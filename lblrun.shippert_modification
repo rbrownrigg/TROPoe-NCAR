@@ -1,0 +1,603 @@
+#!/bin/sh
+#===========================================================================
+#
+#  (C) Cooperative Institute for Meteorological Satellite Studies, 1996
+#
+#  NAME:
+# 	lblrun
+#
+#  PURPOSE:
+#       Script file to run LBLRTM in a dynamically defined work directory
+#         that is tagged with the begin date and time of the LBLRTM run.
+#         The LBLRTM home directory is defined in the environment variable
+#         LBL_HOME. If this environment variable is not set, execution stops
+#         and the user is notified.
+#       An additional environment variable, LBL_RUN_ROOT, can be defined to
+#         allow the user to select the root directory in which LBLRTM is
+#         actually run. If not specified, the root directory defaults to the
+#         user's home directory. This option was added to take advantage of 
+#         superior I/O capabilities of different file systems that *may* 
+#         exist on a system.
+#
+#  CATEGORY:
+#       LBLRTM
+#
+#  LANGUAGE:
+#       Bourne shell script
+#
+#  CALLING SEQUENCE:
+#       lblrun tape5_name results_dir
+#
+#  INPUTS:
+#       tape5_name:  The name of the TAPE5 input file required by LBLRTM.
+#
+#  OPTIONAL INPUTS:
+#       results_dir: User specified subdirectory to hold the output from the LBLRTM
+#                      run. 
+# 
+#  OUTPUTS:
+#       TAPE6:   ASCII log file of LBLRTM run.
+#       TAPE7:   ASCII file of molecular amounts and temperature data used in the
+#                  LBLRTM calculation.
+#       TAPE12:  Final calculated radiance and transmittance (double panel file).
+#       TAPE13:  Final calculated layer by layer radiance and transmittance
+#                  (multiple layer double panel file).
+#       TAPE27:  (OPTIONAL BASED ON INPUTS) ASCII file containing calculated
+#                  quantities, e.g. radiance, transmittance.
+#       TAPE28:  (OPTIONAL BASED ON INPUTS) ASCII file containing calculated
+#                  quantities, e.g. radiance, transmittance.
+#       TMP*:    (OPTIONAL BASED ON INPUTS) Single panel file containing interim
+#                  calculated quantities, e.g. result of heavy molecule cross-section
+#                  calculation.
+#       OD*:     (OPTIONAL BASED ON INPUTS) Single panel files of the layer optical
+#                  depths (resolution may vary with pressure).
+#
+#  SIDE EFFECTS:
+#       If a TAPE13 file IS NOT created in the LBLRTM run, then the work directory is
+#         deleted after the various products have been moved.
+#       If a TAPE13 file IS created, the work directory is not deleted as a link to the
+#         TAPE13 file in the work directory is established. This is done as the TAPE13
+#         files can become rather large (100's of MB)
+#         
+#
+#  RESTRICTIONS:
+#       lblrun will not execute LBLRTM if the LBL_HOME environment variable 
+#         is not set. It is strongly recommended that this environment variable,
+#         be set in your .profile or .cshrc file (or equivalent).
+#
+#  EXAMPLE:
+#       Given a directory containing a TAPE5 file:
+#
+#         origin-/paulv : dir tape5*
+#            8 -rw-r--r--    1 paulv    user         295 Oct 21 16:00 tape5.rdk
+#
+#       LBLRTM can be run with this input file by typing:
+#
+#          origin-/paulv : lblrun tape5.rdk
+#
+#       The script file will provide output similar to the following (depending on
+#       definition of LBL_WORK):
+# 
+#          origin-/paulv : lblrun tape5.rdk
+#           
+#               Using TAPE3 file tape3.32mol_norej_0-20000cm-1
+#               Using TAPE5 file tape5.rdk
+#           
+#           lblrtm running.
+#           Begin date: 19981022
+#           Begin time: 135212CDT
+#           
+#          STOP  LBLRTM EXIT  statement executed
+#           
+#           Saving LBLRTM products in /paulv/lblrtm_paulv_19981022_135212CDT....
+#           
+#       Note the subdirectory into which the results are placed - a user, date, and time
+#         tagged directory name.
+#
+#       To output the results to a subdirectory of your choice, pass the subdirectory name
+#         as the second argument:
+#
+#          origin-/paulv : lblrun tape5.rdk results_dir
+#           
+#               Using TAPE3 file tape3.32mol_norej_0-20000cm-1
+#               Using TAPE5 file tape5.rdk
+#           
+#           lblrtm running.
+#           Begin date: 19981022
+#           Begin time: 135459CDT
+#           
+#          STOP  LBLRTM EXIT  statement executed
+#           
+#           Saving LBLRTM products in /paulv/results_dir....
+#
+#  MODIFICATION HISTORY:
+# 	Written by:	Paul van Delst, CIMSS/SSEC, 20-Jun-1996
+# 			paul.vandelst@ssec.wisc.edu
+#
+#                       See end of file for CVS/RCS Log information.
+#
+#===========================================================================
+
+# -----------------------------------------------------------------
+# Function to move back LBLRTM products and check for copy errors.
+# This should eliminate deletion of products if the file copy fails
+# for some reason, e.g. not enough disk space at destination.
+# -----------------------------------------------------------------
+
+move_file()
+{
+  FROM_FILE=$1
+  TO_FILE=$2
+
+
+# -- Copy file if it exists
+
+  if [ -f ${FROM_FILE} ]; then
+
+    cp ${FROM_FILE} ${TO_FILE}
+
+
+#   -- Make sure copy was successful before deleting
+
+    if [ $? -eq 0 ]; then
+      rm -f ${FROM_FILE}
+    else
+      echo '     Error copying '${FROM_FILE}' to '${TO_FILE}'. Attempting link instead'
+      ln -s ${FROM_FILE} ${TO_FILE}
+      if [ $? -ne 0 ]; then
+        echo '     Error linking file also! Sorry. :('
+      fi
+    fi
+  fi
+}
+
+
+# -------------
+# RCS ID string
+# -------------
+
+  rcsID='$Id: lblrun,v 1.12 1999/04/15 13:53:45 paulv Exp $'
+
+  echo
+  echo ' '${rcsID}
+  echo
+
+
+
+# -------------------------------------
+# Check for correct number of arguments
+# -------------------------------------
+
+  if [ $# -eq 0 ]; then
+
+    echo
+    echo ' Usage : lblrun tape5_name [results_directory]'
+    echo
+    echo
+    echo '         where tape5_name        : TAPE5 LBLRTM input in current directory'
+    echo
+    echo '               results_directory : Name of subdirectory in which to copy the'
+    echo '                                   results of the LBLRTM run. Default action'
+    echo '                                   is to copy results into a subdirectory'
+    echo '                                   tagged by the user name and LBLRTM run'
+    echo '                                   begin date and time.'
+    echo
+
+    exit 1
+
+  fi
+
+
+# --------------------------
+# Check that LBL_HOME is set
+# --------------------------
+
+# -- Determine if the LBL_HOME environment variable is set
+
+  def_LBL_HOME=`env | grep LBL_HOME`
+
+
+# -- If LBL_HOME is not set, then let the user know and exit
+
+  if [ -z "${def_LBL_HOME}" ]; then
+
+    echo
+    echo ' Required LBL_HOME environment variable not set.'
+    echo ' Set this environment variable to the LBLRTM home directory'
+
+    exit 1
+
+
+# -- otherwise check to see if the defined directory actually exists....
+
+  else
+
+    if [ ! -d ${LBL_HOME} ]; then
+
+      echo
+      echo ' Directory defined by LBL_HOME, '${LBL_HOME}' does not exist!'
+
+      exit 2
+
+    fi
+
+  fi
+
+
+# -------------------------------------
+# Check if LBL_RUN_ROOT variable is set
+# -------------------------------------
+
+# -- Determine if the LBL_RUN_ROOT environment variable is set
+
+  def_LBL_RUN_ROOT=`env | grep LBL_RUN_ROOT`
+
+
+# -- If LBL_RUN_ROOT is not set, then make the user's home directory
+# -- the work directory....
+
+  if [ -z "${def_LBL_RUN_ROOT}" ]; then
+
+    LBL_RUN_ROOT=${HOME}
+
+
+# -- otherwise check to see if the defined directory actually exists....
+
+  else
+
+    if [ ! -d ${LBL_RUN_ROOT} ]; then
+
+      echo
+      echo ' Directory defined by LBL_RUN_ROOT, '${LBL_RUN_ROOT}' does not exist!'
+
+      exit 2
+
+    fi
+
+  fi
+
+
+# ---------------------------------------------------
+# Set name of TAPE3 file; else use default
+# ---------------------------------------------------
+
+  if [ $# -eq 3 ]; then
+    T3_FILE=$3
+  else
+    T3_FILE='tape3.data'
+  fi
+
+
+# ------------------------------------------------------
+# Create the data and time flagged LBLRTM work directory
+# ------------------------------------------------------
+
+# -- Get the start date and time
+
+  LBLRUN_DATE=`date '+%Y%m%d'`
+  LBLRUN_TIME=`date '+%H%M%S%Z'`
+
+
+# -- Create a root definition for the LBLRUN_TAG variable
+
+  ROOT_LBLRUN_TAG='_'`whoami`'_'${LBLRUN_DATE}'_'${LBLRUN_TIME}
+
+
+# -- Assign the root tag value to LBLRUN_TAG
+
+  LBLRUN_TAG=${ROOT_LBLRUN_TAG}
+
+
+# -- Create the work directory name
+
+  LBL_WORK=${LBL_RUN_ROOT}'/.lblrtm'${LBLRUN_TAG}
+
+
+# -- Make sure the directory doesn't already exist. If it does, suffix
+# -- the name with an _ and an integer identifier.
+
+  LBLRUN_SUFFIX=0
+  while [ -d ${LBL_WORK} ]; do
+    LBLRUN_SUFFIX=`expr ${LBLRUN_SUFFIX} + 1`
+    LBLRUN_TAG=${ROOT_LBLRUN_TAG}'_'${LBLRUN_SUFFIX}
+    LBL_WORK=${LBL_RUN_ROOT}'/.lblrtm'${LBLRUN_TAG}
+  done
+
+
+# -- Make the directory
+
+  mkdir ${LBL_WORK}
+
+
+# --------------------
+# Link to HITRAN files
+# --------------------
+
+# -- Link to cross-section molecule description file FSCDXS if required
+
+  HITRAN_DIR=${LBL_HOME}/hitran
+
+  if [ ! -f ${LBL_WORK}/FSCDXS ]; then
+
+    ln -s ${HITRAN_DIR}/FSCDXS ${LBL_WORK}/FSCDXS
+
+  fi
+
+
+# -- Link /x (cross-section data) directory to LBL_WORK if required
+
+  if [ ! -d ${LBL_WORK}/x ]; then
+
+    ln -s ${HITRAN_DIR}/x ${LBL_WORK}/x
+
+  fi
+
+
+# -- Link /xs (cross-section data) directory to LBL_WORK if required
+
+  if [ ! -d ${LBL_WORK}/xs ]; then
+
+    ln -s ${HITRAN_DIR}/xs ${LBL_WORK}/xs
+
+  fi
+
+
+# -- Link TAPE3 spectroscopic database to work directory
+
+  T3_DIR=${HITRAN_DIR}
+
+  if [ ! -e ${T3_DIR}/${T3_FILE} ]; then
+ 
+    echo '             *** NO FILE '${T3_FILE}' ***'
+    echo
+    echo '     Directory of '${T3_DIR}' : '
+    ls ${T3_DIR}
+ 
+    exit 3
+ 
+  fi
+
+  echo
+  echo '     Using TAPE3 file '${T3_FILE}
+
+  rm -f ${LBL_WORK}/TAPE3
+  ln -s ${T3_DIR}/${T3_FILE} ${LBL_WORK}/TAPE3
+
+
+
+# ---------------------------------
+# Copy TAPE5 file to work directory
+# ---------------------------------
+
+  T5_FILE=$1
+  CURRENT_DIR=$PWD
+
+  if [ ! -f ${T5_FILE} ]; then
+
+    echo '             *** NO FILE '${T5_FILE}' ***'
+    echo
+    echo '     Directory of '${CURRENT_DIR}' : '
+    ls ${CURRENT_DIR}
+
+    exit 4
+
+  fi
+
+  echo '     Using LBL_HOME: '${LBL_HOME}
+  echo '     Using TAPE5 file '${T5_FILE}
+
+  rm -f ${LBL_WORK}/'TAPE5' 2>/dev/null
+  cp ${T5_FILE} ${LBL_WORK}/'TAPE5'
+
+
+# --------------------------------------------------
+# Copy EMISSIVITY file to work directory, if found
+# --------------------------------------------------
+
+  EMISSION_FILE="EMISSIVITY"
+
+  if [ -f ${EMISSION_FILE} ]; then
+
+    echo '             *** Found '${EMISSION_FILE}' and copied it to run directory ***'
+    cp ${EMISSION_FILE} ${LBL_WORK}/${EMISSION_FILE}
+
+  fi
+
+
+# --------------------------------------------------
+# Copy REFLECTIVITY file to work directory, if found
+# --------------------------------------------------
+
+  REFLECTION_FILE="REFLECTIVITY"
+
+  if [ -f ${REFLECTION_FILE} ]; then
+
+    echo '             *** Found '${REFLECTION_FILE}' and copied it to run directory ***'
+    cp ${REFLECTION_FILE} ${LBL_WORK}/${REFLECTION_FILE}
+
+  fi
+
+
+# ----------------------------
+# Run LBLRTM in work directory
+# ----------------------------
+
+  LBLRTM='lblrtm'
+
+  cd ${LBL_WORK}
+  echo
+  echo ' '${LBLRTM}' running.'
+  echo ' Begin date: '${LBLRUN_DATE}
+  echo ' Begin time: '${LBLRUN_TIME}
+  echo
+  nice -1 ${LBL_HOME}/bin/${LBLRTM}
+  
+
+# ---------------------------------------------------
+# Set and, if necessary, create the results directory
+# Modification by Tim Shippert to allow absolute path
+# ---------------------------------------------------
+
+  echo "    Using Shippert mod"
+  if [ $# -ge 2 ]; then
+    OUT_DIR=$2
+    if [ "`echo $OUT_DIR | cut -c 1`" == "/" ]; then
+      RESULTS_DIR=${OUT_DIR}
+    else
+      RESULTS_DIR=${CURRENT_DIR}'/'${OUT_DIR}
+    fi
+  else
+    RESULTS_DIR=${CURRENT_DIR}'/lblrtm'${LBLRUN_TAG}
+  fi
+
+  if [ ! -d ${RESULTS_DIR} ]; then
+    mkdir ${RESULTS_DIR}
+  fi
+
+# ------------------
+# Copy back products
+# ------------------
+
+# -- Determine disk usage in KB
+
+  DISK_USAGE=`du -sk ${RESULT_DIR} | cut -f1 -d" "`
+
+
+# -- Output info message
+
+  echo 
+  echo ' Saving LBLRTM products ('${DISK_USAGE}' kB total) in '${RESULTS_DIR}'....'
+  echo
+
+
+# -- Copy products and then delete them individually. This will work
+# -- across filesystems, mv will not.
+
+  move_file TAPE6 ${RESULTS_DIR}/TAPE6
+  move_file TAPE7 ${RESULTS_DIR}/TAPE7
+  move_file TAPE10 ${RESULTS_DIR}/TAPE10
+  move_file TAPE12 ${RESULTS_DIR}/TAPE12
+  move_file TAPE13 ${RESULTS_DIR}/TAPE13
+  move_file TAPE14 ${RESULTS_DIR}/TAPE14
+  move_file TAPE27 ${RESULTS_DIR}/TAPE27
+  move_file TAPE28 ${RESULTS_DIR}/TAPE28
+  move_file EMISSIVITY   ${RESULTS_DIR}/EMISSIVITY
+  move_file REFLECTIVITY ${RESULTS_DIR}/REFLECTIVITY
+
+  cp TMP* ${RESULTS_DIR} 2> /dev/null
+  rm -f TMP*
+  cp OD* ${RESULTS_DIR} 2> /dev/null
+  rm -f OD*
+
+
+# --------------------------------------------
+# Delete everything else in the work directory
+# --------------------------------------------
+
+  rm -f EMISSION 2>/dev/null
+  rm -f FSCDXS 2>/dev/null
+  rm -f TAPE3 2>/dev/null
+  rm -f TAPE5 2>/dev/null
+  rm -f x 2>/dev/null
+  rm -f xs 2>/dev/null
+
+  rm -f TAPE9 2>/dev/null
+  rm -f TAPE11 2>/dev/null
+  rm -f TAPE14 2>/dev/null
+
+  cd ${CURRENT_DIR}
+
+
+# -- Delete the work directory.
+
+  rmdir ${LBL_WORK}
+
+
+exit
+
+
+#===========================================================================
+#
+# CVS/RCS log information
+# -----------------------
+#
+#  $Log: lblrun,v $
+#  Revision 1.12  1999/04/15 13:53:45  paulv
+#  - Changed movement of OD* and TMP* files using cp rather than the function
+#    move_files.
+#
+#  Revision 1.11  1999/03/17 20:11:28  paulv
+#  - Added function move_files to copy over product files to results
+#    directory. This function checks if the files exists before it copies.
+#    If the copy fails, the original file is NOT deleted and a symbolic link
+#    is attempted.
+#  - All product files are now copied over, even the large ones. Lack of
+#    sufficient disk space is now the concern of the user.
+#
+#  Revision 1.10  1999/02/08 14:52:36  paulv
+#  Corrected bug in copying TMP* and OD* files to the user defined output
+#    directory.
+#
+#  Revision 1.9  1999/01/22 18:03:59  paulv
+#  Updated header documentation.
+#
+#  Revision 1.8  1999/01/22 17:41:51  paulv
+#  - Changed default shell from Korn to Bourne shell for running under Linux.
+#  - Altered the syntax of reading in the date and time into the LBLRUN_DATE
+#    and LBLRUN_TIME variables. Using the "read" command didn't work under
+#    Linux. Don't know why.
+#  - Changed all Korn shell specific operations to Bourne shell syntax, e.g.
+#    integer arithmetic, file type inquiry.
+#  - Removed use of timex command. Linux doesn't appear to have this
+#    functionality.
+#  - TAPE10 product file is no longer copied over at end of LBLRTM run.
+#  - Header documentation updated.
+#
+#  Revision 1.7  1999/01/14 23:10:27  paulv
+#  Renamed TAPE3 file that is copied to a more generic name, tape3.data
+#    to allow for switching of the file in the T3_DIR.
+#  Development purposes only.
+#
+#  Revision 1.6  1999/01/11 19:42:17  paulv
+#  Changed HITRAN directory from hitran96 to simply hitran.
+#
+#  Revision 1.5  1999/01/11 17:28:34  paulv
+#  Changed TAPE3 directory from ${HITRAN_DIR}/tape to simply ${HITRAN_DIR}.
+#
+#  Revision 1.4  1999/01/06 17:06:10  paulv
+#  - The variable LBLRUN_TAG now contains the user name as well as the date and time.
+#    This was done to avoid different user's LBLRTM runs clashing if they defined the
+#    same LBL_RUN_ROOT environment variable and started their runs at the same time.
+#    The created scratch directory names would still be unique but it would be difficult
+#    to tell which scratch directory belonged to which user if, for some reason, it
+#    became necessary to inspect the scratch area contents, e.g. if lblrun was killed
+#    by the user.
+#  - A check is now made to determine if a TAPE13 file was created in the LBLRTM run.
+#    If it wasn't, the scratch directory is deleted. If it was, the scratch directory
+#    is not deleted and, rather than move the TAPE13 file to the user's results
+#    directory, a link to the TAPE13 file is created in the user's results directory
+#    to the scratch directory. This was done since the TAPE13 files generated can
+#    be quite large and fill up a user area; not to mention the degeneration of
+#    system response when moving a 500MB file across filesystems on a semi-regular
+#    basis.
+#  - TAPE10 product file now moved to user's results directory.
+#  - RCS Id keyword string output when script is invoked.
+#  - Added some more inline documentation.
+#  - Updated header documentation.
+#
+#  Revision 1.3  1998/10/26 21:10:12  paulv
+#  Added option of LBL_RUN_ROOT environment variable. This allows the user to
+#    select the root directory in which LBLRTM is actually run. This option
+#    was added to take advantage of superior I/O capabilities of different
+#    file systems that *may* exist on a system.
+#
+#  Revision 1.2  1998/10/22 19:39:24  paulv
+#  Added optional argument to specify subdirectory in which the LBLRTM
+#    calculation result is placed. Default action is to create a date and
+#    time tagged subdirectory.
+#  Updated header documentation.
+#
+#  Revision 1.1.1.1  1998/10/21 22:22:49  paulv
+#  Imported source
+#
+#===========================================================================
