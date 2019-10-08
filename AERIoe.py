@@ -608,7 +608,7 @@ if len(foo) <= 0:
         VIP_Databases_functions.abort(lbltmpdir,date)
         sys.exit()
     print 'Resetting the end hour to process at least 1 sample'
-    if foo < 2:
+    if len(foo) < 2:
         ehour = aeri['hour'][foo] + 1/3600.     # Added 1 second to this AERI sample to make sure to get it
     else:
         ehour = aeri['hour'][foo[0]] + 1/3600.
