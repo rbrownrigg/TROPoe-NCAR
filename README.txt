@@ -1,7 +1,7 @@
 -----------
 DESCRIPTION
 -----------
-pyAERIoe is an python version of Dave Turner's IDL AERIoe algorithm. This code was produced so AERIoe could be run using a free programming language. The logic in pyAERIoe follows the original code exactly. The main driver script for pyAERIoe is the AERIoe.py file. This script makes calls to 79 functions that are written in the other .py files.
+pyAERIoe is an python version of Dave Turner's IDL AERIoe algorithm. The original IDL code was Release_2_9.  This code was produced so AERIoe could be run using a free programming language. The logic in pyAERIoe follows the original code exactly. The main driver script for pyAERIoe is the AERIoe.py file. This script makes calls to 79 functions that are written in the other .py files.
 The functions are separated in files by the tasks that they perform so users can find and edit them (if needed) efficiently.
 
 VIP_Databases_function.py - Functions that read in the VIP file and other databases needed for the retrieval

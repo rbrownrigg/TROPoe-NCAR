@@ -2966,7 +2966,7 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
             if verbose >= 1:
                 print 'No ARM met found in this directory for this date'
         else:
-            for i in range(files[i]):
+            for i in range(len(files)):
                 fid = Dataset(files[i], 'r')
                 bt = fid.variables['base_time'][:]
                 to = fid.variables['time_offset'][:]
