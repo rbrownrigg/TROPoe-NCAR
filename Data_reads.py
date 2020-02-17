@@ -2978,10 +2978,9 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
                 foo = np.where((p > 0) & (p < 1050) & (t < 60) & (u >= 0) & (u < 103))[0]
                 if len(foo) < 2:
                     continue
-                to = to[foo]
-                p = p[foo]
-                t = t[foo]
-                u = u[foo]
+                to = to[foo].squeeze()
+                p = p[foo].squeeze()
+                t = t[foo].squeeze()
                 qunit = 'g/kg'
                 qtype = 'ARM met station'
                 
@@ -3246,7 +3245,7 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
             qq0 = np.zeros(len(secs))
             sq0 = np.zeros(len(secs))
             for i in range(len(secs)):
-                foo = np.where((secs[i]-tres*60/2. <= qsecs) & qsecs <= secs[i] + tres*60/2.)[0]
+                foo = np.where((secs[i]-tres*60/2. <= qsecs) & (qsecs <= secs[i] + tres*60/2.))[0]
                 if len(foo) > 0:
                     qq0[i] = np.nanmean(wv[foo])
                     sq0[i] = np.nanmean(swv[foo])
@@ -3356,7 +3355,7 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
             cco2 = np.zeros(len(secs))
             scco2 = np.zeros(len(secs))
             for i in range(len(secs)):
-                foo = np.where((secs[i]-tres*60/2. <= co2secs) & co2secs <= secs[i] + tres*60/2.)[0]
+                foo = np.where((secs[i]-tres*60/2. <= co2secs) & (co2secs <= secs[i] + tres*60/2.))[0]
                 if len(foo) > 0:
                     cco2[i] = np.nanmean(co2[foo])
                     scco2[i] = np.nanmean(sco2[foo])
