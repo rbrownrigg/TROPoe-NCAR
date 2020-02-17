@@ -2,3 +2,5 @@ Things that we need to do on pyAERIoe
 
 * Test the appending ability
 * Fix the output issue with single samples
+* Using a temporal resolution other than 0 in VIP creates an error
+* Output files are still too large; netCDF dimensions are (probably) correct but not storing either Sop or Akernal properly in a sample-by-sample way
