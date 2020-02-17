@@ -160,9 +160,13 @@ def esat(temp,ice):
     
     # Compute saturation vapor pressure (es, in mb) over water or ice at temperature
     # temp (in Kelvin using te Goff-Gratch formulation (List, 1963)
-    if type(temp) != np.ndarray:
-        temp = np.array([temp])
-   
+    #print(type(temp))
+    if ((type(temp) != np.ndarray) & (type(temp) != list) & (type(temp) != np.ma.MaskedArray)):
+        temp = np.asarray([temp])
+
+    if type(temp) == list:
+        temp = np.asarray(temp)
+
     tk = temp + tzero
     es = np.zeros(len(temp))
   
