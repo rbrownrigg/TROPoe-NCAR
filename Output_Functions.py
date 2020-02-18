@@ -82,11 +82,11 @@ def write_output(vip, ext_prof, mod_prof, ext_tseries, globatt, xret, prior,
         height.long_name = 'height'
         height.units = 'km AGL'
         
-        temperature = fid.createVariable('temperature', 'f4', ('height','time',))
-        temperature.long_name = temperature
+        temperature = fid.createVariable('temperature', 'f4', ('time','height',))
+        temperature.long_name = 'temperature'
         temperature.units = 'C'
         
-        waterVapor = fid.createVariable('waterVapor', 'f4', ('height', 'time',))
+        waterVapor = fid.createVariable('waterVapor', 'f4', ('time', 'height',))
         waterVapor.long_name = 'water vapor mixing ratio'
         waterVapor.units = 'g/kg'
         
@@ -106,23 +106,23 @@ def write_output(vip, ext_prof, mod_prof, ext_tseries, globatt, xret, prior,
         iReff.long_name = 'ice effective radius'
         iReff.units = 'microns'
         
-        co2 = fid.createVariable('co2', 'f4', ('gas_dim','time',))
+        co2 = fid.createVariable('co2', 'f4', ('time','gas_dim',))
         co2.long_name = 'carbon dioxide concentration'
         co2.units = 'ppm'
         
-        ch4 = fid.createVariable('ch4', 'f4', ('gas_dim', 'time',))
+        ch4 = fid.createVariable('ch4', 'f4', ('time', 'gas_dim',))
         ch4.long_name = 'methane concentration'
         ch4.units = 'ppm'
         
-        n2o = fid.createVariable('n2o', 'f4', ('gas_dim', 'time',))
+        n2o = fid.createVariable('n2o', 'f4', ('time', 'gas_dim',))
         n2o.long_name = 'nitrous oxide concentration'
         n2o.units = 'ppm'
         
-        sigmaT = fid.createVariable('sigma_temperature', 'f4', ('height','time',))
+        sigmaT = fid.createVariable('sigma_temperature', 'f4', ('time','height',))
         sigmaT.long_name = '1-sigma uncertainty in temperature'
         sigmaT.units = 'C'
         
-        sigmaWV = fid.createVariable('sigma_waterVapor', 'f4', ('height','time',))
+        sigmaWV = fid.createVariable('sigma_waterVapor', 'f4', ('time','height',))
         sigmaWV.long_name = '1-sigma uncertainty in water vapor mixing vapor'
         sigmaWV.units = 'g/kg'
         
@@ -142,15 +142,15 @@ def write_output(vip, ext_prof, mod_prof, ext_tseries, globatt, xret, prior,
         sigma_iReff.long_name = '1-sigma uncertainty in ice effective radius'
         sigma_iReff.units = 'microns'
         
-        sigma_co2 = fid.createVariable('sigma_co2', 'f4', ('gas_dim','time',))
+        sigma_co2 = fid.createVariable('sigma_co2', 'f4', ('time','gas_dim',))
         sigma_co2.long_name = '1-sigma uncertainty in carbon dioxide concentration'
         sigma_co2.units = 'ppm'
         
-        sigma_ch4 = fid.createVariable('sigma_ch4', 'f4', ('gas_dim','time',))
+        sigma_ch4 = fid.createVariable('sigma_ch4', 'f4', ('time','gas_dim',))
         sigma_ch4.long_name = '1-sigma uncertainty in methane concentration'
         sigma_ch4.units = 'ppm'
         
-        sigma_n2o = fid.createVariable('sigma_n2o', 'f4', ('gas_dim','time',))
+        sigma_n2o = fid.createVariable('sigma_n2o', 'f4', ('time','gas_dim',))
         sigma_n2o.long_name = '1-sigma uncertaintiy in nitrous oxide concentration'
         sigma_n2o.units = 'ppm'
         
@@ -197,7 +197,7 @@ def write_output(vip, ext_prof, mod_prof, ext_tseries, globatt, xret, prior,
         convergence_criteria.long_name = 'convergence criteria di^2'
         convergence_criteria.units = 'unitless'
         
-        dfs = fid.createVariable('dfs', 'f4', ('dfs','time',))
+        dfs = fid.createVariable('dfs', 'f4', ('time','dfs',))
         dfs.long_name = 'degrees of freedom of signal'
         dfs.units = 'unitless'
         dfs.comment = 'total DFS, then DFS for each of temperature, waterVapor, LWP, L_Reff, I_tau, I_Reff, carbonDioxide, methane, nitrousOxide'
@@ -206,11 +206,11 @@ def write_output(vip, ext_prof, mod_prof, ext_tseries, globatt, xret, prior,
         sic.long_name = 'Shannon information content'
         sic.units = 'unitless'
         
-        vres_temp = fid.createVariable('vres_temperature', 'f4', ('height','time',))
+        vres_temp = fid.createVariable('vres_temperature', 'f4', ('time','height',))
         vres_temp.long_name = 'Vertical resolution of the temperature profile'
         vres_temp.units = 'km'
         
-        vres_wv = fid.createVariable('vres_waterVapor', 'f4', ('height','time',))
+        vres_wv = fid.createVariable('vres_waterVapor', 'f4', ('time','height',))
         vres_wv.long_name = 'Vertical resolution of the water vapor profile'
         vres_wv.units = 'km'
         
@@ -231,32 +231,32 @@ def write_output(vip, ext_prof, mod_prof, ext_tseries, globatt, xret, prior,
         cbh_flag.comment3 = 'Value 2 implies Outer Window radiance'
         cbh_flag.comment4 = 'Value 3 implies Default CBH radiance'
         
-        pressure = fid.createVariable('pressure', 'f4', ('height','time',))
+        pressure = fid.createVariable('pressure', 'f4', ('time','height',))
         pressure.long_name = 'derived pressure'
         pressure.units = 'mb'
         pressure.comment = 'derived from AERI surface pressure observations and the hyposmetric calculation using the thermodynamic profiles'
         
-        theta = fid.createVariable('theta', 'f4', ('height','time',))
+        theta = fid.createVariable('theta', 'f4', ('time','height',))
         theta.long_name = 'potential temperature'
         theta.units = 'K'
         theta.comment = 'This field is derived from the retrieved fields'
         
-        thetae = fid.createVariable('thetae', 'f4', ('height','time',))
+        thetae = fid.createVariable('thetae', 'f4', ('time','height',))
         thetae.long_name = 'euivalent potential temperature'
         thetae.units = 'K'
         thetae.comment = 'This field is derived from the retrieved fields'
         
-        rh = fid.createVariable('rh', 'f4', ('height','time',))
+        rh = fid.createVariable('rh', 'f4', ('time','height',))
         rh.long_name = 'relative humidity'
         rh.units = '%'
         rh.comment = 'This field is derived from the retrieved field'
         
-        dewpt = fid.createVariable('dewpt', 'f4', ('height','time',))
+        dewpt = fid.createVariable('dewpt', 'f4', ('time','height',))
         dewpt.long_name = 'dew point temperature'
         dewpt.units = 'C'
         dewpt.comment = 'This field is derived from the retrieved fields'
         
-        dindices = fid.createVariable('dindices', 'f4', ('index_dim','time',))
+        dindices = fid.createVariable('dindices', 'f4', ('time','index_dim',))
         dindices.long_name = 'derived indices'
         dindices.units = 'units depends on the index; see comments below'
         dindices.comment0 = 'This field is derived from the retrieved fields'
@@ -272,7 +272,7 @@ def write_output(vip, ext_prof, mod_prof, ext_tseries, globatt, xret, prior,
         dindices.field_4_name = 'lcl'
         dindices.field_4_units = 'km AGL'
         
-        sigma_dindices = fid.createVariable('sigma_dindices', 'f4', ('index_dim','time',))
+        sigma_dindices = fid.createVariable('sigma_dindices', 'f4', ('time','index_dim',))
         sigma_dindices.long_name = '1-sigma uncertainties in the derived indices'
         sigma_dindices.units = 'units depend on the index, see the field above '
         sigma_dindices.comment1 = 'This field is derived fro mthe retrieved fields'
@@ -360,15 +360,15 @@ def write_output(vip, ext_prof, mod_prof, ext_tseries, globatt, xret, prior,
         obs_dim.long_name = 'Dimension of the observation vector'
         obs_dim.units = 'mixed units -- see obs_flag field above'
         
-        obs_vector = fid.createVariable('obs_vector', 'f4', ('obs_dim','time',))
+        obs_vector = fid.createVariable('obs_vector', 'f4', ('time','obs_dim',))
         obs_vector.long_name = 'Observation vector Y'
         obs_vector.units = 'mixed units -- see obs_flag field above'
         
-        obs_vector_uncertainty = fid.createVariable('obs_vector_uncertainty', 'f4', ('obs_dim','time',))
+        obs_vector_uncertainty = fid.createVariable('obs_vector_uncertainty', 'f4', ('time','obs_dim',))
         obs_vector_uncertainty.long_name = '1-sigma uncertainty in the observation vector (sigY)'
         obs_vector_uncertainty.units = 'mixed units -- see obs_flag field above'
         
-        forward_calc = fid.createVariable('forward_calc', 'f4', ('obs_dim','time',))
+        forward_calc = fid.createVariable('forward_calc', 'f4', ('time','obs_dim',))
         forward_calc.long_name = 'Forward calculation from state vector (i.e., F(Xn))'
         forward_calc.units = 'mixed units -- see obs_flag field above'
         
@@ -383,15 +383,15 @@ def write_output(vip, ext_prof, mod_prof, ext_tseries, globatt, xret, prior,
                        + 'ice cloud optical depth (5), ice cloud Reff (6), carbon dioxide (7)'
                        + ' methane (8), nitrous oxide (9)')
             
-            Xop = fid.createVariable('Xop', 'f4', ('arb','time',))
+            Xop = fid.createVariable('Xop', 'f4', ('time','arb',))
             Xop.long_name = 'optimal solution'
             Xop.units = 'mixed units -- see field arb above'
             
-            Sop = fid.createVariable('Sop', 'f4', ('arb','arb','time',))
+            Sop = fid.createVariable('Sop', 'f4', ('time','arb','arb',))
             Sop.long_name = 'covariance matrix of the solution'
             Sop.units = 'mixed units -- see field arb above'
             
-            Akernal = fid.createVariable('Akernal', 'f4', ('arb','arb','time',))
+            Akernal = fid.createVariable('Akernal', 'f4', ('time','arb','arb',))
             Akernal.long_name = 'averaging kernal'
             Akernal.units = 'mixed units -- see field arb above'
             
@@ -708,26 +708,26 @@ def write_output(vip, ext_prof, mod_prof, ext_tseries, globatt, xret, prior,
             print 'Whoaa -- this should not happen size -- aborting'
             return success, nfilename
         
-        temperature[:,fsample+i] = xret[fsample+i]['Xn'][0:nht]
-        waterVapor[:,fsample+i] = xret[fsample+i]['Xn'][nht:2*nht]
+        temperature[fsample+i,:] = xret[fsample+i]['Xn'][0:nht]
+        waterVapor[fsample+i,:] = xret[fsample+i]['Xn'][nht:2*nht]
         lwp[fsample+i] = xret[fsample+i]['Xn'][2*nht]
         lReff[fsample+i] = xret[fsample+i]['Xn'][2*nht+1]
         iTau[fsample+i] = xret[fsample+i]['Xn'][2*nht+2]
         iReff[fsample+i] = xret[fsample+i]['Xn'][2*nht+3]
-        co2[:,fsample+i] = xret[fsample+i]['Xn'][2*nht+4:2*nht+7]
-        ch4[:,fsample+i] = xret[fsample+i]['Xn'][2*nht+7:2*nht+10]
-        n2o[:,fsample+i] = xret[fsample+i]['Xn'][2*nht+10:2*nht+13]
+        co2[fsample+i,:] = xret[fsample+i]['Xn'][2*nht+4:2*nht+7]
+        ch4[fsample+i,:] = xret[fsample+i]['Xn'][2*nht+7:2*nht+10]
+        n2o[fsample+i,:] = xret[fsample+i]['Xn'][2*nht+10:2*nht+13]
         
-        sigmaT[:,fsample+i] = stemp_tmp[:,fsample+i]
-        sigmaWV[:,fsample+i] = swvmr_tmp[:,fsample+i]
+        sigmaT[fsample+i,:] = stemp_tmp[:,fsample+i]
+        sigmaWV[fsample+i,:] = swvmr_tmp[:,fsample+i]
         sig = np.sqrt(np.diag(xret[fsample+i]['Sop']))
         sigma_lwp[fsample+i] = sig[2*nht]
         sigma_lReff[fsample+i] = sig[2*nht+1]
         sigma_iTau[fsample+i] = sig[2*nht+2]
         sigma_iReff[fsample+i] = sig[2*nht+3]
-        sigma_co2[:,fsample+i] = sig[2*nht+4:2*nht+7]
-        sigma_ch4[:,fsample+i] = sig[2*nht+7:2*nht+10]
-        sigma_n2o[:,fsample+i] = sig[2*nht+10:2*nht+13]
+        sigma_co2[fsample+i,:] = sig[2*nht+4:2*nht+7]
+        sigma_ch4[fsample+i,:] = sig[2*nht+7:2*nht+10]
+        sigma_n2o[fsample+i,:] = sig[2*nht+10:2*nht+13]
         
         converged_flag[fsample+i] = xret[fsample+i]['converged']
         gamma[fsample+i] = xret[fsample+i]['gamma']
@@ -737,31 +737,31 @@ def write_output(vip, ext_prof, mod_prof, ext_tseries, globatt, xret, prior,
         rmsp[fsample+i] = xret[fsample+i]['rmsp']
         chi2[fsample+i] = xret[fsample+i]['chi2']
         convergence_criteria[fsample+i] = xret[fsample+i]['di2m']
-        dfs[:,fsample+i] = xret[fsample+i]['dfs']
+        dfs[fsample+i,:] = xret[fsample+i]['dfs']
         sic[fsample+i] = xret[fsample+i]['sic']
-        vres_temp[:,fsample+i] = xret[fsample+i]['vres'][0,:]
-        vres_wv[:,fsample+i] = xret[fsample+i]['vres'][1,:]
+        vres_temp[fsample+i,:] = xret[fsample+i]['vres'][0,:]
+        vres_wv[fsample+i,:] = xret[fsample+i]['vres'][1,:]
         
         hatchOpen[fsample+i] = xret[fsample+i]['hatchopen']
         cbh[fsample+i] = xret[fsample+i]['cbh']
         cbh_flag[fsample+i] = xret[fsample+i]['cbhflag']
-        pressure[:,fsample+i] = xret[fsample+i]['p'][0:nht]
+        pressure[fsample+i,:] = xret[fsample+i]['p'][0:nht]
         
-        theta[:,fsample+i] = theta_tmp[:,fsample+i]
-        thetae[:,fsample+i] = theta_tmp[:,fsample+i]
-        rh[:,fsample+i] = rh_tmp[:,fsample+i]
-        dewpt[:,fsample+i] = dewpt_tmp[:,fsample+i]
-        dindices[:,fsample+i] = indices[:,fsample+i]
-        sigma_dindices[:,fsample+i] = sigma_indices[:,fsample+i]
+        theta[fsample+i,:] = np.transpose(theta_tmp[:,fsample+i])
+        thetae[fsample+i,:] = np.transpose(theta_tmp[:,fsample+i])
+        rh[fsample+i,:] = np.transpose(rh_tmp[:,fsample+i])
+        dewpt[fsample+i,:] = np.transpose(dewpt_tmp[:,fsample+i])
+        dindices[fsample+i,:] = np.transpose(indices[:,fsample+i])
+        sigma_dindices[fsample+i,:] = np.transpose(sigma_indices[:,fsample+i])
         
-        obs_vector[:,fsample+i] = xret[fsample+i]['Y']
-        obs_vector_uncertainty[:,fsample+i] = xret[fsample+i]['sigY']
-        forward_calc[:,fsample+i] = xret[fsample+i]['FXn']
+        obs_vector[fsample+i,:] = xret[fsample+i]['Y']
+        obs_vector_uncertainty[fsample+i,:] = xret[fsample+i]['sigY']
+        forward_calc[fsample+i,:] = xret[fsample+i]['FXn']
         
         if vip['output_file_keep_small'] == 0:
-            Xop[:,fsample+i] = xret[fsample+i]['Xn']
-            Sop[:,:,fsample+i] = xret[fsample+i]['Sop']
-            Akernal[:,:,fsample+i] = xret[fsample+i]['Akern']
+            Xop[fsample+i,:] = xret[fsample+i]['Xn']
+            Sop[fsample+i,:,:] = xret[fsample+i]['Sop']
+            Akernal[fsample+i,:,:] = xret[fsample+i]['Akern']
     
     fid.close()
     success = 1
