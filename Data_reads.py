@@ -504,7 +504,7 @@ def read_mwr(path, rootname, date, mwr_type, mwr_elev_field, mwr_n_tb_fields,
             
     if verbose >= 2:
         print 'Reading MWR data in ' + path
-        err = {'success':0, 'type':-1}
+    err = {'success':0, 'type':-1}
         
     # Read in the data from yesterday, today, and tomorrow
     udate = [(datetime.strptime(str(date), '%Y%m%d') - timedelta(days=1)).strftime('%Y%m%d') ,
