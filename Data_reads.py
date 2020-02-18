@@ -1512,54 +1512,54 @@ def grid_aeri(ch1, aerisum, avg_instant, hatchOpenSwitch, missingDataFlagSwitch,
                 mssflag[i] = np.nanmax(ch1['missingDataFlag'][foo])
                 
                 # Determine the appropriate value for the cbh.  If one of the
-		# "inners" are set, then use the median of these values.  Otherwise,
-		# use the median of the "outers".  Last resort is to use the "default"
-		
-		bar = np.where(ch1['cbhflag'][foo] == 1)[0]    # Look for "inners"
-		if len(bar) > 0:
-		    if len(bar) == 1:
-		        cbh[i] = ch1['cbh'][foo[bar]]
-		    else:
-		        cbh[i] = np.nanmedian(ch1['cbh'][foo[bar]])
-		    cbhflag[i] = 1
-		
-		else:
-		    bar = np.where(ch1['cbhflag'][foo] == 2)[0] # Look for "outers"
-		    if len(bar) > 0:
-		      if len(bar) == 1:
-		        cbh[i] = ch1['cbh'][foo[bar]]
-		      else:
-		        cbh[i] = np.nanmedian(ch1['cbh'][foo[bar]])
-		      cbhflag[i] = 2
-		    else:
-		        cbh[i] = np.nanmedian(ch1['cbh'][foo])
-		        cbhflag[i] = 3
-		 
-		        
+                # "inners" are set, then use the median of these values.  Otherwise,
+                # use the median of the "outers".  Last resort is to use the "default"
+
+                bar = np.where(ch1['cbhflag'][foo] == 1)[0]    # Look for "inners"
+                if len(bar) > 0:
+                    if len(bar) == 1:
+                        cbh[i] = ch1['cbh'][foo[bar]]
+                    else:
+                        cbh[i] = np.nanmedian(ch1['cbh'][foo[bar]])
+                    cbhflag[i] = 1
+
+                else:
+                    bar = np.where(ch1['cbhflag'][foo] == 2)[0] # Look for "outers"
+                    if len(bar) > 0:
+                      if len(bar) == 1:
+                        cbh[i] = ch1['cbh'][foo[bar]]
+                      else:
+                        cbh[i] = np.nanmedian(ch1['cbh'][foo[bar]])
+                      cbhflag[i] = 2
+                    else:
+                        cbh[i] = np.nanmedian(ch1['cbh'][foo])
+                        cbhflag[i] = 3
+
+
                 # Determine the appropriate value for the hatch, given there
-		# are several AERI samples in this window.  If the hatch is open
-		# for all of these samples, then call it open.  If the hatch is
-		# closed for all of the samples, then call it closed.  Otherwise
-		# call it "indeterminant"
-		
-		bar = np.where(ch1['hatchopen'][foo] == 1)[0]       
-		if len(bar) == len(foo):
-		    hatflag[i] = 1                             # Hatch was always open
-		else:
-		    np.where(ch1['hatchopen'][foo] == 0)[0]
-		    if len(bar) == len(foo):
-		      hatflag[i] = 0                           # Hatch was always closed
-		    else:
-		      hatflag[i] = 3                           # If we are here it is neither
-		      
-	    atmos_pres[i] = np.nanmean(ch1['atmos_pres'][foo])
-	
-	# Get the summary data on this grid   
+                # are several AERI samples in this window.  If the hatch is open
+                # for all of these samples, then call it open.  If the hatch is
+                # closed for all of the samples, then call it closed.  Otherwise
+                # call it "indeterminant"
+
+                bar = np.where(ch1['hatchopen'][foo] == 1)[0]
+                if len(bar) == len(foo):
+                    hatflag[i] = 1                             # Hatch was always open
+                else:
+                    np.where(ch1['hatchopen'][foo] == 0)[0]
+                    if len(bar) == len(foo):
+                      hatflag[i] = 0                           # Hatch was always closed
+                    else:
+                      hatflag[i] = 3                           # If we are here it is neither
+
+            atmos_pres[i] = np.nanmean(ch1['atmos_pres'][foo])
+
+    # Get the summary data on this grid
         if avg_instant == 0:
             foo = np.where((secs[i]-tavg*60./2. <= ch1['secs']) & (ch1['secs'] < secs[i]+tavg*60./2.))[0]
-	else:
-	    dell = np.abs(secs[i]-aerisum['secs'])
-	    foo = np.where((secs[i]-tavg*60./2. <= ch1['secs']) & (ch1['secs'] < secs[i]+tavg*60./2.) &
+    else:
+        dell = np.abs(secs[i]-aerisum['secs'])
+        foo = np.where((secs[i]-tavg*60./2. <= ch1['secs']) & (ch1['secs'] < secs[i]+tavg*60./2.) &
                                (dell == np.nanmin(dell)))[0]
             
                                
@@ -1574,15 +1574,15 @@ def grid_aeri(ch1, aerisum, avg_instant, hatchOpenSwitch, missingDataFlagSwitch,
         else:
             
             # Divide by sqrt N when averaging many samples together
-      	    # In the end, I think that the noise spectrum is getting
-	    # too compressed using the correct way of dividing by 
-	    # the sqrt(N).  However, I would like there to be some 
-	    # noise compression when averaging data, so I am going to
-	    # use this 'hack'.
-	    
-	    #nrad[:,i] = (np.nansum(aerisum['noise'][:,foo],axis = 1)/np.float(len(foo))) / np.sqrt(len(foo))
-	    nrad[:,i] = (np.nansum(aerisum['noise'][:,foo],axis = 1)/np.float(len(foo))) / np.sqrt(len(foo))
-	
+            # In the end, I think that the noise spectrum is getting
+            # too compressed using the correct way of dividing by
+            # the sqrt(N).  However, I would like there to be some
+            # noise compression when averaging data, so I am going to
+            # use this 'hack'.
+
+            #nrad[:,i] = (np.nansum(aerisum['noise'][:,foo],axis = 1)/np.float(len(foo))) / np.sqrt(len(foo))
+            nrad[:,i] = (np.nansum(aerisum['noise'][:,foo],axis = 1)/np.float(len(foo))) / np.sqrt(len(foo))
+
     
     # Put all AERI data on same spectral grid
     wnum = np.copy(ch1['wnum'])
