@@ -1414,7 +1414,7 @@ def read_vceil(path, date, vceil_type, ret_secs, verbose):
 ################################################################################
 
 def grid_aeri(ch1, aerisum, avg_instant, hatchOpenSwitch, missingDataFlagSwitch,
-            secs, tavg, verbose):
+              secs, tavg, verbose):
             
     if verbose == 3:
         print 'Temporally gridding the AERI data'
@@ -1526,15 +1526,14 @@ def grid_aeri(ch1, aerisum, avg_instant, hatchOpenSwitch, missingDataFlagSwitch,
                 else:
                     bar = np.where(ch1['cbhflag'][foo] == 2)[0] # Look for "outers"
                     if len(bar) > 0:
-                      if len(bar) == 1:
-                        cbh[i] = ch1['cbh'][foo[bar]]
-                      else:
-                        cbh[i] = np.nanmedian(ch1['cbh'][foo[bar]])
-                      cbhflag[i] = 2
+                        if len(bar) == 1:
+                            cbh[i] = ch1['cbh'][foo[bar]]
+                        else:
+                            cbh[i] = np.nanmedian(ch1['cbh'][foo[bar]])
+                        cbhflag[i] = 2
                     else:
                         cbh[i] = np.nanmedian(ch1['cbh'][foo])
                         cbhflag[i] = 3
-
 
                 # Determine the appropriate value for the hatch, given there
                 # are several AERI samples in this window.  If the hatch is open
@@ -1554,18 +1553,17 @@ def grid_aeri(ch1, aerisum, avg_instant, hatchOpenSwitch, missingDataFlagSwitch,
 
             atmos_pres[i] = np.nanmean(ch1['atmos_pres'][foo])
 
-    # Get the summary data on this grid
+        # Get the summary data on this grid
         if avg_instant == 0:
             foo = np.where((secs[i]-tavg*60./2. <= ch1['secs']) & (ch1['secs'] < secs[i]+tavg*60./2.))[0]
-    else:
-        dell = np.abs(secs[i]-aerisum['secs'])
-        foo = np.where((secs[i]-tavg*60./2. <= ch1['secs']) & (ch1['secs'] < secs[i]+tavg*60./2.) &
+        else:
+            dell = np.abs(secs[i]-aerisum['secs'])
+            foo = np.where((secs[i]-tavg*60./2. <= ch1['secs']) & (ch1['secs'] < secs[i]+tavg*60./2.) &
                                (dell == np.nanmin(dell)))[0]
-            
-                               
-            if len(foo) > 1:
-                foo = np.array([foo[0]])
-                nfoo = 1
+
+        if len(foo) > 1:
+            foo = np.array([foo[0]])
+            nfoo = 1
       
         if len(foo) == 0:
             nrad[:,i] = -9999.
@@ -1583,35 +1581,34 @@ def grid_aeri(ch1, aerisum, avg_instant, hatchOpenSwitch, missingDataFlagSwitch,
             #nrad[:,i] = (np.nansum(aerisum['noise'][:,foo],axis = 1)/np.float(len(foo))) / np.sqrt(len(foo))
             nrad[:,i] = (np.nansum(aerisum['noise'][:,foo],axis = 1)/np.float(len(foo))) / np.sqrt(len(foo))
 
-    
     # Put all AERI data on same spectral grid
     wnum = np.copy(ch1['wnum'])
     noise = rrad*0.
     for i in range(len(secs)):
         noise[:,i] = np.interp(wnum,aerisum['wnum'],nrad[:,i])
-        
+
         # Get the surface temperature from the AERI radiance observations
         # Use the actual AERI radiances, not the subset that was extracted
-        
+
     bar = np.where((wnum >= 670) & (wnum <= 675))[0]
-        
+
     if len(bar) >= 8:
         Tsfc = Calcs_Conversions.invplanck(np.nansum(wnum[bar])/np.float(len(bar)),np.nansum(rrad[bar,:],axis = 0)/np.float(len(bar)))
         Tsfc = Tsfc - 273.16
-            
+
         bar = np.where(np.isnan(Tsfc))
-            
+
         if len(bar) > 0:
             Tsfc[bar] = -999.
     else:
         Tsfc = np.ones(len(secs))*-999.
-        
+
     yy = np.array([datetime.utcfromtimestamp(x).year for x in secs])
     mm = np.array([datetime.utcfromtimestamp(x).month for x in secs])
     dd = np.array([datetime.utcfromtimestamp(x).day for x in secs])
     ymd = yy*10000 + mm*100 + dd
     hour = np.array([((datetime.utcfromtimestamp(x)-datetime(yy[0],mm[0],dd[0])).total_seconds())/3600. for x in secs])
-    
+
     return ({'success':1, 'secs':secs, 'ymd':ymd, 'hour':hour, 'yy':yy, 'mm':mm, 'dd':dd,
             'cbh':cbh, 'cbhflag':cbhflag, 'hatchopen':hatflag, 'avg_instant':avg_instant,
             'wnum':wnum, 'radmn':rrad, 'noise':noise, 'atmos_pres':atmos_pres,
