@@ -314,9 +314,12 @@ def read_all_data(date, retz, tres, dostop, verbose, avg_instant, ch1_path,
                     wait = raw_input('Stopping inside routine for debugging. Press enter to continue')
                 return fail, -999, -999, -999
             
-            wnum = np.arange(int((1800-520)/0.5)+1)*0.5+520            #Simulated wavenumber array
+            wnum = np.arange(int((950-900)/0.5)+1)*0.5+900            #Simulated wavenumber array
             mrad = np.ones((len(wnum),len(mwr_data['secs'])))*-999.0   #Radiance is all missing
             noise = np.ones((len(wnum),len(mwr_data['secs'])))         #Set all noise values to 1
+            print mwr_data['secs'].shape
+            print mwr_data['psfc'].shape
+	    print mrad.shape
             yy = np.array([datetime.utcfromtimestamp(x).year for x in mwr_data['secs']])
             mm = np.array([datetime.utcfromtimestamp(x).month for x in mwr_data['secs']])
             dd = np.array([datetime.utcfromtimestamp(x).day for x in mwr_data['secs']])
@@ -565,6 +568,8 @@ def read_mwr(path, rootname, date, mwr_type, mwr_elev_field, mwr_n_tb_fields,
     nmwr_points = 0
     if mwr_type > 0:
         for i in range(len(files)):
+            if verbose >= 3:
+                print "Reading: " + files[i]
             fid = Dataset(files[i],'r')
             bt = fid.variables['base_time'][:]
             to = fid.variables['time_offset'][:]
@@ -579,17 +584,17 @@ def read_mwr(path, rootname, date, mwr_type, mwr_elev_field, mwr_n_tb_fields,
             # It might be "p_sfc" or "sfc_p" or "sfc_pres". Units are mb in both cases
             foo = np.where(np.array(fid.variables.keys()) == 'sfc_pres')[0]
             if len(foo) > 0:
-                psfc = fid.variables['sfc_pres'][:]
+                psfcx = fid.variables['sfc_pres'][:]
             else:
                 foo = np.where(np.array(fid.variables.keys()) == 'sfc_p')[0]
                 if len(foo) > 0:
-                    psfc = fid.variables['sfc_p'][:]
+                    psfcx = fid.variables['sfc_p'][:]
                 else:
                    foo = np.where(np.array(fid.variables.keys()) == 'p_sfc')[0] 
                    if len(foo) > 0:
-                       psfc = fid.variables['p_sfc'][:]
+                       psfcx = fid.variables['p_sfc'][:]
                    else:
-                       psfc = np.ones(to.shape)*-999.0
+                       psfcx = np.ones(to.shape)*-999.0
             
             #See if the elevation variable exists. If so, read it in. If not then
             # assume all samples are zenith pointing and create the elev field as such
@@ -687,6 +692,7 @@ def read_mwr(path, rootname, date, mwr_type, mwr_elev_field, mwr_n_tb_fields,
                     tbsky = np.copy(tbskyx)
                 pwv = np.copy(pwvx)
                 lwp = np.copy(lwpx)
+                psfc = np.copy(psfcx)
             else:
                 secs = np.append(secs, bt+to)
                 elev = np.append(elev, elevx)
@@ -694,6 +700,7 @@ def read_mwr(path, rootname, date, mwr_type, mwr_elev_field, mwr_n_tb_fields,
                     tbsky = np.append(tbsky,tbskyx,axis =1)
                 pwv = np.append(pwv,pwvx)
                 lwp = np.append(lwp,lwpx)
+                psfc = np.append(psfc, psfcx)
             nmwr_points = len(secs)
         
         if len(secs) == 0:
@@ -729,6 +736,7 @@ def read_mwr(path, rootname, date, mwr_type, mwr_elev_field, mwr_n_tb_fields,
                     tbsky0 = np.copy(tbsky0[:,foo])
                 pwv = pwv[foo]
                 lwp = lwp[foo]
+                psfc = psfc[foo]
     
     if mwr_type == 0:
         return {'success':1, 'type':mwr_type}
@@ -1550,7 +1558,9 @@ def grid_aeri(ch1, aerisum, avg_instant, hatchOpenSwitch, missingDataFlagSwitch,
                       hatflag[i] = 0                           # Hatch was always closed
                     else:
                       hatflag[i] = 3                           # If we are here it is neither
-
+            #print len(ch1['secs'])
+            #print len(ch1['atmos_pres'])
+            #print foo
             atmos_pres[i] = np.nanmean(ch1['atmos_pres'][foo])
 
         # Get the summary data on this grid
