@@ -1063,7 +1063,7 @@ for i in range(len(aeri['secs'])):                        # { loop_i
                 # If this type, then AERI data aren't being used in the retrieval
                 # so the forward calc should be missing and the Jacobian is 0
                 wnumc = np.copy(aeri['wnum'])
-                Fxn = np.ones(len(wnumc))*-999.
+                FXn = np.ones(len(wnumc))*-999.
                 Kij = np.zeros((len(wnumc),len(Xn)))
                 flag = 1
                 version_compute_jacobian = 'No AERI data in retrieval, so LBLRTM not used'
