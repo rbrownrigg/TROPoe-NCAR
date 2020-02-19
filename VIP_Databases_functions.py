@@ -39,6 +39,7 @@ def read_vip_file(filename,globatt,verbose,debug,dostop):
       'tres':0,                     #Temporal resolution [min], 0 implies native AERI temporal resolution
       'avg_instant':0,              #A flag to specify if this is an average (0) over the tres period, or instantaneous (1) sample (i.e. do not average the data)
       'tag':'tag',                  #String for temporary files / directories
+
       'aeri_type':0,                # 0- output, options, and stop, 1 - ARM AERI data, 2 - dmv2cdf AERI data (C1_rnc.cdf and _sum.cdf), 3 - dmv2ncdf (C1.RNC.cdf and .SUM.cdf) , -1 - MWR data is to be used as MASTER dataset (no AERI data being read in)
       'aeri_pca_nf':1,              # 0 - AERI data was NOT PCA noise filtered, 1 - AERI data was PCA noise filtered
       'aerich1_path':'None',          # Path to the AERI ch1 radiance files
@@ -146,30 +147,31 @@ def read_vip_file(filename,globatt,verbose,debug,dostop):
       'cbh_window_in':20,            # Inner temporal window (full-size) centered upon AERI time to look for cloud
       'cbh_window_out':180,          # Outer temporal window (full-size) centered upon AERI time to look for cloud
       'cbh_default_ht':2.0,          # Default CBH height [km AGL], if no CBH data found
+
       'output_rootname':'None',        # String with the rootname of the output file
       'output_path':'None',            # Path where the output file will be placed
       'output_clobber':0,            # 0 - do not clobber preexisting output files, 1 - clobber them, 2 - append to the last file of this day
       'output_file_keep_small':0,    # 0 - all fields written; 1 - keep output file small by not including Sop, Akern, others
       
-      'lbl_home':'None',               # String with the LBL_HOME path (environment variable)
-      'lbl_version':'None',            # String with the version information on LBLRTM
-      'lbl_temp_dir':'None',           # Temporary working directory for the retrieval
+      'lbl_home':'/home/tropoe/vip/src/lblrtm_v12.1/lblrtm',               # String with the LBL_HOME path (environment variable)
+      'lbl_version':'v12.1',         # String with the version information on LBLRTM
+      'lbl_temp_dir':'/tmp',         # Temporary working directory for the retrieval
       'lbl_std_atmos':6,             # Standard atmosphere to use in LBLRTM and MonoRTM calcs
-      'path_std_atmos':'std_atmosphere.idl', # The path to the IDL save file with the standard atmosphere info in it
+      'path_std_atmos':'/home/tropoe/vip/src/input/std_atmosphere.idl', # The path to the IDL save file with the standard atmosphere info in it
       'lbl_tape3':'tape3.data',      # The TAPE3 file to use in the lblrtm calculation.  Needs to be in the directory lbl_home/hitran/
-      'monortm_version':'None',        # String with the version information on MonoRTM
-      'monortm_wrapper':'/Users/Dave.Turner/vip/src/monortm_v5.0/wrapper/monortm_v5', # Turner wrapper to run MonoRTM
-      'monortm_exec':'/Users/Dave.Turner/vip/src/monortm_v5.0/monortm/monortm_v5.0_OS_X_gnu_sgl', # AERs MonoRTM executable
-      'monortm_spec':'/Users/Dave.Turner/vip/src/monortm_v5.0/monolnfl_v1.0/TAPE3.spectral_lines.dat.0_55.v5.0_veryfast', # MonoRTM spectral database
+      'monortm_version':'v5.0',        # String with the version information on MonoRTM
+      'monortm_wrapper':'/home/tropoe/vip/src/monortm_v5.0/wrapper/monortm_v5', # Turner wrapper to run MonoRTM
+      'monortm_exec':'/home/tropoe/vip/src/monortm_v5.0/monortm/monortm_v5.0_linux_gnu_sgl', # AERs MonoRTM executable
+      'monortm_spec':'/home/tropoe/vip/src/monortm_v5.0/monolnfl_v1.0/TAPE3.spectral_lines.dat.0_55.v5.0_veryfast', # MonoRTM spectral database
       
       'lblrtm_jac_option':3,         # 1 - LBLRTM Finite Diffs, 2 - 3calc method, 3 - deltaOD method
       'lblrtm_forward_threshold':0., # The upper LWP threshold [g/m2] to use LBLRTM vs. radxfer in forward calculation
       'monortm_jac_option':2,        # 1 - MonoRTM Finite Diffs, 2 - 3calc method
-      'jac_max_ht':15.0,             # Maximum height to compute the Jacobian [km AGL]
+      'jac_max_ht':8.0,             # Maximum height to compute the Jacobian [km AGL]
       'max_iterations':10,           # The maximum number of iterations to use
       'first_guess':0,               # 1 - use prior as FG, 2 - use lapse rate and 60% RH profile as FG, 3 - use previous sample as FG
       'superadiabatic_maxht':0.300,  # The maximum height a superadiabatic layer at the surface can have [km AGL]
-      'spectral_bands':np.zeros((2,maxbands)), # An array of spectral bands to use
+      'spectral_bands':612-618,624-660,674-713,713-722,860.1-864.0,872.2-877.5,898.2-905.4,1150-1350
       'retrieve_co2':0,              # 0 - do not retrieve co2, 1 - do retrieve co2 (exponential model), 2 - do retrieve co2 (step model)
       'fix_co2_shape':0,             # (This option only works with retrieve_co2=1): 0 - retrieve all three coefs, 1 - shape coef is f(PBLH) and fixed
       'retrieve_ch4':0,              # 0 - do not retrieve ch4, 1 - do retrieve ch4 (exponential model), 2 - do retrieve co2 (step model)
@@ -178,9 +180,9 @@ def read_vip_file(filename,globatt,verbose,debug,dostop):
       'fix_n2o_shape':0,            # (This option only works with retrieve_n2o=1): 0 - retrieve all three coefs, 1 - shape coef is f(PBLH) and fixed
       'retrieve_lcloud':1,           # 0 - do not retrieve liquid clouds, 1 - retrieve liquid cloud properties
       'retrieve_icloud':0,           # 0 - do not retrieve   ice  clouds, 1 - retrieve   ice  cloud properties
-      'lcloud_ssp':'None',             # SSP file for liquid cloud properties
-      'icloud_ssp':'None',             # SSP file for   ice  cloud properties
-      'qc_rms_value':6.0,            # The RMS value between ((obs minus calc)/obs_uncert) spectra, with values less than this being "good".  In short, if the solution is within n-sigma of the observation (where "n" is given by this value, then the retrieval is good
+      'lcloud_ssp':'/home/tropoe/vip/src/input/ssp_db.mie_wat.gamma_sigma_0p100',  # SSP file for liquid cloud properties
+      'icloud_ssp':'/home/tropoe/vip/src/input/ssp_db.mie_ice.gamma_sigma_0p100',  # SSP file for   ice  cloud properties
+      'qc_rms_value':10.0,            # The RMS value between ((obs minus calc)/obs_uncert) spectra, with values less than this being "good".  In short, if the solution is within n-sigma of the observation (where "n" is given by this value, then the retrieval is good
       'prior_t_ival':1.0,            # The prior inflation factor (>= 1) to apply at the surface for temperature
       'prior_t_iht':1.0,             # The height [km AGL] where the inflation factor goes to 1 (linear) for temperature
       'prior_q_ival':1.0,            # The prior inflation factor (>= 1) to apply at the surface for water vapor mixing ratio
@@ -203,7 +205,7 @@ def read_vip_file(filename,globatt,verbose,debug,dostop):
       'prior_iReff_sd':8.0,           # 1-sigma uncertainty in ice cloud Reff [Reff]
       'min_PBL_height':0.3,           # The minimum height of the planetary boundary layer (used for trace gases) [km AGL]
       'max_PBL_height':5.0,           # The maximum height of the planetary boundary layer (used for trace gases) [km AGL]
-      'vip_filename':'None'}            # Just for tracability
+      'vip_filename':'None'}          # Just for tracability
       )
     
     # Read in the file all at once
