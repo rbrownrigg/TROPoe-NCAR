@@ -171,7 +171,7 @@ def read_vip_file(filename,globatt,verbose,debug,dostop):
       'max_iterations':10,           # The maximum number of iterations to use
       'first_guess':0,               # 1 - use prior as FG, 2 - use lapse rate and 60% RH profile as FG, 3 - use previous sample as FG
       'superadiabatic_maxht':0.300,  # The maximum height a superadiabatic layer at the surface can have [km AGL]
-      'spectral_bands':612-618,624-660,674-713,713-722,860.1-864.0,872.2-877.5,898.2-905.4,1150-1350
+      'spectral_bands':np.zeros((2,maxbands)), # An array of spectral bands to use
       'retrieve_co2':0,              # 0 - do not retrieve co2, 1 - do retrieve co2 (exponential model), 2 - do retrieve co2 (step model)
       'fix_co2_shape':0,             # (This option only works with retrieve_co2=1): 0 - retrieve all three coefs, 1 - shape coef is f(PBLH) and fixed
       'retrieve_ch4':0,              # 0 - do not retrieve ch4, 1 - do retrieve ch4 (exponential model), 2 - do retrieve co2 (step model)

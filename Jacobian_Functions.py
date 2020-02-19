@@ -169,7 +169,7 @@ def compute_jacobian_deltaod(X, p, zz, lblhome, lbldir, lblroot, stdatmos, tp5, 
             
     command = '('+command+')>& /dev/null'
     
-    process = Popen(command, stdout = PIPE, shell=True, executable = '/bin/csh')
+    process = Popen(command, shell=True, executable = '/bin/csh')
     stdout, stderr = process.communicate()
     
     # Now read in the baseline optical depths
@@ -794,7 +794,7 @@ def compute_jacobian_deltaod(X, p, zz, lblhome, lbldir, lblroot, stdatmos, tp5, 
                     'rm -rf ' + lbldir + '.99 ; '+
                     '(' + lblrun + ' ' + tp5 + '.99 ' + lbldir + '.99 ' + tp3 + ') >& /dev/null')
 
-        process = Popen(command99, stdout = PIPE, shell=True, executable = '/bin/csh')
+        process = Popen(command99, shell=True, executable = '/bin/csh')
         stdout, stderr = process.communicate()
         
         tp27 = []

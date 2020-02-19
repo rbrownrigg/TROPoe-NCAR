@@ -1,6 +1,11 @@
 Things that we need to do on pyAERIoe
 
-* Test the appending ability
-* Fix the output issue with single samples
-* Using a temporal resolution other than 0 in VIP creates an error
-* Output files are still too large; netCDF dimensions are (probably) correct but not storing either Sop or Akernal properly in a sample-by-sample way
+* Allow spaces in the globatt VIP entries
+* Allow spaces in the spectral_bands VIP entry
+* Modify read_mwr (zenith) to allow step to be used in the ncdf_varget calls
+	- add this as a new keyword to VIP
+	- update call to read_mwr to use this new VIP key-value instead of the hard-coded "1"
+* Update the formatting of the stdOut messages
+* Update Docker operational running script to pass in verbosity
+* Update Docker operational running script to have option to capture stdOut and stdErr in specified argument
+
