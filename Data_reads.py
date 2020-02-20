@@ -1151,16 +1151,22 @@ def read_aeri_sum(path,date,aeri_type,smooth_noise,verbose):
             print 'Error in read_aeri_sum: unable to find the SkyNENCh2 field'
             return err
         
-        if len(np.where(np.array(fid.variables.keys()) == 'Latitude')[0]) > 0:
-            lat = np.nanmedian(fid.variables['Latitude'][:])
+	if len(np.where(np.array(fid.variables.keys()) == 'lat')[0]) > 0:
+	    lat = fid.variables['lat'][:]
+	elif len(np.where(np.array(fid.variables.keys()) == 'Latitude')[0]) > 0:
+            lat = np.ma.median(fid.variables['Latitude'][:])
         else:
             lat = -999.0
-        if len(np.where(np.array(fid.variables.keys()) == 'Longitude')[0]) > 0:
-            lon =  np.nanmedian(fid.variables['Longitude'][:])
+	if len(np.where(np.array(fid.variables.keys()) == 'lon')[0]) > 0:
+	    lon = fid.variables['lon'][:]
+        elif len(np.where(np.array(fid.variables.keys()) == 'Longitude')[0]) > 0:
+            lon =  np.ma.median(fid.variables['Longitude'][:])
         else:
             lon = -999.0
-        if len(np.where(np.array(fid.variables.keys()) == 'Altitude')[0]) > 0:
-            alt =  np.nanmedian(fid.variables['Altitude'][:])
+	if len(np.where(np.array(fid.variables.keys()) == 'alt')[0]) > 0:
+	    alt = fid.variables['alt'][:]
+        elif len(np.where(np.array(fid.variables.keys()) == 'Altitude')[0]) > 0:
+            alt =  np.ma.median(fid.variables['Altitude'][:])
         else:
             alt = 0.0
         fid.close()
@@ -3286,15 +3292,15 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
         sq0 = -999.
         
     # This section is for the CO2 obs
-    # Read in the surface in-situ C02 data, if desired
-    # No external surface C02 source specified....
+    # Read in the surface in-situ CO2 data, if desired
+    # No external surface CO2 source specified....
     co2unit = ' '
     if co2_sfc_type == 0:
         a = 0                  # Do nothing -- read nothing -- make no noise at all
         co2type = 'none'
-        external['nC02sfc'] = 0
+        external['nCo2sfc'] = 0
     
-    # Read in the surface in-situ C02 data (assuming DDT's PGS qc1turn datastream)
+    # Read in the surface in-situ CO2 data (assuming DDT's PGS qc1turn datastream)
     elif co2_sfc_type == 1:
         if verbose >= 1:
             print 'Reading in ARM PGS qc1turn datastream'
@@ -3306,7 +3312,7 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
         
         if len(files) == 0:
             if verbose >= 1:
-                print 'No ARM C02 found in this directory for this date'
+                print 'No ARM CO2 found in this directory for this date'
         else:
             for i in range(len(files)):
                 fid = Dataset(files[i],'r')
@@ -3319,7 +3325,7 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
                 co2type = 'ARM PGS qc1turn'
                 
                 # Append the data to the growing structure
-                if external['nC02sfc <= 0']:
+                if external['nCo2sfc <= 0']:
                     co2secs = bt+to
                     co2 = np.copy(xco2)
                     sco2 = np.copy(xsco2)
@@ -3329,28 +3335,28 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
                     sco2 = np.append(sco2,xsco2)
                 external['nCO2sfc'] = len(co2secs)
         
-        # An undefined surface in-situ C02 source was specified...
+        # An undefined surface in-situ CO2 source was specified...
     else:
-        print 'Error in read_external_tseries: Undefined in-situ C02 surface obs source specified'
+        print 'Error in read_external_tseries: Undefined in-situ CO2 surface obs source specified'
         return external
     
     # Strip out any missing values before the next step
-    if external['nC02sfc'] > 0:
+    if external['nCo2sfc'] > 0:
         foo = np.where(co2 > 0)[0]
         if len(foo) > 0:
-            external['nC02sfc'] = len(foo)
+            external['nCo2sfc'] = len(foo)
             co2secs = co2secs[foo]
             co2 = co2[foo]
             sco2 = sco2[foo]
         else:
-            external['nC02sfc'] = 0
+            external['nCo2sfc'] = 0
     
     # Add on the representativeness errors that were specified 
-    if ((external['nC02sfc'] > 0) & (co2_sfc_rep_error > 0)):
+    if ((external['nCo2sfc'] > 0) & (co2_sfc_rep_error > 0)):
         sco2 += co2_sfc_rep_error
     
     # Now I need to bin/interpolate the data appropriately
-    if external['nC02sfc'] > 0:
+    if external['nCo2sfc'] > 0:
         # Compute the median time interval between CO2 measurements [minutes]
         tdel = np.nanmedian(co2secs[1:len(co2secs)] - co2secs[0:len(co2secs)-1]) / 60.
         
@@ -3424,7 +3430,7 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
         qq1 = np.copy(qq0)
         sq1 = np.copy(sq0)
     
-    if external['nC02sfc'] > 0:
+    if external['nCo2sfc'] > 0:
         cco2a = np.zeros((co2_sfc_npts,len(secs)))
         scco2a = np.zeros((co2_sfc_npts,len(secs)))
         cco2a[0,:] = np.copy(cco2)
