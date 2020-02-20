@@ -4,6 +4,7 @@ import numpy as np
 import shutil
 import scipy.io
 import copy
+import warnings
 from netCDF4 import Dataset
 from datetime import datetime
 from time import gmtime, strftime
@@ -96,6 +97,8 @@ success = True
 if verbose == 3:
     print ' '
     print 'The current shell is', os.getenv('SHELL')
+else: 
+    warnings.filterwarnings("ignore", category=UserWarning)
     
 process = Popen('which csh', stdout = PIPE, stderr = PIPE, shell=True)
 stdout, stderr = process.communicate()
@@ -143,13 +146,8 @@ if vip['success'] != 1:
     print ' '
     sys.exit()
     
-print 'DDT Just before the first echo command'
 process = Popen('echo $$', stdout = PIPE, stderr = PIPE, shell=True, executable = SHELL)
 stdout, stderr = process.communicate()
-print 'DDT Just after the first echo command'
-uniquekey = vip['tag'] + '.' + stdout[:-1]
-print uniquekey
-sys.exit()	 # Delete to here
 
 uniquekey = vip['tag'] + '.' + stdout[:-1]
 
