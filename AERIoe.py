@@ -97,7 +97,7 @@ if verbose == 3:
     print ' '
     print 'The current shell is', os.getenv('SHELL')
     
-process = Popen('which csh', stdout = PIPE, shell=True)
+process = Popen('which csh', stdout = PIPE, stderr = PIPE, shell=True)
 stdout, stderr = process.communicate()
 
 if stdout == '':
@@ -143,8 +143,13 @@ if vip['success'] != 1:
     print ' '
     sys.exit()
     
-process = Popen('echo $$', stdout = PIPE, shell=True, executable = SHELL)
+print 'DDT Just before the first echo command'
+process = Popen('echo $$', stdout = PIPE, stderr = PIPE, shell=True, executable = SHELL)
 stdout, stderr = process.communicate()
+print 'DDT Just after the first echo command'
+uniquekey = vip['tag'] + '.' + stdout[:-1]
+print uniquekey
+sys.exit()	 # Delete to here
 
 uniquekey = vip['tag'] + '.' + stdout[:-1]
 
