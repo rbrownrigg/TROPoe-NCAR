@@ -116,7 +116,6 @@ def predict_co2_concentration(yy,mm,dd):
     # Now get the current year + year_fraction
     jt = datetime(yy,mm,dd).timetuple().tm_yday
     yr = yy + jt/365.
-    print yr
     if (yr < np.nanmin(x)) | (yr > np.nanmax(x)):
         print 'Error: the desired year in predict_co2_concentration is outside bounds'
         return -999.
