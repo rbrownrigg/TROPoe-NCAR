@@ -4,6 +4,7 @@ import numpy as np
 import shutil
 import scipy.io
 import copy
+import warnings
 from netCDF4 import Dataset
 from datetime import datetime
 from time import gmtime, strftime
@@ -96,8 +97,10 @@ success = True
 if verbose == 3:
     print ' '
     print 'The current shell is', os.getenv('SHELL')
+else: 
+    warnings.filterwarnings("ignore", category=UserWarning)
     
-process = Popen('which csh', stdout = PIPE, shell=True)
+process = Popen('which csh', stdout = PIPE, stderr = PIPE, shell=True)
 stdout, stderr = process.communicate()
 
 if stdout == '':
@@ -143,7 +146,7 @@ if vip['success'] != 1:
     print ' '
     sys.exit()
     
-process = Popen('echo $$', stdout = PIPE, shell=True, executable = SHELL)
+process = Popen('echo $$', stdout = PIPE, stderr = PIPE, shell=True, executable = SHELL)
 stdout, stderr = process.communicate()
 
 uniquekey = vip['tag'] + '.' + stdout[:-1]
@@ -1063,7 +1066,7 @@ for i in range(len(aeri['secs'])):                        # { loop_i
                 # If this type, then AERI data aren't being used in the retrieval
                 # so the forward calc should be missing and the Jacobian is 0
                 wnumc = np.copy(aeri['wnum'])
-                Fxn = np.ones(len(wnumc))*-999.
+                FXn = np.ones(len(wnumc))*-999.
                 Kij = np.zeros((len(wnumc),len(Xn)))
                 flag = 1
                 version_compute_jacobian = 'No AERI data in retrieval, so LBLRTM not used'

@@ -507,7 +507,7 @@ def rundecker(model, aprofile, z, p, t, w, co2_profile= None, o3_profile=None,
         rec_1_2 = '    1    0    1    0    1    0    0    1    0    1         0    0    0    0    0    1'
     
     # Get the date for the default comment string
-    process = Popen('date', stdout = PIPE, shell=True, executable = '/bin/csh')
+    process = Popen('date', stdout = PIPE, stderr = PIPE, shell=True, executable = '/bin/csh')
     stdout, stderr = process.communicate()
     date = stdout[:-1]
     
@@ -1508,7 +1508,7 @@ def run_monortm(command, freq, z, stdatmos):
     error = {'status':0}
     
     # Run the command
-    process = Popen(command, stdout = PIPE, shell=True, executable = '/bin/csh')
+    process = Popen(command, stdout = PIPE, stderr = PIPE, shell=True, executable = '/bin/csh')
     stdout, stderr = process.communicate()
        
     stdout = stdout.split('\n')
