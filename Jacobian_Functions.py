@@ -66,7 +66,7 @@ def compute_jacobian_deltaod(X, p, zz, lblhome, lbldir, lblroot, stdatmos, tp5, 
     
     # Make the baseline run
     if verbose >= 3:
-        print 'Making the LBLRTM runs for the Jacobian'
+        print('Making the LBLRTM runs for the Jacobian')
    
     LBLRTM_Functions.rundecker(3, stdatmos, zz, p, t, w, co2_profile=co2prof, ch4_profile=ch4prof, n2o_profile = n2oprof,
              od_only = 1, mlayers=zz, wnum1=lblwnum1, wnum2=lblwnum2, tape5=tp5+'.1', v10=True, silent=True)
@@ -176,11 +176,11 @@ def compute_jacobian_deltaod(X, p, zz, lblhome, lbldir, lblroot, stdatmos, tp5, 
     files1 = []
     files1 = files1 + (glob.glob(lbldir+'.1/OD*'))
     if len(files1) != k-1:
-        print 'This should not happen (0) in compute_jacobian_deltaod'
+        print('This should not happen (0) in compute_jacobian_deltaod')
         if verbose >= 3:
-            print 'The working LBLRTM directory is ' +lbldir+ '.1'
+            print('The working LBLRTM directory is ' +lbldir+ '.1')
         if debug:
-            wait = raw_input('Stopping inside compute_jacobian_deltaod to debug. Press enter to continue')
+            wait = input('Stopping inside compute_jacobian_deltaod to debug. Press enter to continue')
         else:
             return success, -999., -999., -999., -999., -999.
     
@@ -193,7 +193,7 @@ def compute_jacobian_deltaod(X, p, zz, lblhome, lbldir, lblroot, stdatmos, tp5, 
     if foo[0] >= len(files1):
         foo[0] = len(files1)-1
     if verbose >= 3:
-        print 'Using the spectral resolution at height ' + str(zz[foo[0]]) + ' km AGL'
+        print('Using the spectral resolution at height ' + str(zz[foo[0]]) + ' km AGL')
     
     s0, v0 = LBLRTM_Functions.lbl_read(files1[foo[0]], do_load_data=True)
     v = np.copy(v0)
@@ -209,11 +209,11 @@ def compute_jacobian_deltaod(X, p, zz, lblhome, lbldir, lblroot, stdatmos, tp5, 
                 files2 = []
                 files2 = files2 + (glob.glob(lbldir+'.2/OD*'))
                 if len(files2) != len(files1):
-                    print 'This should not happen (1) in compute jacobian_deltaod'
+                    print('This should not happen (1) in compute jacobian_deltaod')
                     if verbose >= 3:
-                        print 'The working LBLRTM directory is ' +lbldir+ '.2'
+                        print('The working LBLRTM directory is ' +lbldir+ '.2')
                     if debug:
-                        wait = raw_input('Stopping inside compute_jacobian_deltaod to debug. Press enter to continue')
+                        wait = input('Stopping inside compute_jacobian_deltaod to debug. Press enter to continue')
                     else:
                         return success, -999., -999., -999., -999., -999.
                 od11 = np.zeros((len(files1),len(v)))
@@ -225,11 +225,11 @@ def compute_jacobian_deltaod(X, p, zz, lblhome, lbldir, lblroot, stdatmos, tp5, 
                 files3 = []
                 files3 = files3 + (glob.glob(lbldir+'.3/OD*'))
                 if len(files2) != len(files1):
-                    print 'This should not happen (2) in compute jacobian_deltaod'
+                    print('This should not happen (2) in compute jacobian_deltaod')
                     if verbose >= 3:
-                        print 'The working LBLRTM directory is ' +lbldir+ '.3'
+                        print('The working LBLRTM directory is ' +lbldir+ '.3')
                     if debug:
-                        wait = raw_input('Stopping inside compute_jacobian_deltaod to debug. Press enter to continue')
+                        wait = input('Stopping inside compute_jacobian_deltaod to debug. Press enter to continue')
                     else:
                         return success, -999., -999., -999., -999., -999.
                 od22 = np.zeros((len(files1),len(v)))
@@ -241,11 +241,11 @@ def compute_jacobian_deltaod(X, p, zz, lblhome, lbldir, lblroot, stdatmos, tp5, 
                 files4 = []
                 files4 = files4 + (glob.glob(lbldir+'.4/OD*'))
                 if len(files2) != len(files1):
-                    print 'This should not happen (3) in compute jacobian_deltaod'
+                    print('This should not happen (3) in compute jacobian_deltaod')
                     if verbose >= 3:
-                        print 'The working LBLRTM directory is ' +lbldir+ '.4'
+                        print('The working LBLRTM directory is ' +lbldir+ '.4')
                     if debug:
-                        wait = raw_input('Stopping inside compute_jacobian_deltaod to debug. Press enter to continue')
+                        wait = input('Stopping inside compute_jacobian_deltaod to debug. Press enter to continue')
                     else:
                         return success, -999., -999., -999., -999., -999.
                 od33 = np.zeros((len(files1),len(v)))
@@ -257,11 +257,11 @@ def compute_jacobian_deltaod(X, p, zz, lblhome, lbldir, lblroot, stdatmos, tp5, 
                 files5 = []
                 files5 = files5 + (glob.glob(lbldir+'.5/OD*'))
                 if len(files5) != len(files1):
-                    print 'This should not happen (5) in compute jacobian_deltaod'
+                    print('This should not happen (5) in compute jacobian_deltaod')
                     if verbose >= 3:
-                        print 'The working LBLRTM directory is ' +lbldir+ '.5'
+                        print('The working LBLRTM directory is ' +lbldir+ '.5')
                     if debug:
-                        wait = raw_input('Stopping inside compute_jacobian_deltaod to debug. Press enter to continue')
+                        wait = input('Stopping inside compute_jacobian_deltaod to debug. Press enter to continue')
                     else:
                         return success, -999., -999., -999., -999., -999.
                 od44 = np.zeros((len(files1),len(v)))
@@ -273,11 +273,11 @@ def compute_jacobian_deltaod(X, p, zz, lblhome, lbldir, lblroot, stdatmos, tp5, 
                 files6 = []
                 files6 = files6 + (glob.glob(lbldir+'.6/OD*'))
                 if len(files2) != len(files1):
-                    print 'This should not happen (6) in compute jacobian_deltaod'
+                    print('This should not happen (6) in compute jacobian_deltaod')
                     if verbose >= 3:
-                        print 'The working LBLRTM directory is ' +lbldir+ '.6'
+                        print('The working LBLRTM directory is ' +lbldir+ '.6')
                     if debug:
-                        wait = raw_input('Stopping inside compute_jacobian_deltaod to debug. Press enter to continue')
+                        wait = input('Stopping inside compute_jacobian_deltaod to debug. Press enter to continue')
                     else:
                         return success, -999., -999., -999., -999., -999.
                 od55 = np.zeros((len(files1),len(v)))
@@ -336,15 +336,15 @@ def compute_jacobian_deltaod(X, p, zz, lblhome, lbldir, lblroot, stdatmos, tp5, 
                     od5[:,i] = 0.
    
     if verbose >= 3:
-        print 'Computing the baseline radiance spectrum'
+        print('Computing the baseline radiance spectrum')
     wnum = np.copy(awnum)
     gasod = np.copy(od0)
     
     foo = np.where(adeltaod > 0)[0]
     if len(foo) == 0:
-        print 'MAJOR Problem in compute_jacobian_deltaOD -- all of the deltas are nonpositive'
+        print('MAJOR Problem in compute_jacobian_deltaOD -- all of the deltas are nonpositive')
         if debug:
-            wait = raw_input('Stopping inside compute_jacobian_deltaod to debug. Press enter to continue')
+            wait = input('Stopping inside compute_jacobian_deltaod to debug. Press enter to continue')
         else:
             return success, -999., -999., -999., -999., -999.
     
@@ -400,7 +400,7 @@ def compute_jacobian_deltaod(X, p, zz, lblhome, lbldir, lblroot, stdatmos, tp5, 
         radc0 = np.real(Other_functions.apodizer(radc0,0))
     
     if verbose >= 2:
-        print 'Computing the Jacobian using the delta-OD method'
+        print('Computing the Jacobian using the delta-OD method')
     
     Kij = np.zeros((len(radc0),2*k+4+3*3))
     
@@ -411,7 +411,7 @@ def compute_jacobian_deltaod(X, p, zz, lblhome, lbldir, lblroot, stdatmos, tp5, 
     # emission temperature of the layer
     if fixt != 1:
         if verbose >= 3:
-            print 'Computing Jacobian for temperature'
+            print('Computing Jacobian for temperature')
         for kk in range(k):
             if zz[kk] > maxht:
                 Kij[:,kk] = 0.
@@ -441,14 +441,14 @@ def compute_jacobian_deltaod(X, p, zz, lblhome, lbldir, lblroot, stdatmos, tp5, 
                 
     else:
         if verbose >= 3:
-            print 'Temperatue jacobian set to zero (fixed T profile)'
+            print('Temperatue jacobian set to zero (fixed T profile)')
         Kij[:,0:k] = 0.
     
     
     # Compute the water vapor perturbation
     if fixwv != 1:
         if verbose >= 3:
-            print 'Computing Jacobian for water vapor'
+            print('Computing Jacobian for water vapor')
         for kk in range(k):
             if zz[kk] > maxht:
                 Kij[:,kk+k] = 0.
@@ -471,13 +471,13 @@ def compute_jacobian_deltaod(X, p, zz, lblhome, lbldir, lblroot, stdatmos, tp5, 
                 Kij[:,kk+k] = mult * ( (radc1-radc0) / (w[kk]*h2opert - w[kk]) )
     else:
         if verbose >= 3:
-            print 'Water vapor jacobian set to zero (fixed WV profile)'
+            print('Water vapor jacobian set to zero (fixed WV profile)')
         Kij[:,k:2*k] = 0.
     
     # Compute the carbon dioxide perturbation
     if doco2 >= 1:
         if verbose >= 3:
-            print 'Computing Jacobian for carbon dioxide'
+            print('Computing Jacobian for carbon dioxide')
         
         # Compute the sensitivity to the first coefficient
         gasod = np.copy(od3)                  # Will use the entire perturbed CO2 dataset
@@ -546,13 +546,13 @@ def compute_jacobian_deltaod(X, p, zz, lblhome, lbldir, lblroot, stdatmos, tp5, 
             Kij[:,2*k+6] = 0
     else:
         if verbose >= 3:
-            print 'Carbon dioxide jacobian set to zero (fixed CO2 profile)'
+            print('Carbon dioxide jacobian set to zero (fixed CO2 profile)')
         Kij[:,2*k+4:2*k+7] = 0.
     
     # Compute the methane perturbation      
     if doch4 >= 1:
         if verbose >= 3:
-            print 'Computing Jacobian for methane'
+            print('Computing Jacobian for methane')
         
         # Compute the sensitivity to the first coefficient
         gasod = np.copy(od4)                 # Will use the entire perturbed CH4 data
@@ -618,13 +618,13 @@ def compute_jacobian_deltaod(X, p, zz, lblhome, lbldir, lblroot, stdatmos, tp5, 
             Kij[:,2*k+9] = 0
     else:
         if verbose >= 3:
-            print 'Methane jacobian set to zero (fixed CH4 value)'
+            print('Methane jacobian set to zero (fixed CH4 value)')
         Kij[:,2*k+7:2*k+10] = 0.
     
     # Compute the nitrous oxide perturbation
     if don2o >= 1:
         if verbose >= 3:
-            print 'Computing Jacobian for nitrous oxide'
+            print('Computing Jacobian for nitrous oxide')
             
         # Compute the sensitivity to the first coefficient
         gasod = np.copy(od5)
@@ -690,13 +690,13 @@ def compute_jacobian_deltaod(X, p, zz, lblhome, lbldir, lblroot, stdatmos, tp5, 
             Kij[:,2*k+12] = 0
     else:
         if verbose >= 3:
-            print 'Nitrous oxide jacobian set to zero (fixed N2O value)'
+            print('Nitrous oxide jacobian set to zero (fixed N2O value)')
         Kij[:,2*k+10:2*k+13] = 0.
     
     # Compute the liquid cloud property perturbation
     if fixlcld != 1:
         if verbose >= 3:
-            print 'Computing Jacobian for the liquid cloud properties (LWP and ReffL)'
+            print('Computing Jacobian for the liquid cloud properties (LWP and ReffL)')
     
         # Get the desired cloud absorption optical depth spectrum
         lwppert = 2.          # The additive LWP perturbation [g/m2]
@@ -726,14 +726,14 @@ def compute_jacobian_deltaod(X, p, zz, lblhome, lbldir, lblroot, stdatmos, tp5, 
         Kij[:,2*k+1] = (radc2-radc0) / reffpert
     else:
         if verbose >= 3:
-            print 'Cloud jacobian set to zero (fixed LWP and ReffL values)'
+            print('Cloud jacobian set to zero (fixed LWP and ReffL values)')
         Kij[:,2*k] = 0.
         Kij[:,2*k+1] = 0.
     
     # Compute the ice cloud property perturbation
     if fixicld != 1:
         if verbose >= 3:
-            print 'Computing Jacobian for the ice cloud properties (TauI and ReffI)'
+            print('Computing Jacobian for the ice cloud properties (TauI and ReffI)')
         
         # Get the desired cloud absorption optical depth spectrum
         taupert = 0.5            # The additive perturbation for ice optical depth
@@ -763,7 +763,7 @@ def compute_jacobian_deltaod(X, p, zz, lblhome, lbldir, lblroot, stdatmos, tp5, 
         Kij[:,2*k+3] = (radc2-radc0) / reffpert
     else:
         if verbose >= 3:
-            print 'Cloud jacobian set to zero (fixed TauI and ReffI values)'
+            print('Cloud jacobian set to zero (fixed TauI and ReffI values)')
         Kij[:,2*k+2] = 0.
         Kij[:,2*k+3] = 0. 
     
@@ -782,7 +782,7 @@ def compute_jacobian_deltaod(X, p, zz, lblhome, lbldir, lblroot, stdatmos, tp5, 
         # If the LWP is less than the desired threshold then assume that
         # we don't need to worry about clouds and use the LBLRTM as the forward model
         if verbose >= 3:
-            print 'Forward model F(Xn) using LBLRTM and assuming no clouds'
+            print('Forward model F(Xn) using LBLRTM and assuming no clouds')
         
         LBLRTM_Functions.rundecker(3, stdatmos, zz, p, t, w, co2_profile=co2prof, ch4_profile=ch4prof, n2o_profile = n2oprof,
              mlayers=zz, wnum1=lblwnum1-100, wnum2=lblwnum2+100, tape5=tp5+'.99', v10=True, silent=True)
@@ -800,7 +800,7 @@ def compute_jacobian_deltaod(X, p, zz, lblhome, lbldir, lblroot, stdatmos, tp5, 
         tp27 = []
         tp27 = tp27 + (glob.glob(lbldir+'.99/TAPE27'))
         if len(tp27) != 1:
-            print 'This should not happen. Error reading TAPE27 file'
+            print('This should not happen. Error reading TAPE27 file')
         
         w99, r99 = LBLRTM_Functions.read_tape27(filen=tp27[0])
         r99 *= 1e7              # Convert W/(cm2 sr cm-1) to mW/(m2 sr cm-1)
@@ -808,7 +808,7 @@ def compute_jacobian_deltaod(X, p, zz, lblhome, lbldir, lblroot, stdatmos, tp5, 
         # Now cut the radiance dowm; this is the forward calcultion
         foo = np.where((np.min(wnumc)-0.1 <= w99) & (w99 <= np.max(wnumc)+0.1))[0]
         if ((len(foo) != len(wnumc)) | (np.abs(np.min(wnumc)-np.min(w99[foo])) > 0.1)):
-            print 'PROBLEM inside compute_jacobian_deltaod -- wavenumbers do not match'
+            print('PROBLEM inside compute_jacobian_deltaod -- wavenumbers do not match')
             return success, -999., -999., -999., -999., -999.
         
         FXn = np.copy(r99[foo])
@@ -817,7 +817,7 @@ def compute_jacobian_deltaod(X, p, zz, lblhome, lbldir, lblroot, stdatmos, tp5, 
         # otherwise the LWP is greater than the desired threshold so we need to include
         # clouds in the forward model. Use the radxfer logic below
         if verbose >= 3:
-            print 'Forward model F(Xn) using radxfer and assuming clouds'
+            print('Forward model F(Xn) using radxfer and assuming clouds')
         
         gasod = np.copy(od00)
         lcldodir = np.interp(v,wnum,lcldodir)
@@ -856,7 +856,7 @@ def compute_jacobian_deltaod(X, p, zz, lblhome, lbldir, lblroot, stdatmos, tp5, 
         # Now cut the radiance down; this is the forward calculation
         foo = np.where((np.min(wnumc)-0.1 <= bwnum) & (bwnum <= np.max(wnumc)+0.1))[0]
         if ((len(foo) != len(wnumc)) | (np.abs(np.min(wnumc)-np.min(bwnum[foo])) > 0.1)):
-            print 'PROBLEM inside compute_jacobian_deltaod -- wavenumber do not match'
+            print('PROBLEM inside compute_jacobian_deltaod -- wavenumber do not match')
             return success, -999., -999., -999., -999., -999.
         
         FXn = np.copy(brad[foo])
@@ -865,7 +865,7 @@ def compute_jacobian_deltaod(X, p, zz, lblhome, lbldir, lblroot, stdatmos, tp5, 
     etime = datetime.now()
     totaltime = (etime-stime).total_seconds()
     if verbose >= 3:
-        print ' It took ' + totaltime + ' s to compute Jacobian (delta od)'
+        print(' It took ' + totaltime + ' s to compute Jacobian (delta od)')
     success = 1
     
     return success, Kij, FXn, wnumc, version, totaltime
@@ -892,7 +892,7 @@ def compute_jacobian_microwave_finitediff(Xn, p, z, freq, cbh, vip, workdir,
     FXn = np.zeros(len(freq))
     
     if verbose >= 2:
-        print 'Computing the Jacobian using the finite diff method with MonoRTM'
+        print('Computing the Jacobian using the finite diff method with MonoRTM')
     stime = datetime.now()
     
     # Perform the baseline calculation
@@ -901,7 +901,7 @@ def compute_jacobian_microwave_finitediff(Xn, p, z, freq, cbh, vip, workdir,
     command = monortm_exec + ' ' + monortm_tfile + ' {:3.1f} {:8.2f} {:6.3f} {:6.3f}'.format(1.0, lwp, cbh, cth)
     a = LBLRTM_Functions.run_monortm(command, freq, z, stdatmos)
     if a['status'] == 0:
-        print 'Problem with MonoRTM calc 0'
+        print('Problem with MonoRTM calc 0')
         return flag, -999., -999., -999.
     FXn = np.copy(a['tb'])
     
@@ -909,7 +909,7 @@ def compute_jacobian_microwave_finitediff(Xn, p, z, freq, cbh, vip, workdir,
     if fixt != 1:
         delta = 1.0        # Additive perturbation of 1 K
         if verbose >= 3:
-            print 'Computing Jacobian for temperature'
+            print('Computing Jacobian for temperature')
         for kk in  range(k):
             if z[kk] > maxht:
                 Kij[:,kk] = 0.
@@ -921,20 +921,20 @@ def compute_jacobian_microwave_finitediff(Xn, p, z, freq, cbh, vip, workdir,
                 command = monortm_exec + ' ' + monortm_tfile + ' {:3.1f} {:8.2f} {:6.3f} {:6.3f}'.format(1.0, lwp, cbh, cth)
                 b = LBLRTM_Functions.run_monortm(command, freq, z, stdatmos)
                 if b['status'] == 0:
-                    print 'Problem with MonoRTM calc 1'
+                    print('Problem with MonoRTM calc 1')
                     return flag, -999., -999., -999.
                 FXp = np.copy(b['tb'])
                 Kij[:,kk] = (FXp-FXn) / (t0[kk] - t[kk])
     else:
         if verbose >= 3:
-            print 'Temperature jacobian set to zero (fixed T profile)'
+            print('Temperature jacobian set to zero (fixed T profile)')
         Kij[:,0:k] = 0.
     
     # Compute the water vapor perturbation
     if fixwv != 1:
         delta = 0.99           # Multiplicative perturbation of 1%
         if verbose >= 3:
-            print 'Computing Jacobian for water vapor'
+            print('Computing Jacobian for water vapor')
         for kk in range(k):
             if z[kk] > maxht:
                 Kij[:,kk+k] = 0.
@@ -946,14 +946,14 @@ def compute_jacobian_microwave_finitediff(Xn, p, z, freq, cbh, vip, workdir,
                 command = monortm_exec + ' ' + monortm_tfile + ' {:3.1f} {:8.2f} {:6.3f} {:6.3f}'.format(1.0, lwp, cbh, cth)
                 b = LBLRTM_Functions.run_monortm(command, freq, z, stdatmos)
                 if b['status'] == 0:
-                    print 'Problem with MonoRTM calc 2'
+                    print('Problem with MonoRTM calc 2')
                     return flag, -999., -999., -999.
                 FXp = np.copy(b['tb'])
                 Kij[:,kk+k] = (FXp-FXn) / (w0[kk] - w[kk])
         
     else:
         if verbose >= 3:
-            print 'Water vapor jacobian set to zero (fixed WV profile)'
+            print('Water vapor jacobian set to zero (fixed WV profile)')
         Kij[:,k:2*k] = 0.
     
     # Compute the Jacobian forthe perturbation of LWP
@@ -963,7 +963,7 @@ def compute_jacobian_microwave_finitediff(Xn, p, z, freq, cbh, vip, workdir,
     command = monortm_exec + ' ' + monortm_tfile + ' {:3.1f} {:8.2f} {:6.3f} {:6.3f}'.format(1.0, lwpp, cbh, cth)
     b = LBLRTM_Functions.run_monortm(command, freq, z, stdatmos)
     if b['status'] == 0:
-        print 'Problem with MonoRTM calc 3'
+        print('Problem with MonoRTM calc 3')
     FXp = np.copy(b['tb'])
     Kij[:,2*k] = (FXp - FXn) / (lwpp - lwp)
     
@@ -971,7 +971,7 @@ def compute_jacobian_microwave_finitediff(Xn, p, z, freq, cbh, vip, workdir,
     etime = datetime.now()
     totaltime = (etime-stime).total_seconds()
     if verbose >= 3:
-        print ' It took ' + totaltime + ' s to compute Jacobian (finite diffs)'
+        print(' It took ' + totaltime + ' s to compute Jacobian (finite diffs)')
     
     flag = 1
     
@@ -998,7 +998,7 @@ def compute_jacobian_microwave_3method(Xn, p, z, freq, cbh, vip, workdir,
     FXn = np.zeros(len(freq))
     
     if verbose >= 2:
-        print 'Computing the MWR-zenith Jacobian using the 3method with MonoRTM'
+        print('Computing the MWR-zenith Jacobian using the 3method with MonoRTM')
         
     stime = datetime.now()   
     # Perform the baseline calculation
@@ -1007,7 +1007,7 @@ def compute_jacobian_microwave_3method(Xn, p, z, freq, cbh, vip, workdir,
     command = monortm_exec + ' ' + monortm_tfile + ' {:3.1f} {:8.2f} {:6.3f} {:6.3f}'.format(1.0, lwp, cbh, cth)
     a = LBLRTM_Functions.run_monortm(command, freq, z, stdatmos)
     if a['status'] == 0:
-        print 'Problem with MonoRTM calc 0'
+        print('Problem with MonoRTM calc 0')
         return flag, -999., -999., -999.
     FXn = np.copy(a['tb'])
     
@@ -1019,7 +1019,7 @@ def compute_jacobian_microwave_3method(Xn, p, z, freq, cbh, vip, workdir,
         command = monortm_exec + ' ' + monortm_tfile + ' {:3.1f} {:8.2f} {:6.3f} {:6.3f}'.format(1.0, lwp, cbh, cth)
         b = LBLRTM_Functions.run_monortm(command, freq, z, stdatmos)
         if b['status'] == 0:
-            print 'Problem with MonoRTM calc 1'
+            print('Problem with MonoRTM calc 1')
             return flag, -999., -999., -999.
     else:
         command = 'ls'
@@ -1032,7 +1032,7 @@ def compute_jacobian_microwave_3method(Xn, p, z, freq, cbh, vip, workdir,
         command = monortm_exec + ' ' + monortm_tfile + ' {:3.1f} {:8.2f} {:6.3f} {:6.3f}'.format(1.0, lwp, cbh, cth)
         c = LBLRTM_Functions.run_monortm(command, freq, z, stdatmos)
         if c['status'] == 0:
-            print 'Problem with MonoRTM calc 2'
+            print('Problem with MonoRTM calc 2')
             return flag, -999., -999., -999.
     else:
         command = 'ls'
@@ -1044,7 +1044,7 @@ def compute_jacobian_microwave_3method(Xn, p, z, freq, cbh, vip, workdir,
         command = monortm_exec + ' ' + monortm_tfile + ' {:3.1f} {:8.2f} {:6.3f} {:6.3f}'.format(1.0, lwpp, cbh, cth)
         d = LBLRTM_Functions.run_monortm(command, freq, z, stdatmos)
         if d['status'] == 0:
-            print 'Problem with MonoRTM calc 3'
+            print('Problem with MonoRTM calc 3')
             return flag, -999., -999., -999.
     else:
         command = 'ls'
@@ -1058,7 +1058,7 @@ def compute_jacobian_microwave_3method(Xn, p, z, freq, cbh, vip, workdir,
     
     wnum = freq / 30.
     if verbose >= 3:
-        print 'Computing the baseline microwave brightness temperature spectrum'
+        print('Computing the baseline microwave brightness temperature spectrum')
     gasod = np.copy(od0)
     t = t + 273.16         # Convert degC to degK
     
@@ -1069,7 +1069,7 @@ def compute_jacobian_microwave_3method(Xn, p, z, freq, cbh, vip, workdir,
     tt = np.interp(a['z'], stdatmos['z'], stdatmos['t'])
     foo = np.where(a['z'] <= np.max(z))[0]
     if len(foo) != len(t):
-        print 'Problem here -- this should not happen'
+        print('Problem here -- this should not happen')
         return flag, -999., -999., -999.
     tt[foo] = np.copy(t)
     t = np.copy(tt)
@@ -1084,7 +1084,7 @@ def compute_jacobian_microwave_3method(Xn, p, z, freq, cbh, vip, workdir,
     # emission temperature of the layer
     if fixt != 1:
         if verbose >= 3:
-            print ' Computing Jacobian for temperature'
+            print(' Computing Jacobian for temperature')
         for kk in range(k):
             if z[kk] > maxht:
                 Kij[:,kk] = 0.
@@ -1103,13 +1103,13 @@ def compute_jacobian_microwave_3method(Xn, p, z, freq, cbh, vip, workdir,
                 Kij[:,kk] = mult*(tb1-tb0)/tpert
     else:
         if verbose >= 3:
-            print 'Temperature jacobian set to zero (fixed T profile)'
+            print('Temperature jacobian set to zero (fixed T profile)')
         Kij[:,0:k] = 0.
     
     # Compute the water vapor perturbation
     if fixwv != 1:
         if verbose >= 3:
-            print 'Computing Jacobian for water vapor'
+            print('Computing Jacobian for water vapor')
         for kk in range(k):
             if z[kk] > maxht:
                 Kij[:,kk+k] = 0.
@@ -1127,17 +1127,17 @@ def compute_jacobian_microwave_3method(Xn, p, z, freq, cbh, vip, workdir,
                 Kij[:,kk+k] = mult * ( (tb1-tb0) / (w[kk]*h2opert - w[kk]))
     else:
         if verbose >= 3:
-            print 'Water vapor jacobian set to zero (fixed WV profile)'
+            print('Water vapor jacobian set to zero (fixed WV profile)')
         Kij[:,k:2*k] = 0.
     
     # Compute the liquid cloud property perturbation
     if fixlcld != 1:
         if verbose >= 3:
-            print 'Computing Jacobian for the liuid cloud properties'
+            print('Computing Jacobian for the liuid cloud properties')
         Kij[:,2*k] = (d['tb']-a['tb'])/(lwpp-lwp)
     else:
         if verbose >= 3:
-            print 'Cloud jacobian set to zero (fixed LWP)'
+            print('Cloud jacobian set to zero (fixed LWP)')
         Kij[:,2*k] = 0.
     
     # Capture the most accurate forward calculation
@@ -1147,7 +1147,7 @@ def compute_jacobian_microwave_3method(Xn, p, z, freq, cbh, vip, workdir,
     etime = datetime.now()
     totaltime = (etime-stime).total_seconds()
     if verbose >= 3:
-        print ' It took ' + totaltime + ' s to compute Jacobian (3method)'
+        print(' It took ' + totaltime + ' s to compute Jacobian (3method)')
     
     flag = 1
     
@@ -1172,7 +1172,7 @@ def compute_jacobian_external_temp_profiler(Xn, p, z, minht, maxht, temp_type):
         # The radiosonde data were read in and are in degC
         foo = np.where((minht <= z) & (z <= maxht))[0]
         if len(foo) == 0:
-            print 'Error in external temperature profiler forward model -- no vertical levels'
+            print('Error in external temperature profiler forward model -- no vertical levels')
             return flag, -999., -999.
         
         # We have a perfect forward model and the Jacobian has perfect sensitivity
@@ -1189,7 +1189,7 @@ def compute_jacobian_external_temp_profiler(Xn, p, z, minht, maxht, temp_type):
         # The RLID temperature data are in degC
         foo = np.where((minht <= z) & (z <= maxht))[0]
         if len(foo) == 0:
-            print 'Error in external temperature profiler forward model -- no vertical levels found'
+            print('Error in external temperature profiler forward model -- no vertical levels found')
             return flag, -999., -999
         
         # We have a perfect forward model and the Jacobian has perfect sensitivity
@@ -1205,7 +1205,7 @@ def compute_jacobian_external_temp_profiler(Xn, p, z, minht, maxht, temp_type):
     elif temp_type == 4:
         foo = np.where((minht <= z) & (z <= maxht))[0]
         if len(foo) == 0:
-            print 'Error in external temperature profiler forward model -- no vertical levels found'
+            print('Error in external temperature profiler forward model -- no vertical levels found')
             return flag, -999., -999.
         
         # We have a perfect forward model and the Jacobian has perfect sensitivity
@@ -1222,7 +1222,7 @@ def compute_jacobian_external_temp_profiler(Xn, p, z, minht, maxht, temp_type):
         # The radiosonde data were read in and are in degC
         foo = np.where((minht <= z) & (z <= maxht))[0]
         if len(foo) == 0:
-            print 'Error in external temperature profiler forward model -- no vertical levels'
+            print('Error in external temperature profiler forward model -- no vertical levels')
             return flag, -999., -999.
         
         # We have a perfect forward model and the Jacobian has perfect sensitivity
@@ -1236,7 +1236,7 @@ def compute_jacobian_external_temp_profiler(Xn, p, z, minht, maxht, temp_type):
         
     # Undefined external temperature profiler source
     else:
-        print 'Undefined external temperature profiler used in its forward model -- aborting'
+        print('Undefined external temperature profiler used in its forward model -- aborting')
         return flag, -999., -999.
     
     flag = 1
@@ -1260,7 +1260,7 @@ def compute_jacobian_external_wv_profiler(Xn, p, z, minht, maxht, wv_type, wv_mu
         # The radiosonde data were read in and converted to wv mixing ratio
         foo = np.where((minht <= z) & (z <= maxht))[0]
         if len(foo) == 0:
-            print 'Error in external water vapor profiler forward model -- no vertical levels'
+            print('Error in external water vapor profiler forward model -- no vertical levels')
             return flag, -999., -999.
         
         # We have a perfect forward model and the Jacobian has perfect sensitivity
@@ -1279,7 +1279,7 @@ def compute_jacobian_external_wv_profiler(Xn, p, z, minht, maxht, wv_type, wv_mu
         # is trivial, as is the Jacobian
         foo = np.where((minht <= z) & (z <= maxht))[0]
         if len(foo) == 0:
-            print 'Error in external water vapor profiler forward model -- no vertical levels'
+            print('Error in external water vapor profiler forward model -- no vertical levels')
             return flag, -999., -999.
         
         # We have a perfect forward model and the Jacobian has perfect sensitivity
@@ -1299,7 +1299,7 @@ def compute_jacobian_external_wv_profiler(Xn, p, z, minht, maxht, wv_type, wv_mu
         # Compute the Jocobian over the appropriate height
         foo = np.where((minht <= z) & (z <= maxht))[0]
         if len(foo) == 0:
-            print 'Error in external water vapor profiler forward model -- no vertical levels'
+            print('Error in external water vapor profiler forward model -- no vertical levels')
             return flag, -999., -999.
         
         Kij = np.zeros((len(foo),len(Xn)))
@@ -1330,7 +1330,7 @@ def compute_jacobian_external_wv_profiler(Xn, p, z, minht, maxht, wv_type, wv_mu
     elif wv_type == 4:
         foo = np.where((minht <= z) & (z <= maxht))[0]
         if len(foo) == 0:
-            print 'Error in external water vapor profiler forward model -- no vertical levels'
+            print('Error in external water vapor profiler forward model -- no vertical levels')
             return flag, -999., -999.
         
         # We have a perfect forward model and the Jacobian has perfect sensitivity
@@ -1346,7 +1346,7 @@ def compute_jacobian_external_wv_profiler(Xn, p, z, minht, maxht, wv_type, wv_mu
     elif wv_type == 5:
         foo = np.where((minht <= z) & (z <= maxht))[0]
         if len(foo) == 0:
-            print 'Error in external water vapor profiler forward model -- no vertical levels'
+            print('Error in external water vapor profiler forward model -- no vertical levels')
             return flag, -999., -999.
         
         # We have a perfect forward model and the Jacobian has perfect sensitivity
@@ -1363,7 +1363,7 @@ def compute_jacobian_external_wv_profiler(Xn, p, z, minht, maxht, wv_type, wv_mu
         # The radiosonde data were read in and converted to wv mixing ratio
         foo = np.where((minht <= z) & (z <= maxht))[0]
         if len(foo) == 0:
-            print 'Error in external water vapor profiler forward model -- no vertical levels'
+            print('Error in external water vapor profiler forward model -- no vertical levels')
             return flag, -999., -999.
         
         # We have a perfect forward model and the Jacobian has perfect sensitivity
@@ -1376,7 +1376,7 @@ def compute_jacobian_external_wv_profiler(Xn, p, z, minht, maxht, wv_type, wv_mu
             Kij[j,k+foo[j]] = 1.
     
     else:
-        print 'Undefned external water vapor profiler used in its forward model -- aborting'
+        print('Undefned external water vapor profiler used in its forward model -- aborting')
         return flag, -999., -999.
     
     flag = 1
@@ -1405,7 +1405,7 @@ def compute_jacobian_external_sfc_met(Xn, p, z, sfc_relative_height,
     FXn = np.zeros(len(units))
     foo = np.where(z >= chimney_height)[0]
     if len(foo) < 2:
-        print 'Warning: The chimney is too high in compute_jacobian_external_sfc_met'
+        print('Warning: The chimney is too high in compute_jacobian_external_sfc_met')
         return flag, -999., -999.
     
     for i in range(len(units)):
@@ -1429,7 +1429,7 @@ def compute_jacobian_external_sfc_met(Xn, p, z, sfc_relative_height,
                 func = scipy.interpolate.interp1d(z[foo], ww[foo], fill_value = 'extrapolate')
                 Kij[i,j+k] = (func(sfc_rel_height) - FXn[i]) / (ww[j] - w[j])
         else:
-            print 'Undefined external surface met unit used in the forward model -- aborting'
+            print('Undefined external surface met unit used in the forward model -- aborting')
             return flag, -999., -999
         
     flag = 1
@@ -1456,7 +1456,7 @@ def compute_jacobian_external_sfc_co2(Xn, p, z, sfc_relative_height, retrieve_co
     # Ensure that the profile makes some sense
     foo = np.where(co2_prof <= 0)[0]
     if len(foo) > 0:
-        print 'Error inside compute_jacobian_external_sfc_co2: CO2 is less than zero'
+        print('Error inside compute_jacobian_external_sfc_co2: CO2 is less than zero')
         return flag, -999., -999.
     
     # We are just interpolating the data linearly to the sfc_relative_height
@@ -1535,7 +1535,7 @@ def compute_jacobian_microwavescan_3method(Xn, p, z, mwrscan, cbh, vip, workdir,
     FFXn = np.zeros(mwrscan['n_fields'])
     
     if verbose >= 2:
-        print 'Computing the MWR-scan Jacobian using the 3method with MonoRTM'
+        print('Computing the MWR-scan Jacobian using the 3method with MonoRTM')
     
     stime = datetime.now()
     
@@ -1556,7 +1556,7 @@ def compute_jacobian_microwavescan_3method(Xn, p, z, mwrscan, cbh, vip, workdir,
         command = monortm_exec + ' ' + monortm_tfile + ' {:3.1f} {:8.2f} {:6.3f} {:6.3f} {:6.3f}'.format(1.0, lwp, cbh, cth, 90-uelev[ii])
         a = LBLRTM_Functions.run_monortm(command, mwrscan['freq'], z, stdatmos)
         if a['status'] == 0:
-            print 'Problem with MonoRTM calc 0'
+            print('Problem with MonoRTM calc 0')
             return flag, -999., -999., -999.
         FFXn = np.copy(a['tb'])
         
@@ -1568,7 +1568,7 @@ def compute_jacobian_microwavescan_3method(Xn, p, z, mwrscan, cbh, vip, workdir,
             command = monortm_exec + ' ' + monortm_tfile + ' {:3.1f} {:8.2f} {:6.3f} {:6.3f} {:6.3f}'.format(1.0, lwp, cbh, cth, 90-uelev[ii])
             b = LBLRTM_Functions.run_monortm(command, mwrscan['freq'], z, stdatmos)
             if a['status'] == 0:
-                print 'Problem with MonoRTM calc 1 MWR-scan'
+                print('Problem with MonoRTM calc 1 MWR-scan')
                 return flag, -999., -999., -999.
         else:
             command = 'ls'
@@ -1581,7 +1581,7 @@ def compute_jacobian_microwavescan_3method(Xn, p, z, mwrscan, cbh, vip, workdir,
             command = monortm_exec + ' ' + monortm_tfile + ' {:3.1f} {:8.2f} {:6.3f} {:6.3f} {:6.3f}'.format(1.0, lwp, cbh, cth, 90-uelev[ii])
             c = LBLRTM_Functions.run_monortm(command, mwrscan['freq'], z, stdatmos)
             if c['status'] == 0:
-                print 'Problem with MonoRTM calc 2 MWR-scan'
+                print('Problem with MonoRTM calc 2 MWR-scan')
                 return flag, -999., -999., -999.
         else:
             command = 'ls'
@@ -1593,7 +1593,7 @@ def compute_jacobian_microwavescan_3method(Xn, p, z, mwrscan, cbh, vip, workdir,
             command = monortm_exec + ' ' + monortm_tfile + ' {:3.1f} {:8.2f} {:6.3f} {:6.3f} {:6.3f}'.format(1.0, lwpp, cbh, cth, 90-uelev[ii])
             d = LBLRTM_Functions.run_monortm(command, mwrscan['freq'], z, stdatmos)
             if d['status'] == 0:
-                print 'Problem with MonoRTM calc 2 MWR-scan'
+                print('Problem with MonoRTM calc 2 MWR-scan')
                 return flag, -999., -999., -999.
         else:
             command = 'ls'
@@ -1607,7 +1607,7 @@ def compute_jacobian_microwavescan_3method(Xn, p, z, mwrscan, cbh, vip, workdir,
         
         wnum = mwrscan['freq']/30.
         if verbose >= 3:
-            print 'Computing the baseline microwave brightness temperature spectrum MWR-scan'
+            print('Computing the baseline microwave brightness temperature spectrum MWR-scan')
             
         gasod = np.copy(od0)
         t = t + 273.16  # Convert degC to degK
@@ -1620,7 +1620,7 @@ def compute_jacobian_microwavescan_3method(Xn, p, z, mwrscan, cbh, vip, workdir,
         tt = np.interp(a['z'], stdatmos['z'], stdatmos['t'])
         foo = np.where(z['z'] <= np.max(z))[0]
         if len(foo) != len(t):
-            print 'Problem here -- this should not be happen MWR-scan'
+            print('Problem here -- this should not be happen MWR-scan')
         tt[foo] = np.copy(t)
         t = np.copy(tt)
         
@@ -1635,7 +1635,7 @@ def compute_jacobian_microwavescan_3method(Xn, p, z, mwrscan, cbh, vip, workdir,
         
         if fixt != 1:
             if verbose >= 3:
-                print 'Computing Jacobian for temperature MWR-scan'
+                print('Computing Jacobian for temperature MWR-scan')
             for kk in range(k):
                 if z[kk] > maxht:
                     KKij[:,kk] = 0.
@@ -1654,14 +1654,14 @@ def compute_jacobian_microwavescan_3method(Xn, p, z, mwrscan, cbh, vip, workdir,
                     KKij[:,kk] = mult * (tb1-tb0) / tpert
         else:
             if verbose >= 3:
-                print 'Temperature jacobian set to zero (fixed T profile) MWR-scan'
+                print('Temperature jacobian set to zero (fixed T profile) MWR-scan')
             KKij[0,0:k] = 0.
         
         # Compute the water vapor perturbation
         
         if fixwv != 1:
             if verbose >= 3:
-                print 'Computing Jacobian for water vapor MWR-scan'
+                print('Computing Jacobian for water vapor MWR-scan')
             for kk in range(k):
                 if z[kk] > maxht:
                     KKij[:,kk+k] = 0.
@@ -1679,18 +1679,18 @@ def compute_jacobian_microwavescan_3method(Xn, p, z, mwrscan, cbh, vip, workdir,
                     KKij[:,kk+k] = mult * ( (tb1-tb0) / (w[kk]*h2opert - w[kk]) )
         else:
             if verbose >= 3:
-                print 'Water vapor jacobian set to zero (fixed WV profile) MWR-scan'
+                print('Water vapor jacobian set to zero (fixed WV profile) MWR-scan')
             KKij[:,k:2*k] = 0.
         
         # Compute the liquid cloud property perturbation
         if fixlcld != 1:
             if verbose >= 3:
-                print ' Computing Jacobian for the liquid cloud properties (LWP) MWR-scan'
+                print(' Computing Jacobian for the liquid cloud properties (LWP) MWR-scan')
             
             KKij[:,2*k] = (d['tb']-a['tb']) / (lwpp-lwp)
         else:
             if verbose >= 3:
-                print 'Cloud jacobian set to zero (fixed LWP) MWR-scan'
+                print('Cloud jacobian set to zero (fixed LWP) MWR-scan')
             KKij[:,2*k] = 0.
         
         # Capture the most accurate forward calculation and Jacobian into the 
@@ -1710,7 +1710,7 @@ def compute_jacobian_microwavescan_3method(Xn, p, z, mwrscan, cbh, vip, workdir,
     etime = datetime.now()
     totaltime = (etime-stime).total_seconds()
     if verbose >= 3:
-        print 'It took ' + str(totaltime) + ' s to compute Jacobian (3method) MWR-scan'
+        print('It took ' + str(totaltime) + ' s to compute Jacobian (3method) MWR-scan')
     
     flag = 1
     

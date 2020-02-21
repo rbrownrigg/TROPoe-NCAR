@@ -35,11 +35,11 @@ def read_aeri_ch(path,date,aeri_type,fv,fa,engsecs,engtemp,bbcavfactor,
                  get_aeri_missingDataFlag, verbose):
                  
     if verbose >= 2:
-        print 'Reading aeri_ch data in ' + path
+        print('Reading aeri_ch data in ' + path)
     err = {'success':0}
     if aeri_type <= 0:
-        print ('This piece of code should not be exercised, as this option should be screened ' +
-               'in read_aeri_eng() earlier')
+        print(('This piece of code should not be exercised, as this option should be screened ' +
+               'in read_aeri_eng() earlier'))
         return err
     elif ((aeri_type == 1) | (aeri_type == 4)):
         filename = path + '/' + '*aeri*ch*' + str(date) + '*cdf'
@@ -48,36 +48,36 @@ def read_aeri_ch(path,date,aeri_type,fv,fa,engsecs,engtemp,bbcavfactor,
     elif aeri_type == 3:
         filename = path + '/' + '*' + str(date % 2000000) + 'C1.RNC.cdf'
     else:
-        print 'Error in read_aeri_ch: unable to decode aeri_type'
+        print('Error in read_aeri_ch: unable to decode aeri_type')
         return err
     
     if verbose >= 3:
-        print 'Looking for AERI channel data as ' + filename
+        print('Looking for AERI channel data as ' + filename)
     
     files = glob.glob(filename)
     if len(files) == 0:
-        print 'Error: Unable to find any AERI channel data -- aborting'
+        print('Error: Unable to find any AERI channel data -- aborting')
         return err
     
     for jj in range(len(files)):
         fid = Dataset(files[jj])
         bt = fid.variables['base_time'][:]
         to = fid.variables['time_offset'][:]
-        vid = np.where(np.array(fid.variables.keys()) == 'wnum')[0]
+        vid = np.where(np.array(list(fid.variables.keys())) == 'wnum')[0]
         if len(vid) > 0:
             wnum = fid.variables['wnum'][:]
         else:
-            vid = np.where(np.array(fid.variables.keys()) == 'wnum1')[0]
+            vid = np.where(np.array(list(fid.variables.keys())) == 'wnum1')[0]
             if len(vid) > 0:
                 wnum = fid.variables['wnum1'][:]
             else:
-                print 'Error in read_aeri_ch: unable to find either "wnum" or "wnum1 -- aborting'
+                print('Error in read_aeri_ch: unable to find either "wnum" or "wnum1 -- aborting')
                 return err
         
         xmrad = fid.variables['mean_rad'][:]
-        if len(np.where(np.array(fid.variables.keys()) == 'hatchOpen')[0]) > 0:
+        if len(np.where(np.array(list(fid.variables.keys())) == 'hatchOpen')[0]) > 0:
             xhatchOpen = fid.variables['hatchOpen'][:]
-        elif  len(np.where(np.array(fid.variables.keys()) == 'hatchIndicator')[0]) > 0:
+        elif  len(np.where(np.array(list(fid.variables.keys())) == 'hatchIndicator')[0]) > 0:
             #The AERI-01 has a hatchIndicator flag instead of hatchOpen,
             #but I need to change some of the values so that they are consistent
             
@@ -89,8 +89,8 @@ def read_aeri_ch(path,date,aeri_type,fv,fa,engsecs,engtemp,bbcavfactor,
             if len(foo) > 0:
                 xhatchOpen[foo] = 3
         else:
-            print ('Warning: Unable to find AERI hatchOpen or hatchIndicator field in ' +
-                  'data file -- assuming hatch is always open')
+            print(('Warning: Unable to find AERI hatchOpen or hatchIndicator field in ' +
+                  'data file -- assuming hatch is always open'))
             xhatchOpen = np.ones(len(to))
         
         xbbsupport = fid.variables['BBsupportStructureTemp'][:]
@@ -101,11 +101,11 @@ def read_aeri_ch(path,date,aeri_type,fv,fa,engsecs,engtemp,bbcavfactor,
         
         #Read in the field "missingDataFlag". If it does not exist, then abort
         if get_aeri_missingDataFlag == 1:
-            if len(np.where(np.array(fid.variables.keys()) == 'missingDataFlag')[0]) > 0:
+            if len(np.where(np.array(list(fid.variables.keys())) == 'missingDataFlag')[0]) > 0:
                 xmissingDataFlag = fid.variables['missingDataFlag'][:]
                 xmissingDataFlag = xmissingDataFlag.astype('int')
             else:
-                print 'Error in read_aeri_ch: unable to find the field missingDataFlag'
+                print('Error in read_aeri_ch: unable to find the field missingDataFlag')
                 return err
         else:
             xmissingDataFlag = np.zeros(len(to))
@@ -141,12 +141,12 @@ def read_aeri_ch(path,date,aeri_type,fv,fa,engsecs,engtemp,bbcavfactor,
     
     flag, prob = Other_functions.matchtimes(engsecs, chsecs, 0.5)
     if prob == 0:
-        print 'Error in read_aeri_ch: matchtimes() failed very badly'
+        print('Error in read_aeri_ch: matchtimes() failed very badly')
         return err
     
     foo = np.where(flag == 1)[0]
     if len(foo) == 0:
-        print 'Error in read_aeri_ch: None of the ch data match the eng data times'
+        print('Error in read_aeri_ch: None of the ch data match the eng data times')
         return err
     
     chsecs = np.copy(chsecs[foo])
@@ -162,12 +162,12 @@ def read_aeri_ch(path,date,aeri_type,fv,fa,engsecs,engtemp,bbcavfactor,
     #And now the reverse
     flag, prob = Other_functions.matchtimes(chsecs,engsecs,0.5)
     if prob == 0:
-        print 'Error in read_aeri_ch: matchtimes() failed very badly'
+        print('Error in read_aeri_ch: matchtimes() failed very badly')
         return err
 
     foo = np.where(flag == 1)[0]
     if len(foo) == 0:
-        print 'Error in read_aeri_ch: None of the eng data match the ch data times'
+        print('Error in read_aeri_ch: None of the eng data match the ch data times')
         return err
     engsecs = np.copy(engsecs[foo])
     engtemp = np.copy(engtemp[foo])
@@ -184,7 +184,7 @@ def read_aeri_ch(path,date,aeri_type,fv,fa,engsecs,engtemp,bbcavfactor,
     #both turned on
     
     if ((fv > 0) & (fa > 0)):
-        print 'Error: both the obscuration (Fv) and aft-optics (Fa) corrections are turned on'
+        print('Error: both the obscuration (Fv) and aft-optics (Fa) corrections are turned on')
         return err
     
     #Recalibrate the AERI data to ensure that the BB emissivity is correct.
@@ -192,7 +192,7 @@ def read_aeri_ch(path,date,aeri_type,fv,fa,engsecs,engtemp,bbcavfactor,
     #but we should be using something in excess of 35 (more like 39)
     
     if verbose == 3:
-        print 'Correcting for the blackbody emissivity cavity factor'
+        print('Correcting for the blackbody emissivity cavity factor')
     nrad = mrad * 0
     emisn = Other_functions.get_aeri_bb_emis(wnum,39.0)
     for i in range(len(hour)):
@@ -209,16 +209,16 @@ def read_aeri_ch(path,date,aeri_type,fv,fa,engsecs,engtemp,bbcavfactor,
     
     foo = np.where(engtemp > 0)
     if ((len(foo) == 0) & (fa > 0)):
-        print 'Error: The algorithm wants to apply an aft-optics correction to the AERI'
-        print '          data (i.e., fa > 0), but the field "interferometerSecondPortTemp"'
-        print '          was not found in the input data. Thus we must abort this'
-        print '          processing. Please either rerun with fa == 0 or modify the'
-        print '          code so that a different field is used as the aft optic temperature'
+        print('Error: The algorithm wants to apply an aft-optics correction to the AERI')
+        print('          data (i.e., fa > 0), but the field "interferometerSecondPortTemp"')
+        print('          was not found in the input data. Thus we must abort this')
+        print('          processing. Please either rerun with fa == 0 or modify the')
+        print('          code so that a different field is used as the aft optic temperature')
         return err
     
     if fa > 0:
         if verbose >= 2:
-            print 'Correcting AERI data with Fa = ' + str(fa)
+            print('Correcting AERI data with Fa = ' + str(fa))
         nrad = np.copy(mrad)
         for i in range(len(hour)):
             Bref = Calcs_Conversions.planck(wnum,calibambt[i])
@@ -228,7 +228,7 @@ def read_aeri_ch(path,date,aeri_type,fv,fa,engsecs,engtemp,bbcavfactor,
             
             #Apply a bit of QC here!
             if ((calibcbbt[i] - 20 > aft_temp) | (aft_temp > calibhbbt[i]+2)):
-                print 'Error: the temperature used for the aft optics (Fa correction) is out of bounds'
+                print('Error: the temperature used for the aft optics (Fa correction) is out of bounds')
                 return err
             Baft = Calcs_Conversions.planck(wnum,aft_temp)
             nrad[:,i] = mrad[:,i] - fa*Baft + fa*(mrad[:,i]-Rc)
@@ -236,7 +236,7 @@ def read_aeri_ch(path,date,aeri_type,fv,fa,engsecs,engtemp,bbcavfactor,
     
     if fv > 0:
         if verbose >= 2:
-            print 'Correcting AERI data with Fv = ' + str(fv)
+            print('Correcting AERI data with Fv = ' + str(fv))
         nrad = np.copy(mrad)
         for i in range(len(hour)):
             brad = Calcs_Conversions.planck(wnum, bbsupport[i])
@@ -267,7 +267,7 @@ def read_all_data(date, retz, tres, dostop, verbose, avg_instant, ch1_path,
     
     # Check the flag to make sure it has reasonable values
     if ((avg_instant != 0) & (avg_instant != 1)):
-        print 'Error: The "avg_instant" flag can only have a value of 0 (average) or 1 (instantaneous); do not average'
+        print('Error: The "avg_instant" flag can only have a value of 0 (average) or 1 (instantaneous); do not average')
         fail = 1
         return fail, -999, -999, -999
         
@@ -282,7 +282,7 @@ def read_all_data(date, retz, tres, dostop, verbose, avg_instant, ch1_path,
         # using AERI data in this case, it should not have any other value
     
         if mwr_tb_replicate != 1:
-            print 'Error: The mwr_tb_replicate should be unity in this MWR-only retrieval (no AERI data)'
+            print('Error: The mwr_tb_replicate should be unity in this MWR-only retrieval (no AERI data)')
             fail = 1
             return fail, -999, -999, -999
     
@@ -290,7 +290,7 @@ def read_all_data(date, retz, tres, dostop, verbose, avg_instant, ch1_path,
         # so that I can simulate AERI data (all as MISSING) so that the rest of the code
         # can work ...
         
-        print ' Attempting to use MWR as the master instrument; no AERI data will be read in'
+        print(' Attempting to use MWR as the master instrument; no AERI data will be read in')
         
         mwr_data = read_mwr(mwr_path, mwr_rootname, date, mwr_type, mwr_elev_field, mwr_n_tb_fields,
                            mwr_tb_field_names, mwr_tb_freqs, mwr_tb_noise, mwr_tb_bias, mwr_tb_field1_tbmax,
@@ -298,7 +298,7 @@ def read_all_data(date, retz, tres, dostop, verbose, avg_instant, ch1_path,
                            verbose)
         
         if mwr_data['success'] != 1:
-            print 'Problem reading MWR data -- unable to continue because the MWR is the master instrument'
+            print('Problem reading MWR data -- unable to continue because the MWR is the master instrument')
             fail = 1
             return fail, -999, -999, -999
         else:
@@ -308,18 +308,18 @@ def read_all_data(date, retz, tres, dostop, verbose, avg_instant, ch1_path,
             
             foo = np.where(mwr_data['psfc'] > 0)
             if len(foo) == 0:
-                print 'Error: Flags set to use MWR as master instrument, but Psfc not found -- must abort'
+                print('Error: Flags set to use MWR as master instrument, but Psfc not found -- must abort')
                 fail = 1
                 if dostop:
-                    wait = raw_input('Stopping inside routine for debugging. Press enter to continue')
+                    wait = input('Stopping inside routine for debugging. Press enter to continue')
                 return fail, -999, -999, -999
             
             wnum = np.arange(int((950-900)/0.5)+1)*0.5+900            #Simulated wavenumber array
             mrad = np.ones((len(wnum),len(mwr_data['secs'])))*-999.0   #Radiance is all missing
             noise = np.ones((len(wnum),len(mwr_data['secs'])))         #Set all noise values to 1
-            print mwr_data['secs'].shape
-            print mwr_data['psfc'].shape
-	    print mrad.shape
+            print(mwr_data['secs'].shape)
+            print(mwr_data['psfc'].shape)
+	    print(mrad.shape)
             yy = np.array([datetime.utcfromtimestamp(x).year for x in mwr_data['secs']])
             mm = np.array([datetime.utcfromtimestamp(x).month for x in mwr_data['secs']])
             dd = np.array([datetime.utcfromtimestamp(x).day for x in mwr_data['secs']])
@@ -344,9 +344,9 @@ def read_all_data(date, retz, tres, dostop, verbose, avg_instant, ch1_path,
         
         aerieng = read_aeri_eng(eng_path,date,aeri_type,verbose)
         if aerieng['success'] == 0:
-            print 'Problem reading AERI eng data'
+            print('Problem reading AERI eng data')
             if dostop:
-                wait = raw_input('Stopping inside routine for debugging. Press enter to continue')
+                wait = input('Stopping inside routine for debugging. Press enter to continue')
             fail = 1
             return fail, -999, -999, -999
         
@@ -357,11 +357,11 @@ def read_all_data(date, retz, tres, dostop, verbose, avg_instant, ch1_path,
         aerisum = read_aeri_sum(sum_path,date,aeri_type,aeri_smooth_noise,verbose)
         
         if aerich1['success'] != 1:
-            print 'Problem reading AERI ch1 data'
+            print('Problem reading AERI ch1 data')
             fail = 1
             return fail, -999, -999, -999
         if aerisum['success'] != 1:
-            print 'Problem reading AERI sum data'
+            print('Problem reading AERI sum data')
             fail = 1
             return fail, -999, -999, -999
             
@@ -378,22 +378,22 @@ def read_all_data(date, retz, tres, dostop, verbose, avg_instant, ch1_path,
         # The scaling is wavenumber dependent, and I need to find a function that does this well...
         
         if pca_nf > 0:
-            print 'The AERI data have been PCA noise filtered. Someone needs to scale the AERI noise spectrum (not yet implimented)'
+            print('The AERI data have been PCA noise filtered. Someone needs to scale the AERI noise spectrum (not yet implimented)')
         
         if ((fail == 1) & (dostop != 0)):
-            wait = raw_input('Stopping inside routine for debugging. Press enter to continue')
+            wait = input('Stopping inside routine for debugging. Press enter to continue')
         elif fail == 1:
             return fail, -999, -999, -999
         
         #Calibrate the AERI pressure sensor using a linear function
         if len(cal_aeri_pres) != 2:
-            print 'The calibration information for the AERI pressure sensor is ill-formed'
+            print('The calibration information for the AERI pressure sensor is ill-formed')
             fail = 1
         else:
             aerich1['atmos_pres'] = cal_aeri_pres[0] + aerich1['atmos_pres'] *cal_aeri_pres[1]
             
         if ((fail == 1) & (dostop != 0)):
-            wait = raw_input('Stopping inside routine for debugging. Press enter to continue')
+            wait = input('Stopping inside routine for debugging. Press enter to continue')
         elif fail == 1:
             return fail, -999, -999, -999
     
@@ -413,7 +413,7 @@ def read_all_data(date, retz, tres, dostop, verbose, avg_instant, ch1_path,
         elif np.nanmax(hour) <= 3*24:
             nmins = 3*1440.0
         else:
-            print 'Error -- the AERI data files span more than 3 days -- code needs an update'
+            print('Error -- the AERI data files span more than 3 days -- code needs an update')
             fail = 1
             return fail, -999, -999, -999
         d = datetime(yy[0],mm[0],dd[0],0,0,0)
@@ -428,9 +428,9 @@ def read_all_data(date, retz, tres, dostop, verbose, avg_instant, ch1_path,
                         verbose)
                         
     if mwr_data['success'] != 1:
-        print 'Problem reading in MWR-zenith data'
+        print('Problem reading in MWR-zenith data')
     elif mwr_data['type'] > 0:
-        print 'Reading in MWR-zenith data'
+        print('Reading in MWR-zenith data')
         
     #Read in the MWR scan data
     mwrscan_data = read_mwrscan(vip['mwrscan_path'], vip['mwrscan_rootname'], date, vip['mwrscan_type'],
@@ -439,11 +439,11 @@ def read_all_data(date, retz, tres, dostop, verbose, avg_instant, ch1_path,
                    vip['mwrscan_tb_field1_tbmax'], vip['mwrscan_n_elevations'], vip['mwrscan_elevations'], verbose)
                    
     if mwrscan_data['success'] == 0:
-        print 'Problem reading MWR-scan data'
+        print('Problem reading MWR-scan data')
         fail = 1
         return fail, -999, -999, -999
     elif mwrscan_data['type'] > 0:
-        print 'Reading in MWR-scan data'
+        print('Reading in MWR-scan data')
     
     #Read in the ceilometer data
     vceil = read_vceil(vceil_path, date, vceil_type, ret_secs, verbose)
@@ -452,11 +452,11 @@ def read_all_data(date, retz, tres, dostop, verbose, avg_instant, ch1_path,
         fail = 1
     elif vceil['success'] == 0:
         if verbose >= 2:
-            print 'Problem reading vceil dat -- assuming ceilometer reported clear entire time'
+            print('Problem reading vceil dat -- assuming ceilometer reported clear entire time')
         vceil = {'success':2, 'secs':aerich1['secs'], 'ymd':aerich1['ymd'], 'hour':aerich1['hour'], 'cbh':np.ones(len(aerich1['secs']))*-1}
     
     if ((fail == 1) & (dostop)):
-        wait = raw_input('Stopping for debugging. Press enter to continue')
+        wait = input('Stopping for debugging. Press enter to continue')
     elif fail == 1:
         return fail, -999, -999, -999
         
@@ -492,7 +492,7 @@ def read_all_data(date, retz, tres, dostop, verbose, avg_instant, ch1_path,
         return fail, -999, -999, -999
         
     if dostop:
-        wait = raw_input('Stopping inside to debug this bad boy. Press enter to continue')
+        wait = input('Stopping inside to debug this bad boy. Press enter to continue')
     
     return fail, aeri, mwr, mwrscan
 
@@ -506,7 +506,7 @@ def read_mwr(path, rootname, date, mwr_type, mwr_elev_field, mwr_n_tb_fields,
             mwr_lwp_scalar, verbose):
             
     if verbose >= 2:
-        print 'Reading MWR data in ' + path
+        print('Reading MWR data in ' + path)
     err = {'success':0, 'type':-1}
         
     # Read in the data from yesterday, today, and tomorrow
@@ -514,17 +514,17 @@ def read_mwr(path, rootname, date, mwr_type, mwr_elev_field, mwr_n_tb_fields,
               str(date) ,  (datetime.strptime(str(date), '%Y%m%d') + timedelta(days=1)).strftime('%Y%m%d') ]
               
     if mwr_type < 0:
-        print ' '
-        print '-----------------------------------------------------------------'
-        print '****** options for the VIP parameter "mwr_type" *******'
-        print '   mwr_type=0 --->'
-        print '             No MWR data specified'
-        print '   mwr_type=1 --->'
-        print '             MWR Tb data are in individual 1-d variables in the input file'
-        print '   mwr_type=2 --->'
-        print '             MWR tb data are in a single 2-d variable in the input file'
-        print '-----------------------------------------------------------------'
-        print ' '
+        print(' ')
+        print('-----------------------------------------------------------------')
+        print('****** options for the VIP parameter "mwr_type" *******')
+        print('   mwr_type=0 --->')
+        print('             No MWR data specified')
+        print('   mwr_type=1 --->')
+        print('             MWR Tb data are in individual 1-d variables in the input file')
+        print('   mwr_type=2 --->')
+        print('             MWR tb data are in a single 2-d variable in the input file')
+        print('-----------------------------------------------------------------')
+        print(' ')
         err = {'success':-1}
         return err
         
@@ -532,23 +532,23 @@ def read_mwr(path, rootname, date, mwr_type, mwr_elev_field, mwr_n_tb_fields,
     if mwr_n_tb_fields > 0:
         parts = mwr_tb_freqs.split(',')
         if len(parts) != mwr_n_tb_fields:
-            print 'Error: The number of entered MWR frequencies does not match desired MWR channels'
+            print('Error: The number of entered MWR frequencies does not match desired MWR channels')
             return err
         else:
             freq = np.array(parts).astype(np.float)
         foo = np.where(((freq >= 15) & (freq < 240)))
         if len(parts) != mwr_n_tb_fields:
-            print 'Error: The entered frequencies are not between 15 and 240 GHz -- probably an error'
+            print('Error: The entered frequencies are not between 15 and 240 GHz -- probably an error')
             return err
         parts = mwr_tb_bias.split(',')
         if len(parts) != mwr_n_tb_fields:
-            print 'Error: The number of entered MWR Tb bias values does not match desired MWR channels'
+            print('Error: The number of entered MWR Tb bias values does not match desired MWR channels')
             return err
         else:
             bias = np.array(parts).astype(np.float)
         parts = mwr_tb_noise.split(',')
         if len(parts) != mwr_n_tb_fields:
-            print 'Error: The number of entered MWR Tb noise values does not match desired MWR channels'
+            print('Error: The number of entered MWR Tb noise values does not match desired MWR channels')
             return err
         else:
             noise = np.array(parts).astype(np.float)
@@ -560,7 +560,7 @@ def read_mwr(path, rootname, date, mwr_type, mwr_elev_field, mwr_n_tb_fields,
         for i in range(len(udate)):
             files = files + (glob.glob(path + '/' + '*' + rootname + '*' + udate[i] + '*cdf'))
         if len(files) == 0:
-            print 'Warning: No MWR files found for this date'
+            print('Warning: No MWR files found for this date')
             mwr_type = 0
         
     # Only read MWR data if mwr_type > 0
@@ -569,7 +569,7 @@ def read_mwr(path, rootname, date, mwr_type, mwr_elev_field, mwr_n_tb_fields,
     if mwr_type > 0:
         for i in range(len(files)):
             if verbose >= 3:
-                print "Reading: " + files[i]
+                print("Reading: " + files[i])
             fid = Dataset(files[i],'r')
             bt = fid.variables['base_time'][:]
             to = fid.variables['time_offset'][:]
@@ -582,15 +582,15 @@ def read_mwr(path, rootname, date, mwr_type, mwr_elev_field, mwr_n_tb_fields,
                 
             # Get the surface pressure field, if it exists
             # It might be "p_sfc" or "sfc_p" or "sfc_pres". Units are mb in both cases
-            foo = np.where(np.array(fid.variables.keys()) == 'sfc_pres')[0]
+            foo = np.where(np.array(list(fid.variables.keys())) == 'sfc_pres')[0]
             if len(foo) > 0:
                 psfcx = fid.variables['sfc_pres'][:]
             else:
-                foo = np.where(np.array(fid.variables.keys()) == 'sfc_p')[0]
+                foo = np.where(np.array(list(fid.variables.keys())) == 'sfc_p')[0]
                 if len(foo) > 0:
                     psfcx = fid.variables['sfc_p'][:]
                 else:
-                   foo = np.where(np.array(fid.variables.keys()) == 'p_sfc')[0] 
+                   foo = np.where(np.array(list(fid.variables.keys())) == 'p_sfc')[0] 
                    if len(foo) > 0:
                        psfcx = fid.variables['p_sfc'][:]
                    else:
@@ -598,27 +598,27 @@ def read_mwr(path, rootname, date, mwr_type, mwr_elev_field, mwr_n_tb_fields,
             
             #See if the elevation variable exists. If so, read it in. If not then
             # assume all samples are zenith pointing and create the elev field as such
-            foo = np.where(np.array(fid.variables.keys()) == mwr_elev_field)[0]
+            foo = np.where(np.array(list(fid.variables.keys())) == mwr_elev_field)[0]
             if len(foo) > 0:
                 elevx = fid.variables[mwr_elev_field][:]
             else:
-                print 'Warning: Unable to find the field ' + mwr_elev_field + ' in the MWR input file'
+                print('Warning: Unable to find the field ' + mwr_elev_field + ' in the MWR input file')
                 elevx = np.ones(to.shape)*-90.0
                 
             # Read in the PWV and LWP fields in the input MWR file. If the field 
             # is not found, then assume the field is full of missing values.
-            foo = np.where(np.array(fid.variables.keys()) == mwr_pwv_field)[0]
+            foo = np.where(np.array(list(fid.variables.keys())) == mwr_pwv_field)[0]
             if len(foo) == 0:
-                print 'Warning: Unable to find the PWV field ' + mwr_pwv_field + ' in the MWR input file'
-                print files[i]
+                print('Warning: Unable to find the PWV field ' + mwr_pwv_field + ' in the MWR input file')
+                print(files[i])
                 pwvx = np.ones(to.shape)*-999.0
             else:
                 pwvx = fid.variables[mwr_pwv_field][:]
                 pwvx = pwvx * mwr_pwv_scalar
             
-            foo = np.where(np.array(fid.variables.keys()) == mwr_lwp_field)[0]
+            foo = np.where(np.array(list(fid.variables.keys())) == mwr_lwp_field)[0]
             if len(foo) == 0:
-                print 'Warning: Unable to find the LWP field ' + mwr_lwp_field + ' in the MWR input file'
+                print('Warning: Unable to find the LWP field ' + mwr_lwp_field + ' in the MWR input file')
                 lwpx = np.ones(to.shape)*-999.0
             else:
                 lwpx = fid.variables[mwr_lwp_field][:]
@@ -631,13 +631,13 @@ def read_mwr(path, rootname, date, mwr_type, mwr_elev_field, mwr_n_tb_fields,
                     #If mwr_type is 1, then I expect to have mwr_n_tb_fields specified
                     fields = mwr_tb_field_names.split(',')
                     if len(fields) != mwr_n_tb_fields:
-                        print 'Error: The number of desired MWR Tb fields does not equal the number of input field names'
+                        print('Error: The number of desired MWR Tb fields does not equal the number of input field names')
                         return err
                     
                     for j in range(mwr_n_tb_fields):
-                        foo = np.where(np.array(fid.variables.keys()) == fields[j])[0]
+                        foo = np.where(np.array(list(fid.variables.keys())) == fields[j])[0]
                         if len(foo) == 0:
-                            print 'Error: Unable to find the Tb field ' + fields[j] + ' in the MWR input file'
+                            print('Error: Unable to find the Tb field ' + fields[j] + ' in the MWR input file')
                         tmp = fid.variables[fields[j]][:]
                         if j == 0:
                             tbskyx = np.copy(tmp)
@@ -647,9 +647,9 @@ def read_mwr(path, rootname, date, mwr_type, mwr_elev_field, mwr_n_tb_fields,
                 elif mwr_type == 2:
                     
                     # if mwr_type is 2, then I expect there to only be a single mwr_tb_field_name
-                    foo = np.where(np.array(fid.variables.keys()) == mwr_tb_field_names)[0]
+                    foo = np.where(np.array(list(fid.variables.keys())) == mwr_tb_field_names)[0]
                     if len(foo) == 0:
-                        print 'Error: Unable to find the Tb field ' + mwr_tb_field_names + ' in the MWR input file'
+                        print('Error: Unable to find the Tb field ' + mwr_tb_field_names + ' in the MWR input file')
                         return err
                     tbskyx = fid.variables[mwr_tb_field_names][:].T
                     
@@ -658,12 +658,12 @@ def read_mwr(path, rootname, date, mwr_type, mwr_elev_field, mwr_n_tb_fields,
                     # of the channels in the dataset are desired). Select the channels that are
                     # closest in frequency to the entered (desired) frequencies.
                     
-                    foo = np.where(np.array(fid.variables.keys()) == 'freq')[0]
+                    foo = np.where(np.array(list(fid.variables.keys())) == 'freq')[0]
                     if len(foo) == 0:
-                        foo = np.where(np.array(fid.variables.keys()) == 'frequency')[0]
+                        foo = np.where(np.array(list(fid.variables.keys())) == 'frequency')[0]
                         
                         if len(foo) == 0:
-                            print 'Error: Unable to find the field "freq" or "frequency" in the MWR input file'
+                            print('Error: Unable to find the field "freq" or "frequency" in the MWR input file')
                             return err
                         else:
                             freqx = fid.variables['frequency'][:]
@@ -679,7 +679,7 @@ def read_mwr(path, rootname, date, mwr_type, mwr_elev_field, mwr_n_tb_fields,
                     tbskyx = np.copy(tbskyx[idx,:])
                  
                 else:
-                    print 'Error: Undefined mwr_type in VIP file -- aborting'
+                    print('Error: Undefined mwr_type in VIP file -- aborting')
                     return err
             fid.close()
             
@@ -712,7 +712,7 @@ def read_mwr(path, rootname, date, mwr_type, mwr_elev_field, mwr_n_tb_fields,
             
             if mwr_n_tb_fields > 0:
                 if len(tbsky[:,0]) != mwr_n_tb_fields:
-                    print 'Big problem in read_mwr'
+                    print('Big problem in read_mwr')
                     return err
                 tbsky0 = np.copy(tbsky)
                 for i in range(mwr_n_tb_fields):
@@ -727,7 +727,7 @@ def read_mwr(path, rootname, date, mwr_type, mwr_elev_field, mwr_n_tb_fields,
                 foo = np.where(((elev >= 89) & (elev < 91)))[0]
                 
             if len(foo) == 0:
-                print 'Warning: All MWR data are at elevations other than 90 degrees (zenith)'
+                print('Warning: All MWR data are at elevations other than 90 degrees (zenith)')
                 mwr_type = 0
             else:
                 secs = secs[foo]
@@ -766,7 +766,7 @@ def read_mwrscan(path, rootname, date, mwrscan_type, mwrscan_elev_field, mwrscan
             mwrscan_tb_field1_tbmax, mwrscan_n_elevations, mwrscan_elevations, verbose):
             
     if verbose >= 2:
-        print 'Reading MWR-scan data in ' + path
+        print('Reading MWR-scan data in ' + path)
     err = {'success':0, 'type':-1}
     
     # Read in the data from yesterday, today, and tomorrow
@@ -774,17 +774,17 @@ def read_mwrscan(path, rootname, date, mwrscan_type, mwrscan_elev_field, mwrscan
               str(date) ,  (datetime.strptime(str(date), '%Y%m%d') + timedelta(days=1)).strftime('%Y%m%d') ]
               
     if mwrscan_type < 0:
-        print ' '
-        print '-----------------------------------------------------------------'
-        print '****** options for the VIP parameter "mwrscan_type" *******'
-        print '   mwrscan_type=0 --->'
-        print '             No MWR-scan data specified'
-        print '   mwrscan_type=1 --->'
-        print '             MWR-scan Tb data are in individual 1-d variables in the input file'
-        print '   mwrscan_type=2 --->'
-        print '             MWR-scan tb data are in a single 2-d variable in the input file'
-        print '-----------------------------------------------------------------'
-        print ' '
+        print(' ')
+        print('-----------------------------------------------------------------')
+        print('****** options for the VIP parameter "mwrscan_type" *******')
+        print('   mwrscan_type=0 --->')
+        print('             No MWR-scan data specified')
+        print('   mwrscan_type=1 --->')
+        print('             MWR-scan Tb data are in individual 1-d variables in the input file')
+        print('   mwrscan_type=2 --->')
+        print('             MWR-scan tb data are in a single 2-d variable in the input file')
+        print('-----------------------------------------------------------------')
+        print(' ')
         err = {'success':-1}
         return err
         
@@ -792,35 +792,35 @@ def read_mwrscan(path, rootname, date, mwrscan_type, mwrscan_elev_field, mwrscan
     if mwrscan_n_tb_fields > 0:
         parts = mwrscan_tb_freqs.split(',')
         if len(parts) != mwrscan_n_tb_fields:
-            print 'Error: The number of entered MWR-scan frequencies does not match desired number of channels'
+            print('Error: The number of entered MWR-scan frequencies does not match desired number of channels')
             return err
         else:
             freq = np.array(parts).astype(np.float)
         foo = np.where(((freq >= 15) & (freq < 240)))
         if len(parts) != mwrscan_n_tb_fields:
-            print 'Error: The entered MWR-scan frequencies are not between 15 and 240 GHz -- probably an error'
+            print('Error: The entered MWR-scan frequencies are not between 15 and 240 GHz -- probably an error')
             return err
         parts = mwrscan_tb_bias.split(',')
         if len(parts) != mwrscan_n_tb_fields:
-            print 'Error: The number of entered MWR-scan Tb bias values does not match desired number of channels'
+            print('Error: The number of entered MWR-scan Tb bias values does not match desired number of channels')
             return err
         else:
             bias = np.array(parts).astype(np.float)
         parts = mwrscan_tb_noise.split(',')
         if len(parts) != mwrscan_n_tb_fields:
-            print 'Error: The number of entered MWR-scan Tb noise values does not match desired number of channels'
+            print('Error: The number of entered MWR-scan Tb noise values does not match desired number of channels')
             return err
         else:
             noise = np.array(parts).astype(np.float)
     if mwrscan_n_elevations > 0:
         parts = mwrscan_elevations.split(',')
         if len(parts) != mwrscan_n_elevations:
-            print 'Error: The number of entered MWR-scan elevations does not match desired number of elevations'
+            print('Error: The number of entered MWR-scan elevations does not match desired number of elevations')
             return err
         else:
             delev = np.array(parts).astype(np.float)
     else:
-        print 'Error: The number of entered MWR-scan elevations must be larger than 0'
+        print('Error: The number of entered MWR-scan elevations must be larger than 0')
         return err
         
     
@@ -831,7 +831,7 @@ def read_mwrscan(path, rootname, date, mwrscan_type, mwrscan_elev_field, mwrscan
         for i in range(len(udate)):
             files = files + (glob.glob(path + '/' + '*' + rootname + '*' + udate[i] + '*cdf'))
         if len(files) == 0:
-            print 'Warning: No MWR files found for this date'
+            print('Warning: No MWR files found for this date')
             mwrscan_type = 0
      
     # Only read MWR-scan data if mwrscan_type > 0       
@@ -850,11 +850,11 @@ def read_mwrscan(path, rootname, date, mwrscan_type, mwrscan_elev_field, mwrscan
             
             # See if the elevation variable exists. If so, read it in. If not, then
             # assume all samples are zenith pointing and create the elev field as such
-            vid = np.where(np.array(fid.variables.keys()) == mwrscan_elev_field)[0]
+            vid = np.where(np.array(list(fid.variables.keys())) == mwrscan_elev_field)[0]
             if len(vid) > 0:
                 elevx = fid.variables[mwrscan_elev_field][:]
             else:
-                print 'Warning: Unable to find the field ' + mwrscan_elev_field + ' in the MWR-scan input file'
+                print('Warning: Unable to find the field ' + mwrscan_elev_field + ' in the MWR-scan input file')
             
             # Now read in the Tb data, if desired
             if mwrscan_n_tb_fields > 0:
@@ -863,13 +863,13 @@ def read_mwrscan(path, rootname, date, mwrscan_type, mwrscan_elev_field, mwrscan
                     #If mwrscam_type is 1, then I expect to have mwrscan_n_tb_fields specified
                     fields = mwrscan_tb_field_names.split(',')
                     if len(fields) != mwrscan_n_tb_fields:
-                        print 'Error: The number of desired MWR-scan Tb fields does not equal the number of input field names'
+                        print('Error: The number of desired MWR-scan Tb fields does not equal the number of input field names')
                         return err
                     
                     for j in range(mwrscan_n_tb_fields):
-                        vid = np.where(np.array(fid.variables.keys()) == fields[j])[0]
+                        vid = np.where(np.array(list(fid.variables.keys())) == fields[j])[0]
                         if len(vid) == 0:
-                            print 'Error: Unable to find the Tb field ' + fields[j] + ' in the MWR-scan input file'
+                            print('Error: Unable to find the Tb field ' + fields[j] + ' in the MWR-scan input file')
                         tmp = fid.variables[fields[j]][:]
                         if j == 0:
                             tbskyx = np.copy(tmp)
@@ -879,9 +879,9 @@ def read_mwrscan(path, rootname, date, mwrscan_type, mwrscan_elev_field, mwrscan
                 elif mwrscan_type == 2:
                     
                     # if mwrscan_type is 2, then I expect there to only be a single mwrscan_tb_field_name
-                    vid = np.where(np.array(fid.variables.keys()) == mwrscan_tb_field_names)[0]
+                    vid = np.where(np.array(list(fid.variables.keys())) == mwrscan_tb_field_names)[0]
                     if len(vid) == 0:
-                        print 'Error: Unable to find the Tb field ' + mwrscan_tb_field_names + ' in the MWR-scan input file'
+                        print('Error: Unable to find the Tb field ' + mwrscan_tb_field_names + ' in the MWR-scan input file')
                         return err
                     tbskyx = fid.variables[mwrscan_tb_field_names][:].T
                     
@@ -890,12 +890,12 @@ def read_mwrscan(path, rootname, date, mwrscan_type, mwrscan_elev_field, mwrscan
                     # of the channels in the dataset are desired). Select the channels that are
                     # closest in frequency to the entered (desired) frequencies.
                     
-                    vid = np.where(np.array(fid.variables.keys()) == 'freq')[0]
+                    vid = np.where(np.array(list(fid.variables.keys())) == 'freq')[0]
                     if len(vid) == 0:
-                        vid = np.where(np.array(fid.variables.keys()) == 'frequency')[0]
+                        vid = np.where(np.array(list(fid.variables.keys())) == 'frequency')[0]
                         
                         if len(vid) == 0:
-                            print 'Error: Unable to find the field "freq" or "frequency" in the MWR-scan input file'
+                            print('Error: Unable to find the field "freq" or "frequency" in the MWR-scan input file')
                             return err
                         else:
                             freqx = fid.variables['frequency'][:]
@@ -910,7 +910,7 @@ def read_mwrscan(path, rootname, date, mwrscan_type, mwrscan_elev_field, mwrscan
                     tbskyx = np.copy(tbskyx[idx,:])
                  
                 else:
-                    print 'Error: Undefined mwrscan_type in VIP file -- aborting'
+                    print('Error: Undefined mwrscan_type in VIP file -- aborting')
                     return err
             fid.close()
             
@@ -937,7 +937,7 @@ def read_mwrscan(path, rootname, date, mwrscan_type, mwrscan_elev_field, mwrscan
             
             if mwrscan_n_tb_fields > 0:
                 if len(tbsky[:,0]) != mwrscan_n_tb_fields:
-                    print 'Big problem in read_mwrscan'
+                    print('Big problem in read_mwrscan')
                     return err
                 tbsky0 = np.copy(tbsky)
                 for i in range(len(mwrscan_n_tb_fields)):
@@ -945,7 +945,7 @@ def read_mwrscan(path, rootname, date, mwrscan_type, mwrscan_elev_field, mwrscan
             
             # This should never happen. If it does assume an error and abort
             if mwrscan_n_tb_fields <= 0:
-                print 'Error: The number of Tb fields in MWR-scan was less than 1 -- aborting'
+                print('Error: The number of Tb fields in MWR-scan was less than 1 -- aborting')
                 return err
                 
             # Select only the data that have elevations that match the desired elevations (within 1 deg)
@@ -958,7 +958,7 @@ def read_mwrscan(path, rootname, date, mwrscan_type, mwrscan_elev_field, mwrscan
                     keep_samples[foo] = 1
             foo = np.where(keep_samples == 1)[0]
             if len(foo) == 0:
-                print 'Warning: Did not find any MWR-scan data at the desired elevations'
+                print('Warning: Did not find any MWR-scan data at the desired elevations')
                 mwrscan_type = 0
             else:
                 secs = np.copy(secs[foo])
@@ -990,25 +990,25 @@ def read_mwrscan(path, rootname, date, mwrscan_type, mwrscan_elev_field, mwrscan
 def read_aeri_eng(path, date, aeri_type, verbose):
     
     if verbose >= 2:
-        print 'Reading aeri_eng data in ' + path
+        print('Reading aeri_eng data in ' + path)
     err = {'success':0}
     if aeri_type <= 0:
-        print ' '
-        print '-----------------------------------------------------------------'
-        print '****** options for the VIP parameter "aeri_type" ******'
-        print '   aeri_type=1 --->'
-        print '             ARM-style ch1/ch2/sum/eng AERI input'
-        print '   aeri_type=2 --->'
-        print '             SSEC dmv-ncdf converted netcdf files, with'
-        print '                     _sum.cdf and C1_rnc.cdf endings'
-        print '   aeri_type=3 --->'
-        print '             SSEC dmv-ncdf converted netcdf files, with '
-        print '                     .SUM.cdf and C1.RNC,cdf endings'
-        print '   aeri_type=4 --->'
-        print '             ARM-style ch1/ch2/sum AERI datastream names, but all of the'
-        print '                     engineering data is found in the summary file (dmv2ncdf)'
-        print '-----------------------------------------------------------------'
-        print ' '
+        print(' ')
+        print('-----------------------------------------------------------------')
+        print('****** options for the VIP parameter "aeri_type" ******')
+        print('   aeri_type=1 --->')
+        print('             ARM-style ch1/ch2/sum/eng AERI input')
+        print('   aeri_type=2 --->')
+        print('             SSEC dmv-ncdf converted netcdf files, with')
+        print('                     _sum.cdf and C1_rnc.cdf endings')
+        print('   aeri_type=3 --->')
+        print('             SSEC dmv-ncdf converted netcdf files, with ')
+        print('                     .SUM.cdf and C1.RNC,cdf endings')
+        print('   aeri_type=4 --->')
+        print('             ARM-style ch1/ch2/sum AERI datastream names, but all of the')
+        print('                     engineering data is found in the summary file (dmv2ncdf)')
+        print('-----------------------------------------------------------------')
+        print(' ')
         err = {'success':0}
         return err
     
@@ -1021,16 +1021,16 @@ def read_aeri_eng(path, date, aeri_type, verbose):
     elif aeri_type == 4:
         filename = path + '/' + '*aeri*sum*' + str(date) + '*cdf'
     else:
-        print 'Error in read_aeri_eng: unable to decode aeri_type'
+        print('Error in read_aeri_eng: unable to decode aeri_type')
         return err
     
     if verbose == 3:
-        print 'Looking for AERI engineering data as ' + filename
+        print('Looking for AERI engineering data as ' + filename)
         
     files = glob.glob(filename)
     if len(files) == 0:
-        print 'Error: Unable to find any AERI engineering data - aborting'
-        print 'Set aeri_type=0 and rerun to compare format of AERI data to aeri_type options'
+        print('Error: Unable to find any AERI engineering data - aborting')
+        print('Set aeri_type=0 and rerun to compare format of AERI data to aeri_type options')
         return err
         
     for jj in range(len(files)):
@@ -1042,21 +1042,21 @@ def read_aeri_eng(path, date, aeri_type, verbose):
         #interfermoeter. The name of this field was different for the v2 and v4
         #AERI systems, so I have to look for either field
         
-        if len(np.where(np.array(fid.variables.keys()) == 'interferometerSecondPortTemp')[0]) > 0:
+        if len(np.where(np.array(list(fid.variables.keys())) == 'interferometerSecondPortTemp')[0]) > 0:
             xinterferometerSecondPortTemp = fid.variables['interferometerSecondPortTemp'][:]
-        elif len(np.where(np.array(fid.variables.keys()) == 'airNearInterferometerTemp')[0]) > 0:
+        elif len(np.where(np.array(list(fid.variables.keys())) == 'airNearInterferometerTemp')[0]) > 0:
             xinterferometerSecondPortTemp = fid.variables['airNearInterferometerTemp'][:]
         else:
             xinterferometerSecondPortTemp = np.ones(len(to))*-999.0
         
         #If the airNearInterferometerTemp exists, I will get this too. It is not used.
         
-        if len(np.where(np.array(fid.variables.keys()) == 'airNearInterferometerTemp')[0]) > 0:
+        if len(np.where(np.array(list(fid.variables.keys())) == 'airNearInterferometerTemp')[0]) > 0:
             xairNearInterferometerTemp = fid.variables['airNearInterferometerTemp'][:]
         else:
             xairNearInterferometerTemp = np.ones(len(to))*-999.0
             
-        if len(np.where(np.array(fid.variables.keys()) == 'BBcavityFactor')[0]) > 0:
+        if len(np.where(np.array(list(fid.variables.keys())) == 'BBcavityFactor')[0]) > 0:
             xbbcavityfactor = fid.variables['BBcavityFactor'][:]
         else:
             xbbcavityfactor = np.ones(len(to))*12.79
@@ -1101,11 +1101,11 @@ def read_aeri_eng(path, date, aeri_type, verbose):
 
 def read_aeri_sum(path,date,aeri_type,smooth_noise,verbose):
     if verbose >= 2:
-        print 'Reading aeri_sum data in ' + path
+        print('Reading aeri_sum data in ' + path)
     err = {'success':0}
     if aeri_type <= 0:
-        print ('This piece of code should not be exercised, as this option should ' +
-               'be screened in read_aeri_eng() earlier')
+        print(('This piece of code should not be exercised, as this option should ' +
+               'be screened in read_aeri_eng() earlier'))
         return err
     elif ((aeri_type == 1) | (aeri_type == 4)):
         filename = path + '/' + '*aeri*sum*' + str(date) + '*cdf'
@@ -1114,15 +1114,15 @@ def read_aeri_sum(path,date,aeri_type,smooth_noise,verbose):
     elif aeri_type == 3:
         filename = path + '/' + '*' + str(date % 2000000) + '.SUM.cdf'
     else:
-        print 'Error in read_aeri_sum: unable to decode aeri_type'
+        print('Error in read_aeri_sum: unable to decode aeri_type')
         return err 
         
     if verbose >= 3:
-        print 'Looking for AERI summary data as ' + filename
+        print('Looking for AERI summary data as ' + filename)
         
     files = glob.glob(filename)
     if len(files) == 0:
-        print 'Error: Unable to find any AERI summary data - aborting'
+        print('Error: Unable to find any AERI summary data - aborting')
     
     for jj in range(len(files)):
         fid = Dataset(files[jj],'r')
@@ -1135,37 +1135,37 @@ def read_aeri_sum(path,date,aeri_type,smooth_noise,verbose):
             wnum1 = fid.variables['wnum1'][:]
             wnum2 = fid.variables['wnum2'][:]
         
-        if len(np.where(np.array(fid.variables.keys()) == 'SkyNENCh1')[0]) > 0:
+        if len(np.where(np.array(list(fid.variables.keys())) == 'SkyNENCh1')[0]) > 0:
             xnoise1 = fid.variables['SkyNENCh1'][:]
-        elif len(np.where(np.array(fid.variables.keys()) == 'SkyNENch1')[0]) > 0:
+        elif len(np.where(np.array(list(fid.variables.keys())) == 'SkyNENch1')[0]) > 0:
             xnoise1 = fid.variables['SkyNENch1'][:]
         else:
-            print 'Error in read_aeri_sum: unable to find the SkyNENCh1 field'
+            print('Error in read_aeri_sum: unable to find the SkyNENCh1 field')
             return err
             
-        if len(np.where(np.array(fid.variables.keys()) == 'SkyNENCh2')[0]) > 0:
+        if len(np.where(np.array(list(fid.variables.keys())) == 'SkyNENCh2')[0]) > 0:
             xnoise2 = fid.variables['SkyNENCh2'][:]
-        elif len(np.where(np.array(fid.variables.keys()) == 'SkyNENch2')[0]) > 0:
+        elif len(np.where(np.array(list(fid.variables.keys())) == 'SkyNENch2')[0]) > 0:
             xnoise2 = fid.variables['SkyNENch2'][:]
         else:
-            print 'Error in read_aeri_sum: unable to find the SkyNENCh2 field'
+            print('Error in read_aeri_sum: unable to find the SkyNENCh2 field')
             return err
         
-	if len(np.where(np.array(fid.variables.keys()) == 'lat')[0]) > 0:
+	if len(np.where(np.array(list(fid.variables.keys())) == 'lat')[0]) > 0:
 	    lat = fid.variables['lat'][:]
-	elif len(np.where(np.array(fid.variables.keys()) == 'Latitude')[0]) > 0:
+	elif len(np.where(np.array(list(fid.variables.keys())) == 'Latitude')[0]) > 0:
             lat = np.ma.median(fid.variables['Latitude'][:])
         else:
             lat = -999.0
-	if len(np.where(np.array(fid.variables.keys()) == 'lon')[0]) > 0:
+	if len(np.where(np.array(list(fid.variables.keys())) == 'lon')[0]) > 0:
 	    lon = fid.variables['lon'][:]
-        elif len(np.where(np.array(fid.variables.keys()) == 'Longitude')[0]) > 0:
+        elif len(np.where(np.array(list(fid.variables.keys())) == 'Longitude')[0]) > 0:
             lon =  np.ma.median(fid.variables['Longitude'][:])
         else:
             lon = -999.0
-	if len(np.where(np.array(fid.variables.keys()) == 'alt')[0]) > 0:
+	if len(np.where(np.array(list(fid.variables.keys())) == 'alt')[0]) > 0:
 	    alt = fid.variables['alt'][:]
-        elif len(np.where(np.array(fid.variables.keys()) == 'Altitude')[0]) > 0:
+        elif len(np.where(np.array(list(fid.variables.keys())) == 'Altitude')[0]) > 0:
             alt =  np.ma.median(fid.variables['Altitude'][:])
         else:
             alt = 0.0
@@ -1196,7 +1196,7 @@ def read_aeri_sum(path,date,aeri_type,smooth_noise,verbose):
     
     if smooth_noise > 0:
         if verbose >= 2:
-            print 'Smoothing the AERI noise temporally'
+            print('Smoothing the AERI noise temporally')
             
             #Derive the number of points to use in the smoother. The
             #variable "smooth_noise" is the temporal window in minutes,
@@ -1220,7 +1220,7 @@ def read_aeri_sum(path,date,aeri_type,smooth_noise,verbose):
         for i in range(wnum):
             snoise[i,:], flag = Other_functions.smooth(snoise[i,:],npts)
             if flag == 0:
-                print 'Error in smooth function. Aborting.'
+                print('Error in smooth function. Aborting.')
                 return err
         noise = np.copy(snoise)
     
@@ -1239,7 +1239,7 @@ def read_aeri_sum(path,date,aeri_type,smooth_noise,verbose):
 
 def read_vceil(path, date, vceil_type, ret_secs, verbose):
     if verbose >= 2:
-        print 'Reading ceilometer data in ' + path
+        print('Reading ceilometer data in ' + path)
         
     # Read in the cloud base height data from yesterday, today, and tomorrow.
     udate = [(datetime.strptime(str(date), '%Y%m%d') - timedelta(days=1)).strftime('%Y%m%d') ,
@@ -1252,37 +1252,37 @@ def read_vceil(path, date, vceil_type, ret_secs, verbose):
     
     files = []
     if vceil_type <= 0:
-        print ' '
-        print '------------------------------------------------------'
-        print '****** options for the VIP parameter "chb_type" ******'
-        print '   cbh_type=1 --->'
-        print '             ARM-style Vaisala ceilometer input'
-        print '                     Files named "*ceil*cdf" '
-        print '                     Reads field "first_cbh", which has units m AGL'
-        print '   cbh_type=2 --->'
-        print '             Greg Blumbergs simple tranlation of ASOS CBH dataset'
-        print '                     Files named "*ceil*cdf" or "cbh*cdf" '
-        print '                     Reads field "cloudHeight", which has units km AGL'
-        print '   cbh_type=3 --->'
-        print '             CLAMPS Doppler lidar fixed point (zenith) data'
-        print '                     Files named "*dlfp*cdf"'
-        print '                     Reads field "cbh", which has units km AGL'
-        print '   cbh_type=4 --->'
-        print '             ARM Doppler lidar "dlprofwstats" data'
-        print '             Files named "*dlprofwstats*cdf" '
-        print '             Reads field "dl_cbh", which has units m AGL'
-        print '   cbh_type=5 --->'
-        print '             JOYCE-style Vaisala ceilometer input'
-        print '                     Files named "*ct25k*nc" '
-        print '                     Reads field "first_cbh", which has units m AGL'
-        print '-------------------------------------------------------'
-        print ' '
+        print(' ')
+        print('------------------------------------------------------')
+        print('****** options for the VIP parameter "chb_type" ******')
+        print('   cbh_type=1 --->')
+        print('             ARM-style Vaisala ceilometer input')
+        print('                     Files named "*ceil*cdf" ')
+        print('                     Reads field "first_cbh", which has units m AGL')
+        print('   cbh_type=2 --->')
+        print('             Greg Blumbergs simple tranlation of ASOS CBH dataset')
+        print('                     Files named "*ceil*cdf" or "cbh*cdf" ')
+        print('                     Reads field "cloudHeight", which has units km AGL')
+        print('   cbh_type=3 --->')
+        print('             CLAMPS Doppler lidar fixed point (zenith) data')
+        print('                     Files named "*dlfp*cdf"')
+        print('                     Reads field "cbh", which has units km AGL')
+        print('   cbh_type=4 --->')
+        print('             ARM Doppler lidar "dlprofwstats" data')
+        print('             Files named "*dlprofwstats*cdf" ')
+        print('             Reads field "dl_cbh", which has units m AGL')
+        print('   cbh_type=5 --->')
+        print('             JOYCE-style Vaisala ceilometer input')
+        print('                     Files named "*ct25k*nc" ')
+        print('                     Reads field "first_cbh", which has units m AGL')
+        print('-------------------------------------------------------')
+        print(' ')
         err = {'success':-1}
         return err
         
     elif ((vceil_type == 1) | (vceil_type == 5)):
         if verbose == 3:
-            print 'Reading in VCEIL data'
+            print('Reading in VCEIL data')
         for i in range(len(udate)):
             files = files + (glob.glob(path + '/' + '*ceil*' + udate[i] + '*.cdf'))
         if len(files) == 0:
@@ -1295,19 +1295,19 @@ def read_vceil(path, date, vceil_type, ret_secs, verbose):
                     for i in range(len(vdate)):
                         files = files + (glob.glob(path + '/' + vdate[i] + '*ct25k*' + '*.nc'))
         if len(files) == 0:
-            print 'No CBH files found for this date'
+            print('No CBH files found for this date')
             return err
         
         for i in range(len(files)):
             fid = Dataset(files[i],'r')
             bt = fid.variables['base_time'][:]
-            if len(np.where(np.array(fid.variables.keys()) == 'time_offset')[0]) > 0:
+            if len(np.where(np.array(list(fid.variables.keys())) == 'time_offset')[0]) > 0:
                 to = fid.variables['time_offset'][:]
-            elif len(np.where(np.array(fid.variables.keys()) == 'time')[0]) > 0:
+            elif len(np.where(np.array(list(fid.variables.keys())) == 'time')[0]) > 0:
                 to = fid.variables['time'][:]
             else:
                 fid.close()
-                print ' Error reading the time fields -- aborting read_vceil'
+                print(' Error reading the time fields -- aborting read_vceil')
                 return err
             cbhx = fid.variables['first_cbh'][:]
             fid.close()
@@ -1322,7 +1322,7 @@ def read_vceil(path, date, vceil_type, ret_secs, verbose):
     
     elif vceil_type == 2:
         if verbose == 3:
-            print 'Reading in ASOS/AWOS'
+            print('Reading in ASOS/AWOS')
             
         for i in range(len(udate)):
             files = files + (glob.glob(path + '/' + '*ceil*' + udate[i] + '*.cdf'))
@@ -1330,12 +1330,12 @@ def read_vceil(path, date, vceil_type, ret_secs, verbose):
             for i in range(len(udate)):
                 files = files + (glob.glob(path + '/' + '*cbh*' + udate[i] + '*.cdf'))
             if len(files) == 0:
-                print 'No CBH files found for this data'
+                print('No CBH files found for this data')
                 return err
         
         for i in range(len(files)):
             if verbose == 3:
-                print ' Reading in file ' + files(i)
+                print(' Reading in file ' + files(i))
             
             fid = Dataset(files[i],'r')
             bt = fid.variables['base_time'][:]
@@ -1352,15 +1352,15 @@ def read_vceil(path, date, vceil_type, ret_secs, verbose):
     
     elif vceil_type == 3:
         if verbose == 3:
-            print 'Reading in CLAMPS dlfp data'
+            print('Reading in CLAMPS dlfp data')
         for i in range(len(udate)):
             files = files + (glob.glob(path + '/' + '*dlfp*' + udate[i] + '*.cdf'))
         if len(files) == 0:
-            print 'No CBH files found for this date'
+            print('No CBH files found for this date')
             return err
         for i in range(len(files)):
             if verbose == 3:
-                print 'Reading the file ' + files[i]
+                print('Reading the file ' + files[i])
         
             fid = Dataset(files[i],'r')
             bt = fid.variables['base_time'][:]
@@ -1378,17 +1378,17 @@ def read_vceil(path, date, vceil_type, ret_secs, verbose):
     elif vceil_type == 4:
         ftype = ['nc','cdf']
         if verbose == 3:
-            print ' Reading in ARM dlprofwstats data'
+            print(' Reading in ARM dlprofwstats data')
         for i in range(len(udate)):
             for j in range(len(ftype)):
                 files = files + (glob.glob(path +'/' + '*dlprofwstats*' + udate[i] + '*.' + ftype[j]))
         if len(files) == 0:
-            print 'No CBH files found for this date'
+            print('No CBH files found for this date')
             return err
         
         for i in range(len(files)):
             if verbose == 3:
-                print ' Reading the file ' + files[i]
+                print(' Reading the file ' + files[i])
             fid = Dataset(files[i],'r')
             bt = fid.variables['base_time'][:]
             to = fid.variables['time_offset'][:]
@@ -1404,7 +1404,7 @@ def read_vceil(path, date, vceil_type, ret_secs, verbose):
         cbh = cbh/1000.              # Convert m AGL to km AGL
     
     else:
-        print 'Error in read_vceil: Undefined ceilometer type'
+        print('Error in read_vceil: Undefined ceilometer type')
         return err
     
     # Put in a trap for the GDL version of the code, as occassionally some
@@ -1412,7 +1412,7 @@ def read_vceil(path, date, vceil_type, ret_secs, verbose):
     # have the base_time as type int64, which GDL did not handle well...
     
     if (bt == 0):
-        print 'Error in read_vceil: Unable to read in base_time -- likely the GDL/int64 issue'
+        print('Error in read_vceil: Unable to read in base_time -- likely the GDL/int64 issue')
         return err
     
     yy = np.array([datetime.utcfromtimestamp(x).year for x in secs])
@@ -1431,7 +1431,7 @@ def grid_aeri(ch1, aerisum, avg_instant, hatchOpenSwitch, missingDataFlagSwitch,
               secs, tavg, verbose):
             
     if verbose == 3:
-        print 'Temporally gridding the AERI data'
+        print('Temporally gridding the AERI data')
     
     err = {'success':0}
     
@@ -1448,7 +1448,7 @@ def grid_aeri(ch1, aerisum, avg_instant, hatchOpenSwitch, missingDataFlagSwitch,
         
         if ((hatchOpenSwitch == 1) & (missingDataFlagSwitch == 0)):
             if ((i == 0) & (verbose >= 2)):
-                print 'Only averaging AERI data where hatchOpen is 1 (missingDataFlag is anything)'
+                print('Only averaging AERI data where hatchOpen is 1 (missingDataFlag is anything)')
             if avg_instant == 0:
                 foo = np.where((secs[i]-tavg*60./2. <= ch1['secs']) & (ch1['secs'] < secs[i]+tavg*60./2.) &
                                ((ch1['hatchopen'] >= 0.8) & (ch1['hatchopen'] < 1.2)))[0]
@@ -1462,7 +1462,7 @@ def grid_aeri(ch1, aerisum, avg_instant, hatchOpenSwitch, missingDataFlagSwitch,
                     nfoo = 1
         elif ((hatchOpenSwitch == 0) & (missingDataFlagSwitch == 0)):
             if ((i == 0) & (verbose >= 2)):
-                print 'Averaging all AERI data regardless of hatchOpen or missingDataFlag'
+                print('Averaging all AERI data regardless of hatchOpen or missingDataFlag')
             if avg_instant == 0:
                 foo = np.where((secs[i]-tavg*60./2. <= ch1['secs']) & (ch1['secs'] < secs[i]+tavg*60./2.))[0]
             else:
@@ -1475,7 +1475,7 @@ def grid_aeri(ch1, aerisum, avg_instant, hatchOpenSwitch, missingDataFlagSwitch,
                     nfoo = 1
         elif ((hatchOpenSwitch == 1) & (missingDataFlagSwitch == 1)):
             if ((i == 0) & (verbose >= 2)):
-                print 'Only averaging AERI data where hatchOpen is 1 and missingDataFlag is 0'
+                print('Only averaging AERI data where hatchOpen is 1 and missingDataFlag is 0')
             if avg_instant == 0:
                foo = np.where((secs[i]-tavg*60./2. <= ch1['secs']) & (ch1['secs'] < secs[i]+tavg*60./2.) &
                                (ch1['missingDataFlag'] == 0) & ((ch1['hatchopen'] >= 0.8) & (ch1['hatchopen'] < 1.2)))[0]
@@ -1490,7 +1490,7 @@ def grid_aeri(ch1, aerisum, avg_instant, hatchOpenSwitch, missingDataFlagSwitch,
                     
         elif ((hatchOpenSwitch == 0) & (missingDataFlagSwitch == 1)):
             if ((i == 0) & (verbose >= 2)):
-                print 'Averaging all AERI data where missingDataFlag is 0 (hatchOpen can be anything)'
+                print('Averaging all AERI data where missingDataFlag is 0 (hatchOpen can be anything)')
                 
             if avg_instant == 0:
                foo = np.where((secs[i]-tavg*60./2. <= ch1['secs']) & (ch1['secs'] < secs[i]+tavg*60./2.) &
@@ -1505,7 +1505,7 @@ def grid_aeri(ch1, aerisum, avg_instant, hatchOpenSwitch, missingDataFlagSwitch,
                     nfoo = 1
                     
         else:
-            print 'This piece of code should never be executed -- logic trap in grid_aeri()'
+            print('This piece of code should never be executed -- logic trap in grid_aeri()')
             return err
         
         if len(foo) == 0:
@@ -1638,7 +1638,7 @@ def grid_aeri(ch1, aerisum, avg_instant, hatchOpenSwitch, missingDataFlagSwitch,
 def grid_mwr(mwr, avg_instant, secs, tavg, verbose):
     
     if verbose == 3:
-        print 'Temporally gridding the MWR data'
+        print('Temporally gridding the MWR data')
     err = {'success':0}
     
     yy = np.array([datetime.utcfromtimestamp(x).year for x in secs])
@@ -1655,7 +1655,7 @@ def grid_mwr(mwr, avg_instant, secs, tavg, verbose):
     # If the Tavg is too low (or zero), then inflate it somewhat. Units are minutes
     
     if tavg < 2:
-        print 'Tavg for MWR data is too small. Setting it equal to 2 seconds.'
+        print('Tavg for MWR data is too small. Setting it equal to 2 seconds.')
         twin = 2
     else:
         twin = tavg
@@ -1705,7 +1705,7 @@ def grid_mwr(mwr, avg_instant, secs, tavg, verbose):
                     for j in range(mwr['n_fields']):
                         tbsky[j,i] = mwr['tbsky_corr'][j,foo[bar]]
     else:
-        print ' Error: the avg_instant flag has an unknown value in grid mwr()'
+        print(' Error: the avg_instant flag has an unknown value in grid mwr()')
         return err
     
     # The structure being returned depends on the number of Tb fields desired
@@ -1725,7 +1725,7 @@ def grid_mwr(mwr, avg_instant, secs, tavg, verbose):
 def grid_mwrscan(mwrscan, secs, n_elevations, elevations, timewindow, verbose):
     
     if verbose == 3:
-        print ' Temporally gridding the MWR-scan data'
+        print(' Temporally gridding the MWR-scan data')
     err = {'success':0}
     
     yy = np.array([datetime.utcfromtimestamp(x).year for x in secs])
@@ -1742,7 +1742,7 @@ def grid_mwrscan(mwrscan, secs, n_elevations, elevations, timewindow, verbose):
     parts = elevations.split(',')
     
     if len(parts) != n_elevations:
-        print 'Error: Problem with elevations in grid_mwrscan (this should not happen)'
+        print('Error: Problem with elevations in grid_mwrscan (this should not happen)')
         return err
     else:
         delev = np.array(parts).astype(np.float)
@@ -1750,7 +1750,7 @@ def grid_mwrscan(mwrscan, secs, n_elevations, elevations, timewindow, verbose):
     # Compute the time window to use in seconds, and it should be at least 2 minutes
     
     if ((timewindow*3600.) < (2.*60)):
-        print 'Original time window for averaging mwr scan data was too small. Changing to 2 minutes.'
+        print('Original time window for averaging mwr scan data was too small. Changing to 2 minutes.')
         twin = 2*60.
     else:
         twin = timewindow*3600.
@@ -1830,7 +1830,7 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
     
     elif wv_prof_type == 1:
         if verbose >= 1:
-            print 'Reading in ARM radiosonde data to contrain the WV profile'
+            print('Reading in ARM radiosonde data to contrain the WV profile')
         
         files = []
         for i in range(len(dates)):
@@ -1839,7 +1839,7 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
                 
         if len(files) == 0:
             if verbose >= 1:
-                print 'No ARM radiosondes found in this directory for this date'
+                print('No ARM radiosondes found in this directory for this date')
             external['nQprof'] = 0.0
         else:
             maxht = int(wv_prof_maxht+0.1)
@@ -1900,7 +1900,7 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
     
     elif wv_prof_type == 2:
         if verbose >= 1:
-            print 'Reading in ARM Raman lidar (rlprofmr) data to constrain the WV profile'
+            print('Reading in ARM Raman lidar (rlprofmr) data to constrain the WV profile')
         
         qunit = 'g/kg'
         files = []
@@ -1909,11 +1909,11 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
                 files = files + (glob.glob(wv_prof_path + '/' + '*rlprofmr*' + dates[i] + '*.' + cdf[j]))
         if len(files) == 0:
             if verbose >= 1:
-                print 'No ARM RLID WV found in this directory for this date'
+                print('No ARM RLID WV found in this directory for this date')
             external['nQprof'] = 0.
         else:
             if verbose >= 2:
-                print 'Reading ' + str(len(files)) + ' ARM RLID WV data files'
+                print('Reading ' + str(len(files)) + ' ARM RLID WV data files')
             nprof = 0.
             for i in range(len(files)):
                 fid = Dataset(files[i],'r')
@@ -1923,7 +1923,7 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
                 # There are two types of RLPROF_MR data.
                 # This handles the rlprofmr1turn dataset.
                 
-                if len(np.where(np.array(fid.variables.keys()) == 'mixing_ratio_3')[0]) > 0:
+                if len(np.where(np.array(list(fid.variables.keys())) == 'mixing_ratio_3')[0]) > 0:
                     qtype = 'ARM Raman lidar (rlprofmr1turn)'
                     htx = fid.variables['height'][:]
                     wvx = fid.variables['mixing_ratio_3'][:]
@@ -1935,7 +1935,7 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
                     
                     foo = np.where(htx > 0.070)[0]
                     if len(foo) == 0:
-                        print 'This should not happen when processing the RLID WV data'
+                        print('This should not happen when processing the RLID WV data')
                     htx = htx[foo]
                     wvx = wvx[foo,:]
                     swvx = wvx[foo,:]
@@ -1943,7 +1943,7 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
                     # And only keep samples where the qc_flag is 0 (i.e. good quality)
                     foo = np.where(qcflag == 0)[0]
                     if len(foo) == 0:
-                        print 'Warning: no good samples found for the RLID WV on this day'
+                        print('Warning: no good samples found for the RLID WV on this day')
                         continue
                     else:
                         to = to[foo]
@@ -1961,7 +1961,7 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
                     #Only keep data above 70 m to ensure the 60-m tower isn't included
                     foo = np.where(htx > 0.070)[0]
                     if len(foo) == 0:
-                        print 'This should not happen when processing the RLID WV data'
+                        print('This should not happen when processing the RLID WV data')
                     htx = htx[foo]
                     wvx = wvx[foo,:]
                     swvx = swvx[foo,:]
@@ -1990,7 +1990,7 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
     
     elif wv_prof_type == 3:
         if verbose >= 1:
-            print 'Reading in NCAR WV DIAL data to constrain the WV profile'
+            print('Reading in NCAR WV DIAL data to constrain the WV profile')
         
         files = []
         for i in range(len(dates)):
@@ -1999,11 +1999,11 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
         
         if len(files) == 0:
             if verbose >= 1:
-                print 'No NCAR WV DIAL found in this directory for this date'
+                print('No NCAR WV DIAL found in this directory for this date')
             external['nQprof'] = 0.0
         else:
             if verbose >= 2:
-                print 'Reading ' + str(len(files)) + ' NCAR WV DIAL data files'
+                print('Reading ' + str(len(files)) + ' NCAR WV DIAL data files')
             for i in range(len(files)):
                 fid = Dataset(files[i],'r')
                 secsx = fid.variables['time_unix'][:]
@@ -2034,7 +2034,7 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
     
     elif wv_prof_type == 4:
         if verbose >= 1:
-            print 'Reading in NWP model output to constrain the WV profile'
+            print('Reading in NWP model output to constrain the WV profile')
         
         files = []
         for i in range(len(dates)):
@@ -2042,11 +2042,11 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
                 files = files + (glob.glob(wv_prof_path + '/' + '*model*' + dates[i] + '*.' + cdf[j]))
         if len(files) == 0:
             if verbose >= 1:
-                print 'No NWP model output data ound in this directory for this date'
+                print('No NWP model output data ound in this directory for this date')
             external['nQprof'] = 0
         else:
             if verbose >= 2:
-                print 'Reading ' + str(len(files))  + ' NWP output WV files'
+                print('Reading ' + str(len(files))  + ' NWP output WV files')
             for i in range(len(files)):
                 fid = Dataset(files[i], 'r')
                 bt = fid.variables['base_time'][0]
@@ -2091,7 +2091,7 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
     # Read in the Vaisala water vapor DIAL profiles
     elif wv_prof_type == 5:
         if verbose >= 1:
-            print 'Reading in Vaisala WV DIAL to constrain the WV profile'
+            print('Reading in Vaisala WV DIAL to constrain the WV profile')
         
         files = []
         for i in range(len(dates)):
@@ -2100,11 +2100,11 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
         
         if len(files) == 0:
             if verbose >= 1:
-                print 'No Vaisala WV DIAL data found in this directory for this date'
+                print('No Vaisala WV DIAL data found in this directory for this date')
             external['nQprof'] = 0
         else:
             if verbose >= 2:
-                print 'Reading ' + str(len(files)) + ' Vaisala WV DIAL files'
+                print('Reading ' + str(len(files)) + ' Vaisala WV DIAL files')
             
             for i in range(len(files)):
                 fid = Dataset(files[i], 'r')
@@ -2141,7 +2141,7 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
         
     elif wv_prof_type == 99:
         if verbose >= 1:
-            print 'Reading in RHUBC-2 AER GVRP-retrieval radiosonde data to constrain the WV profile'
+            print('Reading in RHUBC-2 AER GVRP-retrieval radiosonde data to constrain the WV profile')
         
         files = []
         for i in range(len(dates)):
@@ -2150,7 +2150,7 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
                 
         if len(files) == 0:
             if verbose >=1:
-                print 'No AER GVRP radiosondes found in this directory for this date'
+                print('No AER GVRP radiosondes found in this directory for this date')
             external['nQprof'] = 0
         else:
             maxht = int(wv_prof_maxht + 0.1)
@@ -2207,7 +2207,7 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
         
     # An undefined external WV data source was specified...
     else:
-        print 'Error in read_external_profile_data: Undefined external water vapor profile source specified'
+        print('Error in read_external_profile_data: Undefined external water vapor profile source specified')
         return external
     
     # Read the external temperature data next
@@ -2222,7 +2222,7 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
     
     elif temp_prof_type == 1:
         if verbose >= 1:
-            print 'Reading in ARM radiosonde data to constrain the temp profile'
+            print('Reading in ARM radiosonde data to constrain the temp profile')
         
         files = []
         for i in range(len(dates)):
@@ -2231,12 +2231,12 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
                 
         if len(files) == 0:
             if verbose >= 1:
-                print 'No ARM radiosondes found in this directory for this date'
+                print('No ARM radiosondes found in this directory for this date')
             external['nTprof'] = 0.
             
         else:
             if verbose >= 2:
-                print 'Reading ' + str(len(files)) + ' ARM radiosonde files'
+                print('Reading ' + str(len(files)) + ' ARM radiosonde files')
             maxht = int(temp_prof_maxht+0.1)
             if (maxht < temp_prof_maxht):
                 maxht += 1
@@ -2290,7 +2290,7 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
     
     elif temp_prof_type == 2:
         if verbose >= 1:
-            print 'Reading in ARM Raman lidar (rlproftemp) data to constrain the temp profile'
+            print('Reading in ARM Raman lidar (rlproftemp) data to constrain the temp profile')
         
         ttype = 'ARM Raman lidar (rlproftemp)'
         tunit = 'C'
@@ -2302,11 +2302,11 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
                 
         if len(files) == 0:
             if verbose >= 1:
-                print 'No ARM RLID TEMP found in this directory for this date'
+                print('No ARM RLID TEMP found in this directory for this date')
             external['nTprof'] = 0      
         else:
             if verbose >= 2:
-                print 'Reading ' + str(len(files)) + ' ARM RLID TEMP data files'
+                print('Reading ' + str(len(files)) + ' ARM RLID TEMP data files')
             
             nprof = 0
             for i in range(len(files)):
@@ -2317,7 +2317,7 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
                 #There are two types of RLPROF_TEMP data.
                 #This handles the rlprofmr1news dataset
                 
-                if len(np.where(np.array(fid.variables.keys()) == 'rot_raman_temperature')[0]) > 0:
+                if len(np.where(np.array(list(fid.variables.keys())) == 'rot_raman_temperature')[0]) > 0:
                     ttype = 'ARM Raman lidar (rlprofmr1news)'
                     htx = fid.variables['height'][:]
                     tempx = fid.variables['rot_raman_temperature'][:]
@@ -2327,7 +2327,7 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
                     
                     foo = np.where(htx > 0.070)[0]
                     if len(foo) == 0:
-                        print 'This should not happen when processing the RLID WV data'
+                        print('This should not happen when processing the RLID WV data')
                         
                     htx = htx[foo]
                     tempx = tempx[foo,:]
@@ -2348,7 +2348,7 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
                     
                     foo = np.where(htx > 0.070)[0]
                     if len(foo) == 0:
-                        print 'This should not happen when processing the RLID WV data'
+                        print('This should not happen when processing the RLID WV data')
                         
                     htx = htx[foo]
                     tempx = tempx[foo,:]
@@ -2374,7 +2374,7 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
     # Read in the numerical weather model soundings (Greg Blumberg's format)
     elif temp_prof_type == 4:
         if verbose >= 1:
-            print 'Reading in NWP model output to constrain the temperature profile'
+            print('Reading in NWP model output to constrain the temperature profile')
             
         files = []
         for i in range(len(dates)):
@@ -2383,11 +2383,11 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
         
         if files == 0:
             if verbose >= 1:
-                print 'No NWP model output data found in this directory for this date'
+                print('No NWP model output data found in this directory for this date')
             external['nTprof'] = 0
         else:
             if verbose >= 2:
-                print 'Reading ' + str(len(files)) + ' NWP output temp files'
+                print('Reading ' + str(len(files)) + ' NWP output temp files')
             for i in range(len(files)):
                 fid = Dataset(files[i], 'r')
                 bt = fid.variables['base_time'][0]
@@ -2432,7 +2432,7 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
     # Read in the RHUBC-2 radiosonde data from AER's files
     elif temp_prof_type == 99:
         if verbose >= 1:
-            print 'Reading in RHUBC-2 AER radiosonde data to constrain the temperature profile'
+            print('Reading in RHUBC-2 AER radiosonde data to constrain the temperature profile')
         
         files = []
         for i in range(len(dates)):
@@ -2441,7 +2441,7 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
                 
         if len(files) == 0:
             if verbose >= 1:
-                print 'No ARM radiosondes found in this directory for this date'
+                print('No ARM radiosondes found in this directory for this date')
             external['nTprof'] = 0
         else:
             maxht = int(temp_prof_maxht + 0.1)
@@ -2497,7 +2497,7 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
                 stemp = stemp.T
     
     else:
-        print 'Error in read_external_profile_data: Undefined external temperature source specified'
+        print('Error in read_external_profile_data: Undefined external temperature source specified')
         return external
     
     #If there were neither input external temperature or humidity data then return gracefully
@@ -2508,7 +2508,7 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
         return external
     elif ((external['nQprof'] < 0) | (external['nTprof'] < 0)):
         if verbose >= 2:
-            print 'Error associated with read_external_profile_data -- inconsistent processing somehow'
+            print('Error associated with read_external_profile_data -- inconsistent processing somehow')
         return external
     
     # Interpolate the data to the time/height grid
@@ -2663,10 +2663,10 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
         wv_noise_multiplier = np.interp(ht, wv_noise_multiplier_hts, wv_noise_multiplier_val)
         foo = np.where(wv_noise_multiplier < 1)[0]
         if len(foo) > 0:
-            print 'Error in read_external_profile_data: wv_noise_multiplier_val must be >= 1'
+            print('Error in read_external_profile_data: wv_noise_multiplier_val must be >= 1')
             return external
         if verbose >= 2:
-            print 'Applying external_wv_noise_multiplier'
+            print('Applying external_wv_noise_multiplier')
         for j in range(len(secs)):
             feh = np.where(new_swater[:,j] > -900)[0]
             if len(feh) > 0:
@@ -2679,10 +2679,10 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
         temp_noise_adder = np.interp(ht, temp_noise_adder_hts, temp_noise_adder_val)
         foo = np.where(temp_noise_adder < 0)[0]
         if len(foo) > 0:
-            print 'Error in read_external_profile_data: temp_noise_adder should not be negative'
+            print('Error in read_external_profile_data: temp_noise_adder should not be negative')
             return external
         if verbose >= 2:
-            print 'Applying externl_temp_noise_adder'
+            print('Applying externl_temp_noise_adder')
         for j in range(len(secs)):
             feh = np.where(new_stemp[:,j] > -900)[0]
             if len(feh) > 0:
@@ -2747,7 +2747,7 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
             estring = 'VIP input error; when co2_sfc_npts > 0, then 1 <= co2_sfc_npts < ' + str(maxpts)
     if estring != ' ':
         if verbose >= 1:
-            print estring
+            print(estring)
         return external
     
     # Read the external surface met temperature data first
@@ -2768,7 +2768,7 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
     # Read in the ARM met temperature data
     elif (sfc_temp_type == 1):
         if verbose >= 1:
-            print 'Reading in ARM met temperature data'
+            print('Reading in ARM met temperature data')
         
         files = []
         for i in range(len(dates)):
@@ -2776,7 +2776,7 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
                 files = files + (glob.glob(sfc_path + '/' + '*met*' + dates[i] + '*.' + cdf[j]))
         if len(files) == 0:
             if verbose >= 1:
-                print 'No ARM met found in this directory for this date'
+                print('No ARM met found in this directory for this date')
         else:
             for i in range(len(files)):
                 fid = Dataset(files[i], 'r')
@@ -2813,7 +2813,7 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
     
     elif sfc_temp_type == 2:
         if verbose >= 1:
-            print 'Reading in NCAR ISFS met temperature data'
+            print('Reading in NCAR ISFS met temperature data')
         
         files = []
         for i in range(len(dates)):
@@ -2831,17 +2831,17 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
                 
         if len(files) == 0:
             if verbose >= 1:
-                print 'No NCAR ISFS met found in this directory for this date'
+                print('No NCAR ISFS met found in this directory for this date')
         else:
             for i in range(len(files)):
                 fid = Dataset(files[i],'r')
                 bt = fid.variables['base_time'][:]
-                if len(np.where(np.array(fid.variables.keys()) == 'time')[0]) > 0:
+                if len(np.where(np.array(list(fid.variables.keys())) == 'time')[0]) > 0:
                     to = fid.variables['time'][:]
-                elif len(np.where(np.array(fid.variables.keys()) == 'time_offset')[0]) > 0:
+                elif len(np.where(np.array(list(fid.variables.keys())) == 'time_offset')[0]) > 0:
                     to = fid.variables['time_offset'][:]
                 else:
-                    print 'Error: Unable to find the time field in the ISFS data file'
+                    print('Error: Unable to find the time field in the ISFS data file')
                     fid.close()
                     return external
                 p = fid.variables['pres'][:]            # hPa
@@ -2874,7 +2874,7 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
         
     elif sfc_temp_type == 3:
         if verbose >= 1:
-            print 'Reading in MWR met temperature data'
+            print('Reading in MWR met temperature data')
         
         files = []        
         names = ['mwr','met']
@@ -2885,7 +2885,7 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
         
         if len(files) == 0:
             if verbose >= 1:
-                print 'No MWR met found in this directory for this date'
+                print('No MWR met found in this directory for this date')
         else:
             for i in range(len(files)):
                 fid = Dataset(files[i],'r')
@@ -2894,9 +2894,9 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
                 
                 #This field could be sfc_pres or p_sfc
                 
-                if len(np.where(np.array(fid.variables.keys()) == 'sfc_pres')[0]) > 0:
+                if len(np.where(np.array(list(fid.variables.keys())) == 'sfc_pres')[0]) > 0:
                     p = fid.variables['sfc_pres'][:]
-                elif len(np.where(np.array(fid.variables.keys()) == 'p_sfc')[0]) > 0:
+                elif len(np.where(np.array(list(fid.variables.keys())) == 'p_sfc')[0]) > 0:
                     p = fid.variables['p_sfc'][:]
                 else:
                     p = np.ones(len(to))*-999.
@@ -2904,12 +2904,12 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
                 # This field could be sfc_temp or t_sfc. I also need to check the 
                 # units to make sure that is handled correctly
                 
-                if len(np.where(np.array(fid.variables.keys()) == 'sfc_temp')[0]) > 0:
+                if len(np.where(np.array(list(fid.variables.keys())) == 'sfc_temp')[0]) > 0:
                     t = fid.variables['sfc_temp'][:]
                     ttunit = fid.variables['sfc_temp'].units
                     if ((ttunit == 'K') | (ttunit == 'k') | (ttunit == 'Kelvin')):
                         t -= 273.15
-                elif len(np.where(np.array(fid.variables.keys()) == 't_sfc')[0]) > 0:
+                elif len(np.where(np.array(list(fid.variables.keys())) == 't_sfc')[0]) > 0:
                     t = fid.variables['t_sfc'][:]
                     ttunit = fid.variables['t_sfc'].units
                     if ((ttunit == 'K') | (ttunit == 'k') | (ttunit == 'Kelvin')):
@@ -2919,9 +2919,9 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
                     
                 # This field could be sfc_rh or rh_sfc
                 
-                if len(np.where(np.array(fid.variables.keys()) == 'sfc_rh')[0]) > 0:
+                if len(np.where(np.array(list(fid.variables.keys())) == 'sfc_rh')[0]) > 0:
                     u = fid.variables['sfc_rh'][:]
-                elif len(np.where(np.array(fid.variables.keys()) == 'rh_sfc')[0]) > 0:
+                elif len(np.where(np.array(list(fid.variables.keys())) == 'rh_sfc')[0]) > 0:
                     u = fid.variables['rh_sfc'][:]
                 else:
                     u = np.ones(len(to))*-999.
@@ -2952,7 +2952,7 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
         # An undefined external surface met temperature source was specified...
     
     else:
-        print 'Error in read_external_tseries: Undefined external met temperature source specified'
+        print('Error in read_external_tseries: Undefined external met temperature source specified')
         return external
     
     # Read the external surface met water vapor data next
@@ -2968,7 +2968,7 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
     
     elif sfc_wv_type == 1:
         if verbose >= 1:
-            print 'Reading in ARM met water vapor data'
+            print('Reading in ARM met water vapor data')
         
         files = []
         for i in range(len(dates)):
@@ -2977,7 +2977,7 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
         
         if len(files) == 0:
             if verbose >= 1:
-                print 'No ARM met found in this directory for this date'
+                print('No ARM met found in this directory for this date')
         else:
             for i in range(len(files)):
                 fid = Dataset(files[i], 'r')
@@ -3026,7 +3026,7 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
         
     elif sfc_wv_type == 2:
         if verbose >= 1:
-            print 'Reading in NCAR ISFS met water vapor data'
+            print('Reading in NCAR ISFS met water vapor data')
             
         files = []
         for i in range(len(dates)):
@@ -3044,18 +3044,18 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
         
         if len(files) == 0:
             if verbose >= 1:
-                print 'No NCAR ISFS met found in this directory for this date'
+                print('No NCAR ISFS met found in this directory for this date')
         
         else:
             for i in range(len(files)):
                 fid = Dataset(files[i],'r')
                 bt = fid.variables['base_time'][:]
-                if len(np.where(np.array(fid.variables.keys()) == 'time')[0]) > 0:
+                if len(np.where(np.array(list(fid.variables.keys())) == 'time')[0]) > 0:
                     to = fid.variables['time'][:]
-                elif len(np.where(np.array(fid.variables.keys()) == 'time_offset')[0]) > 0:
+                elif len(np.where(np.array(list(fid.variables.keys())) == 'time_offset')[0]) > 0:
                     to = fid.variables['time_offset'][:]
                 else:
-                    print 'Error: Unable to find the time field in the ISFS data file'
+                    print('Error: Unable to find the time field in the ISFS data file')
                     fid.close()
                     return external
                 p = fid.variables['pres'][:]            # hPa
@@ -3100,7 +3100,7 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
         # Read in the MWR met data
     elif sfc_wv_type == 3:
         if verbose >= 1:
-            print 'Reading in MWR met water vapor data'
+            print('Reading in MWR met water vapor data')
             
         names = ['mwr','met']
         for i in range(len(dates)):
@@ -3110,7 +3110,7 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
         
         if len(files) == 0:
             if verbose >= 1:
-                print 'No MWR met found in this directory for this date'
+                print('No MWR met found in this directory for this date')
         else:
             for i in range(len(files)):
                 fid = Dataset(files[i],'r')
@@ -3119,9 +3119,9 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
                 
                 #This field could be sfc_pres or p_sfc
                 
-                if len(np.where(np.array(fid.variables.keys()) == 'sfc_pres')[0]) > 0:
+                if len(np.where(np.array(list(fid.variables.keys())) == 'sfc_pres')[0]) > 0:
                     p = fid.variables['sfc_pres'][:]
-                elif len(np.where(np.array(fid.variables.keys()) == 'p_sfc')[0]) > 0:
+                elif len(np.where(np.array(list(fid.variables.keys())) == 'p_sfc')[0]) > 0:
                     p = fid.variables['p_sfc'][:]
                 else:
                     p = np.ones(len(to))*-999.
@@ -3129,12 +3129,12 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
                 # This field could be sfc_temp or t_sfc. I also need to check the 
                 # units to make sure that is handled correctly
                 
-                if len(np.where(np.array(fid.variables.keys()) == 'sfc_temp')[0]) > 0:
+                if len(np.where(np.array(list(fid.variables.keys())) == 'sfc_temp')[0]) > 0:
                     t = fid.variables['sfc_temp'][:]
                     ttunit = fid.variables['sfc_temp'].units
                     if ((ttunit == 'K') | (ttunit == 'k') | (ttunit == 'Kelvin')):
                         t -= 273.15
-                elif len(np.where(np.array(fid.variables.keys()) == 't_sfc')[0]) > 0:
+                elif len(np.where(np.array(list(fid.variables.keys())) == 't_sfc')[0]) > 0:
                     t = fid.variables['t_sfc'][:]
                     ttunit = fid.variables['t_sfc'].units
                     if ((ttunit == 'K') | (ttunit == 'k') | (ttunit == 'Kelvin')):
@@ -3144,9 +3144,9 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
                     
                 # This field could be sfc_rh or rh_sfc
                 
-                if len(np.where(np.array(fid.variables.keys()) == 'sfc_rh')[0]) > 0:
+                if len(np.where(np.array(list(fid.variables.keys())) == 'sfc_rh')[0]) > 0:
                     u = fid.variables['sfc_rh'][:]
-                elif len(np.where(np.array(fid.variables.keys()) == 'rh_sfc')[0]) > 0:
+                elif len(np.where(np.array(list(fid.variables.keys())) == 'rh_sfc')[0]) > 0:
                     u = fid.variables['rh_sfc'][:]
                 else:
                     u = np.ones(len(to))*-999.
@@ -3189,7 +3189,7 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
         
         # An undefined external surface met water vapor source was specified
     else:
-        print 'Error in read_external_tseries: Undefined external met water vapor source'
+        print('Error in read_external_tseries: Undefined external met water vapor source')
         return external
     
     # Add on the representativeness errors that were specified
@@ -3303,7 +3303,7 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
     # Read in the surface in-situ CO2 data (assuming DDT's PGS qc1turn datastream)
     elif co2_sfc_type == 1:
         if verbose >= 1:
-            print 'Reading in ARM PGS qc1turn datastream'
+            print('Reading in ARM PGS qc1turn datastream')
             
         files = []
         for i in range(len(dates)):
@@ -3312,7 +3312,7 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
         
         if len(files) == 0:
             if verbose >= 1:
-                print 'No ARM CO2 found in this directory for this date'
+                print('No ARM CO2 found in this directory for this date')
         else:
             for i in range(len(files)):
                 fid = Dataset(files[i],'r')
@@ -3337,7 +3337,7 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
         
         # An undefined surface in-situ CO2 source was specified...
     else:
-        print 'Error in read_external_tseries: Undefined in-situ CO2 surface obs source specified'
+        print('Error in read_external_tseries: Undefined in-situ CO2 surface obs source specified')
         return external
     
     # Strip out any missing values before the next step

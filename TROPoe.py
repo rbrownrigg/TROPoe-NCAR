@@ -95,8 +95,8 @@ success = True
 # set the SHELL to this.
 
 if verbose == 3:
-    print ' '
-    print 'The current shell is', os.getenv('SHELL')
+    print(' ')
+    print(('The current shell is', os.getenv('SHELL')))
 else: 
     warnings.filterwarnings("ignore", category=UserWarning)
     
@@ -104,14 +104,14 @@ process = Popen('which csh', stdout = PIPE, stderr = PIPE, shell=True)
 stdout, stderr = process.communicate()
 
 if stdout == '':
-    print 'Error: Unable to find the C-shell command on this system'
-    print '>>> AERIoe retrieval on ' + str(date) + ' FAILED and ABORTED <<<'
+    print('Error: Unable to find the C-shell command on this system')
+    print(('>>> AERIoe retrieval on ' + str(date) + ' FAILED and ABORTED <<<'))
     sys.exit()
 else:
     SHELL = stdout[:-1]
 
 if verbose == 3:
-    print 'The shell for all commands is', SHELL
+    print(('The shell for all commands is', SHELL))
 
 #Capture the version of this file
 globatt = {'algorithm_code': 'AERIoe Retrieval Code',
@@ -132,18 +132,18 @@ globatt = {'algorithm_code': 'AERIoe Retrieval Code',
            
 
 # Start the retrieval
-print ' '
-print '------------------------------------------------------------------------'
-print  '>>> Starting AERIoe retrieval for ' + str(date) + ' (from ' + str(shour) + ' to ' + str(ehour) + ' UTC) <<<'
+print(' ')
+print('------------------------------------------------------------------------')
+print(('>>> Starting AERIoe retrieval for ' + str(date) + ' (from ' + str(shour) + ' to ' + str(ehour) + ' UTC) <<<'))
 
 #Find the VIP file and read it   
 
 vip = VIP_Databases_functions.read_vip_file(vip_filename, globatt = globatt, debug = debug, verbose = verbose, dostop = dostop)
 
 if vip['success'] != 1:
-    print '>>> AERI retrieval on ' + str(date) + ' FAILED and ABORTED <<<'
-    print '--------------------------------------------------------------------'
-    print ' '
+    print(('>>> AERI retrieval on ' + str(date) + ' FAILED and ABORTED <<<'))
+    print('--------------------------------------------------------------------')
+    print(' ')
     sys.exit()
     
 process = Popen('echo $$', stdout = PIPE, stderr = PIPE, shell=True, executable = SHELL)
@@ -152,7 +152,7 @@ stdout, stderr = process.communicate()
 uniquekey = vip['tag'] + '.' + stdout[:-1]
 
 if debug:
-    print 'DDT: Saving the VIP and globatt structure into "vip.npy" -- for debugging'
+    print('DDT: Saving the VIP and globatt structure into "vip.npy" -- for debugging')
     np.save('vip.npy', vip)
 
 # Make sure that Paul van Delst's script "lblrun" is in the $LBL_HOME/bin
@@ -160,30 +160,30 @@ if debug:
 # that the rest of the LBLRTM distribution is set up to use it properly.
 
 if not os.path.exists(vip['lbl_home'] + '/bin/lblrun'):
-    print 'Error: Unable to find the script "lblrun" in the "lbl_home"/bin directory'
-    print 'This is a critical component of the LBLRTM configuration - aborting'
-    print '>>> AERI retrieval on ' + str(date) + ' FAILED and ABORTED <<<'
-    print '--------------------------------------------------------------------'
-    print ' '
+    print('Error: Unable to find the script "lblrun" in the "lbl_home"/bin directory')
+    print('This is a critical component of the LBLRTM configuration - aborting')
+    print(('>>> AERI retrieval on ' + str(date) + ' FAILED and ABORTED <<<'))
+    print('--------------------------------------------------------------------')
+    print(' ')
     sys.exit()
 
 # Check if the prior data exists
 if not os.path.exists(prior_filename):
-    print 'Error: Unable to find the prior data file: ' + prior_filename
-    print '>>> AERI retrieval on ' + str(date) + ' FAILED and ABORTED <<<'
-    print '--------------------------------------------------------------------'
-    print ' '
+    print(('Error: Unable to find the prior data file: ' + prior_filename))
+    print(('>>> AERI retrieval on ' + str(date) + ' FAILED and ABORTED <<<'))
+    print('--------------------------------------------------------------------')
+    print(' ')
     sys.exit()
 
-print 'Using the prior file: ' + prior_filename
+print(('Using the prior file: ' + prior_filename))
 
 
 # Make sure that the output directory exists
 if not os.path.exists(vip['output_path']):
-    print 'Error: The output directory does not exist'
-    print '>>> AERI retrieval on ' + str(date) + ' FAILED and ABORTED <<<'
-    print '--------------------------------------------------------------------'
-    print ' '
+    print('Error: The output directory does not exist')
+    print(('>>> AERI retrieval on ' + str(date) + ' FAILED and ABORTED <<<'))
+    print('--------------------------------------------------------------------')
+    print(' ')
     sys.exit()
 
 # Look at the name of the LBLtmpDir; if it starts with a "$"
@@ -194,10 +194,10 @@ if vip['lbl_temp_dir'][0] == '$':
     envpath = vip['lbl_temp_dir'].split('/')
     tmpdir = os.getenv(envpath[0])
     if not tmpdir:
-        print 'Error: The LBLRTM temporary directory is being set to an environment variable that does not exist'
-        print '>>> AERI retrieval on ' + str(date) + ' FAILED and ABORTED <<<'
-        print '--------------------------------------------------------------------'
-        print ' '
+        print('Error: The LBLRTM temporary directory is being set to an environment variable that does not exist')
+        print(('>>> AERI retrieval on ' + str(date) + ' FAILED and ABORTED <<<'))
+        print('--------------------------------------------------------------------')
+        print(' ')
         sys.exit()
     for i in range(1,len(envpath)):
         tmpdir = tmpdir + '/' + envpath[i]
@@ -205,16 +205,16 @@ if vip['lbl_temp_dir'][0] == '$':
     
 # Create the temporary working directory
 lbltmpdir = vip['lbl_temp_dir'] + '/' + uniquekey
-print 'Setting the temporary directory for RT model runs to: ' + lbltmpdir
+print(('Setting the temporary directory for RT model runs to: ' + lbltmpdir))
 
 #Address this in Python 3 version
 try:
     os.makedirs(lbltmpdir)
 except:
-    print 'Error making the temporary directory'
-    print '>>> AERI retrieval on ' + str(date) + ' FAILED and ABORTED <<<'
-    print '--------------------------------------------------------------------'
-    print ' '
+    print('Error making the temporary directory')
+    print(('>>> AERI retrieval on ' + str(date) + ' FAILED and ABORTED <<<'))
+    print('--------------------------------------------------------------------')
+    print(' ')
 
 #Now we are ready to start the main retrieval.
 notqcov = 0    # I will leave this here for now, but later will add this to the vip file. If "1" it assumes no covariance between T & Q
@@ -225,19 +225,19 @@ success = 0
 # House keeping stuff
 starttime = datetime.now()
 endtime = starttime
-print ' '
+print(' ')
 
 # Read in the SSP databases
 sspl, flag = VIP_Databases_functions.read_scat_databases(vip['lcloud_ssp'])
 if flag == 1:
-    print 'Error: Problem reading SSP file for liquid cloud properties'
+    print('Error: Problem reading SSP file for liquid cloud properties')
     VIP_Databases_functions.abort(lbltmpdir,date)
     sys.exit()
     
     
 sspi, flag = VIP_Databases_functions.read_scat_databases(vip['icloud_ssp'])
 if flag == 1:
-    print 'Error: Problem reading SSP file for ice cloud properties'
+    print('Error: Problem reading SSP file for ice cloud properties')
     VIP_Databases_functions.abort(lbltmpdir,date)
     sys.exit()
     
@@ -252,7 +252,7 @@ maxiReff = np.nanmax(sspi['data'][2,:])
 
 # Perform some more baseline checking of the keywords
 if ((cvgmult  < 0.1) | (cvgmult > 1)):
-    print 'Error: cvgmult is too small or too large'
+    print('Error: cvgmult is too small or too large')
     VIP_Databases_functions.abort(lbltmpdir,date)
     sys.exit()
 
@@ -297,21 +297,21 @@ fixtemp = 0             #Right now this is always on
 fixwvmr = 0             #Right now this is always on
 
 # Select the LBLRTM version to use
-print ' ' 
-print 'Working with the LBLRTM version ' + vip['lbl_version']
-print 'in the directory ' + vip['lbl_home']
-print 'and the TAPE3 file ' + vip['lbl_tape3']
-print ' '
+print(' ') 
+print(('Working with the LBLRTM version ' + vip['lbl_version']))
+print(('in the directory ' + vip['lbl_home']))
+print(('and the TAPE3 file ' + vip['lbl_tape3']))
+print(' ')
 
 # Quick check: make sure the LBLRTM path is properly set
 if not os.path.exists(vip['lbl_home'] + '/bin/lblrtm'):
-    print 'Error: lblhome is not properly set'
+    print('Error: lblhome is not properly set')
     VIP_Databases_functions.abort(lbltmpdir,date)
     sys.exit()
     
 # Make sure that the specified TAPE3 file exists
 if not os.path.exists(vip['lbl_home'] + '/hitran/' + vip['lbl_tape3']):
-    print 'Error: unable to find the specified TAPE3 file in the LBL_HOME hitran directory'
+    print('Error: unable to find the specified TAPE3 file in the LBL_HOME hitran directory')
     VIP_Databases_functions.abort(lbltmpdir,date)
     sys.exit()
     
@@ -342,7 +342,7 @@ create_monortm_sfreq = 1            # Set this flag to create a custom freq-scan
 
 stdatmos = VIP_Databases_functions.read_stdatmos(vip['path_std_atmos'], vip['lbl_std_atmos'], verbose)
 if stdatmos['status'] == 0:
-    print 'Error: Unable to find/read the standard atmosphere file'
+    print('Error: Unable to find/read the standard atmosphere file')
     VIP_Databases_functions.abort(lbltmpdir,date)
     sys.exit()
     
@@ -350,7 +350,7 @@ if stdatmos['status'] == 0:
 bands = vip['spectral_bands']
 foo = np.where(bands[0,:] >= 0)[0]
 if len(foo) <= 0:
-    print 'Error: the spectral bands do not have any properly defined values'
+    print('Error: the spectral bands do not have any properly defined values')
     VIP_Databases_functions.abort(lbltmpdir,date)
     sys.exit()
 bands = bands[:,foo]
@@ -358,12 +358,12 @@ bands = bands[:,foo]
 # Make sure that the MWR flags make sense
 if vip['mwr_type'] > 0:
     if vip['mwr_tb_replicate'] <= 0:
-        print 'Error: when using MWR data the "replicate" flag must be >= 1'
+        print('Error: when using MWR data the "replicate" flag must be >= 1')
         VIP_Databases_functions.abort(lbltmpdir,date)
         sys.exit()
 
 # Echo to the user the type of retrieval being performed
-print ' '
+print(' ')
 tmp = 'Performing T and Q'
 if dolcloud == 1:
     tmp = tmp + ' & Liq_Cloud'
@@ -375,7 +375,7 @@ if doch4 == 1:
     tmp = tmp + ' & CH4'
 if don2o == 1:
     tmp = tmp + ' & N2O'
-print tmp+' retrieval'
+print((tmp+' retrieval'))
 
 
 # Read in the a priori covariance matrix of T/Q for this study
@@ -383,7 +383,7 @@ nsonde_prior = -1
 try:
     fid = Dataset(prior_filename,'r')
 except:
-    print 'Error: Unable to open the XaSa file'
+    print('Error: Unable to open the XaSa file')
     VIP_Databases_functions.abort(lbltmpdir,date)
     sys.exit()
 
@@ -395,17 +395,17 @@ comment_prior = str(fid.Comment)
 minT = float(fid.QC_limits_T.split()[5])
 maxT = float(fid.QC_limits_T.split()[7])
 if verbose == 3:
-    print 'QC limits for T are ' + str(minT) + ' and ' + str(maxT)
+    print(('QC limits for T are ' + str(minT) + ' and ' + str(maxT)))
 minQ = float(fid.QC_limits_q.split()[7])
 maxQ = float( fid.QC_limits_q.split()[9])
 if verbose == 3:
-    print 'QC limits for Q are ' + str(minQ) + ' and ' + str(maxQ)
+    print(('QC limits for Q are ' + str(minQ) + ' and ' + str(maxQ)))
 fid.close()
 
 if verbose >= 1:
-    print 'Retrieved profiles will have ' + str(len(z)) + ' levels (from prior)'
+    print(('Retrieved profiles will have ' + str(len(z)) + ' levels (from prior)'))
 if verbose >= 2:
-    print 'There were ' + str(nsonde_prior) + ' radiosondes used in the calculation of the prior'
+    print(('There were ' + str(nsonde_prior) + ' radiosondes used in the calculation of the prior'))
 
 # Inflate the lowest levels of the prior covariance matrix, if desired
 
@@ -458,7 +458,7 @@ fail, aeri, mwr, mwrscan = Data_reads.read_all_data(date, z, vip['tres'], dostop
     vip['aeri_use_missingDataFlag'], vip)
     
 if fail == 1:
-    print 'Error reading in data: aborting'
+    print('Error reading in data: aborting')
     VIP_Databases_functions.abort(lbltmpdir,date)
     sys.exit()
 
@@ -473,7 +473,7 @@ ext_prof = Data_reads.read_external_profile_data(date, z, aeri['secs'], vip['tre
               dostop, verbose)
               
 if ext_prof['success'] != 1:
-    print 'Error: there is some problem in the external profile WV or temperature specification'
+    print('Error: there is some problem in the external profile WV or temperature specification')
     VIP_Databases_functions.abort(lbltmpdir,date)
     sys.exit()
 
@@ -488,7 +488,7 @@ mod_prof = Data_reads.read_external_profile_data(date, z, aeri['secs'], vip['tre
               dostop, verbose)
               
 if mod_prof['success'] != 1:
-    print 'Error: there is some problem in the model profile WV or temperature specification'
+    print('Error: there is some problem in the model profile WV or temperature specification')
     VIP_Databases_functions.abort(lbltmpdir,date)
     sys.exit()
     
@@ -502,7 +502,7 @@ ext_tseries = Data_reads.read_external_timeseries(date, aeri['secs'], vip['tres'
               vip['co2_sfc_time_delta'], dostop, verbose)
 
 if ext_tseries['success'] != 1:
-    print 'Error: there is some problem in the external time series data specification'
+    print('Error: there is some problem in the external time series data specification')
     VIP_Databases_functions.abort(lbltmpdir,date)
     sys.exit()
     
@@ -511,13 +511,13 @@ if ext_tseries['success'] != 1:
 if ehour < 0:
     ehour = np.nanmax(aeri['hour'])
     if verbose >= 2:
-        print 'Resetting the processing end hour to ' + str(ehour) + ' UTC'
+        print(('Resetting the processing end hour to ' + str(ehour) + ' UTC'))
 
 # Capture the lat/lon/alt data in a structure
 location = {'lat':aeri['lat'], 'lon':aeri['lon'], 'alt':aeri['alt']}
 if vip['aeri_alt'] >= 0:
     if verbose >= 2:
-        print 'Overriding lat/lon/alt with info from VIP file'
+        print('Overriding lat/lon/alt with info from VIP file')
     location = {'lat':vip['aeri_lat'], 'lon':vip['aeri_lon'], 'alt':vip['aeri_alt']}
 
 # Apply the AERI bias spectrum
@@ -531,12 +531,12 @@ if remove_bias == 1:
     #bias = np.interp(aeri['wnum'],bwnum,bspec)
     #for i in range(len(aeri['secs'])):
     #    aeri['radmn'][:,i] -= bias
-    print 'Error: Remove bias is not functional at all. Have to end.'
+    print('Error: Remove bias is not functional at all. Have to end.')
     VIP_Databases_functions.abort(lbltmpdir,date)
     sys.exit()
 else:
     if verbose >= 2:
-        print 'Did not remove a spectral bias from the AERI observations'
+        print('Did not remove a spectral bias from the AERI observations')
 
 if notqcov == 1:
     k = len(z)
@@ -559,7 +559,7 @@ nfooch4 = len(np.where(tmpch4 < 0)[0])
 tmpn2o = Other_functions.trace_gas_prof(vip['retrieve_n2o'], z, vip['prior_n2o_mn'])
 nfoon2o = len(np.where(tmpn2o < 0)[0])
 if ((nfooco2 > 0) | (nfooch4 > 0) | (nfoon2o > 0)):
-    print 'Error: The CO2, CH4, and/or N2O parameters are incorrect giving negative values - aborting'
+    print('Error: The CO2, CH4, and/or N2O parameters are incorrect giving negative values - aborting')
     VIP_Databases_functions.abort(lbltmpdir,date)
     sys.exit()
 
@@ -607,10 +607,10 @@ foo = np.where((shour <= aeri['hour']) & (aeri['hour'] <= ehour))[0]
 if len(foo) <= 0:
     foo = np.where(shour <= aeri['hour'])[0]
     if len(foo) <= 0:
-        print 'No samples were found after this start time. Quitting'
+        print('No samples were found after this start time. Quitting')
         VIP_Databases_functions.abort(lbltmpdir,date)
         sys.exit()
-    print 'Resetting the end hour to process at least 1 sample'
+    print('Resetting the end hour to process at least 1 sample')
     if len(foo) < 2:
         ehour = aeri['hour'][foo] + 1/3600.     # Added 1 second to this AERI sample to make sure to get it
     else:
@@ -620,7 +620,7 @@ if len(foo) <= 0:
 # all retrievals are done as clear sky
 if ((vip['retrieve_lcloud'] == 0) & (vip['retrieve_icloud'] == 0)):
     if verbose >= 2:
-        print 'All cloud retrievals disabled -- assuming clear sky'
+        print('All cloud retrievals disabled -- assuming clear sky')
     Xa[2*len(z)] = 0  # Zero LWP
     Xa[2*len(z)+2] = 0 # Zero ice optical depth
     aeri['cbhflag'][:] = 0        # Reset all flags to clear sky
@@ -653,17 +653,17 @@ for i in range(len(aeri['secs'])):                        # { loop_i
         
     # Make sure that the AERI data aren't missing or considered bad
     if ((aeri['missingDataFlag'][i] > 0) | (aeri['missingDataFlag'][i] <= -1)):
-        print 'Sample ' + str(i) + ' at ' + str(aeri['hour'][i]) + ' UTC -- no valid AERI data found'
+        print(('Sample ' + str(i) + ' at ' + str(aeri['hour'][i]) + ' UTC -- no valid AERI data found'))
         continue
     else:
-        print 'Sample ' + str(i) + ' at ' + str(aeri['hour'][i]) + ' UTC is being processed (cbh is ' + str(aeri['cbh'][i]) + ' -- ' + str(cbh_string[int(np.nanmax([aeri['cbhflag'][i],0]))]) + ')'
+        print(('Sample ' + str(i) + ' at ' + str(aeri['hour'][i]) + ' UTC is being processed (cbh is ' + str(aeri['cbh'][i]) + ' -- ' + str(cbh_string[int(np.nanmax([aeri['cbhflag'][i],0]))]) + ')'))
         
 
     # Make sure the AERI's surface pressure is a valid value, as
     # this is needed to construct a pressure profile from the current X
     
     if ((vip['psfc_min'] > aeri['atmos_pres'][i]) | (aeri['atmos_pres'][i] > vip['psfc_max'])):
-        print 'Error: AERI surface pressure is not within range set in VIP -- skipping sample'
+        print('Error: AERI surface pressure is not within range set in VIP -- skipping sample')
         continue
     
     # Select the spectral range to use for the retrieval
@@ -735,7 +735,7 @@ for i in range(len(aeri['secs'])):                        # { loop_i
     if ext_prof['nTprof'] > 0:
         foo = np.where((ext_prof['tempminht'] <= ext_prof['ht']) & (ext_prof['ht'] <= ext_prof['tempmaxht']))[0]
         if len(foo) <= 0:
-            print 'Major error when adding external temp profile to observation vector. This should not happen!'
+            print('Major error when adding external temp profile to observation vector. This should not happen!')
             VIP_Databases_functions.abort(lbltmpdir,date)
             sys.exit()
         Y = np.append(Y,ext_prof['temp'][foo,i])
@@ -749,13 +749,13 @@ for i in range(len(aeri['secs'])):                        # { loop_i
     if ext_prof['nQprof'] > 0:
         foo = np.where((ext_prof['wvminht'] <= ext_prof['ht']) & (ext_prof['ht'] <= ext_prof['wvmaxht']))[0]
         if len(foo) <= 0:
-            print 'Major error when adding external wv profile to observation vector. This should not happen!'
+            print('Major error when adding external wv profile to observation vector. This should not happen!')
             VIP_Databases_functions.abort(lbltmpdir,date)
             sys.exit()
         Y = np.append(Y,ext_prof['wv'][foo,i])
         if vip['ext_wv_add_rel_error'] > 0:
             if verbose >= 2:
-                print 'Adding systematic error to the external WV profile'
+                print('Adding systematic error to the external WV profile')
             nSy = Other_functions.add_sys_error(ext_prof['wv'][foo,i], ext_prof['sig_wv'][foo,i], vip['ext_wv_add_rel_error'])
         else:
             nSy = np.diag(ext_prof['sig_wv'][foo,i]**2)
@@ -786,7 +786,7 @@ for i in range(len(aeri['secs'])):                        # { loop_i
     if mod_prof['nTprof'] > 0:
         foo = np.where((mod_prof['tempminht'] <= mod_prof['ht']) & (mod_prof['ht'] <= mod_prof['tempmaxht']))[0]
         if len(foo) <= 0:
-            print 'Major error when adding model temp profile to observation vector. This should not happen!'
+            print('Major error when adding model temp profile to observation vector. This should not happen!')
             VIP_Databases_functions.abort(lbltmpdir,date)
             sys.exit()
         Y = np.append(Y,mod_prof['temp'][foo,i])
@@ -800,7 +800,7 @@ for i in range(len(aeri['secs'])):                        # { loop_i
     if mod_prof['nQprof'] > 0:
         foo = np.where((mod_prof['wvminht'] <= mod_prof['ht']) & (mod_prof['ht'] <= mod_prof['wvmaxht']))[0]
         if len(foo) <= 0:
-            print 'Major error when adding model wv profile to observation vector. This should not happen!'
+            print('Major error when adding model wv profile to observation vector. This should not happen!')
             VIP_Databases_functions.abort(lbltmpdir,date)
             sys.exit()
         Y = np.append(Y,mod_prof['wv'][foo,i])
@@ -843,11 +843,11 @@ for i in range(len(aeri['secs'])):                        # { loop_i
         tmp = np.copy(flagY[foo])
         feh = np.unique(tmp)
         if len(feh) <= 0:
-            print 'This should not happen. Major error in quick check of 1-sigma uncertainties'
+            print('This should not happen. Major error in quick check of 1-sigma uncertainties')
             VIP_Databases_functions.abort(lbltmpdir,date)
             sys.exit()
         else:
-            print 'Warning: There were missing values in these obs: ' + str(feh)
+            print(('Warning: There were missing values in these obs: ' + str(feh)))
         sigY[foo] *= -1           # Presumably, the missing values had -999 for their uncertainties
     
     foo = np.where((sigY <= 0) & (Y > -900))[0]
@@ -855,11 +855,11 @@ for i in range(len(aeri['secs'])):                        # { loop_i
         tmp = np.copy(flagY[foo])
         feh = np.unique(tmp)
         if len(feh) <= 0:
-            print 'This should not happen. Major error in quick check of 1-sigma uncertainties'
+            print('This should not happen. Major error in quick check of 1-sigma uncertainties')
             VIP_Databases_functions.abort(lbltmpdir,date)
             sys.exit()
         else:
-            print 'Error: There were negative 1-sigma uncertainties in obs: ' + str(feh) + ' Skipping sample'
+            print(('Error: There were negative 1-sigma uncertainties in obs: ' + str(feh) + ' Skipping sample'))
             continue
         
     # Compute the estimate of the forward model uncertainty (Sf).
@@ -882,14 +882,14 @@ for i in range(len(aeri['secs'])):                        # { loop_i
     if vip['first_guess'] == 1:
         # Use the prior as the first guess
         if verbose >= 3:
-            print 'Using prior as first guess'
+            print('Using prior as first guess')
         t = np.copy(Xa[0:nX/2])
         q = np.copy(Xa[nX/2:nX])
     elif vip['first_guess'] == 2:
         # Build a first guess from the AERI-estimated surface temperture,
         # an assumed lapse rate, and a 60% RH as first guess
         if verbose >= 3:
-            print 'Using Tsfc with lapse rate and 60& RH as first guess'
+            print('Using Tsfc with lapse rate and 60& RH as first guess')
         lapserate = -7.0        # C / km
         constRH = 60.           # percent RH
         t = aeri['Tsfc'][i] + z*lapserate
@@ -900,7 +900,7 @@ for i in range(len(aeri['secs'])):                        # { loop_i
         # Get first guess from the previous retrieval, if there is one
         # If there isn't a valid prior retrieval, use prior
         if verbose >= 3:
-            print 'Using previous good retrieval as first guess'
+            print('Using previous good retrieval as first guess')
         use_prior = 1
         if type(xret) == list:
             for j in range(len(xret)-1,-1,-1):            # We want to use the last good retrieval, so loop from back to front
@@ -911,11 +911,11 @@ for i in range(len(aeri['secs'])):                        # { loop_i
                     break
         if use_prior == 1:
             if verbose >= 3:
-                print 'but there were no good retrievals yet'
+                print('but there were no good retrievals yet')
             t = np.copy(Xa[0:nX/2])
             q = np.copy(Xa[nX/2:nX])
     else:
-        print 'Error: Undefined first guess option'
+        print('Error: Undefined first guess option')
         VIP_Databases_functions.abort(lbltmpdir,date)
         sys.exit()
     
@@ -939,7 +939,7 @@ for i in range(len(aeri['secs'])):                        # { loop_i
             vip['output_clobber'] = 0
             xret = []
         if ((verbose >= 1) & (fsample > 0)):
-            print 'Will append output to the file ' + noutfilename
+            print(('Will append output to the file ' + noutfilename))
     
     # If we are in 'append' mode, then skip any AERi samples that are
     # before the last time in the xret structure. Generally, the current
@@ -952,7 +952,7 @@ for i in range(len(aeri['secs'])):                        # { loop_i
     
     if vip['output_clobber'] == 2:
         if aeri['secs'][i] <= xret[fsample-1]['secs']:
-            print '  ....but was already processed (append mode)'
+            print('  ....but was already processed (append mode)')
             continue
     
     cbh = aeri['cbh'][i]
@@ -977,7 +977,7 @@ for i in range(len(aeri['secs'])):                        # { loop_i
     while ((itern <= vip['max_iterations']) & (converged == 0)):        # { While loop over iter
         
         if verbose >= 3:
-            print ' Making the forward calculation for iteration ' + str(itern)
+            print((' Making the forward calculation for iteration ' + str(itern)))
         
         if os.path.exists(lbltp5):
             shutil.rmtree(lbltp5)
@@ -1018,7 +1018,7 @@ for i in range(len(aeri['secs'])):                        # { loop_i
         # This function makes the forward calculation and computes the Jacobian
         # for the AERI component of the forward model
         if vip['lblrtm_jac_option'] == 1:
-            print 'DDT needs to update the compute_jacobian_finitediff function. Have to abort... Sorry!!'
+            print('DDT needs to update the compute_jacobian_finitediff function. Have to abort... Sorry!!')
             VIP_Databases_functions.abort(lbltmpdir,date)
             sys.exit()
             flag, Kij, FXn, wnumc, version_compute_jacobian, totaltime  = Jacobian_Functions.compute_jacobian_finitediff(Xn, p, z,
@@ -1029,7 +1029,7 @@ for i in range(len(aeri['secs'])):                        # { loop_i
                            vip['jac_max_ht'], vip['lblrtm_forward_threshold'], verbose, debug, doapidize=True)
         
         elif vip['lblrtm_jac_option'] == 2:
-            print 'DDT needs to update the compute_jacobian_3method function. Have to abort... Sorry!!'
+            print('DDT needs to update the compute_jacobian_3method function. Have to abort... Sorry!!')
             VIP_Databases_functions.abort(lbltmpdir,date)
             sys.exit()
             flag, Kij, FXn, wnumc, version_compute_jacobian, totaltime  = Jacobian_Functions.compute_jacobian_3method(Xn, p, z,
@@ -1044,10 +1044,10 @@ for i in range(len(aeri['secs'])):                        # { loop_i
             # It should be in the XaSa file. But only do it once!
             if read_deltaod <= 0:
                 fid = Dataset(prior_filename, 'r')
-                vid = np.where(np.array(fid.variables.keys()) == 'delta_od')[0]
+                vid = np.where(np.array(list(fid.variables.keys())) == 'delta_od')[0]
                 if len(vid) == 0:
                     fid.close()
-                    print 'Error: The XaSa prior file does not have the needed deltaOD info'
+                    print('Error: The XaSa prior file does not have the needed deltaOD info')
                     VIP_Databases_functions.abort(lbltmpdir,date)
                     sys.exit()
                 awnum = fid.variables['wnum'][:]
@@ -1055,7 +1055,7 @@ for i in range(len(aeri['secs'])):                        # { loop_i
                 fid.close()
                 foo = np.where((lblwnum1 <= awnum) & (awnum <= lblwnum2))[0]
                 if len(foo) <= 0:
-                    print 'Error: The delta OD spectral range does not match LBLRTM spectral range'
+                    print('Error: The delta OD spectral range does not match LBLRTM spectral range')
                     VIP_Databases_functions.abort(lbltmpdir,date)
                     sys.exit()
                 awnum = awnum[foo]
@@ -1081,21 +1081,21 @@ for i in range(len(aeri['secs'])):                        # { loop_i
                             vip['jac_max_ht'], awnum, adeltaod, vip['lblrtm_forward_threshold'],
                             verbose, debug, doapodize=True)
         else:
-            print 'Error: Undefined jacobian option selected'
+            print('Error: Undefined jacobian option selected')
             VIP_Databases_functions.abort(lbltmpdir,date)
             sys.exit()
         
         # If the Jacobian did not compute properly (i.e., an error occurred)
         # then we need to abort
         if flag == 0:
-            print ' -- Skipping this sample due to issue with LBLRTM Jacobian (likely bad input profile)'
+            print(' -- Skipping this sample due to issue with LBLRTM Jacobian (likely bad input profile)')
             continue_next_sample = 1
             break
         
         # Select the wavenumber indices to use
         w1idx, junk = Other_functions.find_wnum_idx(wnumc, bands)
         if len(w1idx) != len(w0idx):
-            print 'Problem with wnum indices1'
+            print('Problem with wnum indices1')
             VIP_Databases_functions.abort(lbltmpdir,date)
             sys.exit()
         wnumc = wnumc[w1idx]
@@ -1110,8 +1110,8 @@ for i in range(len(aeri['secs'])):                        # { loop_i
         foo = np.where(flagY == 1)[0]
         bar = np.where(Y[foo] < -900)[0]
         if len(bar) > 0:
-            print 'yo'
-            print bar
+            print('yo')
+            print(bar)
             FXn[bar] = np.copy(Y[foo[bar]])
             for gg in range(len(bar)):
                 Kij[bar[gg],:] = 0.
@@ -1177,14 +1177,14 @@ for i in range(len(aeri['secs'])):                        # { loop_i
                             fixtemp, fixwvmr, fixlcloud, vip['jac_max_ht'], stdatmos, verbose)
             
             else:
-                print 'Error: Undefined option for monortm_jac_option'
+                print('Error: Undefined option for monortm_jac_option')
                 VIP_Databases_functions.abort(lbltmpdir,date)
                 sys.exit()
             
             # If the Jacobian did not compute properly (i.e., an error ocurred),
             # then we need to abort
             if flag == 0:
-                print '-- Skipping this sample due to issure with MonoRTM Jacobian (likely bad input profile)'
+                print('-- Skipping this sample due to issure with MonoRTM Jacobian (likely bad input profile)')
                 continue_next_sample = 1
                 break
             
@@ -1202,7 +1202,7 @@ for i in range(len(aeri['secs'])):                        # { loop_i
             # Now the size of the forward calculation should be the correct size to match
             # the number of MWR observations in the Y vector
             if len(foo) != len(FF):
-                print 'Problem computing the Jacobian for the microwave radiometer'
+                print('Problem computing the Jacobian for the microwave radiometer')
                 VIP_Databases_functions.abort(lbltmpdir,date)
                 sys.exit()
                 
@@ -1225,11 +1225,11 @@ for i in range(len(aeri['secs'])):                        # { loop_i
                             ext_prof['tempminht'], ext_prof['tempmaxht'], ext_prof['temp_type'])
             
             if flag == 0:
-                print 'Problem computing the Jacobian for the external temp profiler. Have to abort'
+                print('Problem computing the Jacobian for the external temp profiler. Have to abort')
                 VIP_Databases_functions.abort(lbltmpdir,date)
                 sys.exit()
             if len(foo) != len(FF):
-                print 'Problem computing the Jacobian for the external temp profiler'
+                print('Problem computing the Jacobian for the external temp profiler')
                 VIP_Databases_functions.abort(lbltmpdir,date)
                 sys.exit()
             
@@ -1252,11 +1252,11 @@ for i in range(len(aeri['secs'])):                        # { loop_i
                             ext_prof['wvminht'], ext_prof['wvmaxht'], ext_prof['wv_type'], ext_prof['wvmultiplier'])
             
             if flag == 0:
-                print 'Problem computing the Jacobian for the external wv profiler. Have to abort'
+                print('Problem computing the Jacobian for the external wv profiler. Have to abort')
                 VIP_Databases_functions.abort(lbltmpdir,date)
                 sys.exit()
             if len(foo) != len(FF):
-                print 'Problem computing the Jacobian for the external wv profiler'
+                print('Problem computing the Jacobian for the external wv profiler')
                 VIP_Databases_functions.abort(lbltmpdir,date)
                 sys.exit()
             
@@ -1286,7 +1286,7 @@ for i in range(len(aeri['secs'])):                        # { loop_i
             elif ((len(barT) == 0) & (len(barQ) > 0)):
                 units = np.array([ext_tseries['qunit']]*len(barQ))
             else:
-                print 'This absolutely should not happen, as I should be finding some units'
+                print('This absolutely should not happen, as I should be finding some units')
                 VIP_Databases_functions.abort(lbltmpdir,date)
                 sys.exit()
             
@@ -1294,12 +1294,12 @@ for i in range(len(aeri['secs'])):                        # { loop_i
                              ext_tseries['sfc_relative_height'], units, vip['prior_chimney_ht'])
             
             if flag == 0:
-                print 'Problem computing the Jacobian for the external surface met data. Have to abort'
+                print('Problem computing the Jacobian for the external surface met data. Have to abort')
                 VIP_Databases_functions.abort(lbltmpdir,date)
                 sys.exit()
                 
             if len(foo) != len(FF):
-                print 'Problem computing the Jacobian for the external surface met'
+                print('Problem computing the Jacobian for the external surface met')
                 VIP_Databases_functions.abort(lbltmpdir,date)
                 sys.exit()
             
@@ -1322,11 +1322,11 @@ for i in range(len(aeri['secs'])):                        # { loop_i
                             mod_prof['tempminht'], mod_prof['tempmaxht'], mod_prof['temp_type'])
             
             if flag == 0:
-                print 'Problem computing the Jacobian for the NWP temp profiler. Have to abort'
+                print('Problem computing the Jacobian for the NWP temp profiler. Have to abort')
                 VIP_Databases_functions.abort(lbltmpdir,date)
                 sys.exit()
             if len(foo) != len(FF):
-                print 'Problem computing the Jacobian for the NWP temp profiler'
+                print('Problem computing the Jacobian for the NWP temp profiler')
                 VIP_Databases_functions.abort(lbltmpdir,date)
                 sys.exit()
             
@@ -1349,11 +1349,11 @@ for i in range(len(aeri['secs'])):                        # { loop_i
                             mod_prof['wvminht'], mod_prof['wvmaxht'], mod_prof['wv_type'], mod_prof['wvmultiplier'])
             
             if flag == 0:
-                print 'Problem computing the Jacobian for the NWP wv profiler. Have to abort'
+                print('Problem computing the Jacobian for the NWP wv profiler. Have to abort')
                 VIP_Databases_functions.abort(lbltmpdir,date)
                 sys.exit()
             if len(foo) != len(FF):
-                print 'Problem computing the Jacobian for the NWP wv profiler'
+                print('Problem computing the Jacobian for the NWP wv profiler')
                 VIP_Databases_functions.abort(lbltmpdir,date)
                 sys.exit()
             
@@ -1377,11 +1377,11 @@ for i in range(len(aeri['secs'])):                        # { loop_i
                         vip['fix_co2_shape'], ext_tseries['nptsCO2'])
             
             if flag == 0:
-                print 'Problem computing the Jacobian for the in-situ surface co2 data. Have to abort'
+                print('Problem computing the Jacobian for the in-situ surface co2 data. Have to abort')
                 VIP_Databases_functions.abort(lbltmpdir,date)
                 sys.exit()
             if len(foo) != len(FF):
-                print 'Problem computing the Jacobian for the in-situ surfac co2 data.'
+                print('Problem computing the Jacobian for the in-situ surfac co2 data.')
                 VIP_Databases_functions.abort(lbltmpdir,date)
                 sys.exit()
             
@@ -1447,27 +1447,27 @@ for i in range(len(aeri['secs'])):                        # { loop_i
             
             # Run the forward model and compute the Jacobian
             if vip['monortm_jac_option'] == 1:
-                print 'Error: DDT has not enabled finite differencing in the MWR-scan jacobian yet'
+                print('Error: DDT has not enabled finite differencing in the MWR-scan jacobian yet')
             elif vip['monortm_jac_option'] == 2:
                 flag, KK, FF, m_comp_time = Jacobian_Functions.compute_jacobian_microwavescan_3method(Xn, p, z, 
                                         mwrscan, cbh, vip, lbltmpdir, monortm_tfile, monortm_sexec,
                                         fixtemp, fixwvmr, fixlcloud, vip['jac_max_ht'], stdatmos,
                                         verbose)
             else:
-                print 'Error: Undefined option for monortm_jac_option'
+                print('Error: Undefined option for monortm_jac_option')
             
             # If the Jacobian did not compute properly (i.e., an error occurred)
             # then we need to abort
             
             if flag == 0:
-                print ' -- Skipping this sample due to issure with MonoRTM Jacobian (likely bad input profile)'
+                print(' -- Skipping this sample due to issure with MonoRTM Jacobian (likely bad input profile)')
                 continue_next_sample = 1
                 break
             
             # Now the size fo the forward calculation should be the correct size to match the
             # the number of MWR-scan observation in the Y vector
             if len(foo) != len(FF):
-                print 'Problem computing the Jacobian for the microwave radiometer scan'
+                print('Problem computing the Jacobian for the microwave radiometer scan')
                 VIP_Databases_functions.abort(lbltmpdir,date)
                 sys.exit()
             
@@ -1491,7 +1491,7 @@ for i in range(len(aeri['secs'])):                        # { loop_i
         if use_L_curve > 0:
             # Starting here, I am following the Carissimo et al. logic hete
             if (itern == 0) & verbose >= 2:
-                print 'Using the L-curve method to optimize gamma'
+                print('Using the L-curve method to optimize gamma')
                 ggamma = np.arange(101)*0.10 - 5     # Values from -5 to +5
                 ggamma = 10.**ggamma        # this is the range of values I want: 10^(-5) to 10^(+5)
                 
@@ -1529,7 +1529,7 @@ for i in range(len(aeri['secs'])):                        # { loop_i
         # though, as it really should output a flagged result or abort/
         foo = np.where(np.isnan(Xnp1))[0]          # DDT
         if len(foo) > 0:
-            print 'Stopping for NaN issue 1'
+            print('Stopping for NaN issue 1')
             VIP_Databases_functions.abort(lbltmpdir,date)
             sys.exit()
         
@@ -1559,19 +1559,19 @@ for i in range(len(aeri['secs'])):                        # { loop_i
         # Perform the RH_limit test (i.e., make sure thew WVMR Is not too large
         # such that RH > 100%)
         if ((itern == 0) & (verbose >= 3)):
-            print 'Testing for RH > 100%'
+            print('Testing for RH > 100%')
         rh = Calcs_Conversions.w2rh(np.squeeze(Xnp1[nX/2:nX]), p, np.squeeze(Xnp1[0:nX/2]),0) * 100   # units are %RH
         feh = np.where(rh > 100)[0]
         if len(feh) > 0:
             if verbose >= 3:
-                print 'RH is above 100% somewhere in this profile -- setting it to 100%'
+                print('RH is above 100% somewhere in this profile -- setting it to 100%')
             rh[feh] = 100.
             Xnp1[nX/2:nX,0] = Calcs_Conversions.rh2w(np.squeeze(Xnp1[0:nX/2]), rh/100., p)
         
         # Perform the monotonically ascending potential temperature test (i.e
         # make sure that theta never decreases with height)
         if ((itern == 0) & (verbose >= 3)):
-            print 'Testing for decreasing theata with height'
+            print('Testing for decreasing theata with height')
         
         # Multiply WVMR by zero to get theta, not theta-v
         theta = Calcs_Conversions.t2theta(np.squeeze(Xnp1[0:nX/2]), 0*np.squeeze(Xnp1[nX/2:nX]), p)
@@ -1703,9 +1703,9 @@ for i in range(len(aeri['secs'])):                        # { loop_i
         # use the last valid sample as the solution and exit.
         foo = np.where(np.isnan(Xnp1))[0]
         if len(foo) > 0:
-            print 'Warning: Found NaNs in the next iteration -- using last iter'
+            print('Warning: Found NaNs in the next iteration -- using last iter')
             if itern == 0:
-                print 'Wow -- I never thought this could happen'
+                print('Wow -- I never thought this could happen')
                 VIP_Databases_functions.abort(lbltmpdir,date)
                 sys.exit()
         
@@ -1761,7 +1761,7 @@ for i in range(len(aeri['secs'])):                        # { loop_i
             Fxnm1 = np.copy(FXn)
             itern += 1
             if verbose >= 1:
-                print '       iter is ' + str(itern) + ' di2m is ' + str(di2m) + ' and RMS is ' + str(rmsa)
+                print(('       iter is ' + str(itern) + ' di2m is ' + str(di2m) + ' and RMS is ' + str(rmsa)))
         
         # Place the data into a structure
         xtmp = {'idx':i, 'secs':aeri['secs'][i], 'ymd':aeri['ymd'][i], 'hour':aeri['hour'][i],
@@ -1787,11 +1787,11 @@ for i in range(len(aeri['secs'])):                        # { loop_i
     # If the retrieval converged, then let's store the various
     # pieces of information for later. Otherwise, let's just move on...
     if converged == 1:
-        print 'Converged! (di2m << nY)'
+        print('Converged! (di2m << nY)')
     elif converged == 2:
-        print 'Converged (best RMS as RMS drastically increased)'
+        print('Converged (best RMS as RMS drastically increased)')
     elif converged == 9:
-        print 'Converged (found NaN in Xnp1 so abort sample)'
+        print('Converged (found NaN in Xnp1 so abort sample)')
     else:
         
         # If the retrieval did not convreged but performed max_iter iterations
@@ -1832,7 +1832,7 @@ for i in range(len(aeri['secs'])):                        # { loop_i
                 'rmsr':rmsr, 'rmsp':rmsp, 'chi2':chi2, 'converged':converged}
                 
         xsamp.append(xtmp)
-        print 'Converged! (best RMS after max_iter)'
+        print('Converged! (best RMS after max_iter)')
     
    # Store the data, regardless whether it converges or not
     if xret == []:
@@ -1846,7 +1846,7 @@ for i in range(len(aeri['secs'])):                        # { loop_i
         try:
             version = globatt['algorithm_version'] + version_compute_jacobian
         except:
-            print 'Did not find globatt version'
+            print('Did not find globatt version')
             version = 'Unknown Version' + version_compute_jacobian
     
     endtime = datetime.now()
@@ -1888,11 +1888,11 @@ shutil.rmtree(lbltmp)
 
 totaltime = (endtime - starttime).total_seconds()
    
-print 'Processing took ' + str(totaltime) + ' seconds'   
+print(('Processing took ' + str(totaltime) + ' seconds'))   
          
 shutil.rmtree(lbltmpdir)
 
 # Successful exit
-print '>>> AERI retrieval on ' + str(date) + ' ended properly <<<'
-print '--------------------------------------------------------------------'
-print ' '                                   
+print(('>>> AERI retrieval on ' + str(date) + ' ended properly <<<'))
+print('--------------------------------------------------------------------')
+print(' ')                                   

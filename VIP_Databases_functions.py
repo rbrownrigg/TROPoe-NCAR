@@ -213,115 +213,115 @@ def read_vip_file(filename,globatt,verbose,debug,dostop):
     if os.path.exists(filename):
         
         if verbose >= 1:
-            print 'Reading the VIP file: ' + filename
+            print('Reading the VIP file: ' + filename)
         
         try:
             inputt = np.genfromtxt(filename, dtype=str,comments='#', usecols = (0,1,2))
         except:
-            print 'There was an problem reading the VIP file'
+            print('There was an problem reading the VIP file')
     else:
-        print 'The VIP file ' + filename + ' does not exist'
+        print('The VIP file ' + filename + ' does not exist')
         return vip
     
     if len(inputt) == 0:
-        print 'There were no valid lines found in the VIP file'
+        print('There were no valid lines found in the VIP file')
         return vip
      
     # Look for these tags
     
     nfound = 1
-    for i in range(len(vip.keys())):
-        if vip.keys()[i] != 'success':
+    for i in range(len(list(vip.keys()))):
+        if list(vip.keys())[i] != 'success':
             nfound += 1
-            if vip.keys()[i] == 'vip_filename':
+            if list(vip.keys())[i] == 'vip_filename':
                 vip['vip_filename'] = filename
             else:
-                foo = np.where(vip.keys()[i] == inputt[:,0])[0]
+                foo = np.where(list(vip.keys())[i] == inputt[:,0])[0]
                 if len(foo) > 1:
-                    print 'Error: There were multiple lines with the same key in VIP file: ' + vip.keys()[i]
+                    print('Error: There were multiple lines with the same key in VIP file: ' + list(vip.keys())[i])
                     return vip
                     
                 elif len(foo) == 1:
                     if verbose == 3:
-                        print 'Loading the key ' + vip.keys()[i]
-                    if vip.keys()[i] == 'spectral_bands':
+                        print('Loading the key ' + list(vip.keys())[i])
+                    if list(vip.keys())[i] == 'spectral_bands':
                         bands = vip['spectral_bands']-1
                         tmp = inputt[foo,2][0].split(',')
                         
                         if len(tmp) >= maxbands:
-                            print 'Error: There were more spectral bands defined than maximum allowed (maxbands = ' + str(maxbands) + ')'
+                            print('Error: There were more spectral bands defined than maximum allowed (maxbands = ' + str(maxbands) + ')')
                             return vip
                             
                         for j in range(len(tmp)):
                             feh = tmp[j].split('-')
                             if len(feh) != 2:
-                                print 'Error: Unable to properly decompose the spectral_bands key'
+                                print('Error: Unable to properly decompose the spectral_bands key')
                                 if dostop:
-                                    wait = raw_input('Stopping inside to debug this bad boy. Press enter to continue')
+                                    wait = input('Stopping inside to debug this bad boy. Press enter to continue')
                                 return vip
                             bands[0,j] = float(feh[0])
                             bands[1,j] = float(feh[1])
                         vip['spectral_bands'] = bands
                         
-                    elif vip.keys()[i] == 'aeri_calib_pres':
+                    elif list(vip.keys())[i] == 'aeri_calib_pres':
                         feh = inputt[foo,2][0].split(',')
                         if len(feh) != 2:
-                            print 'Error: The key aeri_calib_pres in VIP file must be intercept, slope'
+                            print('Error: The key aeri_calib_pres in VIP file must be intercept, slope')
                             if dostop:
-                                wait = raw_input('Stopping inside to debug this bad boy. Press enter to continue')
+                                wait = input('Stopping inside to debug this bad boy. Press enter to continue')
                             return vip
                         vip['aeri_calib_pres'][0] = float(feh[0])
                         vip['aeri_calib_pres'][1] = float(feh[1])
                         if vip['aeri_calib_pres'][1] <= 0.0001:
-                            print 'Error: The key aeri_calib_pres in VIP file must have positive slope'
+                            print('Error: The key aeri_calib_pres in VIP file must have positive slope')
                             if dostop:
-                                wait = raw_input('Stopping inside to debug this bad boy. Press enter to continue')
+                                wait = input('Stopping inside to debug this bad boy. Press enter to continue')
                             return vip
                             
-                    elif ((vip.keys()[i] == 'ext_wv_noise_mult_val') |
-                          (vip.keys()[i] == 'ext_wv_noise_mult_hts') |
-                          (vip.keys()[i] == 'ext_temp_noise_adder_val') |
-                          (vip.keys()[i] == 'ext_temp_noise_adder_hts') |
-                          (vip.keys()[i] == 'mod_wv_noise_mult_val') |
-                          (vip.keys()[i] == 'mod_wv_noise_mult_hts') |
-                          (vip.keys()[i] == 'mod_temp_noise_adder_val') |
-                          (vip.keys()[i] == 'mod_temp_noise_adder_hts') |
-                          (vip.keys()[i] == 'prior_co2_mn') |
-                          (vip.keys()[i] == 'prior_co2_sd') |
-                          (vip.keys()[i] == 'prior_ch4_mn') |
-                          (vip.keys()[i] == 'prior_ch4_sd') |
-                          (vip.keys()[i] == 'prior_n2o_mn') |
-                          (vip.keys()[i] == 'prior_n2o_sd') ):
+                    elif ((list(vip.keys())[i] == 'ext_wv_noise_mult_val') |
+                          (list(vip.keys())[i] == 'ext_wv_noise_mult_hts') |
+                          (list(vip.keys())[i] == 'ext_temp_noise_adder_val') |
+                          (list(vip.keys())[i] == 'ext_temp_noise_adder_hts') |
+                          (list(vip.keys())[i] == 'mod_wv_noise_mult_val') |
+                          (list(vip.keys())[i] == 'mod_wv_noise_mult_hts') |
+                          (list(vip.keys())[i] == 'mod_temp_noise_adder_val') |
+                          (list(vip.keys())[i] == 'mod_temp_noise_adder_hts') |
+                          (list(vip.keys())[i] == 'prior_co2_mn') |
+                          (list(vip.keys())[i] == 'prior_co2_sd') |
+                          (list(vip.keys())[i] == 'prior_ch4_mn') |
+                          (list(vip.keys())[i] == 'prior_ch4_sd') |
+                          (list(vip.keys())[i] == 'prior_n2o_mn') |
+                          (list(vip.keys())[i] == 'prior_n2o_sd') ):
                         
                         feh = inputt[foo,2][0].split(',')
-                        if len(feh) != len(vip[vip.keys()[i]]):
-                            print 'Error: The key ' + vip.keys()[i] + ' in VIP file must be a ' + str(len(vip[vip.keys()[i]])) + ' element array'
+                        if len(feh) != len(vip[list(vip.keys())[i]]):
+                            print('Error: The key ' + list(vip.keys())[i] + ' in VIP file must be a ' + str(len(vip[list(vip.keys())[i]])) + ' element array')
                             if dostop:
-                                wait = raw_input('Stopping inside to debug this bad boy. Press enter to continue')
+                                wait = input('Stopping inside to debug this bad boy. Press enter to continue')
                             return vip
                         
-                        vip[vip.keys()[i]][0] = float(feh[0])
-                        vip[vip.keys()[i]][1] = float(feh[1])
-                        vip[vip.keys()[i]][2] = float(feh[2])
+                        vip[list(vip.keys())[i]][0] = float(feh[0])
+                        vip[list(vip.keys())[i]][1] = float(feh[1])
+                        vip[list(vip.keys())[i]][2] = float(feh[2])
                         
                     else:
-                        vip[vip.keys()[i]] = type(vip[vip.keys()[i]])(inputt[foo,2][0])
+                        vip[list(vip.keys())[i]] = type(vip[list(vip.keys())[i]])(inputt[foo,2][0])
                 else:
                     if verbose == 3:
-                        print 'UNABLE to find the key ' + vip.keys()[i]
+                        print('UNABLE to find the key ' + list(vip.keys())[i])
                     nfound -= 1
     
     if verbose == 3:
-        print vip
+        print(vip)
     if verbose >= 2:
-        print 'There were ' + str(nfound) + ' entries found out of ' + str(len(vip.keys()))
+        print('There were ' + str(nfound) + ' entries found out of ' + str(len(list(vip.keys()))))
     
     # Now look for any global attributes that might have been entered in the file
     
     matching = [s for s in inputt[:,0] if "globatt" in s]
     
     if verbose >= 2:
-        print 'There were ' + str(len(matching)) + ' global attributes found'
+        print('There were ' + str(len(matching)) + ' global attributes found')
     
     for i in range(len(matching)):
         foo = np.where(matching[i] == inputt[:,0])[0]
@@ -330,7 +330,7 @@ def read_vip_file(filename,globatt,verbose,debug,dostop):
     vip['success'] = 1
     
     if dostop:
-        wait = raw_input('Stopping inside to debug this bad boy. Press enter to continue')
+        wait = input('Stopping inside to debug this bad boy. Press enter to continue')
     return vip 
     
 ################################################################################
@@ -342,35 +342,35 @@ def check_vip(vip):
     flag = 0           # Default is that everything is ok
     
     if ((vip['output_clobber'] < 0) | (vip['output_clobber'] > 2)):
-        print 'Error: The output_clobber flag can only be set to 0, 1, or 2'
+        print('Error: The output_clobber flag can only be set to 0, 1, or 2')
         flag = 1
     
     if ((vip['aeri_fv'] < 0.0) | (vip['aeri_fv'] > 0.03)):
-        print 'Error: The AERI fv is too small or too large'
+        print('Error: The AERI fv is too small or too large')
         flag = 1
    
     if ((vip['aeri_fa'] < 0.0) | (vip['aeri_fa'] > 0.03)):
-        print 'Error: The AERI fa is too small or too large'
+        print('Error: The AERI fa is too small or too large')
         flag = 1
     
     if vip['jac_max_ht'] <= 1.0:    
-        print 'Error: The maximum height to compute the Jacobian is too small; please increase'
+        print('Error: The maximum height to compute the Jacobian is too small; please increase')
         flag = 1 
         
     if ((vip['max_iterations'] <= 0) | (vip['max_iterations'] >= 25)):
-        print 'Error: The maximum number of iterations is not positive (or too big)'
+        print('Error: The maximum number of iterations is not positive (or too big)')
         flag = 1
     
     if ((vip['lbl_std_atmos'] < 1) | (vip['lbl_std_atmos'] > 6)):
-        print 'Error: The LBLRTM standard atmosphere must be an integer between 1 and 6'
+        print('Error: The LBLRTM standard atmosphere must be an integer between 1 and 6')
         flag = 1
         
     if ((vip['aeri_use_missingDataFlag'] < 0) | (vip['aeri_use_missingDataFlag'] > 1)):
-        print 'Error: The aeri_use_missingDataFlag must be either 0 or 1'
+        print('Error: The aeri_use_missingDataFlag must be either 0 or 1')
         flag = 1
         
     if ((vip['aeri_hatch_switch'] < 1) | (vip['aeri_hatch_switch'] > 2)):
-        print 'Error: The aeri_hatch_switch must be either 1 or 2'
+        print('Error: The aeri_hatch_switch must be either 1 or 2')
         flag = 1
     
     return flag
@@ -384,9 +384,9 @@ def abort(lbltmpdir, date):
     if os.path.exists(lbltmpdir):
         shutil.rmtree(lbltmpdir)
     
-    print '>>> AERI retrieval on ' + str(date) + ' FAILED and ABORTED <<<'
-    print '--------------------------------------------------------------------'
-    print ' '
+    print('>>> AERI retrieval on ' + str(date) + ' FAILED and ABORTED <<<')
+    print('--------------------------------------------------------------------')
+    print(' ')
 
 ################################################################################ 
 #   This routine reads in the scattering properties from databases that were
@@ -403,7 +403,7 @@ def read_scat_databases(dbname):
     #See if the database actually exists
     
     if not os.path.exists(dbname):
-        print 'ERROR: Unable to find the scattering database'
+        print('ERROR: Unable to find the scattering database')
         return [], 1
     
     #Number of header lines (before the phase function angles)
@@ -413,7 +413,7 @@ def read_scat_databases(dbname):
     ncols = 13
     
     #Open and read the single scattering property database
-    print 'Reading: ' + dbname
+    print('Reading: ' + dbname)
     f = open(dbname, 'r')
     f.readline()
     f.readline()
@@ -421,12 +421,12 @@ def read_scat_databases(dbname):
     nphase = int(f.readline().split()[0])
     
     if nlines <= 0:
-        print 'ERROR: There were no datalines found in this database -- this should not occur'
+        print('ERROR: There were no datalines found in this database -- this should not occur')
         f.close()
         return [], 1
     
     if nphase <= 0:
-        print 'ERROR: The scattering phase function was not defined in this database'
+        print('ERROR: The scattering phase function was not defined in this database')
         f.close()
         return [], 1
     f.close()
@@ -454,16 +454,16 @@ def read_scat_databases(dbname):
 def read_stdatmos(filename, stdatmos, verbose):
     
     if not os.path.exists(filename):
-        print 'Error: Unable to find the IDL save file with the standard atmosphere information in it'
+        print('Error: Unable to find the IDL save file with the standard atmosphere information in it')
         return {'status':0}
         
     temp = scipy.io.readsav(filename, python_dict = True)
     idx = stdatmos-1
     if ((idx < 0) | (idx >= len(temp['name']))):
-        print 'Error: the standard atmosphere specified is out-of-range'
+        print('Error: the standard atmosphere specified is out-of-range')
         return {'status':0}
     
     if verbose >= 1:
-        print 'Using standard atmosphere: ' + temp['name'][idx]
+        print('Using standard atmosphere: ' + temp['name'][idx])
     
     return {'status':1, 'z':temp['z'][idx,:], 'p':temp['p'][idx,:], 't':temp['t'][idx,:], 'w':temp['w'][idx,:], 'pwv':temp['pwv'][idx], 'name':temp['name'][idx]}

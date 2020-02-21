@@ -405,7 +405,7 @@ def inv_hypsometric(z, t, p0):
     
     foo = np.where(t <= 0)[0]
     if len(foo) > 0:
-        print 'ERROR in inv_hypsometric: Temperature is assumed to be Kelvin -- abort'
+        print('ERROR in inv_hypsometric: Temperature is assumed to be Kelvin -- abort')
         return -999
     
     a = 29.2911          # Gas constant in dry air divided by the acceleration due to gravity

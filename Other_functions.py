@@ -53,7 +53,7 @@ def matchtimes(time1,time2,delta):
     for i in range(len(flag)):
         foo = np.where(np.nanmin(np.abs(time1-time2[i])) == np.abs(time1-time2[i]))[0]
         if len(foo) == 0:
-            print 'Big problem in matchtime(). How did this happen???'
+            print('Big problem in matchtime(). How did this happen???')
             return flag, 0
         if np.abs(time1[foo[0]] - time2[i]) <= delta:
             flag[i] = 1
@@ -69,7 +69,7 @@ def matchtimes(time1,time2,delta):
         if len(bar) > 1:
             duh = np.where(np.nanmin(np.abs(time1[vals[foo[i]]] - time2[bar])) == np.abs(time1[vals[foo[i]]] - time2[bar]))
             if len(duh) == 0:
-                print 'Big problem in matchtime(). This should not have happened'
+                print('Big problem in matchtime(). This should not have happened')
                 return flag, 0
             flag[bar] = 0         #reset to zero
             flag[bar[duh[0]]] = 1 #and set only one
@@ -84,7 +84,7 @@ def matchtimes(time1,time2,delta):
 def smooth(data,npts):
     
     if npts % 2 == 0:
-        print 'Error in boxcar smoother. Npts needs to be an odd number. Not sure how this happened'
+        print('Error in boxcar smoother. Npts needs to be an odd number. Not sure how this happened')
         return data, 0
     
     extended = np.insert(data,0,np.flipud(data[0:npts/2]))
@@ -117,7 +117,7 @@ def predict_co2_concentration(yy,mm,dd):
     jt = datetime(yy,mm,dd).timetuple().tm_yday
     yr = yy + jt/365.
     if (yr < np.nanmin(x)) | (yr > np.nanmax(x)):
-        print 'Error: the desired year in predict_co2_concentration is outside bounds'
+        print('Error: the desired year in predict_co2_concentration is outside bounds')
         return -999.
     else:
         return np.interp(yr,x,y)
@@ -131,7 +131,7 @@ def find_wnum_idx(wnum, bands):
     sz = bands.shape
     if len(sz) == 1:
         if sz[0] != 2:
-            print 'Problem with band definition in find_wnum_idx'
+            print('Problem with band definition in find_wnum_idx')
             return -1, -1
         foo = np.where((bands[0] <= wnum) & (wnum <= bands[1]))[0]
     elif len(sz) == 2:
@@ -191,7 +191,7 @@ def trace_gas_prof(types, z, coef):
             tg_prof[foo] += coef[1]
     else:
         # This option has not been defined. Abort !!
-        print 'Error in trace_gas_prof: Undefined type specified.'
+        print('Error in trace_gas_prof: Undefined type specified.')
         return -999.
     return tg_prof
 
@@ -208,27 +208,27 @@ def inflate_prior_covariance(Sa, z, prior_t_ival, prior_t_iht, prior_q_ival,
     
     # First, apply some QC to the input inflation factors
     if prior_t_ival < 1:
-        print 'Error: Prior temperature inflation value must be >= 1 -- aborting'
+        print('Error: Prior temperature inflation value must be >= 1 -- aborting')
         return -999, status
     if prior_q_ival < 1:
-        print 'Error: Prior wate vapor mixing ratio inflation value must be >= 1 -- aborting'
+        print('Error: Prior wate vapor mixing ratio inflation value must be >= 1 -- aborting')
         return -999, status
     if ((prior_t_iht <= 0) | (prior_t_iht > np.nanmax(z))):
-        print 'Error: Prior temperature inflation height must be a valid height (0 to max(z)) -- aborting'
+        print('Error: Prior temperature inflation height must be a valid height (0 to max(z)) -- aborting')
         return -999, status
     if ((prior_q_iht <= 0) | (prior_t_iht > np.nanmax(z))):
-        print 'Error: Prior water vapor mixing ratio inflation height must be a valid height (0 to max(z)) -- aborting'
+        print('Error: Prior water vapor mixing ratio inflation height must be a valid height (0 to max(z)) -- aborting')
         return -999, status
     if ((prior_tq_cov_val < 0) | (prior_tq_cov_val > 1)):
-        print 'Error: Prior T/q covariance scalar must be in the interval [0,1] -- aborting'
+        print('Error: Prior T/q covariance scalar must be in the interval [0,1] -- aborting')
         return -999, status
         
     if ((prior_t_ival > 1) & (verbose > 1)):
-        print 'Inflating the prior temperature profile near the surface by a factor of ' + prior_t_ival
+        print('Inflating the prior temperature profile near the surface by a factor of ' + prior_t_ival)
     if ((prior_q_ival > 1) & (verbose > 1)):
-        print 'Inflating the prior WVMR profile near surface by a factor of ' + prior_q_ival
+        print('Inflating the prior WVMR profile near surface by a factor of ' + prior_q_ival)
     if ((prior_tq_cov_val < 1) & (verbose > 1)):
-        print 'Decreasing the covariance between T and q in the prior by a factor of ' + prior_tq_cov_val
+        print('Decreasing the covariance between T and q in the prior by a factor of ' + prior_tq_cov_val)
     
     # Extract ou the variance values
     var =np.copy(np.diag(Sa))
@@ -263,7 +263,7 @@ def inflate_prior_covariance(Sa, z, prior_t_ival, prior_t_iht, prior_q_ival,
     
     foo = np.where(z < prior_chimney_ht)[0]
     if ((len(foo) > 0) & (verbose >= 1)):
-        print 'Modifying Sa to account for a chimney effect'
+        print('Modifying Sa to account for a chimney effect')
     k = len(z)
     for i in range(len(foo)):
         for j in range(len(z)):
@@ -490,7 +490,7 @@ def find_cloud(aerich1, vceil, window_in, window_out, default_cbh):
 def get_aeri_bb_emis(wn,cavity_factor = 12.79, option=0):
     
     if ((cavity_factor == 12.79) & (option == 0)):
-        print 'WARNING: Cavity factor set to default value of 12.79'
+        print('WARNING: Cavity factor set to default value of 12.79')
     
     #The emissivity spectrum, from DaveT's file
     v = [400.00000, 500.00000, 550.00000, 600.00000, 650.00000, 700.00000,
@@ -540,7 +540,7 @@ def get_aeri_bb_emis(wn,cavity_factor = 12.79, option=0):
     #Note that the method chosen depends on the option selected
     
     if option == -1:
-        print 'Returning emissivity spectrum of the paint (no cavity factor applied)'
+        print('Returning emissivity spectrum of the paint (no cavity factor applied)')
     elif option == 0:
         #The original way to use the wavelength-independent cavity factor
         rcf = 1.0/cavity_factor
@@ -565,7 +565,7 @@ def get_aeri_bb_emis(wn,cavity_factor = 12.79, option=0):
         elif option == 5:
             fov_emis = yaote_emis99
         else:
-            print 'Error: Undefined value for option in get_aeri_bb_emis()'
+            print('Error: Undefined value for option in get_aeri_bb_emis()')
             return 0
         
         bb_emis = emis * 0.
@@ -587,11 +587,11 @@ def aeri_recal(wn,rad1,th1,th2,ta1,ta2,tr1,tr2,eh1,eh2,ea1,ea2):
     #Start with simple QC
     n = len(wn)
     if ((n != len(rad1)) | (n != len(eh1)) | (n != len(eh2)) | (n != len(ea1)) | (n != len(ea2))):
-        print 'Error: the wavenumber, radiance, and emissivity arrays must be the same length'
+        print('Error: the wavenumber, radiance, and emissivity arrays must be the same length')
         return 0
         
     if not ((np.isscalar(th1)) | (np.isscalar(th2)) | (np.isscalar(ta1)) | (np.isscalar(ta2)) | (np.isscalar(tr1)) | (np.isscalar(tr2))):
-        print 'Error: the various temperatures must all be scalars'
+        print('Error: the various temperatures must all be scalars')
         return 0
     
     #Compute the radiances for the various temperatures
@@ -657,7 +657,7 @@ def get_scat_properties(field, wnum, reff, database):
     elif field == 'pf':
         index = np.arange(database['nphase']) + 13
     else:
-        print 'Undefined field used in get_scat_properties()'
+        print('Undefined field used in get_scat_properties()')
         return -999.
     
     scattdb = np.copy(database['data'])
@@ -665,7 +665,7 @@ def get_scat_properties(field, wnum, reff, database):
     # Check to see if r or wnum is an array, but make sure that they are not
     # both arrays
     if ((type(wnum) == np.ndarray) & (type(reff) == np.ndarray)):
-        print 'Error: both Reff and wnum are arrays -- only one of these is allowed to be'
+        print('Error: both Reff and wnum are arrays -- only one of these is allowed to be')
         return -999.
         
     elif type(reff) == np.ndarray:
@@ -693,18 +693,18 @@ def get_scat_properties(field, wnum, reff, database):
     sdata_uniq = np.unique(sdata)
     bar = np.where(sdata_uniq >= sval)[0]
     if len(bar) == 0:
-        print 'Error: the entered ' + scom + ' is above the max value in the SSP database (' + str(np.max(sdata_uniq)) +  ')'
+        print('Error: the entered ' + scom + ' is above the max value in the SSP database (' + str(np.max(sdata_uniq)) +  ')')
         return -999.
     
     if bar[0] == 0:
-        print 'Error: the entired ' + scom + ' is below the min value in the SSP database (' + str(np.min(sdata_uniq)) + ')'
+        print('Error: the entired ' + scom + ' is below the min value in the SSP database (' + str(np.min(sdata_uniq)) + ')')
         return -999.
     
     foo1 = np.where(scattdb[sidx,:] == sdata_uniq[bar[0]-1])[0]
     foo2 = np.where(scattdb[sidx,:] == sdata_uniq[bar[0]])[0]
     
     if len(foo1) != len(foo2):
-        print 'This should NEVER happen and these should be the same'
+        print('This should NEVER happen and these should be the same')
         return -999.
         
     wt = (sval-sdata_uniq[bar[0]-1])/(sdata_uniq[bar[0]]-sdata_uniq[bar[0]-1])
@@ -715,11 +715,11 @@ def get_scat_properties(field, wnum, reff, database):
     ivaly = ivaly1 * (1-wt) + wt * ivaly2
     
     if np.min(ivalx) > np.min(desx):
-        print 'Error: the entired ' + icom + ' is below the min value in the SSP database (' + str(np.min(ivalx)) + ')'
+        print('Error: the entired ' + icom + ' is below the min value in the SSP database (' + str(np.min(ivalx)) + ')')
         return -999.
     
     if np.max(ivalx) < np.max(desx):
-        print 'Error: the entered ' + icom + ' is below the max value in the SSP database (' + str(np.max(ivalx)) + ')'
+        print('Error: the entered ' + icom + ' is below the max value in the SSP database (' + str(np.max(ivalx)) + ')')
         return -999.
     
     desy = np.interp(desx,ivalx,ivaly)
@@ -786,7 +786,7 @@ def get_ir_cld_ods(ssp, intau, wnum, reff, cldthick):
     
     # Quick QC
     if ((reff < np.nanmin(ssp['data'][2,:])) | (reff > np.nanmax(ssp['data'][2,:]))):
-        print 'Error: the desired Reff is outside the Reff range in the SSP ' + ssp['dbname']
+        print('Error: the desired Reff is outside the Reff range in the SSP ' + ssp['dbname'])
         return -999.
     
     # Get the extinction efficiency and extinction coefficient at the
@@ -815,7 +815,7 @@ def get_ir_cld_ods(ssp, intau, wnum, reff, cldthick):
 def cloud_reflectivity(dwnum, tau, ice = False):
     
     if type(tau) is np.ndarray:
-        print 'Warning: the routine cloud_reflectivity needs tau as a signleton - returning zeros'
+        print('Warning: the routine cloud_reflectivity needs tau as a signleton - returning zeros')
         return np.zeros(len(dwnum))
     
     # This spectrum is from DDT's dissertation, with water at Reff=7.5 and
@@ -873,7 +873,7 @@ def radxfer(wnum, t, od, sfc_t = None, sfc_e = None, upwelling = False):
         opd = np.copy(od)
         a = opd.shape
         if len(a) != 1:
-            print 'Error: Optical depth array dimension does not match wnum dimension'
+            print('Error: Optical depth array dimension does not match wnum dimension')
             return -1
     else:
         opd = np.copy(od)
@@ -882,7 +882,7 @@ def radxfer(wnum, t, od, sfc_t = None, sfc_e = None, upwelling = False):
             opd = opd.T
             a = opd.shape
             if a[0] != len(wnum):
-                print 'Error: Optical depth array dimension does not match wnum dimension'
+                print('Error: Optical depth array dimension does not match wnum dimension')
                 return -3
     
     if a[0] != len(t)-1:
@@ -892,11 +892,11 @@ def radxfer(wnum, t, od, sfc_t = None, sfc_e = None, upwelling = False):
         if a[0] == len(t)-1:
             looking_good = 1
         else:
-            print 'Error: Optical depth array dimension does not match temperature dimension'
+            print('Error: Optical depth array dimension does not match temperature dimension')
             return -2
     foo = np.where(t < 0)[0]
     if len(foo) > 0:
-        print 'Error: temperature array has negative values; units should be Kelvin'
+        print('Error: temperature array has negative values; units should be Kelvin')
         return -4
     
     if upwelling:
@@ -909,17 +909,17 @@ def radxfer(wnum, t, od, sfc_t = None, sfc_e = None, upwelling = False):
             sfce = np.squeeze(np.copy(sfc_e))
         foo = np.where((sfce < 0) | (sfce > 1))
         if len(foo) > 0:
-            print 'Error: surface emissivity is outside [0,1]'
+            print('Error: surface emissivity is outside [0,1]')
             return -5
             
         # Make sure that the surface emissivity is the right size
         if type(wnum) != np.ndarray:
             if sfce == np.ndarray:
-                print 'Error: surface emissivity does not have the same dimension size as wnum'
+                print('Error: surface emissivity does not have the same dimension size as wnum')
                 return -6
         else:
             if len(sfce) != len(wnum):
-                print 'Error: surface emissivity does not have the same dimension size as wnum'
+                print('Error: surface emissivity does not have the same dimension size as wnum')
             return -6
         
         # If no surface temperatue is given then use temp of lowest level
@@ -1008,7 +1008,7 @@ def apodize_kaiser_bessel(n,md,k=6):
     n = int(n)
     k = int(k)
     if k < 1:
-        print 'ERROR in apodize kaiser_bessel: Coefficient must be an integer > 6'
+        print('ERROR in apodize kaiser_bessel: Coefficient must be an integer > 6')
         sys.exit()
     
     apod = np.zeros(n)
@@ -1053,7 +1053,7 @@ def apodizer(spectrum, aflag):
     elif aflag == 1:
         apod = apodize_kaiser_bessel(n, imd)
     else:
-        print 'ERROR in apodizer: Undetermined apodization funcion - abort'
+        print('ERROR in apodizer: Undetermined apodization funcion - abort')
         sys.exit()
     
     new_spectrum = np.fft.fft(np.fft.ifft(spectrum)*apod)
@@ -1081,7 +1081,7 @@ def convolve_to_aeri(wnum, radiance):
     
     # Quick QC
     if len(y) != len(x):
-        print 'ERROR: wnum and radiance should have the same number of elements!'
+        print('ERROR: wnum and radiance should have the same number of elements!')
         return 0
     
     # The AERI's delta nu
@@ -1209,7 +1209,7 @@ def convolve_to_aeri(wnum, radiance):
     else:
         # If this happens, warn the user and still use sfac=16, but
         # this will not be an optimal interpolation
-        print 'Warning in convolve_to_aeri: Unanticipated problem in computing new_x'
+        print('Warning in convolve_to_aeri: Unanticipated problem in computing new_x')
         sfac = 16.
     
     new_aeri_dv = aeri_dv / sfac
@@ -1260,7 +1260,7 @@ def convolve_to_aeri(wnum, radiance):
     # minimum and maximum wavenumber intervals of the input data
     foo = np.where((minv+tapersize <= final_aeri_wnum) & (final_aeri_wnum <= maxv-tapersize))[0]
     if len(foo) == 0:
-        print 'ERROR: the spectral range is smaller than twice the tapersize -- aborting'
+        print('ERROR: the spectral range is smaller than twice the tapersize -- aborting')
         return 0
     else:
         final_aeri_wnum = final_aeri_wnum[foo]
@@ -1275,12 +1275,12 @@ def convolve_to_aeri(wnum, radiance):
 def write_arm_sonde_file(z, p, t, u, name, glatt=None, base_time=None, time_offset=None, silent=False):
     
     if (len(z) != len(p)) | (len(z) != len(t)) | (len(z) != len(u)):
-        print 'Error: Profiles are not the same length'
-        print 'No radiosonde netCDF file was created'
+        print('Error: Profiles are not the same length')
+        print('No radiosonde netCDF file was created')
         return
     
     if not silent:
-        print 'Creating the file ' + name
+        print('Creating the file ' + name)
     
     fid = Dataset(name,'w')
     did = fid.createDimension('time',None)
@@ -1342,7 +1342,7 @@ def radxfer_microwave(freq, t, od, sfc_t=None, sfc_e=None, upwelling=None):
         opd = np.copy(od)
         a = opd.shape
         if len(a) != 1:
-            print 'Error: Optical depth array dimension does not match wnum dimension'
+            print('Error: Optical depth array dimension does not match wnum dimension')
             return -1
     else:
         opd = np.copy(od)
@@ -1351,7 +1351,7 @@ def radxfer_microwave(freq, t, od, sfc_t=None, sfc_e=None, upwelling=None):
             opd = opd.T
             a = opd.shape
             if a[0] != len(freq):
-                print 'Error: Optical depth array dimension does not match wnum dimension'
+                print('Error: Optical depth array dimension does not match wnum dimension')
                 return -3
     
     if a[0] != len(t)-1:
@@ -1361,11 +1361,11 @@ def radxfer_microwave(freq, t, od, sfc_t=None, sfc_e=None, upwelling=None):
         if a[0] == len(t)-1:
             looking_good = 1
         else:
-            print 'Error: Optical depth array dimension does not match temperature dimension'
+            print('Error: Optical depth array dimension does not match temperature dimension')
             return -2
     foo = np.where(t < 0)[0]
     if len(foo) > 0:
-        print 'Error: temperature array has negative values; units should be Kelvin'
+        print('Error: temperature array has negative values; units should be Kelvin')
         return -4
     
     if upwelling:
@@ -1378,17 +1378,17 @@ def radxfer_microwave(freq, t, od, sfc_t=None, sfc_e=None, upwelling=None):
             sfce = np.copy(sfc_e)
         foo = np.where((sfce < 0) | (sfce > 1))
         if len(foo) > 0:
-            print 'Error: surface emissivity is outside [0,1]'
+            print('Error: surface emissivity is outside [0,1]')
             return -5
             
         # Make sure that the surface emissivity is the right size
         if type(freq) != np.ndarray:
             if sfce == np.ndarray:
-                print 'Error: surface emissivity does not have the same dimension size as wnum'
+                print('Error: surface emissivity does not have the same dimension size as wnum')
                 return -6
         else:
             if len(sfce) != len(freq):
-                print 'Error: surface emissivity does not have the same dimension size as wnum'
+                print('Error: surface emissivity does not have the same dimension size as wnum')
             return -6
         
         # If no surface temperatue is given then use temp of lowest level
@@ -1504,7 +1504,7 @@ def lcurve(ggamma, flagY, Y0, FXn0, Kij0, Xn0, Xa0, Sa0, Sm0, z0):
     cgamma = compute_cgamma(ggamma, Xa, V, w, G, z)
     idx = np.where(cgamma == np.max(cgamma))[0][0]
     gfac = ggamma[idx]         # this is the optimal gamma value
-    print 'Best gamma value using Carissimo logic is ' + str(gfac)
+    print('Best gamma value using Carissimo logic is ' + str(gfac))
     cgamma /= cgamma[idx]
     
     # Compute the actual L-curve with the two norms
@@ -1545,7 +1545,7 @@ def lcurve(ggamma, flagY, Y0, FXn0, Kij0, Xn0, Xa0, Sa0, Sm0, z0):
     y11 = y1 - np.median(y1) + np.median(x11)                          # shifted
     r1 = np.sqrt(x11**2 + y11**2)                                      # Euclidean distance
     ridx = np.where(r1 == np.min(r1))[0][0]
-    print 'Best gamma value using Turner logic is ' + ggamma[ridx]
+    print('Best gamma value using Turner logic is ' + ggamma[ridx])
     
     return ggamma[ridx]
     

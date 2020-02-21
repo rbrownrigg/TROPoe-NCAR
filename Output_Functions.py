@@ -42,9 +42,9 @@ def write_output(vip, ext_prof, mod_prof, ext_tseries, globatt, xret, prior,
         nfilename = vip['output_path'] + '/' + vip['output_rootname'] + '.' +  str(xret[0]['ymd']) + '.' + str(hh)+str(nn)+str(ss) + '.cdf'
         
         if ((os.path.exists(nfilename)) & (vip['output_clobber'] == 0)):
-            print 'Error: output file exists -- aborting (' + nfilename + ')'
+            print('Error: output file exists -- aborting (' + nfilename + ')')
         elif (os.path.exists(nfilename)):
-            print 'Warning: clobbering existing output file (' +nfilename + ')'
+            print('Warning: clobbering existing output file (' +nfilename + ')')
         
         fid = Dataset(nfilename, 'w')
         tdim = fid.createDimension('time', None)
@@ -353,7 +353,7 @@ def write_output(vip, ext_prof, mod_prof, ext_tseries, globatt, xret, prior,
         
         foo = np.where(marker >= 0)[0]
         if len(foo) > 0:
-            print 'Error in write_output: there seems to be a unit that is not handled here properly'
+            print('Error in write_output: there seems to be a unit that is not handled here properly')
             return success, nfilename
         
         obs_dim = fid.createVariable('obs_dim', 'f8', ('obs_dim',))
@@ -417,8 +417,8 @@ def write_output(vip, ext_prof, mod_prof, ext_tseries, globatt, xret, prior,
         alt.units = 'm above MSL'
         
         # Add some global attributes
-        for i in range(len(globatt.keys())):
-            fid.setncattr(globatt.keys()[i], globatt[globatt.keys()[i]])
+        for i in range(len(list(globatt.keys()))):
+            fid.setncattr(list(globatt.keys())[i], globatt[list(globatt.keys())[i]])
         fid.Algorithm_version = version
         fid.Prior_dataset_comment = prior['comment']
         fid.Prior_dataset_filename = prior['filename']
@@ -548,7 +548,7 @@ def write_output(vip, ext_prof, mod_prof, ext_tseries, globatt, xret, prior,
     zz = np.copy(xret[0]['z'])
     
     if len(dindex_name) != len(dindex_units):
-        print 'Error in write_output: there is a dimension mismatch in the derived indices dindex_'
+        print('Error in write_output: there is a dimension mismatch in the derived indices dindex_')
         return success, nfilename
     
     for i in range(len(xret)):
@@ -625,12 +625,12 @@ def write_output(vip, ext_prof, mod_prof, ext_tseries, globatt, xret, prior,
                     sigma_indices[ii,i] = np.nanstd(indices[ii,i] - tmp)
             
             else:
-                print 'WARNING: There is some derive index that is not properly being computed in aerioe.py'
+                print('WARNING: There is some derive index that is not properly being computed in aerioe.py')
             
     
     # Now append all of the samples from fsample onward into the file
     if verbose >= 3:
-        print 'Appending data to ' + nfilename
+        print('Appending data to ' + nfilename)
     fid = Dataset(nfilename, 'a')
     fid.Total_cloack_execution_time_in_s = str(exectime)
     
@@ -699,13 +699,13 @@ def write_output(vip, ext_prof, mod_prof, ext_tseries, globatt, xret, prior,
         hour[fsample+i] = xret[fsample+i]['hour']
         qc_flag[fsample+i] = xret[fsample+i]['qcflag']
         
-        did = np.where(np.array(fid.dimensions.keys()) == 'height')[0]
+        did = np.where(np.array(list(fid.dimensions.keys())) == 'height')[0]
         if len(did) == 0:
-            print 'Whoaa -- this should not happen -- aborting'
+            print('Whoaa -- this should not happen -- aborting')
             return success, nfilename
         
         if fid.dimensions['height'].size != len(xret[0]['z']):
-            print 'Whoaa -- this should not happen size -- aborting'
+            print('Whoaa -- this should not happen size -- aborting')
             return success, nfilename
         
         temperature[fsample+i,:] = xret[fsample+i]['Xn'][0:nht]
@@ -789,8 +789,8 @@ def create_xret(xret, fsample, vip, aeri, Xa, Sa, z, bands, obsdim, obsflag):
     
     # If none are found, then just run code as normal. Note that xret and fsample
     if len(files) == 0:
-        print 'The flag output_clobber was set to 2 for append, but no prior file was found'
-        print '    so code will run as normal'
+        print('The flag output_clobber was set to 2 for append, but no prior file was found')
+        print('    so code will run as normal')
         nfilename = ' '
         return xret, fsample, nfilename
     
@@ -826,7 +826,7 @@ def create_xret(xret, fsample, vip, aeri, Xa, Sa, z, bands, obsdim, obsflag):
     diff = np.abs(z-xz)
     foo = np.where(diff > 0.001)[0]
     if ((len(xz) != len(z)) | (len(foo) > 0)):
-        print 'Error: output_clobber is set to 2 (append), but there is a mismatch in heights'
+        print('Error: output_clobber is set to 2 (append), but there is a mismatch in heights')
         fsample = -1
         return xret, fsample, nfilename
         
@@ -834,21 +834,21 @@ def create_xret(xret, fsample, vip, aeri, Xa, Sa, z, bands, obsdim, obsflag):
     
     foo = np.where(diff > 0.001)[0]
     if ((len(Xa) != len(xXa)) | (len(foo) > 0)):
-        print 'Error: output_clobber is set to 2 (append), but there is a mismatch in Xa'
+        print('Error: output_clobber is set to 2 (append), but there is a mismatch in Xa')
         fsample = -1
         return xret, fsample, nfilename
     
     diff = np.abs(obsdim - xobsdim)
     foo = np.where(diff > 0.001)[0]
     if ((len(obsdim) != len(xobsdim)) | (len(foo) > 0)):
-        print 'Error: output_clobber is set to 2 (append), but there is a mismatch in obs_dim'
+        print('Error: output_clobber is set to 2 (append), but there is a mismatch in obs_dim')
         fsample = -1
         return xret, fsample, nfilename
     
     diff = np.abs(obsflag - xobsflag)
     foo = np.where(diff > 0.001)[0]
     if ((len(obsflag) != len(xobsflag)) | (len(foo) > 0)):
-        print 'Error: output_clobber is set to 2 (append), but there is a mismatch in obs_flag'
+        print('Error: output_clobber is set to 2 (append), but there is a mismatch in obs_flag')
         fsample = -1
         return xret, fsample, nfilename  
         

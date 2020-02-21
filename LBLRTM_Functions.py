@@ -43,11 +43,11 @@ def rundecker(model, aprofile, z, p, t, w, co2_profile= None, o3_profile=None,
     version = parts[2]
    
     if ((aprofile < 1) | (aprofile > 6)):
-        print' Error: Value for keyword aprofile is out of range - aborting'
+        print(' Error: Value for keyword aprofile is out of range - aborting')
         return
     
     if ((len(z) != len(p)) | (len(z) != len(t)) | (len(z) != len(w))):
-        print 'Error: The lenght of the z/p/t/w vectors must be the same - aborting'
+        print('Error: The lenght of the z/p/t/w vectors must be the same - aborting')
         return
     
     if len(z) > 0:
@@ -63,10 +63,10 @@ def rundecker(model, aprofile, z, p, t, w, co2_profile= None, o3_profile=None,
         if ((len(h2o_sfactor.shape) == 1) & (h2o_sfactor.shape[0] == 2)):
             h2o_sf = np.copy(h2o_sfactor)
         else:
-            print 'WARNING: H2O scale factor vector improperly specified; setting to default'
+            print('WARNING: H2O scale factor vector improperly specified; setting to default')
             h2o_sf = np.array([1.0,0.])
     else:
-        print 'WARNING: H2O scale factor vector improperly specified; setting to default'
+        print('WARNING: H2O scale factor vector improperly specified; setting to default')
         h2o_sf = np.array([1.0,0.]) 
         
     if co2_sfactor is None:
@@ -78,10 +78,10 @@ def rundecker(model, aprofile, z, p, t, w, co2_profile= None, o3_profile=None,
         if ((len(co2_sfactor.shape) == 1) & (co2_sfactor.shape[0] == 2)):
             co2_sf = np.copy(co2_sfactor)
         else:
-            print 'WARNING: CO2 scale factor vector improperly specified; setting to default'
+            print('WARNING: CO2 scale factor vector improperly specified; setting to default')
             co2_sf = np.array([380.0,1.0])
     else:
-        print 'WARNING: CO2 scale factor vector improperly specified; setting to default'
+        print('WARNING: CO2 scale factor vector improperly specified; setting to default')
         co2_sf = np.array([380.0,1.0]) 
         
     if o3_sfactor is None:
@@ -90,10 +90,10 @@ def rundecker(model, aprofile, z, p, t, w, co2_profile= None, o3_profile=None,
         if ((len(o3_sfactor.shape) == 1) & (o3_sfactor.shape[0] == 2)):
             o3_sf = np.copy(o3_sfactor)
         else:
-            print 'WARNING: O3 scale factor vector improperly specified; setting to default'
+            print('WARNING: O3 scale factor vector improperly specified; setting to default')
             o3_sf = np.array([1.0,0.])
     else:
-        print 'WARNING: O3 scale factor vector improperly specified; setting to default'
+        print('WARNING: O3 scale factor vector improperly specified; setting to default')
         o3_sf = np.array([1.0,0.]) 
         
     if co_sfactor is None:
@@ -102,10 +102,10 @@ def rundecker(model, aprofile, z, p, t, w, co2_profile= None, o3_profile=None,
         if ((len(co_sfactor.shape) == 1) & (co_sfactor.shape[0] == 2)):
             co_sf = np.copy(co_sfactor)
         else:
-            print 'WARNING: CO scale factor vector improperly specified; setting to default'
+            print('WARNING: CO scale factor vector improperly specified; setting to default')
             co_sf = np.array([1.0,0.])
     else:
-        print 'WARNING: CO scale factor vector improperly specified; setting to default'
+        print('WARNING: CO scale factor vector improperly specified; setting to default')
         co_sf = np.array([1.0,0.])
         
     if ch4_sfactor is None:
@@ -114,10 +114,10 @@ def rundecker(model, aprofile, z, p, t, w, co2_profile= None, o3_profile=None,
         if ((len(ch4_sfactor.shape) == 1) & (ch4_sfactor.shape[0] == 2)):
             ch4_sf = np.copy(ch4_sfactor)
         else:
-            print 'WARNING: CH4 scale factor vector improperly specified; setting to default'
+            print('WARNING: CH4 scale factor vector improperly specified; setting to default')
             ch4_sf = np.array([1.0,0.])
     else:
-        print 'WARNING: CH4 scale factor vector improperly specified; setting to default'
+        print('WARNING: CH4 scale factor vector improperly specified; setting to default')
         ch4_sf = np.array([1.0,0.]) 
         
     if n2o_sfactor is None:
@@ -126,10 +126,10 @@ def rundecker(model, aprofile, z, p, t, w, co2_profile= None, o3_profile=None,
         if ((len(n2o_sfactor.shape) == 1) & (n2o_sfactor.shape[0] == 2)):
             n2o_sf = np.copy(n2o_sfactor)
         else:
-            print 'WARNING: N2O scale factor vector improperly specified; setting to default'
+            print('WARNING: N2O scale factor vector improperly specified; setting to default')
             n2o_sf = np.array([1.0,0.])
     else:
-        print 'WARNING: N2O scale factor vector improperly specified; setting to default'
+        print('WARNING: N2O scale factor vector improperly specified; setting to default')
         n2o_sf = np.array([1.0,0.]) 
         
     if o2_sfactor is None:
@@ -138,10 +138,10 @@ def rundecker(model, aprofile, z, p, t, w, co2_profile= None, o3_profile=None,
         if ((len(o2_sfactor.shape) == 1) & (o2_sfactor.shape[0] == 2)):
             o2_sf = np.copy(o2_sfactor)
         else:
-            print 'WARNING: O2 scale factor vector improperly specified; setting to default'
+            print('WARNING: O2 scale factor vector improperly specified; setting to default')
             o2_sf = np.array([1.0,0.])
     else:
-        print 'WARNING: O2 scale factor vector improperly specified; setting to default'
+        print('WARNING: O2 scale factor vector improperly specified; setting to default')
         o2_sf = np.array([1.0,0.])
         
     # Process the CFC scale factors to make sure they are in the correct format,
@@ -153,17 +153,17 @@ def rundecker(model, aprofile, z, p, t, w, co2_profile= None, o3_profile=None,
     elif type(ccl4_sfactor) is np.ndarray:
         if ((len(ccl4_sfactor.shape) == 1) & (ccl4_sfactor.shape[0] == 2)):
             if ((ccl4_sfactor[1] < 0) | (ccl4_sfactor[1] > 1)):
-                print 'WARNING: CCL4 scale factor units are incorrect; setting to default'
+                print('WARNING: CCL4 scale factor units are incorrect; setting to default')
                 ccl4_sf = np.array([default_ccl4,1.0])
             else:
                 ccl4_sf = np.copy(ccl4_sfactor)
             if int(ccl4_sfactor[1]+0.5) == 0:
                 ccl4_sf = np.array([default_ccl4*ccl4_sfactor[0],1.0])
         else:
-            print 'WARNING: CCL4 scale factor vector imporoperly specified; setting to default'
+            print('WARNING: CCL4 scale factor vector imporoperly specified; setting to default')
             ccl4_sf = np.array([default_ccl4,1.0])
     else:
-        print 'WARNING: CCL4 scale factor vector imporoperly specified; setting to default'
+        print('WARNING: CCL4 scale factor vector imporoperly specified; setting to default')
         ccl4_sf = np.array([default_ccl4,1.0]) 
     
     default_f11 = 0.2783 #ppm
@@ -172,17 +172,17 @@ def rundecker(model, aprofile, z, p, t, w, co2_profile= None, o3_profile=None,
     elif type(f11_sfactor) is np.ndarray:
         if ((len(f11_sfactor.shape) == 1) & (f11_sfactor.shape[0] == 2)):
             if ((f11_sfactor[1] < 0) | (f11_sfactor[1] > 1)):
-                print 'WARNING: F11 scale factor units are incorrect; setting to default'
+                print('WARNING: F11 scale factor units are incorrect; setting to default')
                 f11_sf = np.array([default_f11,1.0])
             else:
                 f11_sf = np.copy(f11_sfactor)
             if int(f11_sfactor[1]+0.5) == 0:
                 f11_sf = np.array([default_f11*f11_sfactor[0],1.0])
         else:
-            print 'WARNING: F11 scale factor vector imporoperly specified; setting to default'
+            print('WARNING: F11 scale factor vector imporoperly specified; setting to default')
             f11_sf = np.array([default_f11,1.0])
     else:
-        print 'WARNING: F11 scale factor vector imporoperly specified; setting to default'
+        print('WARNING: F11 scale factor vector imporoperly specified; setting to default')
         f11_sf = np.array([default_f11,1.0]) 
    
     default_f12 = 0.5027 #ppm
@@ -191,17 +191,17 @@ def rundecker(model, aprofile, z, p, t, w, co2_profile= None, o3_profile=None,
     elif type(f12_sfactor) is np.ndarray:
         if ((len(f12_sfactor.shape) == 1) & (f12_sfactor.shape[0] == 2)):
             if ((f12_sfactor[1] < 0) | (f12_sfactor[1] > 1)):
-                print 'WARNING: F12 scale factor units are incorrect; setting to default'
+                print('WARNING: F12 scale factor units are incorrect; setting to default')
                 f12_sf = np.array([default_f12,1.0])
             else:
                 f12_sf = np.copy(f12_sfactor)
             if int(f12_sfactor[1]+0.5) == 0:
                 f12_sf = np.array([default_f12*f12_sfactor[0],1.0])
         else:
-            print 'WARNING: F12 scale factor vector imporoperly specified; setting to default'
+            print('WARNING: F12 scale factor vector imporoperly specified; setting to default')
             f12_sf = np.array([default_f12,1.0])
     else:
-        print 'WARNING: F12 scale factor vector imporoperly specified; setting to default'
+        print('WARNING: F12 scale factor vector imporoperly specified; setting to default')
         f12_sf = np.array([default_f12,1.0])
         
     if sample < 1.0:
@@ -211,18 +211,18 @@ def rundecker(model, aprofile, z, p, t, w, co2_profile= None, o3_profile=None,
         
     if monortm:
         if view_angle != 0:
-            print 'MonoRTM calcs (in this tool) can only be made in the downwelling direction'
-            print 'Please set view_angle to zero degrees (the default value)'
+            print('MonoRTM calcs (in this tool) can only be made in the downwelling direction')
+            print('Please set view_angle to zero degrees (the default value)')
             return
     
         # We don't need heavy molecule cross-sections
         if xsec != 0:
-            print 'There is no need for heavy molecule cross-sections -- turning them off'
+            print('There is no need for heavy molecule cross-sections -- turning them off')
             xsec = 0
     
         # We won't be applying any instrument filter function
         if sc != 0:
-            print 'No filter function is applied to monoRTM calculations -- turning sc off'
+            print('No filter function is applied to monoRTM calculations -- turning sc off')
             sc = 0
     
         # We can define wnum1 and wnum2 here so that they don't need to be entered.
@@ -237,18 +237,18 @@ def rundecker(model, aprofile, z, p, t, w, co2_profile= None, o3_profile=None,
     
     if direction == 'upwelling':
         if not silent:
-            print 'Writing tape5 for an upwelling calculation...'
+            print('Writing tape5 for an upwelling calculation...')
         if sfc_temp is None:
-            print 'ERROR: Surface temperature (sfc_temp) is required for upwelling calculations'
+            print('ERROR: Surface temperature (sfc_temp) is required for upwelling calculations')
             return
         if sfc_type is None:
             sfc_type = 'l'
         if ((sfc_type != 'l') & (sfc_type != 's')):
-            print 'Error: Incorrectly defined surface (reflectance) type'
+            print('Error: Incorrectly defined surface (reflectance) type')
             return
     else:
         if not silent:
-            print 'Writing tape5 for a downwelling calculation...'
+            print('Writing tape5 for a downwelling calculation...')
     
     iemit = 1                # Calculate radiance and transmittance
     merge = 0                # Normal merge
@@ -283,7 +283,7 @@ def rundecker(model, aprofile, z, p, t, w, co2_profile= None, o3_profile=None,
         reset_cntnm = True
     
     if reset_cntnm:
-        print 'WARNING: continuum flag is reset to the default - continuing'
+        print('WARNING: continuum flag is reset to the default - continuing')
         cntnm = cntnm_default
     
     
@@ -315,37 +315,37 @@ def rundecker(model, aprofile, z, p, t, w, co2_profile= None, o3_profile=None,
     
     if co2_mix is not None:
         if v10:
-            print 'Warning: Keyword CO2_MIX is not used with v10; use CO2_SFACTOR instead'
+            print('Warning: Keyword CO2_MIX is not used with v10; use CO2_SFACTOR instead')
     else:
         co2_mix = 360.0
     
     if ((model < 0) | (model > 3)):
-        print 'Undefined model - quitting'
+        print('Undefined model - quitting')
         return
     
     if o3_profile is not None:
         if len(o3_profile) != len(p):
-            print 'Ozone profile does not have same number of levels as pressure profile'
+            print('Ozone profile does not have same number of levels as pressure profile')
             return
     
     if co2_profile is not None:
         if len(co2_profile) != len(p):
-            print 'Carbon dioxide profile does not have same number of levels as pressure profile'
+            print('Carbon dioxide profile does not have same number of levels as pressure profile')
             return
     
     if ch4_profile is not None:
         if len(ch4_profile) != len(p):
-            print 'Methane profile does not have same number of levels as pressure profile'
+            print('Methane profile does not have same number of levels as pressure profile')
             return
     
     if co_profile is not None:
         if len(co_profile) != len(p):
-            print 'Carbon monoxide profile does not have same number of levels as pressure profile'
+            print('Carbon monoxide profile does not have same number of levels as pressure profile')
             return
     
     if n2o_profile is not None:
         if len(n2o_profile) != len(p):
-            print 'Nitrous oxide profile does not have same number of levels as pressure profile'
+            print('Nitrous oxide profile does not have same number of levels as pressure profile')
             return
     
     # If TAPE7 is set, validate that the file actually exists. If it does,
@@ -353,8 +353,8 @@ def rundecker(model, aprofile, z, p, t, w, co2_profile= None, o3_profile=None,
     
     if tape7 is not None:
         if not os.path.exists(tape7):
-            print 'Unable to determine the TAPE7 file ' + tape7
-            print ' and therefore the code is aborting!'
+            print('Unable to determine the TAPE7 file ' + tape7)
+            print(' and therefore the code is aborting!')
             return
         iatm = 0
     else:
@@ -434,13 +434,13 @@ def rundecker(model, aprofile, z, p, t, w, co2_profile= None, o3_profile=None,
     
     if model == 3:
         if ((wnum1 is None) | (wnum2 is None)):
-            print 'Undefined starting or ending wavenumber for custom calculations - aborting'
+            print('Undefined starting or ending wavenumber for custom calculations - aborting')
             return
         if wnum2-wnum1 >= 2020:
-            print 'Maximum difference allowed between starting and ending wnum is 2020 - aborting'
+            print('Maximum difference allowed between starting and ending wnum is 2020 - aborting')
             return
         if wnum2-wnum1 <= 120:
-            print 'Ending wnum must be at least 120 cm-1 larger than starting wnum - aborting'
+            print('Ending wnum must be at least 120 cm-1 larger than starting wnum - aborting')
             return
         if v10:
             rec_1_3_c = '{:10.3f}{:10.3f}{:10.3f}                              0.0002    0.001                             7'.format(wnum1,wnum2,sample)
@@ -476,7 +476,7 @@ def rundecker(model, aprofile, z, p, t, w, co2_profile= None, o3_profile=None,
             rec_1_4 = '0.000     0.000'
         else:
             # Get the surface temperature
-            print 'WARNING: This code is not capable of setting up upwelling LBLRTM run, I have to exit'
+            print('WARNING: This code is not capable of setting up upwelling LBLRTM run, I have to exit')
             return
     
     if have_profile == 1:
@@ -527,7 +527,7 @@ def rundecker(model, aprofile, z, p, t, w, co2_profile= None, o3_profile=None,
     
     # Open the file, and write the rundeck
     if not silent:
-        print 'Writing ' + tape5 + '...'
+        print('Writing ' + tape5 + '...')
             
     lun = open(tape5,'w')
     
@@ -583,7 +583,7 @@ def rundecker(model, aprofile, z, p, t, w, co2_profile= None, o3_profile=None,
         elif int(h2o_sf[1]+0.5) == 2:
             sf_string = 'p'
         else:
-            print 'Error: H2O scale factor inappropriately set (units not defined)'
+            print('Error: H2O scale factor inappropriately set (units not defined)')
             lun.close()
             os.remove(tape5)
             return
@@ -596,7 +596,7 @@ def rundecker(model, aprofile, z, p, t, w, co2_profile= None, o3_profile=None,
         elif int(co2_sf[1]+0.5) == 1:
             sf_string = sf_string+'m'
         else:
-            print 'Error: CO2 scale factor inappropriately set (units not defined)'
+            print('Error: CO2 scale factor inappropriately set (units not defined)')
             lun.close()
             os.remove(tape5)
             return
@@ -611,7 +611,7 @@ def rundecker(model, aprofile, z, p, t, w, co2_profile= None, o3_profile=None,
         elif int(o3_sf[1]+0.5) == 2:
             sf_string = sf_string+'d'
         else:
-            print 'Error: O3 scale factor inappropriately set (units not defined)'
+            print('Error: O3 scale factor inappropriately set (units not defined)')
             lun.close()
             os.remove(tape5)
             return
@@ -624,7 +624,7 @@ def rundecker(model, aprofile, z, p, t, w, co2_profile= None, o3_profile=None,
         elif int(n2o_sf[1]+0.5) == 1:
             sf_string = sf_string+'m'
         else:
-            print 'Error: N2O scale factor inappropriately set (units not defined)'
+            print('Error: N2O scale factor inappropriately set (units not defined)')
             lun.close()
             os.remove(tape5)
             return
@@ -637,7 +637,7 @@ def rundecker(model, aprofile, z, p, t, w, co2_profile= None, o3_profile=None,
         elif int(co_sf[1]+0.5) == 1:
             sf_string = sf_string+'m'
         else:
-            print 'Error: CO scale factor inappropriately set (units not defined)'
+            print('Error: CO scale factor inappropriately set (units not defined)')
             lun.close()
             os.remove(tape5)
             return
@@ -650,7 +650,7 @@ def rundecker(model, aprofile, z, p, t, w, co2_profile= None, o3_profile=None,
         elif int(ch4_sf[1]+0.5) == 1:
             sf_string = sf_string+'m'
         else:
-            print 'Error: CH4 scale factor inappropriately set (units not defined)'
+            print('Error: CH4 scale factor inappropriately set (units not defined)')
             lun.close()
             os.remove(tape5)
             return
@@ -663,7 +663,7 @@ def rundecker(model, aprofile, z, p, t, w, co2_profile= None, o3_profile=None,
         elif int(o2_sf[1]+0.5) == 1:
             sf_string = sf_string+'m'
         else:
-            print 'Error: O2 scale factor inappropriately set (units not defined)'
+            print('Error: O2 scale factor inappropriately set (units not defined)')
             lun.close()
             os.remove(tape5)
             return
@@ -692,7 +692,7 @@ def rundecker(model, aprofile, z, p, t, w, co2_profile= None, o3_profile=None,
         # Now place this line in the tape5
         lun.write(line)
         nlayers = int(line[2:5])
-        print str(nlayers) + ' in the gas profiles'
+        print(str(nlayers) + ' in the gas profiles')
         
         # We replace the IPATH flag to zero that way the SECNTO flag dictates the direction
         for i in range(nlayers):
@@ -712,7 +712,7 @@ def rundecker(model, aprofile, z, p, t, w, co2_profile= None, o3_profile=None,
         line = line[0:11] + scento_string + line[20:len(line)]
         lun.write(line)
         nlayers = int(line[2:5])
-        print str(nlayers) + ' in the xsec profiles'
+        print(str(nlayers) + ' in the xsec profiles')
         
         # We replace the IPATH flag to zero that way the SECNTO flag dictates the direction
         for i in range(nlayers):
@@ -778,7 +778,7 @@ def rundecker(model, aprofile, z, p, t, w, co2_profile= None, o3_profile=None,
             elif p_units == 'sa6':
                 JCHARP = '6'
             else:
-                print 'Unidentified pressure unit - quitting'
+                print('Unidentified pressure unit - quitting')
                 return
             
             if t_units == 'K':
@@ -798,7 +798,7 @@ def rundecker(model, aprofile, z, p, t, w, co2_profile= None, o3_profile=None,
             elif t_units == 'sa6':
                 JCHART = '6'
             else:
-                print 'Unidentified temperature unit - quitting'
+                print('Unidentified temperature unit - quitting')
                 return
             
             if w_units == 'ppmv':
@@ -830,7 +830,7 @@ def rundecker(model, aprofile, z, p, t, w, co2_profile= None, o3_profile=None,
             elif w_units == 'sa6':
                 JCHAR = '6'
             else:
-                print 'Unidentified moisture profile unit - quitting'
+                print('Unidentified moisture profile unit - quitting')
                 return
             
             # Work on co2 units
@@ -863,7 +863,7 @@ def rundecker(model, aprofile, z, p, t, w, co2_profile= None, o3_profile=None,
                 elif o3_units == 'sa6':
                     JCHAR = JCHAR + '6'
                 else:
-                    print 'Unidentified ozone profile unit - quitting'
+                    print('Unidentified ozone profile unit - quitting')
                     return
             
             else:
@@ -928,7 +928,7 @@ def rundecker(model, aprofile, z, p, t, w, co2_profile= None, o3_profile=None,
             foo = np.copy(pp[foo])
             bar = np.where(pp != np.fliplr([foo])[0])[0]
             if len(bar) > 0:
-                print 'Pressure array is not monotonically increasing - quitting'
+                print('Pressure array is not monotonically increasing - quitting')
                 lun.close()
                 return
             
@@ -1004,7 +1004,7 @@ def rundecker(model, aprofile, z, p, t, w, co2_profile= None, o3_profile=None,
         elif inst == 2:
             opd = 2.000000000         # IASI
         else:
-            print 'Error in rundecker -- undefined FTS instrument'
+            print('Error in rundecker -- undefined FTS instrument')
             return
         
         # Construct an array of wavenumbers
@@ -1031,8 +1031,8 @@ def rundecker(model, aprofile, z, p, t, w, co2_profile= None, o3_profile=None,
                 foo1 = np.where(varray > wnum1+50.)[0]
                 foo2 = np.where(varray > wnum2-50.)[0]
                 if ((len(foo1) == 0) | (len(foo2)==0)):
-                    print 'Error determining range for _filtering_ in rundeck - aborting'
-                    print 'Rundeck is incomplete!!!'
+                    print('Error determining range for _filtering_ in rundeck - aborting')
+                    print('Rundeck is incomplete!!!')
                     lun.close()
                     return
                 
@@ -1073,7 +1073,7 @@ def rundecker(model, aprofile, z, p, t, w, co2_profile= None, o3_profile=None,
     lun.close()
     
     if not silent:
-        print tape5 + ' completed'
+        print(tape5 + ' completed')
     return
 
 ################################################################################
@@ -1478,7 +1478,7 @@ def lbl_read(lbl_file, do_load_data = False, valid_avg_P = [1e-4,1e4], valid_avg
 def read_tape27(filen = 'TAPE27'):
     
     if not os.path.exists(filen):
-        print 'Unable to find ' + filen
+        print('Unable to find ' + filen)
         return
     
     fn = open(filen,'r')
@@ -1517,7 +1517,7 @@ def run_monortm(command, freq, z, stdatmos):
     stdout = np.array(stdout)
     
     if len(stdout) < (14 + len(freq) + len(z)):
-        print 'Error: the MonoRTM calculation was not successful'
+        print('Error: the MonoRTM calculation was not successful')
         return error
     
     nht = len(stdout) - (14 + len(freq))
@@ -1529,7 +1529,7 @@ def run_monortm(command, freq, z, stdatmos):
               break
  
     if i == len(stdout)-1:
-        print 'Error: unable to find the string "Freq" in the MonoRTM calc -- this is an error'
+        print('Error: unable to find the string "Freq" in the MonoRTM calc -- this is an error')
         return error
     i = i + 1
     
@@ -1549,7 +1549,7 @@ def run_monortm(command, freq, z, stdatmos):
     dell = np.abs(nfreq - freq)
     foo = np.where(dell > 0.001)[0]
     if len(foo) > 0:
-        print 'Error: The frequency array in the MonoRTM calculation does not match up with desired freqs'
+        print('Error: The frequency array in the MonoRTM calculation does not match up with desired freqs')
         return error
    
      
