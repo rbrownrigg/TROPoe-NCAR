@@ -596,14 +596,14 @@ def read_mwr(path, rootname, date, mwr_type, mwr_elev_field, mwr_n_tb_fields,
                    else:
                        psfcx = np.ones(to.shape)*-999.0
             
-            #See if the elevation variable exists. If so, read it in. If not then
+            # See if the elevation variable exists. If so, read it in. If not then
             # assume all samples are zenith pointing and create the elev field as such
             foo = np.where(np.array(list(fid.variables.keys())) == mwr_elev_field)[0]
             if len(foo) > 0:
                 elevx = fid.variables[mwr_elev_field][:]
             else:
                 print('Warning: Unable to find the field ' + mwr_elev_field + ' in the MWR input file')
-                elevx = np.ones(to.shape)*-90.0
+                elevx = np.ones(to.shape)*90.0
                 
             # Read in the PWV and LWP fields in the input MWR file. If the field 
             # is not found, then assume the field is full of missing values.
