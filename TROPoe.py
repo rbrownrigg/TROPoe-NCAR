@@ -63,16 +63,6 @@ if tpss_shour:
 if tpss_ehour:
     ehour = float(tpss_ehour)
     
-#If any of the TPSS variables are set, then change the "algorithm_package"
-
-if ((tpss_date is None) & (tpss_vfile is None) & (tpss_pfile is None)):
-    algorithm_package = 'AERIoe software running in stand-alone mode'
-else:
-    algorithm_package = ('AERIoe software incorporated into the Thermodynamic '+
-                        'Profiling Software System (TPSS) developed at the ' +
-                        'University of Wisconsin-Madison Space Science and ' +
-                        'Engineering Center (SSEC)')
-                        
 #Check to see if any of these are set; if not, fall back to default values
 
 if shour is None:
@@ -103,22 +93,27 @@ else:
 process = Popen('which csh', stdout = PIPE, stderr = PIPE, shell=True)
 stdout, stderr = process.communicate()
 
-if stdout == '':
+if stdout.decode() == '':
     print('Error: Unable to find the C-shell command on this system')
-    print(('>>> AERIoe retrieval on ' + str(date) + ' FAILED and ABORTED <<<'))
+    print(('>>> TROPoe retrieval on ' + str(date) + ' FAILED and ABORTED <<<'))
     sys.exit()
 else:
-    SHELL = stdout[:-1]
+    SHELL = stdout[:-1].decode()
 
 if verbose == 3:
     print(('The shell for all commands is', SHELL))
 
 #Capture the version of this file
-globatt = {'algorithm_code': 'AERIoe Retrieval Code',
+globatt = {'algorithm_code': 'TROPoe Retrieval Code',
            'algorithm_author': 'Dave Turner, Earth System Research Laboratory / NOAA dave.turner@noaa.gov',
-           'python_author': 'Joshua Gebauer, University of Oklahoma joshua.gebauer@ou.edu',
+           'algorithm_comment1': 'TROPoe is a physical-iterative algorithm that retrieves thermodynamic profiles from ' +
+                                 'a wide range of ground-based remote sensors.  It was primarily designed to use either ' +
+                                 'infrared spectrometers or microwave radiometers as the primary instrument, and include ' +
+                                 'observations from other sources to improve the quality of the retrieved profiles', 
+           'algorithm_comment2': 'Original code was written in IDL and is described by the "AERIoe" papers listed below', 
+           'algorithm_comment3': 'Code was ported to python by Joshua Gebauer with contributions ' +
+                                 'from Tyler Bell (both at the University of Oklahoma)', 
            'algorithm_version': '$Id: aerioe.py, v 0.1 2019/03/25 03:31:00 joshua.gebauer Release_0_1 $',
-           'algorithm_package': algorithm_package,
            'algorithm_reference1': 'DD Turner and U Loehnert, Information Content and ' +
                     'Uncertanties in Thermodynamic Profiles and Liquid Cloud Properties ' +
                     'Retrieved from the Ground-Based Atmospheric Emitted Radiance ' +
@@ -126,7 +121,7 @@ globatt = {'algorithm_code': 'AERIoe Retrieval Code',
                     'doi:10.1175/JAMC-D-13-0126.1',
            'algorithm_reference2': 'DD Turner and WG Blumberg, Improvements to the AERIoe ' +
                     'thermodynamic profile retrieval algorithm. IEEE Selected Topics ' +
-                    'Appl. Earth Obs. Remote Sens., submitted Feb 2018',
+                    'Appl. Earth Obs. Remote Sens., 12, 1339-1354, doi:10.1109/JSTARS.2018.2874968', 
            'datafile_created_on_date': strftime("%Y-%m-%d %H:%M:%S", gmtime()),
            'datafile_created_on_machine': os.uname()[-1]}
            
@@ -134,7 +129,7 @@ globatt = {'algorithm_code': 'AERIoe Retrieval Code',
 # Start the retrieval
 print(' ')
 print('------------------------------------------------------------------------')
-print(('>>> Starting AERIoe retrieval for ' + str(date) + ' (from ' + str(shour) + ' to ' + str(ehour) + ' UTC) <<<'))
+print(('>>> Starting TROPoe retrieval for ' + str(date) + ' (from ' + str(shour) + ' to ' + str(ehour) + ' UTC) <<<'))
 
 #Find the VIP file and read it   
 
@@ -149,7 +144,7 @@ if vip['success'] != 1:
 process = Popen('echo $$', stdout = PIPE, stderr = PIPE, shell=True, executable = SHELL)
 stdout, stderr = process.communicate()
 
-uniquekey = vip['tag'] + '.' + stdout[:-1]
+uniquekey = vip['tag'] + '.' + stdout[:-1].decode()
 
 if debug:
     print('DDT: Saving the VIP and globatt structure into "vip.npy" -- for debugging')
@@ -883,8 +878,8 @@ for i in range(len(aeri['secs'])):                        # { loop_i
         # Use the prior as the first guess
         if verbose >= 3:
             print('Using prior as first guess')
-        t = np.copy(Xa[0:nX/2])
-        q = np.copy(Xa[nX/2:nX])
+        t = np.copy(Xa[0:int(nX/2)])
+        q = np.copy(Xa[int(nX/2):nX])
     elif vip['first_guess'] == 2:
         # Build a first guess from the AERI-estimated surface temperture,
         # an assumed lapse rate, and a 60% RH as first guess
@@ -989,13 +984,13 @@ for i in range(len(aeri['secs'])):                        # { loop_i
             shutil.rmtree(lbllog)
             
         # Update the pressure profile using the current estimate of temperature
-        p = Calcs_Conversions.inv_hypsometric(z, Xn[0:nX/2]+273.16, aeri['atmos_pres'][i]) 
+        p = Calcs_Conversions.inv_hypsometric(z, Xn[0:int(nX/2)]+273.16, aeri['atmos_pres'][i]) 
         
         # If the trace gas profile shape is mandated to be a function of the PBL height,
         # then set that here. First, compute the current estimate of the PBL height,
         # then the coefficient and overwrite any current shape coefficient
         
-        pblh = Other_functions.compute_pblh(z, Xn[0:nX/2], p, minht = vip['min_PBL_height'])
+        pblh = Other_functions.compute_pblh(z, Xn[0:int(nX/2)], p, minht = vip['min_PBL_height'])
         coef = Other_functions.get_a2_pblh(pblh)           # Get the shape coef for this PBL height
         if ((vip['retrieve_co2'] == 1) & (vip['fix_co2_shape'] == 1)):
             Xn[nX+4+2] = coef
@@ -1536,7 +1531,7 @@ for i in range(len(aeri['secs'])):                        # { loop_i
         # Compute some information content numbers. The DFS will be computed
         # as the [total, temp, WVMR, LWP, ReffL, TauI, ReffI, co2, ch4, n2o]
         tmp = np.diag(Akern)
-        dfs = np.array([np.sum(tmp), np.sum(tmp[nX:nX/2]), np.sum(tmp[nX/2:nX]), tmp[nX],
+        dfs = np.array([np.sum(tmp), np.sum(tmp[0:int(nX/2)]), np.sum(tmp[int(nX/2):nX]), tmp[nX],
                     tmp[nX+1], tmp[nX+2], tmp[nX+3], tmp[nX+4], tmp[nX+5], tmp[nX+6],
                     tmp[nX+7], tmp[nX+8], tmp[nX+9], tmp[nX+10], tmp[nX+11], tmp[nX+12]])
             
@@ -1560,13 +1555,13 @@ for i in range(len(aeri['secs'])):                        # { loop_i
         # such that RH > 100%)
         if ((itern == 0) & (verbose >= 3)):
             print('Testing for RH > 100%')
-        rh = Calcs_Conversions.w2rh(np.squeeze(Xnp1[nX/2:nX]), p, np.squeeze(Xnp1[0:nX/2]),0) * 100   # units are %RH
+        rh = Calcs_Conversions.w2rh(np.squeeze(Xnp1[int(nX/2):nX]), p, np.squeeze(Xnp1[0:int(nX/2)]),0) * 100   # units are %RH
         feh = np.where(rh > 100)[0]
         if len(feh) > 0:
             if verbose >= 3:
                 print('RH is above 100% somewhere in this profile -- setting it to 100%')
             rh[feh] = 100.
-            Xnp1[nX/2:nX,0] = Calcs_Conversions.rh2w(np.squeeze(Xnp1[0:nX/2]), rh/100., p)
+            Xnp1[int(nX/2):nX,0] = Calcs_Conversions.rh2w(np.squeeze(Xnp1[0:int(nX/2)]), rh/100., p)
         
         # Perform the monotonically ascending potential temperature test (i.e
         # make sure that theta never decreases with height)
@@ -1574,7 +1569,7 @@ for i in range(len(aeri['secs'])):                        # { loop_i
             print('Testing for decreasing theata with height')
         
         # Multiply WVMR by zero to get theta, not theta-v
-        theta = Calcs_Conversions.t2theta(np.squeeze(Xnp1[0:nX/2]), 0*np.squeeze(Xnp1[nX/2:nX]), p)
+        theta = Calcs_Conversions.t2theta(np.squeeze(Xnp1[0:int(nX/2)]), 0*np.squeeze(Xnp1[int(nX/2):nX]), p)
         
         # This creates the maximum theta
         for ii in range(len(theta)):
@@ -1582,13 +1577,13 @@ for i in range(len(aeri['secs'])):                        # { loop_i
                 theta[ii] = theta[ii-1]
             
         # Multiply WVMR by zero to work with theta, not theta-v
-        Xnp1[0:nX/2,0] = Calcs_Conversions.theta2t(theta, 0*np.squeeze(Xnp1[nX/2:nX]), p)
+        Xnp1[0:int(nX/2),0] = Calcs_Conversions.theta2t(theta, 0*np.squeeze(Xnp1[int(nX/2):nX]), p)
         
         # Make sure we don't get any nonphysical values here that would
         # make the next iteration of the LBLRTM croak
         multiplier = 5.
         
-        feh = np.arange(nX/2) + nX/2
+        feh = np.arange(int(nX/2)) + int(nX/2)
         foo = np.where((Xnp1[feh,0] < minQ) | (Xnp1[feh,0] < Xa[feh] - multiplier*np.sqrt((np.diag(Sa)[feh]))))[0]
         
         if len(foo) > 0:
