@@ -319,7 +319,7 @@ def read_all_data(date, retz, tres, dostop, verbose, avg_instant, ch1_path,
             noise = np.ones((len(wnum),len(mwr_data['secs'])))         #Set all noise values to 1
             print(mwr_data['secs'].shape)
             print(mwr_data['psfc'].shape)
-	    print(mrad.shape)
+            print(mrad.shape)
             yy = np.array([datetime.utcfromtimestamp(x).year for x in mwr_data['secs']])
             mm = np.array([datetime.utcfromtimestamp(x).month for x in mwr_data['secs']])
             dd = np.array([datetime.utcfromtimestamp(x).day for x in mwr_data['secs']])
@@ -1151,20 +1151,20 @@ def read_aeri_sum(path,date,aeri_type,smooth_noise,verbose):
             print('Error in read_aeri_sum: unable to find the SkyNENCh2 field')
             return err
         
-	if len(np.where(np.array(list(fid.variables.keys())) == 'lat')[0]) > 0:
-	    lat = fid.variables['lat'][:]
-	elif len(np.where(np.array(list(fid.variables.keys())) == 'Latitude')[0]) > 0:
+        if len(np.where(np.array(list(fid.variables.keys())) == 'lat')[0]) > 0:
+            lat = fid.variables['lat'][:]
+        elif len(np.where(np.array(list(fid.variables.keys())) == 'Latitude')[0]) > 0:
             lat = np.ma.median(fid.variables['Latitude'][:])
         else:
             lat = -999.0
-	if len(np.where(np.array(list(fid.variables.keys())) == 'lon')[0]) > 0:
-	    lon = fid.variables['lon'][:]
+        if len(np.where(np.array(list(fid.variables.keys())) == 'lon')[0]) > 0:
+            lon = fid.variables['lon'][:]
         elif len(np.where(np.array(list(fid.variables.keys())) == 'Longitude')[0]) > 0:
             lon =  np.ma.median(fid.variables['Longitude'][:])
         else:
             lon = -999.0
-	if len(np.where(np.array(list(fid.variables.keys())) == 'alt')[0]) > 0:
-	    alt = fid.variables['alt'][:]
+        if len(np.where(np.array(list(fid.variables.keys())) == 'alt')[0]) > 0:
+            alt = fid.variables['alt'][:]
         elif len(np.where(np.array(list(fid.variables.keys())) == 'Altitude')[0]) > 0:
             alt =  np.ma.median(fid.variables['Altitude'][:])
         else:

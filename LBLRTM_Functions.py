@@ -380,30 +380,30 @@ def rundecker(model, aprofile, z, p, t, w, co2_profile= None, o3_profile=None,
       	            12.000, 13.000, 14.000, 15.000, 16.500, 18.000, 20.000])
       	            
       	        # Better layering in general
-      	        mlayers = np.arange(11)*0.1
-      	        mlayers = np.append(mlayers,np.arange(10)*0.25+1.25)
-      	        mlayers = np.append(mlayers, np.arange(23)*0.5+4.0)
-      	        mlayers = np.append(mlayers, np.arange(5)+16)
-      	    else:
+                mlayers = np.arange(11)*0.1
+                mlayers = np.append(mlayers,np.arange(10)*0.25+1.25)
+                mlayers = np.append(mlayers, np.arange(23)*0.5+4.0)
+                mlayers = np.append(mlayers, np.arange(5)+16)
+            else:
       	        # The old layering used for the SGP QME...
                 mlayers = np.array([0.320, 0.360, 0.400, 0.500, 0.600, 0.700, 0.800,
                     0.900, 1.000, 1.200, 1.400, 1.600, 1.800, 2.000, 2.200, 2.400, 2.600,
       	            2.800, 3.000, 3.200, 3.400, 3.600, 3.800, 4.000, 4.500, 5.000, 5.500,
       	            6.000, 6.500, 7.000, 7.500, 8.000, 8.500, 9.000, 9.500, 10.000, 11.000,
       	            12.000, 13.000, 14.000, 15.000, 16.500, 18.000, 20.000, 22.000, 24.000,
-	            25.500, 27.000, 28.500, 30.000, 32.000, 34.000, 36.000, 38.000, 40.000,
-	            42.000, 44.000, 46.000, 48.000, 50.000, 52.000, 54.000, 56.000, 58.000,
-	            60.000, 64.000, 68.000])
+                    25.500, 27.000, 28.500, 30.000, 32.000, 34.000, 36.000, 38.000, 40.000,
+                    42.000, 44.000, 46.000, 48.000, 50.000, 52.000, 54.000, 56.000, 58.000,
+                    60.000, 64.000, 68.000])
 	       
 	        # Better layering in general
                 mlayers = np.arange(11)*0.1
-      	        mlayers = np.append(mlayers,np.arange(10)*0.25+1.25)
-      	        mlayers = np.append(mlayers, np.arange(23)*0.5+4.0)
-      	        mlayers = np.append(mlayers, np.arange(5)+16)
-      	        mlayers = np.append(mlayers, np.arange(10)*2+22)
-      	        mlayers = np.append(mlayers, np.arange(8)*4+42)
+                mlayers = np.append(mlayers,np.arange(10)*0.25+1.25)
+                mlayers = np.append(mlayers, np.arange(23)*0.5+4.0)
+                mlayers = np.append(mlayers, np.arange(5)+16)
+                mlayers = np.append(mlayers, np.arange(10)*2+22)
+                mlayers = np.append(mlayers, np.arange(8)*4+42)
       	        
-      	    if not mlay_pres:
+            if not mlay_pres:
       	        if have_profile:
       	            mlayers = mlayers = z[0]
       	        else:

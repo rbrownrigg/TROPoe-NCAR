@@ -840,14 +840,14 @@ def compute_jacobian_deltaod(X, p, zz, lblhome, lbldir, lblroot, stdatmos, tp5, 
 	# that I am also assuming that the amount of radiation emitted
 	# by the atmosphere and reflected by the cloud is negligible.
 	
-	reflection = Other_functions.cloud_reflectivity(v, cldodvis+taui)
-	sfcrad = Calcs_Conversions.planck(v,t[0])
-	cldrefrad = sfcrad * reflection * trans1[cldidx,:] * trans1[cldidx,:]
+        reflection = Other_functions.cloud_reflectivity(v, cldodvis+taui)
+        sfcrad = Calcs_Conversions.planck(v,t[0])
+        cldrefrad = sfcrad * reflection * trans1[cldidx,:] * trans1[cldidx,:]
 	
 	# Compute the baseline radiance
-	radv = Other_functions.radxfer(v,t,gasod)
-	radv += cldrefrad
-	bar =  Other_functions.convolve_to_aeri(v, radv)
+        radv = Other_functions.radxfer(v,t,gasod)
+        radv += cldrefrad
+        bar =  Other_functions.convolve_to_aeri(v, radv)
         bwnum = np.copy(bar['wnum'])
         brad = np.copy(bar['spec'])
         if doapo:

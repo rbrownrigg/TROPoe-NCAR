@@ -127,7 +127,7 @@ def rh2dpt(temp,rh):
     
     yo = np.where(np.array(temp) == 0)[0]
     if len(yo) > 0:
-	return np.zeros(len(temp))
+        return np.zeros(len(temp))
 
     latent = 2.5e6 - 2.386e3*temp
     dpt = np.copy(temp)
