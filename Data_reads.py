@@ -317,9 +317,6 @@ def read_all_data(date, retz, tres, dostop, verbose, avg_instant, ch1_path,
             wnum = np.arange(int((950-900)/0.5)+1)*0.5+900            #Simulated wavenumber array
             mrad = np.ones((len(wnum),len(mwr_data['secs'])))*-999.0   #Radiance is all missing
             noise = np.ones((len(wnum),len(mwr_data['secs'])))         #Set all noise values to 1
-            print(mwr_data['secs'].shape)
-            print(mwr_data['psfc'].shape)
-            print(mrad.shape)
             yy = np.array([datetime.utcfromtimestamp(x).year for x in mwr_data['secs']])
             mm = np.array([datetime.utcfromtimestamp(x).month for x in mwr_data['secs']])
             dd = np.array([datetime.utcfromtimestamp(x).day for x in mwr_data['secs']])

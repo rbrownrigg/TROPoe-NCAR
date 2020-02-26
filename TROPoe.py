@@ -1109,14 +1109,12 @@ for i in range(len(aeri['secs'])):                        # { loop_i
         foo = np.where(flagY == 1)[0]
         bar = np.where(Y[foo] < -900)[0]
         if len(bar) > 0:
-            print('yo')
-            print(bar)
             FXn[bar] = np.copy(Y[foo[bar]])
             for gg in range(len(bar)):
                 Kij[bar[gg],:] = 0.
-        
+
         # Now start processing the other observation types that might be in the obs vector
-        
+
         # Perform the forward model calculation and compute the Jacobian for the
         # MWR-zenith portion of the observation vector
         foo = np.where(flagY == 2)[0]
