@@ -385,7 +385,11 @@ except:
 z = fid.variables['height'][:]
 Xa = fid.variables['mean_prior'][:]
 Sa = fid.variables['covariance_prior'][:]
-nsonde_prior = int(fid.Nsonde.split()[0])
+try:
+    nsonde_prior = int(fid.Nsonde.split()[0])
+except AttributeError:
+    nsonde_prior = int(fid.Nprofiles.split()[0])
+
 comment_prior = str(fid.Comment)
 minT = float(fid.QC_limits_T.split()[5])
 maxT = float(fid.QC_limits_T.split()[7])
