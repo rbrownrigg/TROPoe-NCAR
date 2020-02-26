@@ -1185,7 +1185,7 @@ for i in range(len(aeri['secs'])):                        # { loop_i
             
             # Check to see if I am replicating the observation; if so, then adjust the
             # forward calc and Jacobian appropriately (they are the same value repeated)
-            
+            # TODO - There's an issue here when the TB obs are replicated
             tmpFF = np.copy(FF)
             tmpKK = np.copy(KK)
             for gg in range(1,vip['mwr_tb_replicate']):
