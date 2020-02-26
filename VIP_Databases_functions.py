@@ -464,6 +464,6 @@ def read_stdatmos(filename, stdatmos, verbose):
         return {'status':0}
     
     if verbose >= 1:
-        print('Using standard atmosphere: ' + temp['name'][idx])
+        print('Using standard atmosphere: ' + temp['name'][idx].decode())
     
     return {'status':1, 'z':temp['z'][idx,:], 'p':temp['p'][idx,:], 't':temp['t'][idx,:], 'w':temp['w'][idx,:], 'pwv':temp['pwv'][idx], 'name':temp['name'][idx]}

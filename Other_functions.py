@@ -87,8 +87,8 @@ def smooth(data,npts):
         print('Error in boxcar smoother. Npts needs to be an odd number. Not sure how this happened')
         return data, 0
     
-    extended = np.insert(data,0,np.flipud(data[0:npts/2]))
-    extended = np.append(extended,np.flipud(extended[len(extended)-(npts/2):len(extended)]))
+    extended = np.insert(data,0,np.flipud(data[0:int(npts/2)]))
+    extended = np.append(extended,np.flipud(extended[len(extended)-(int(npts/2)):len(extended)]))
     
     cumsum = np.cumsum(np.insert(extended,0,0))
     
@@ -1233,7 +1233,7 @@ def convolve_to_aeri(wnum, radiance):
     n_fold = len(new_aeri_spec_fold)
     new_aeri_inter = np.fft.ifft(new_aeri_spec_fold) * len(new_aeri_spec_fold)
     new_aeri_inter = np.real(new_aeri_inter)
-    new_aeri_inter = np.roll(new_aeri_inter, -1*n_fold/2)
+    new_aeri_inter = np.roll(new_aeri_inter, -1*int(n_fold/2))
     new_aeri_opd = 1./(2*new_aeri_dv)
     new_aeri_xx = ((np.arange(n_fold)/np.float(n_fold)) * 2  - 1) * new_aeri_opd
     
@@ -1243,7 +1243,7 @@ def convolve_to_aeri(wnum, radiance):
     
     # And transform back into the spectral domain
     n_chop = len(aeri_chop_inter)
-    aeri_chop_inter_shift = np.roll(aeri_chop_inter, n_chop/2)
+    aeri_chop_inter_shift = np.roll(aeri_chop_inter, int(n_chop/2))
     final_aeri_spec = np.fft.fft(aeri_chop_inter_shift)/len(aeri_chop_inter_shift)
     final_aeri_spec = np.real(final_aeri_spec)
     
@@ -1253,7 +1253,7 @@ def convolve_to_aeri(wnum, radiance):
     
     # And compute the wavenumber grid for this data
     final_aeri_dv = 1./(2*aeri_opd)
-    final_aeri_wnum = np.arange(len(final_aeri_spec)/2) * final_aeri_dv
+    final_aeri_wnum = np.arange(int(len(final_aeri_spec)/2)) * final_aeri_dv
     final_aeri_spec = final_aeri_spec[0:len(final_aeri_wnum)]
     
     # And the last step: cut off data before and after the actual

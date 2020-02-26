@@ -509,7 +509,7 @@ def rundecker(model, aprofile, z, p, t, w, co2_profile= None, o3_profile=None,
     # Get the date for the default comment string
     process = Popen('date', stdout = PIPE, stderr = PIPE, shell=True, executable = '/bin/csh')
     stdout, stderr = process.communicate()
-    date = stdout[:-1]
+    date = stdout[:-1].decode()
     
     # Get the proper output filename
     if tape5 is None:
