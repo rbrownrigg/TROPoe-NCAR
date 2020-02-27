@@ -317,9 +317,6 @@ def read_all_data(date, retz, tres, dostop, verbose, avg_instant, ch1_path,
             wnum = np.arange(int((950-900)/0.5)+1)*0.5+900            #Simulated wavenumber array
             mrad = np.ones((len(wnum),len(mwr_data['secs'])))*-999.0   #Radiance is all missing
             noise = np.ones((len(wnum),len(mwr_data['secs'])))         #Set all noise values to 1
-            print(mwr_data['secs'].shape)
-            print(mwr_data['psfc'].shape)
-            print(mrad.shape)
             yy = np.array([datetime.utcfromtimestamp(x).year for x in mwr_data['secs']])
             mm = np.array([datetime.utcfromtimestamp(x).month for x in mwr_data['secs']])
             dd = np.array([datetime.utcfromtimestamp(x).day for x in mwr_data['secs']])
@@ -596,14 +593,14 @@ def read_mwr(path, rootname, date, mwr_type, mwr_elev_field, mwr_n_tb_fields,
                    else:
                        psfcx = np.ones(to.shape)*-999.0
             
-            #See if the elevation variable exists. If so, read it in. If not then
+            # See if the elevation variable exists. If so, read it in. If not then
             # assume all samples are zenith pointing and create the elev field as such
             foo = np.where(np.array(list(fid.variables.keys())) == mwr_elev_field)[0]
             if len(foo) > 0:
                 elevx = fid.variables[mwr_elev_field][:]
             else:
                 print('Warning: Unable to find the field ' + mwr_elev_field + ' in the MWR input file')
-                elevx = np.ones(to.shape)*-90.0
+                elevx = np.ones(to.shape)*90.0
                 
             # Read in the PWV and LWP fields in the input MWR file. If the field 
             # is not found, then assume the field is full of missing values.

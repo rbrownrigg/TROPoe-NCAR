@@ -385,7 +385,11 @@ except:
 z = fid.variables['height'][:]
 Xa = fid.variables['mean_prior'][:]
 Sa = fid.variables['covariance_prior'][:]
-nsonde_prior = int(fid.Nsonde.split()[0])
+try:
+    nsonde_prior = int(fid.Nsonde.split()[0])
+except AttributeError:
+    nsonde_prior = int(fid.Nprofiles.split()[0])
+
 comment_prior = str(fid.Comment)
 minT = float(fid.QC_limits_T.split()[5])
 maxT = float(fid.QC_limits_T.split()[7])
@@ -1105,14 +1109,12 @@ for i in range(len(aeri['secs'])):                        # { loop_i
         foo = np.where(flagY == 1)[0]
         bar = np.where(Y[foo] < -900)[0]
         if len(bar) > 0:
-            print('yo')
-            print(bar)
             FXn[bar] = np.copy(Y[foo[bar]])
             for gg in range(len(bar)):
                 Kij[bar[gg],:] = 0.
-        
+
         # Now start processing the other observation types that might be in the obs vector
-        
+
         # Perform the forward model calculation and compute the Jacobian for the
         # MWR-zenith portion of the observation vector
         foo = np.where(flagY == 2)[0]
@@ -1185,7 +1187,7 @@ for i in range(len(aeri['secs'])):                        # { loop_i
             
             # Check to see if I am replicating the observation; if so, then adjust the
             # forward calc and Jacobian appropriately (they are the same value repeated)
-            
+            # TODO - There's an issue here when the TB obs are replicated
             tmpFF = np.copy(FF)
             tmpKK = np.copy(KK)
             for gg in range(1,vip['mwr_tb_replicate']):

@@ -1510,8 +1510,7 @@ def run_monortm(command, freq, z, stdatmos):
     # Run the command
     process = Popen(command, stdout = PIPE, stderr = PIPE, shell=True, executable = '/bin/csh')
     stdout, stderr = process.communicate()
-       
-    stdout = stdout.split('\n')
+    stdout = stdout.decode().split('\n')
     for i in range(len(stdout)):
         stdout[i] = stdout[i].strip()
     stdout = np.array(stdout)

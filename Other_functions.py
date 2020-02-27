@@ -1282,7 +1282,7 @@ def write_arm_sonde_file(z, p, t, u, name, glatt=None, base_time=None, time_offs
     if not silent:
         print('Creating the file ' + name)
     
-    fid = Dataset(name,'w')
+    fid = Dataset(name, 'w', format='NETCDF3_CLASSIC')
     did = fid.createDimension('time',None)
     b_time = fid.createVariable('base_time','i4')
     b_time.long_name = 'Time since 1970-01-01 00:00:00'
