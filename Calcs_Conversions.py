@@ -461,3 +461,10 @@ def theta2t(theta, w, p, p0 = 1000.):
     t = th / ( (p0/p)**0.286 ) - 273.16
     
     return t
+
+################################################################################
+# This allows git to update the version number of this file, and for me to trap it
+################################################################################
+def get_version:
+    version_string = '$Id$'
+    return version_string
