@@ -1285,7 +1285,7 @@ def write_arm_sonde_file(z, p, t, u, name, glatt=None, base_time=None, time_offs
     fid = Dataset(name,'w')
     did = fid.createDimension('time',None)
     b_time = fid.createVariable('base_time','i4')
-    b_time.long_name = 'Time since 1960-01-01 00:00:00'
+    b_time.long_name = 'Time since 1970-01-01 00:00:00'
     b_time.units = 'seconds'
     if base_time is None:
         b_time.comment = 'This is a dummy field and has no real meaning it is only included to match the ARM data format'
