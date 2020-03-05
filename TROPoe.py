@@ -1,3 +1,5 @@
+__version__ = '0.2.14'
+
 import os
 import sys
 import numpy as np
@@ -113,7 +115,7 @@ globatt = {'algorithm_code': 'TROPoe Retrieval Code',
            'algorithm_comment2': 'Original code was written in IDL and is described by the "AERIoe" papers listed below', 
            'algorithm_comment3': 'Code was ported to python by Joshua Gebauer with contributions ' +
                                  'from Tyler Bell (both at the University of Oklahoma)', 
-           'algorithm_version': '$Id: aerioe.py, v 0.1 2019/03/25 03:31:00 joshua.gebauer Release_0_1 $',
+           'algorithm_version': __version__,
            'algorithm_reference1': 'DD Turner and U Loehnert, Information Content and ' +
                     'Uncertanties in Thermodynamic Profiles and Liquid Cloud Properties ' +
                     'Retrieved from the Ground-Based Atmospheric Emitted Radiance ' +
