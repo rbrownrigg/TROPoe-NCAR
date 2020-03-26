@@ -477,26 +477,35 @@ def write_output(vip, ext_prof, mod_prof, ext_tseries, globatt, xret, prior,
         
         # Fill these in, if available
         if type(location) is dict:
-            print(location['lat'])
             if ((type(location['lat']) is int) or (type(location['lat'] is float))):
-                lat = np.float(location['lat'])
+                try:
+                    lat[:] = np.float(location['lat'])
+                except TypeError:
+                    # TODO - Allow changing lat/lon/alt. I.e. let the lat/lon/alt have a time dimension
+                    lat[:] = np.float(np.mean(location['lat']))
             else:
-                lat = -999.0
+                lat[:] = -999.0
             
             if ((type(location['lon']) is int) or (type(location['lon'] is float))):
-                lon = np.float(location['lon'])
+                try:
+                    lon[:] = np.float(location['lon'])
+                except TypeError:
+                    lon[:] = np.float(np.mean(location['lon']))
             else:
-                lon = -999.0
+                lon[:] = -999.0
             
             if ((type(location['alt']) is int) or (type(location['alt'] is float))):
-                alt = np.float(location['alt'])
+                try:
+                    alt[:] = np.float(location['alt'])
+                except TypeError:
+                    alt[:] = np.float(np.mean(location['alt']))
             else:
-                alt = -999.0
+                alt[:] = -999.0
         
         else:
-            lat = -999.
-            lon = -999.
-            alt = -999.
+            lat[:] = -999.
+            lon[:] = -999.
+            alt[:] = -999.
         
         fid.close()
         
