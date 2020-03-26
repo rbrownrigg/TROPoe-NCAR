@@ -34,13 +34,14 @@ def write_output(vip, ext_prof, mod_prof, ext_tseries, globatt, xret, prior,
     
     # If fsample is zero, then we will create the netCDF file
     if fsample == 0:
+        dt = datetime.utcfromtimestamp(xret[0]['secs'])
         hh = datetime.utcfromtimestamp(xret[0]['secs']).hour
         nn = datetime.utcfromtimestamp(xret[0]['secs']).minute
         ss = datetime.utcfromtimestamp(xret[0]['secs']).second
         hms = hh*10000 + nn*100 + ss
         
-        nfilename = vip['output_path'] + '/' + vip['output_rootname'] + '.' +  str(xret[0]['ymd']) + '.' + str(hh)+str(nn)+str(ss) + '.cdf'
-        
+        nfilename = vip['output_path'] + '/' + vip['output_rootname'] + '.' + dt.strftime('%Y%m%d.%H%M%S') + '.cdf'
+
         if ((os.path.exists(nfilename)) & (vip['output_clobber'] == 0)):
             print('Error: output file exists -- aborting (' + nfilename + ')')
         elif (os.path.exists(nfilename)):
@@ -402,20 +403,20 @@ def write_output(vip, ext_prof, mod_prof, ext_tseries, globatt, xret, prior,
             Sa = fid.createVariable('Sa', 'f4', ('arb','arb',))
             Sa.long_name = 'prior covariance'
             Sa.units = 'mixed units -- see field arb above'
-            
+
         # These should be the last three variables in the file
         lat = fid.createVariable('lat', 'f4')
         lat.long_name = 'latitude'
         lat.units = 'degrees north'
-        
+
         lon = fid.createVariable('lon', 'f4')
         lon.long_name = 'longitude'
         lon.units = 'degrees east'
-        
+
         alt = fid.createVariable('alt', 'f4')
         alt.long_name = 'altitude'
         alt.units = 'm above MSL'
-        
+
         # Add some global attributes
         for i in range(len(list(globatt.keys()))):
             fid.setncattr(list(globatt.keys())[i], globatt[list(globatt.keys())[i]])
@@ -476,6 +477,7 @@ def write_output(vip, ext_prof, mod_prof, ext_tseries, globatt, xret, prior,
         
         # Fill these in, if available
         if type(location) is dict:
+            print(location['lat'])
             if ((type(location['lat']) is int) or (type(location['lat'] is float))):
                 lat = np.float(location['lat'])
             else:
