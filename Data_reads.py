@@ -295,7 +295,7 @@ def read_all_data(date, retz, tres, dostop, verbose, avg_instant, ch1_path,
         mwr_data = read_mwr(mwr_path, mwr_rootname, date, mwr_type, mwr_elev_field, mwr_n_tb_fields,
                            mwr_tb_field_names, mwr_tb_freqs, mwr_tb_noise, mwr_tb_bias, mwr_tb_field1_tbmax,
                            mwr_pwv_field, mwr_pwv_scalar, mwr_lwp_field, mwr_lwp_scalar,
-                           verbose)
+                           verbose, single_date=True)
         
         if mwr_data['success'] != 1:
             print('Problem reading MWR data -- unable to continue because the MWR is the master instrument')
@@ -322,7 +322,7 @@ def read_all_data(date, retz, tres, dostop, verbose, avg_instant, ch1_path,
             dd = np.array([datetime.utcfromtimestamp(x).day for x in mwr_data['secs']])
             hour = np.array([((datetime.utcfromtimestamp(x)-datetime(yy[0],mm[0],dd[0])).total_seconds())/3600. for x in mwr_data['secs']])
             ymd = yy*10000 + mm*100 + dd
-            
+
             aerieng = ({'success':1, 'secs':mwr_data['secs'], 'ymd':ymd, 'hour':hour,
                        'bbcavityfactor': np.zeros(len(mwr_data['secs'])),
                        'interferometerSecondPortTemp': np.ones(len(mwr_data['secs']))*300.0})
@@ -500,15 +500,20 @@ def read_all_data(date, retz, tres, dostop, verbose, avg_instant, ch1_path,
 def read_mwr(path, rootname, date, mwr_type, mwr_elev_field, mwr_n_tb_fields,
             mwr_tb_field_names, mwr_tb_freqs, mwr_tb_noise, mwr_tb_bias,
             mwr_tb_field1_tbmax, mwr_pwv_field, mwr_pwv_scalar, mwr_lwp_field,
-            mwr_lwp_scalar, verbose):
+            mwr_lwp_scalar, verbose, single_date=False):
             
     if verbose >= 2:
         print('Reading MWR data in ' + path)
     err = {'success':0, 'type':-1}
         
-    # Read in the data from yesterday, today, and tomorrow
-    udate = [(datetime.strptime(str(date), '%Y%m%d') - timedelta(days=1)).strftime('%Y%m%d') ,
-              str(date) ,  (datetime.strptime(str(date), '%Y%m%d') + timedelta(days=1)).strftime('%Y%m%d') ]
+    # If single date is True, only read in the single date. This is used for MWR only mode upon the first
+    # read of the mwr data. This is mainly to get the times. If we read in data from before and after the
+    # inputted date, it messes up the times.
+    if single_date:
+        udate = [str(date)]
+    else:
+        udate = [(datetime.strptime(str(date), '%Y%m%d') - timedelta(days=1)).strftime('%Y%m%d') ,
+                  str(date) ,  (datetime.strptime(str(date), '%Y%m%d') + timedelta(days=1)).strftime('%Y%m%d') ]
               
     if mwr_type < 0:
         print(' ')
