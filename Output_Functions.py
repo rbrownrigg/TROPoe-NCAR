@@ -549,10 +549,11 @@ def write_output(vip, ext_prof, mod_prof, ext_tseries, globatt, xret, prior,
     # I am going to report a 1-sigma standard deviation
     
     num_mc = 20                      # Number of points to use in the MC sampling
-    
+    npts = len(xret) - fsample       # Number of times that need processed
+
     # The derived indices
-    indices = np.zeros((len(dindex_name), len(xret)))
-    sigma_indices = np.zeros((len(dindex_name), len(xret)))
+    indices = np.zeros((len(dindex_name), npts))
+    sigma_indices = np.zeros((len(dindex_name), npts))
     tmp = np.zeros(num_mc)
     tprofs = np.zeros((nht, num_mc))
     wprofs = np.zeros((nht, num_mc))
@@ -561,8 +562,7 @@ def write_output(vip, ext_prof, mod_prof, ext_tseries, globatt, xret, prior,
     if len(dindex_name) != len(dindex_units):
         print('Error in write_output: there is a dimension mismatch in the derived indices dindex_')
         return success, nfilename
-    
-    for i in range(len(xret)):
+    for i in range(npts):
         # Extract out the temperature and water vapor profiles
         pp = np.copy(xret[i]['p'])
         tt = np.copy(xret[i]['Xn'][0:nht])
@@ -762,8 +762,8 @@ def write_output(vip, ext_prof, mod_prof, ext_tseries, globatt, xret, prior,
         thetae[fsample+i,:] = np.transpose(theta_tmp[:,fsample+i])
         rh[fsample+i,:] = np.transpose(rh_tmp[:,fsample+i])
         dewpt[fsample+i,:] = np.transpose(dewpt_tmp[:,fsample+i])
-        dindices[fsample+i,:] = np.transpose(indices[:,fsample+i])
-        sigma_dindices[fsample+i,:] = np.transpose(sigma_indices[:,fsample+i])
+        dindices[fsample+i,:] = np.transpose(indices[:,i])
+        sigma_dindices[fsample+i,:] = np.transpose(sigma_indices[:,i])
         
         obs_vector[fsample+i,:] = xret[fsample+i]['Y']
         obs_vector_uncertainty[fsample+i,:] = xret[fsample+i]['sigY']
