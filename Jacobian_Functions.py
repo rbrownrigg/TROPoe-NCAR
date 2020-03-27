@@ -1147,7 +1147,7 @@ def compute_jacobian_microwave_3method(Xn, p, z, freq, cbh, vip, workdir,
     etime = datetime.now()
     totaltime = (etime-stime).total_seconds()
     if verbose >= 3:
-        print(' It took ' + totaltime + ' s to compute Jacobian (3method)')
+        print(' It took ' + str(totaltime) + ' s to compute Jacobian (3method)')
     
     flag = 1
     
