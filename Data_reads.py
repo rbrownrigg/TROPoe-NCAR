@@ -2383,7 +2383,7 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
             for j in range(len(cdf)):
                 files = files + (glob.glob(temp_prof_path + '/' + '*model*' + dates[i] + '*.' + cdf[j]))
         
-        if files == 0:
+        if len(files) == 0:
             if verbose >= 1:
                 print('No NWP model output data found in this directory for this date')
             external['nTprof'] = 0
