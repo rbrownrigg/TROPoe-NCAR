@@ -78,6 +78,10 @@ if debug is None:
 if dostop is None:
     dostop = False
 
+# If doplot is True, need to import matplotlib functions
+if doplot:
+    import matplotlib.pyplot as plt
+
 # Initialize
 success = True
 
@@ -1499,7 +1503,6 @@ for i in range(len(aeri['secs'])):                        # { loop_i
             gfac = gfactor[itern]
 
         # Retrieval Calculations
-
         B = (gfac * SaInv) + Kij.T.dot(SmInv).dot(Kij)
         Binv = scipy.linalg.inv(B)
         Gain = Binv.dot(Kij.T).dot(SmInv)
@@ -1692,6 +1695,52 @@ for i in range(len(aeri['secs'])):                        # { loop_i
         # Add doplot code here #
         ########################
 
+        if doplot:
+            if itern == 0:
+                xx = np.array([X0.copy()])
+                fxx = np.array([Y.copy()])
+                frms = np.array([999.])
+
+
+            xx = np.append(xx, np.array([Xn.copy()]), axis=0)
+            fxx = np.append(fxx, np.array([FXn.copy()]), axis=0)
+            frms = np.append(frms, rmsp)
+
+            fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2)
+            fig.set_figheight(10)
+            fig.set_figwidth(10)
+            ylim=(0, 3)
+            # Temperature plot
+            ax1.plot(xx[0, 0:int(nX/2)], z, label='prior')
+            for ii in range(1, xx.shape[0]):
+                ax1.scatter(xx[ii, 0:int(nX/2)], z, color=f"C{ii}", marker='x', label=f'iter{ii}')
+            ax1.plot(Xnp1[0:int(nX/2)], z, linewidth=2, color='k')
+            ax1.set_ylim(ylim)
+            ax1.set_xlim(-30, 40)
+            ax1.set_xlabel("Temperature")
+            ax1.set_ylabel("Altitude (km AGL)")
+            ax1.legend()
+
+            ax2.plot(xx[0, int(nX/2):nX], z)
+            for ii in range(1, xx.shape[0]):
+                ax2.scatter(xx[ii, int(nX/2):nX], z, color=f"C{ii}", marker='x')
+            ax2.plot(Xnp1[int(nX/2):nX], z, linewidth=2, color='k')
+            ax2.set_ylim(ylim)
+            ax2.set_xlim(0, maxQ)
+            ax2.set_xlabel("WVMR")
+            ax2.set_ylabel("Altitude (km AGL)")
+
+            ax3.hlines(0, 0, len(Y), color='k')
+            for ii in range(1, xx.shape[0]):
+                ax3.plot(Y-fxx[ii], color=f"C{ii}")
+            ax3.set_ylim(-10, 10)
+            ax3.set_xlabel('Radiance Index')
+            ax3.set_ylabel('Radiance Diff (RU)')
+
+            plt.tight_layout()
+            #ax1.plot(xx[])
+            plt.savefig(f'temp_output_{itern}.png')
+            plt.close()
         # Capture the iteration with the best RMS value
         if rmsa <= old_rmsa:
             old_rmsa = rmsa
@@ -1854,6 +1903,21 @@ for i in range(len(aeri['secs'])):                        # { loop_i
     ################################
     # IDL SAVE FILE CODE GOES HERE #
     ################################
+    if debug == 1:
+        import pickle
+        # Create the .IDL file only if DEBUG is set
+        # (Main reason is to get the xsamp data that show each iteration)
+        dt = datetime.utcfromtimestamp(aeri['secs'][i])
+        hr = int(shour)*100+int(((shour-int(shour))*60+.5))
+        savename = dt.strftime(f"{vip['output_path']}/{vip['output_rootname']}.%Y%m%d.{hr}.%H%M.pkl")
+        out = {'xret': xret, 'xsamp': xsamp, 'bands': bands, 'vip':vip,
+               'doco2':doco2, 'doch4': doch4, 'don2o':don2o,
+               'dolcloud':dolcloud,'Sa':Sa, 'Xa':Xa, 'nsonde_prior':nsonde_prior,
+               'comment_prior':comment_prior, 'aeri':aeri, 'shour':shour,'ehour':ehour,
+               'starttime':starttime, 'endtime':endtime, 'version':__version__}
+        with open(savename, 'wb') as fh:
+            pickle.dump(out, fh)
+
 
     # Determine the QC of the sample
     # First look for a hatch that is isn't fully open
