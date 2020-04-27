@@ -252,7 +252,7 @@ def wsat(temp, pres):
 def w2pwv(w, p, pwv_err_flag = False, w_err = None, err_thres = 25, max_ht_index = None,
         pwv_max_ht_flag = False, min_w = -5, min_w_err = 0, pwv_profile_flag = False):
         
-    yo = np.where(np.array(w) == 0)
+    yo = np.where(np.array(w) == 0)[0]
     if len(yo) > 0:
         return 0.
  
