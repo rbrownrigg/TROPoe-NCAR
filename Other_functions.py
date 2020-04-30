@@ -1153,8 +1153,8 @@ def convolve_to_aeri(wnum, radiance):
         # Compute the interferogram
         n = len(yfold)
         inter = np.fft.ifft(yfold)*len(yfold)
-        yyi = np.real(np.roll(inter, -1*n/2))
-        
+        yyi = np.real(np.roll(inter, int(-1*n/2)))
+
         # Now we want to zeropad the spectrum to have 2^14 points
         # so we need to figure out how many zeros to put at the ends of
         # the interferogram. And we need to keep track of the factor that
@@ -1175,7 +1175,7 @@ def convolve_to_aeri(wnum, radiance):
         
         # Now compute the spectrum from this zeropadded spectrum
         n_pad = len(yyi_pad)
-        yyi_pad_shift = np.roll(yyi_pad, n_pad/2)
+        yyi_pad_shift = np.roll(yyi_pad, int(n_pad/2))
         new_spec = np.fft.fft(yyi_pad_shift)/len(yyi_pad_shift)
         new_dv = delx/np.float(factor)
         
