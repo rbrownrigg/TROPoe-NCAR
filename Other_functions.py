@@ -1183,7 +1183,7 @@ def convolve_to_aeri(wnum, radiance):
         # and put the energy back in
         
         new_x = np.arange(len(new_spec)/2) * new_dv
-        new_y = factor *np.real(new_spec[0:len(new_spec)/2])
+        new_y = factor * np.real(new_spec[0:int(len(new_spec)/2)])
         new_delx = np.mean(new_x[1:len(new_x)] - new_x[0:len(new_x)-1])
     
     else:
