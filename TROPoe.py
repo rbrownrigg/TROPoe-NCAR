@@ -1,4 +1,4 @@
-__version__ = '0.2.26'
+__version__ = '0.2.27'
 
 import os
 import sys
@@ -878,7 +878,7 @@ for i in range(len(aeri['secs'])):                        # { loop_i
     # the uncertainties in the forward model and the observations
 
     Sm = Sy + Sf
-    SmInv = np.linalg.inv(Sm)
+    SmInv = scipy.linalg.pinv2(Sm)
 
     # Get the other input variables that the forward model will need
     nX = len(z)*2                 # For both T and Q
@@ -1013,12 +1013,12 @@ for i in range(len(aeri['secs'])):                        # { loop_i
         # The decorrelation factor should be between 1 and 100, I think, and read from VIP.
         # This really should only be done in the daytime though, so will need to
         # add new logic to determin local time-of-day from lat/lon position sometime.
-        #prior_pblh_decorrelate_factor = 3.
+        # prior_pblh_decorrelate_factor = 3.
 
-        #Sa = Other_functions.covariance_matrix_decorrelate_level(prior['Sa'], z, pblh, prior_pblh_decorrelate_factor)
+        # Sa = Other_functions.covariance_matrix_decorrelate_level(prior['Sa'], z, pblh, prior_pblh_decorrelate_factor)
 
         # Compute its inverse of the prior
-        SaInv = np.linalg.inv(Sa)
+        SaInv = scipy.linalg.pinv2(Sa)
 
         # This function makes the forward calculation and computes the Jacobian
         # for the AERI component of the forward model
@@ -1504,11 +1504,11 @@ for i in range(len(aeri['secs'])):                        # { loop_i
 
         # Retrieval Calculations
         B = (gfac * SaInv) + Kij.T.dot(SmInv).dot(Kij)
-        Binv = scipy.linalg.inv(B)
+        Binv = scipy.linalg.pinv2(B)
         Gain = Binv.dot(Kij.T).dot(SmInv)
         Xnp1 = Xa[:,None] + Gain.dot(Y[:,None] - FXn[:,None] + Kij.dot((Xn-Xa)[:,None]))
         Sop = Binv.dot(gfac*gfac*SaInv + Kij.T.dot(SmInv).dot(Kij)).dot(Binv)
-        SopInv = scipy.linalg.inv(Sop)
+        SopInv = scipy.linalg.pinv2(Sop)
         Akern = Binv.dot(Kij.T).dot(SmInv).dot(Kij)
 
         # If we are trying to fix the shape of the TG profiles as a function of the
@@ -1542,7 +1542,7 @@ for i in range(len(aeri['secs'])):                        # { loop_i
                     tmp[nX+1], tmp[nX+2], tmp[nX+3], tmp[nX+4], tmp[nX+5], tmp[nX+6],
                     tmp[nX+7], tmp[nX+8], tmp[nX+9], tmp[nX+10], tmp[nX+11], tmp[nX+12]])
 
-        sic = 0.5 * np.log(np.linalg.det(Sa.dot(SopInv)))
+        sic = 0.5 * np.log(scipy.linalg.det(Sa.dot(SopInv)))
         vres = Other_functions.compute_vres_from_akern(Akern, z)
         # Compute the N-form and M-form convergence criteria (X and Y spaces, resp)
         if itern == 0:
@@ -1554,7 +1554,9 @@ for i in range(len(aeri['secs'])):                        # { loop_i
 
         di2n = ((Xn[:,None]-Xnp1).T.dot(SopInv).dot(Xn[:,None]-Xnp1))[0,0]
         if len(Fxnm1) == nY:
-            di2m = ((FXn[:,None] - Fxnm1[:,None]).T.dot(scipy.linalg.inv(Kij.dot(Sop).dot(Kij.T)+Sm)).dot(FXn[:,None] - Fxnm1[:,None]))[0,0]
+            di2m = ((FXn[:,None] - Fxnm1[:,None]).T.dot(
+                scipy.linalg.pinv2(Kij.dot(Sop).dot(Kij.T)+Sm)).dot(
+                FXn[:,None] - Fxnm1[:,None]))[0,0]
         else:
             di2m = 9.0e9
 
@@ -1579,7 +1581,7 @@ for i in range(len(aeri['secs'])):                        # { loop_i
         theta = Calcs_Conversions.t2theta(np.squeeze(Xnp1[0:int(nX/2)]), 0*np.squeeze(Xnp1[int(nX/2):nX]), p)
 
         # This creates the maximum theta
-        for ii in range(len(theta)):
+        for ii in range(len(theta))[1:]:
             if ((theta[ii] <= theta[ii-1]) & (z[ii] > vip['superadiabatic_maxht'])):
                 theta[ii] = theta[ii-1]
 
