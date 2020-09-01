@@ -166,7 +166,7 @@ def compute_jacobian_deltaod(X, p, zz, lblhome, lbldir, lblroot, stdatmos, tp5, 
     # String all of the commands together and make a single Popen call
     command = ('('+command1+')& ; ('+command2+')& ; ('+command3+')& ; ('+command4 +
   		')& ; ('+command5+')& ; ('+command6+')& ; wait ')
-            
+    
     command = '('+command+')>& /dev/null'
     
     process = Popen(command, stdout = PIPE, stderr = PIPE, shell=True, executable = '/bin/csh')
@@ -174,7 +174,7 @@ def compute_jacobian_deltaod(X, p, zz, lblhome, lbldir, lblroot, stdatmos, tp5, 
     
     # Now read in the baseline optical depths
     files1 = []
-    files1 = files1 + (glob.glob(lbldir+'.1/OD*'))
+    files1 = files1 + sorted(glob.glob(lbldir+'.1/OD*'))
     if len(files1) != k-1:
         print('This should not happen (0) in compute_jacobian_deltaod')
         if verbose >= 3:
@@ -207,7 +207,7 @@ def compute_jacobian_deltaod(X, p, zz, lblhome, lbldir, lblroot, stdatmos, tp5, 
         if fixt != 1:
             if i == 0:
                 files2 = []
-                files2 = files2 + (glob.glob(lbldir+'.2/OD*'))
+                files2 = files2 + sorted(glob.glob(lbldir+'.2/OD*'))
                 if len(files2) != len(files1):
                     print('This should not happen (1) in compute jacobian_deltaod')
                     if verbose >= 3:
@@ -223,7 +223,7 @@ def compute_jacobian_deltaod(X, p, zz, lblhome, lbldir, lblroot, stdatmos, tp5, 
         if fixwv != 1:
             if i == 0:
                 files3 = []
-                files3 = files3 + (glob.glob(lbldir+'.3/OD*'))
+                files3 = files3 + sorted(glob.glob(lbldir+'.3/OD*'))
                 if len(files2) != len(files1):
                     print('This should not happen (2) in compute jacobian_deltaod')
                     if verbose >= 3:
@@ -239,7 +239,7 @@ def compute_jacobian_deltaod(X, p, zz, lblhome, lbldir, lblroot, stdatmos, tp5, 
         if doco2 >= 1:
             if i == 0:
                 files4 = []
-                files4 = files4 + (glob.glob(lbldir+'.4/OD*'))
+                files4 = files4 + sorted(glob.glob(lbldir+'.4/OD*'))
                 if len(files2) != len(files1):
                     print('This should not happen (3) in compute jacobian_deltaod')
                     if verbose >= 3:
@@ -255,7 +255,7 @@ def compute_jacobian_deltaod(X, p, zz, lblhome, lbldir, lblroot, stdatmos, tp5, 
         if doch4 >= 1:
             if i == 0:
                 files5 = []
-                files5 = files5 + (glob.glob(lbldir+'.5/OD*'))
+                files5 = files5 + sorted(glob.glob(lbldir+'.5/OD*'))
                 if len(files5) != len(files1):
                     print('This should not happen (5) in compute jacobian_deltaod')
                     if verbose >= 3:
@@ -271,7 +271,7 @@ def compute_jacobian_deltaod(X, p, zz, lblhome, lbldir, lblroot, stdatmos, tp5, 
         if don2o >= 1:
             if i == 0:
                 files6 = []
-                files6 = files6 + (glob.glob(lbldir+'.6/OD*'))
+                files6 = files6 + sorted(glob.glob(lbldir+'.6/OD*'))
                 if len(files2) != len(files1):
                     print('This should not happen (6) in compute jacobian_deltaod')
                     if verbose >= 3:
