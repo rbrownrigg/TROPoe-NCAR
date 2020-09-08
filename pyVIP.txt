@@ -195,8 +195,8 @@ spectral_bands            = 612-618,624-660,674-713,713-722,538-588,860.1-864.0,
 # Global attributes for the output netCDF file (must start with "globatt_")
 # Use '_' instead of spaces between words
 #
-globatt_Site = Norman,_OK
-globatt_Instrument = CLAMPS_AERI-113
-globatt_Dataset_contact = Dave_Turner,_NOAA,_dave.turner@noaa.gov
-globatt_Processing_comment = Data_were_processed_in_real-time_using_independent_noise_filtering_and_radiosonde_prior_information
-globatt_LBLRTM_comment = Data_were_processed_on_ClampsHead_using_LBLRTM.v12.2,_which_was_complied_on_wissen    
+globatt_Site = Norman, OK
+globatt_Instrument = CLAMPS AERI-113
+globatt_Dataset_contact = Dave Turner, NOAA, dave.turner@noaa.gov
+globatt_Processing_comment = Data were processed in real-time using independent noise filtering and radiosonde prior information
+globatt_LBLRTM_comment = Data were processed on ClampsHead using LBLRTM.v12.2, which was complied on wissen

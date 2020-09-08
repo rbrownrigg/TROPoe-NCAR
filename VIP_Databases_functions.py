@@ -216,8 +216,9 @@ def read_vip_file(filename,globatt,verbose,debug,dostop):
             print('Reading the VIP file: ' + filename)
         
         try:
-            inputt = np.genfromtxt(filename, dtype=str,comments='#', usecols = (0,1,2))
-        except:
+            # inputt = np.genfromtxt(filename, dtype=str,comments='#', usecols = (0,1,2))
+            inputt = np.genfromtxt(filename, dtype=str, comments='#', delimiter='=', autostrip=True)
+        except Exception as e:
             print('There was an problem reading the VIP file')
     else:
         print('The VIP file ' + filename + ' does not exist')
@@ -230,23 +231,23 @@ def read_vip_file(filename,globatt,verbose,debug,dostop):
     # Look for these tags
     
     nfound = 1
-    for i in range(len(list(vip.keys()))):
-        if list(vip.keys())[i] != 'success':
+    for key in vip.keys():
+        if key != 'success':
             nfound += 1
-            if list(vip.keys())[i] == 'vip_filename':
+            if key == 'vip_filename':
                 vip['vip_filename'] = filename
             else:
-                foo = np.where(list(vip.keys())[i] == inputt[:,0])[0]
+                foo = np.where(key == inputt[:,0])[0]
                 if len(foo) > 1:
-                    print('Error: There were multiple lines with the same key in VIP file: ' + list(vip.keys())[i])
+                    print('Error: There were multiple lines with the same key in VIP file: ' + key)
                     return vip
                     
                 elif len(foo) == 1:
                     if verbose == 3:
-                        print('Loading the key ' + list(vip.keys())[i])
-                    if list(vip.keys())[i] == 'spectral_bands':
+                        print('Loading the key ' + key)
+                    if key == 'spectral_bands':
                         bands = vip['spectral_bands']-1
-                        tmp = inputt[foo,2][0].split(',')
+                        tmp = inputt[foo,1][0].split(',')
                         
                         if len(tmp) >= maxbands:
                             print('Error: There were more spectral bands defined than maximum allowed (maxbands = ' + str(maxbands) + ')')
@@ -263,8 +264,8 @@ def read_vip_file(filename,globatt,verbose,debug,dostop):
                             bands[1,j] = float(feh[1])
                         vip['spectral_bands'] = bands
                         
-                    elif list(vip.keys())[i] == 'aeri_calib_pres':
-                        feh = inputt[foo,2][0].split(',')
+                    elif key == 'aeri_calib_pres':
+                        feh = inputt[foo,1][0].split(',')
                         if len(feh) != 2:
                             print('Error: The key aeri_calib_pres in VIP file must be intercept, slope')
                             if dostop:
@@ -278,37 +279,37 @@ def read_vip_file(filename,globatt,verbose,debug,dostop):
                                 wait = input('Stopping inside to debug this bad boy. Press enter to continue')
                             return vip
                             
-                    elif ((list(vip.keys())[i] == 'ext_wv_noise_mult_val') |
-                          (list(vip.keys())[i] == 'ext_wv_noise_mult_hts') |
-                          (list(vip.keys())[i] == 'ext_temp_noise_adder_val') |
-                          (list(vip.keys())[i] == 'ext_temp_noise_adder_hts') |
-                          (list(vip.keys())[i] == 'mod_wv_noise_mult_val') |
-                          (list(vip.keys())[i] == 'mod_wv_noise_mult_hts') |
-                          (list(vip.keys())[i] == 'mod_temp_noise_adder_val') |
-                          (list(vip.keys())[i] == 'mod_temp_noise_adder_hts') |
-                          (list(vip.keys())[i] == 'prior_co2_mn') |
-                          (list(vip.keys())[i] == 'prior_co2_sd') |
-                          (list(vip.keys())[i] == 'prior_ch4_mn') |
-                          (list(vip.keys())[i] == 'prior_ch4_sd') |
-                          (list(vip.keys())[i] == 'prior_n2o_mn') |
-                          (list(vip.keys())[i] == 'prior_n2o_sd') ):
+                    elif ((key == 'ext_wv_noise_mult_val') |
+                          (key == 'ext_wv_noise_mult_hts') |
+                          (key == 'ext_temp_noise_adder_val') |
+                          (key == 'ext_temp_noise_adder_hts') |
+                          (key == 'mod_wv_noise_mult_val') |
+                          (key == 'mod_wv_noise_mult_hts') |
+                          (key == 'mod_temp_noise_adder_val') |
+                          (key == 'mod_temp_noise_adder_hts') |
+                          (key == 'prior_co2_mn') |
+                          (key == 'prior_co2_sd') |
+                          (key == 'prior_ch4_mn') |
+                          (key == 'prior_ch4_sd') |
+                          (key == 'prior_n2o_mn') |
+                          (key == 'prior_n2o_sd') ):
                         
-                        feh = inputt[foo,2][0].split(',')
-                        if len(feh) != len(vip[list(vip.keys())[i]]):
-                            print('Error: The key ' + list(vip.keys())[i] + ' in VIP file must be a ' + str(len(vip[list(vip.keys())[i]])) + ' element array')
+                        feh = inputt[foo,1][0].split(',')
+                        if len(feh) != len(vip[key]):
+                            print('Error: The key ' + key + ' in VIP file must be a ' + str(len(vip[key])) + ' element array')
                             if dostop:
                                 wait = input('Stopping inside to debug this bad boy. Press enter to continue')
                             return vip
                         
-                        vip[list(vip.keys())[i]][0] = float(feh[0])
-                        vip[list(vip.keys())[i]][1] = float(feh[1])
-                        vip[list(vip.keys())[i]][2] = float(feh[2])
+                        vip[key][0] = float(feh[0])
+                        vip[key][1] = float(feh[1])
+                        vip[key][2] = float(feh[2])
                         
                     else:
-                        vip[list(vip.keys())[i]] = type(vip[list(vip.keys())[i]])(inputt[foo,2][0])
+                        vip[key] = type(vip[key])(inputt[foo,1][0])
                 else:
                     if verbose == 3:
-                        print('UNABLE to find the key ' + list(vip.keys())[i])
+                        print('UNABLE to find the key ' + key)
                     nfound -= 1
     
     if verbose == 3:
@@ -325,7 +326,7 @@ def read_vip_file(filename,globatt,verbose,debug,dostop):
     
     for i in range(len(matching)):
         foo = np.where(matching[i] == inputt[:,0])[0]
-        globatt[matching[i][8:]] = inputt[foo,2][0].replace('_', ' ')
+        globatt[matching[i][8:]] = inputt[foo,1][0]
     
     vip['success'] = 1
     
