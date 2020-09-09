@@ -1837,7 +1837,7 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
         files = []
         for i in range(len(dates)):
             for j in range(len(cdf)):
-                files = files + (glob.glob(wv_prof_path + '/' + '*sonde*' + dates[i] + '*.' + cdf[j]))
+                files = files + sorted(glob.glob(wv_prof_path + '/' + '*sonde*' + dates[i] + '*.' + cdf[j]))
                 
         if len(files) == 0:
             if verbose >= 1:
@@ -2148,7 +2148,7 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
         files = []
         for i in range(len(dates)):
             for j in range(len(cdf)):
-                files = files + (glob.glob(wv_prof_path + '/' + '*sonde*' + dates[i] + '*.' + cdf[j]))
+                files = files + sorted(glob.glob(wv_prof_path + '/' + '*sonde*' + dates[i] + '*.' + cdf[j]))
                 
         if len(files) == 0:
             if verbose >=1:
@@ -2229,7 +2229,7 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
         files = []
         for i in range(len(dates)):
             for j in range(len(cdf)):
-                files = files + (glob.glob(temp_prof_path + '/' + '*sonde*' + dates[i] + '*.' + cdf[j]))
+                files = files + sorted(glob.glob(temp_prof_path + '/' + '*sonde*' + dates[i] + '*.' + cdf[j]))
                 
         if len(files) == 0:
             if verbose >= 1:
@@ -2287,7 +2287,6 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
             if external['nTprof'] > 0:
                 temp = temp.T
                 stemp = stemp.T
-    
     # Read in the ARM Raman lidar data (rlproftemp)
     
     elif temp_prof_type == 2:
@@ -2439,7 +2438,7 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
         files = []
         for i in range(len(dates)):
             for j in range(len(cdf)):
-                files = files + (glob.glob(temp_prof_path + '/' + '*sonde*' + dates[i] + '*.' + cdf[j]))
+                files = files + sorted(glob.glob(temp_prof_path + '/' + '*sonde*' + dates[i] + '*.' + cdf[j]))
                 
         if len(files) == 0:
             if verbose >= 1:
@@ -2607,7 +2606,7 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
         new_temp = np.zeros((len(ht), len(secs)))
         new_stemp = np.zeros((len(ht), len(secs)))
          
-        for i in range(external['nQprof']):
+        for i in range(external['nTprof']):
             tmp_temp[:,i] = np.interp(ht,zzt,temp[:,i])
             tmp_stemp[:,i] = np.interp(ht,zzt,stemp[:,i])
             foo = np.where((temp[:,i] < -900) & (zzt >= temp_prof_minht))[0]
