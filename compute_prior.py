@@ -42,10 +42,13 @@
 
 from datetime import datetime
 from glob import glob
+from subprocess import Popen, PIPE
 
 from netCDF4 import Dataset
 
 from Calcs_Conversions import *
+from LBLRTM_Functions import *
+from Other_functions import *
 
 
 def compute_Xa_Sa(sonde, mint, maxt, minq, maxq):
@@ -275,8 +278,103 @@ def compute_prior(z, sonde_path, sonde_rootname, month_idx, outfile=None, deltao
     w = Xa[nht:2*nht]
     p = inv_hypsometric(z, t + 273.16, surfp)
 
-    # TODO - Add in the deltaOD portion of this
-    deltaod = False
+    if deltaod:
+        t += 274.15
+        rundecker(3, stdatmos, z, p, t, w, mlayers=z, wnum1=300, wnum2=1799.99, tape5=tp5, v10=True, od_only=True)
+
+        command = ' uname -a ; echo $LBL_HOME ; lblrun ' + tp5 + ' ' + lblout+'1'
+
+        process = Popen(command, stdout=PIPE, stderr=PIPE, shell=True, executable='/bin/csh')
+        stdout, stderr = process.communicate()
+
+        rundecker(3, stdatmos, z, p, t, w, mlayers=z, wnum1=1800, wnum2=3100, tape5=tp5, v10=True, od_only=True)
+
+        command = ' uname -a ; echo $LBL_HOME ; lblrun ' + tp5 + ' ' + lblout + '2'
+
+        process = Popen(command, stdout=PIPE, stderr=PIPE, shell=True, executable='/bin/csh')
+        stdout, stderr = process.communicate()
+
+        # Find the LBLRTM OD files
+        files1 = np.array(sorted(glob(os.path.join(lblout+'1', 'OD*'))))
+        files2 = np.array(sorted(glob(os.path.join(lblout+'2', 'OD*'))))
+
+        if len(files1) != len(z)-1:
+            print("Problem with the LBLRTM calculation")
+            return
+        if len(files1) != len(files2):
+            print("Problem with the ch1 and ch2 LBLRTM calculations")
+            return
+
+        # I want to get the appropriate spectral resolution that is
+        # consistent with that used in the AERIoe retrieval.  The default is
+        # to use the spectral resolution above 8 km
+
+        bar = np.where(z > 8)
+        if len(bar[0]) < 0:
+            print("This should not happen")
+            return
+        s1, v1 = lbl_read(files1[bar[0][0]], do_load_data=True)
+        s2, v2 = lbl_read(files2[bar[0][0]], do_load_data=True)
+
+        wnum = np.append(v1, v2)
+        od = np.zeros((len(files1), len(wnum)))
+
+        # Read in the LBLRTM run
+        for i in range(len(files1)):
+            s1, v1 = lbl_read(files1[i], do_load_data=True)
+            s2, v2 = lbl_read(files2[i], do_load_data=True)
+
+            s = np.append(s1, s2)
+            v = np.append(v1, v2)
+            od[i, :] = np.interp(wnum, v, s)
+
+        # clean up after ourselves
+        command = 'rm -rf ' + lblout + '1 ' + lblout + '2 ' + tp5
+        os.system(command)
+
+        # Compute the true monochromatic radiance spectrum
+        rad_mono = radxfer(wnum, t, od)
+
+        # Convolve the monochromatic spectrum with the AERI's instrument function
+        b = convolve_to_aeri(wnum, rad_mono)
+        awnum = b['wnum']
+        arad = b['spec']
+        arad = apodizer(arad, 0)
+
+        # Convolve the monochromatic transmission with the AERI's instrument function
+        trans = np.array([np.exp(-1*sum(od[:, i])) for i in range(len(wnum))])
+        b = convolve_to_aeri(wnum, trans)
+        atrans = apodizer(b['spec'], 0)
+
+        # Now perform some loops over different delta's to find the delta that works
+        # best for each AERI channel. I'll do this in an exponential manner. Generate
+        # the array of deltas to use
+        delta = [0.1, 0.12]
+        dmult = 1.05
+        while max(delta) < 2:
+            delta.append(max(delta) + (delta[-1] - delta[-2]) * dmult)
+
+        # Loop over these deltas, averaging the optical depths at each layer for each,
+        # and then do the radxfer
+        brad = np.zeros((len(delta), len(awnum)))
+        for i in range(len(delta)):
+            odb = np.zeros((len(files1), len(awnum)))
+            for j in range(len(awnum)):
+                foo = np.where((awnum[j]-delta[i] <= wnum) & (wnum <= awnum[j]+delta[i]))
+                odb[:, j] = np.sum(od[:, foo[0]], axis=1) / len(foo[0])
+
+            brad[i, :] = radxfer(awnum, t, odb)
+
+        # Find the delta that works best for each AERI spectral element
+        crad = np.zeros(len(awnum))
+        idx = np.zeros(len(awnum), dtype=int)
+        for i in range(len(awnum)):
+            sqdiff = (arad[i] - brad[:, i]**2.)
+            idx[i] = np.argmin(sqdiff)
+            crad[i] = np.squeeze(brad[idx[i], i])
+
+
+
 
     # Write out the netcdf
     nc = Dataset(outfile, 'w')
@@ -284,8 +382,8 @@ def compute_prior(z, sonde_path, sonde_rootname, month_idx, outfile=None, deltao
     nc.createDimension('height', size=len(z))
     nc.createDimension('height2', size=len(z)*2)
 
-    # if deltaod:
-    #     nc.createDimension('wnum', len(awnum))
+    if deltaod:
+        nc.createDimension('wnum', len(awnum))
 
     var = nc.createVariable('height', 'f4', ('height',))
     var.setncattr('long_name', 'height')
@@ -321,6 +419,35 @@ def compute_prior(z, sonde_path, sonde_rootname, month_idx, outfile=None, deltao
     var.setncattr('long_name', 'covariance of the mean prior')
     var.setncattr('units', 'C, g/kg')
     var[:] = Sa
+
+    if deltaod:
+        var = nc.createVariable('wnum', 'f4', ('wnum',))
+        var.setncattr('long_name', 'wavenumber')
+        var.setncattr('units', 'cm-1')
+        var[:] = awnum
+
+        var = nc.createVariable('delta_od', 'f4', ('wnum',))
+        var.setncattr('long_name', 'spectral averaging widths')
+        var.setncattr('units', 'cm-1')
+        var.setncattr('comment', 'The spectral window on each side of the AERI ' +
+                      'spectral element that is used for averaging the monochromatic gaseous ' +
+                      'optical depths to give the best estimate of the AERI radiance in a fast manner')
+        var[:] = np.array(delta)[idx]
+
+        var = nc.createVariable('radiance_true', 'f4', ('wnum',))
+        var.setncattr('long_name', 'radiance (truth)')
+        var.setncattr('units', 'mW / (m2 sr cm-1)')
+        var[:] = arad
+
+        var = nc.createVariable('radiance_fast', 'f4', ('wnum',))
+        var.setncattr('long_name', 'radiance computed from fast model using delta_od')
+        var.setncattr('units', 'mW / (m2 sr cm-1)')
+        var[:] = crad
+
+        var = nc.createVariable('transmittance_true', 'f4', ('wnum',))
+        var.setncattr('long_name', 'atmospheric transmittance (truth)')
+        var.setncattr('units', 'unitless')
+        var[:] = crad
 
     nc.setncattr('Date Created', datetime.utcnow().isoformat())
     nc.setncattr('Comment', comment)
@@ -366,4 +493,4 @@ if __name__ == "__main__":
               9.6017380e+00, 1.0571912e+01, 1.1639103e+01,
               1.2813013e+01, 1.4104314e+01, 1.5524745e+01,
               1.7087219e+01])
-    Sa, Xa = compute_prior(height, '/Users/tyler.bell/Data/radiosondes/OUN', 'OUNsonde', 2, doplot=False)
+    Sa, Xa = compute_prior(height, '/raid/clamps/clamps/priors/Shreveport', 'SHVsonde', 8, doplot=False, deltaod=True)
