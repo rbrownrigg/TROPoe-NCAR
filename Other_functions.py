@@ -984,19 +984,20 @@ def radxfer(wnum, t, od, sfc_t = None, sfc_e = None, upwelling = False):
 ################################################################################
 
 def apodize_norton_beer(n,md):
+    n = int(n)
     beer = np.zeros(n)
     beer[0] = 1.
-    for i in range(1,n/2):
+    for i in range(1,int(n/2)):
         if i <= md:
             beer[i] = (1-((i-1)/np.float(md))**2)**2
         else:
             beer[i] = 0.
     
     if n%2 == 0:
-        beer[n/2:n] = np.fliplr([beer[0:n/2]])[0]
+        beer[int(n/2):n] = np.fliplr([beer[0:int(n/2)]])[0]
     else:
-        beer[n/2:n] = np.fliplr([beer[0:n/2+1]])[0]
-    
+        beer[int(n/2):n] = np.fliplr([beer[0:int(n/2)+1]])[0]
+
     return beer
     
 ################################################################################
@@ -1030,12 +1031,12 @@ def apodize_kaiser_bessel(n,md,k=6):
     
     foo = np.where(np.abs(d) <= md)[0]
     c = 1 * r[foo] / s
-    apod[0:n/2] = c
+    apod[0:int(n/2)] = c
     
     if n%2 == 0:
-        apod[n/2:n] = np.fliplr([apod[0:n/2]])[0]
+        apod[int(n/2):n] = np.fliplr([apod[0:int(n/2)]])[0]
     else:
-        apod[n/2:n] = np.fliplr([apod[0:n/2+1]])[0]
+        apod[int(n/2):n] = np.fliplr([apod[0:int(n/2)+1]])[0]
     
     return apod
     
