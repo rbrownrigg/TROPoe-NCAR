@@ -1,4 +1,4 @@
-__version__ = '0.2.33'
+__version__ = '0.2.35'
 
 import os
 import sys
@@ -332,7 +332,7 @@ monortm_zexec = ('cd ' + lbltmpdir + ' ; setenv monortm_config ' + monortm_confi
                 ' ; setenv monortm_freqs ' + monortm_zfreq + ' ; ' + vip['monortm_wrapper'])
 
 monortm_sexec = ('cd ' + lbltmpdir + ' ; setenv monortm_config ' + monortm_config +
-                ' ; setenv monortm_freqs ' + monortm_zfreq + ' ; ' + vip['monortm_wrapper'])
+                ' ; setenv monortm_freqs ' + monortm_sfreq + ' ; ' + vip['monortm_wrapper'])
 
 # This should be included in the VIP file. Right now it is always set.
 create_monortm_config = 1           # Set this flag to create a custom config file for MonoRTM
@@ -1441,7 +1441,7 @@ for i in range(len(aeri['secs'])):                        # { loop_i
 
             if create_monortm_sfreq == 1:
                 # Create the MonoRTM frequency file
-                lun = open(lbltmpdir + '/' + monortm_sfreq)
+                lun = open(lbltmpdir + '/' + monortm_sfreq, 'w')
                 lun.write('\n')
                 lun.write('{:0d}\n'.format(len(mwrscan['freq'])))
                 for gg in range(len(mwrscan['freq'])):

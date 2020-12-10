@@ -1551,7 +1551,7 @@ def compute_jacobian_microwavescan_3method(Xn, p, z, mwrscan, cbh, vip, workdir,
     
     for ii in range(len(uelev)):
         # Perform the baseline calculation
-        u = Calcs_Conversions.w2rh(w, p, t) * 100
+        u = Calcs_Conversions.w2rh(w, p, t, 0) * 100
         Other_functions.write_arm_sonde_file(z*1000, p, t, u, workdir +'/' + monortm_tfile, silent = True)
         command = monortm_exec + ' ' + monortm_tfile + ' {:3.1f} {:8.2f} {:6.3f} {:6.3f} {:6.3f}'.format(1.0, lwp, cbh, cth, 90-uelev[ii])
         a = LBLRTM_Functions.run_monortm(command, mwrscan['freq'], z, stdatmos)
@@ -1563,7 +1563,7 @@ def compute_jacobian_microwavescan_3method(Xn, p, z, mwrscan, cbh, vip, workdir,
         if fixt != 1:
             tpert = 1.0           # Additive perturbation of 1 K
             t0 = t + tpert
-            u = Calcs_Conversions.w2rh(w, p, t0) * 100
+            u = Calcs_Conversions.w2rh(w, p, t0, 0) * 100
             Other_functions.write_arm_sonde_file(z*1000, p, t0, u, workdir +'/' + monortm_tfile, silent = True)
             command = monortm_exec + ' ' + monortm_tfile + ' {:3.1f} {:8.2f} {:6.3f} {:6.3f} {:6.3f}'.format(1.0, lwp, cbh, cth, 90-uelev[ii])
             b = LBLRTM_Functions.run_monortm(command, mwrscan['freq'], z, stdatmos)
@@ -1576,7 +1576,7 @@ def compute_jacobian_microwavescan_3method(Xn, p, z, mwrscan, cbh, vip, workdir,
         if fixwv != 1:
             h2opert = 0.99
             w0 = w*h2opert
-            u = Calcs_Conversions.w2rh(w0, p, t) * 100
+            u = Calcs_Conversions.w2rh(w0, p, t, 0) * 100
             Other_functions.write_arm_sonde_file(z*1000, p, t, u, workdir +'/' + monortm_tfile, silent = True)
             command = monortm_exec + ' ' + monortm_tfile + ' {:3.1f} {:8.2f} {:6.3f} {:6.3f} {:6.3f}'.format(1.0, lwp, cbh, cth, 90-uelev[ii])
             c = LBLRTM_Functions.run_monortm(command, mwrscan['freq'], z, stdatmos)
@@ -1588,7 +1588,7 @@ def compute_jacobian_microwavescan_3method(Xn, p, z, mwrscan, cbh, vip, workdir,
         
         if fixlcld != 1:
             lwpp = lwp + 25.
-            u = Calcs_Conversions.w2rh(w, p, t) * 100
+            u = Calcs_Conversions.w2rh(w, p, t, 0) * 100
             Other_functions.write_arm_sonde_file(z*1000, p, t, u, workdir +'/' + monortm_tfile, silent = True)
             command = monortm_exec + ' ' + monortm_tfile + ' {:3.1f} {:8.2f} {:6.3f} {:6.3f} {:6.3f}'.format(1.0, lwpp, cbh, cth, 90-uelev[ii])
             d = LBLRTM_Functions.run_monortm(command, mwrscan['freq'], z, stdatmos)
@@ -1618,14 +1618,13 @@ def compute_jacobian_microwavescan_3method(Xn, p, z, mwrscan, cbh, vip, workdir,
         # from the retrieval.
         
         tt = np.interp(a['z'], stdatmos['z'], stdatmos['t'])
-        foo = np.where(z['z'] <= np.max(z))[0]
+        foo = np.where(a['z'] <= np.max(z))[0]
         if len(foo) != len(t):
             print('Problem here -- this should not be happen MWR-scan')
         tt[foo] = np.copy(t)
-        t = np.copy(tt)
-        
+
         # Compute the baseline radiance
-        tb0 = Other_functions.radxfer_microwave(mwrscan['freq'],t,gasod)
+        tb0 = Other_functions.radxfer_microwave(mwrscan['freq'], tt, gasod)
         
         # Compute the temperature perturbation
         # Note I'm changing both the optical depth spectrum for the layer
@@ -1643,19 +1642,19 @@ def compute_jacobian_microwavescan_3method(Xn, p, z, mwrscan, cbh, vip, workdir,
                     gasod = np.copy(od0)       # Take baseline monochromatic ODs
                     gasod[kk,:] = od1[kk,:]      # Insert in the mono OD from perturbed temp run
                     
-                    t0 = np.copy(t)
+                    t0 = np.copy(tt)
                     t0[kk] += tpert
                     tb1 = Other_functions.radxfer_microwave(mwrscan['freq'], t0, gasod)
                     if kk == 0:
                         mult = 0.5
                     else:
                         mult = 1.0
-                    mult = 1.0           # DDT -- I will keep the multiplier at 1 until I test it
+                    mult = 1.0           # TODO: DDT -- I will keep the multiplier at 1 until I test it
                     KKij[:,kk] = mult * (tb1-tb0) / tpert
         else:
             if verbose >= 3:
                 print('Temperature jacobian set to zero (fixed T profile) MWR-scan')
-            KKij[0,0:k] = 0.
+            KKij[:,0:k] = 0.
         
         # Compute the water vapor perturbation
         
@@ -1670,7 +1669,7 @@ def compute_jacobian_microwavescan_3method(Xn, p, z, mwrscan, cbh, vip, workdir,
                     gasod[kk,:] = od2[kk,:]      # Insert in the mono OD from perturbed H20 run
                     
                     # Compute the baseline radiance
-                    tb1 = Other_functions.radxfer_microwave(mwrscan['freq'], t, gasod)
+                    tb1 = Other_functions.radxfer_microwave(mwrscan['freq'], tt, gasod)
                     if kk == 0:
                         mult = 0.5
                     else:

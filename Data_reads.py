@@ -904,7 +904,7 @@ def read_mwrscan(path, rootname, date, mwrscan_type, mwrscan_elev_field, mwrscan
                     else:
                         freqx = fid.variables['freq'][:]
                     
-                    idx = np.ones(freq.shape)*-1
+                    idx = np.ones(freq.shape, dtype=int)*-1
                     for j in range(len(freq)):
                         dell = abs(freq[j]-freqx)
                         foo = np.where(dell == np.nanmin(dell))[0]
@@ -942,7 +942,7 @@ def read_mwrscan(path, rootname, date, mwrscan_type, mwrscan_elev_field, mwrscan
                     print('Big problem in read_mwrscan')
                     return err
                 tbsky0 = np.copy(tbsky)
-                for i in range(len(mwrscan_n_tb_fields)):
+                for i in range(mwrscan_n_tb_fields):
                     tbsky[i,:] = tbsky[i,:] + bias[i]
             
             # This should never happen. If it does assume an error and abort
@@ -954,7 +954,7 @@ def read_mwrscan(path, rootname, date, mwrscan_type, mwrscan_elev_field, mwrscan
             # and where the bias-corrected brightness temperature are above the cosmic background (2.7 K)
             
             keep_samples = np.zeros(len(secs))    # all zeros right now
-            for i in range(len(mwrscan_n_elevations)):
+            for i in range(mwrscan_n_elevations):
                 foo = np.where((((elev >= delev[i]-1) & (elev <= delev[i]+1)) & ((tbsky[0,:] >= 2.7) & (tbsky[0,:] < mwrscan_tb_field1_tbmax))))[0]
                 if len(foo) > 0:
                     keep_samples[foo] = 1
@@ -1788,11 +1788,11 @@ def grid_mwrscan(mwrscan, secs, n_elevations, elevations, timewindow, verbose):
         ntbsky[i*mwrscan['n_fields']+idx,:] = tbsky[i,:,:]
         dim[i*mwrscan['n_fields']+idx] = mwrscan['freq']*1000. + delev[i]/1000.
         noise[i*mwrscan['n_fields']+idx] = mwrscan['noise']
-    
-    return ({'success':1, 'secs':secs, 'ymd':ymd, 'hour':hour, 'n_elevations':n_elevations,
-            'elevations':delev, 'n_fields':mwrscan['n_fields'], tbsky:'ntbsky', 'freq':mwrscan['freq'],
-            'noise':noise, 'bias':mwrscan['bias'], 'dim':dim, 'type':mwrscan['type'],
-            'rootname':mwrscan['rootname'], 'timewindow':timewindow})
+
+    return ({'success': 1, 'secs': secs, 'ymd': ymd, 'hour': hour, 'n_elevations': n_elevations,
+            'elevations': delev, 'n_fields': mwrscan['n_fields'], 'tbsky': ntbsky, 'freq': mwrscan['freq'],
+            'noise': noise, 'bias': mwrscan['bias'], 'dim': dim, 'type': mwrscan['type'],
+            'rootname': mwrscan['rootname'], 'timewindow': timewindow})
 
 ################################################################################
 # This function reads in the thermodynamic profiles from the external source
