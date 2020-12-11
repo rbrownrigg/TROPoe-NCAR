@@ -1567,7 +1567,7 @@ def compute_jacobian_microwavescan_3method(Xn, p, z, mwrscan, cbh, vip, workdir,
             Other_functions.write_arm_sonde_file(z*1000, p, t0, u, workdir +'/' + monortm_tfile, silent = True)
             command = monortm_exec + ' ' + monortm_tfile + ' {:3.1f} {:8.2f} {:6.3f} {:6.3f} {:6.3f}'.format(1.0, lwp, cbh, cth, 90-uelev[ii])
             b = LBLRTM_Functions.run_monortm(command, mwrscan['freq'], z, stdatmos)
-            if a['status'] == 0:
+            if b['status'] == 0:
                 print('Problem with MonoRTM calc 1 MWR-scan')
                 return flag, -999., -999., -999.
         else:
