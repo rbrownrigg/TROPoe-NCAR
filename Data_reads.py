@@ -2031,6 +2031,9 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
             swv = swv/wvmultiplier
             qunit = 'molecules/cm3 (sccaled by 1e16)'
             qtype = 'NCAR water vapor DIAL'
+
+        wv = wv.T
+        swv = swv.T
     
     # Read in the numerical weather model soundings (Greg Blumberg's format)
     
