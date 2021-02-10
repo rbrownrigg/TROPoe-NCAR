@@ -174,11 +174,11 @@ def read_aeri_ch(path,date,aeri_type,fv,fa,engsecs,engtemp,bbcavfactor,
     bbcavfactor = np.copy(bbcavfactor[foo])
     
     #Convert the time to something useful
-    yy = np.array([datetime.utcfromtimestamp(x).year for x in secs])
-    mm = np.array([datetime.utcfromtimestamp(x).month for x in secs])
-    dd = np.array([datetime.utcfromtimestamp(x).day for x in secs])
+    yy = np.array([datetime.utcfromtimestamp(x).year for x in chsecs])
+    mm = np.array([datetime.utcfromtimestamp(x).month for x in chsecs])
+    dd = np.array([datetime.utcfromtimestamp(x).day for x in chsecs])
     ymd = yy*10000 + mm*100 + dd
-    hour = np.array([((datetime.utcfromtimestamp(x)-datetime(yy[0],mm[0],dd[0])).total_seconds())/3600. for x in secs])
+    hour = np.array([((datetime.utcfromtimestamp(x)-datetime(yy[0],mm[0],dd[0])).total_seconds())/3600. for x in chsecs])
     
     #I can only apply one of the Fv or Fa corrections, so abort if they are
     #both turned on
@@ -199,7 +199,7 @@ def read_aeri_ch(path,date,aeri_type,fv,fa,engsecs,engtemp,bbcavfactor,
         emiso = Other_functions.get_aeri_bb_emis(wnum, bbcavfactor[i])
         nrad[:,i] = Other_functions.aeri_recal(wnum, mrad[:,i], calibhbbt[i], calibhbbt[i], calibcbbt[i],
                     calibcbbt[i], calibambt[i], calibambt[i], emiso, emisn, emiso, emisn)
-    
+ 
     mrad = np.copy(nrad)
     
     # If the Fa value is greater than zero, remove the contribution from the 
