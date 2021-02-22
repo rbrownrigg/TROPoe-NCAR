@@ -865,7 +865,7 @@ def compute_jacobian_deltaod(X, p, zz, lblhome, lbldir, lblroot, stdatmos, tp5, 
     etime = datetime.now()
     totaltime = (etime-stime).total_seconds()
     if verbose >= 3:
-        print(' It took ' + totaltime + ' s to compute Jacobian (delta od)')
+        print(' It took ' + str(totaltime) + ' s to compute Jacobian (delta od)')
     success = 1
     
     return success, Kij, FXn, wnumc, version, totaltime
@@ -971,7 +971,7 @@ def compute_jacobian_microwave_finitediff(Xn, p, z, freq, cbh, vip, workdir,
     etime = datetime.now()
     totaltime = (etime-stime).total_seconds()
     if verbose >= 3:
-        print(' It took ' + totaltime + ' s to compute Jacobian (finite diffs)')
+        print(' It took ' + str(totaltime) + ' s to compute Jacobian (finite diffs)')
     
     flag = 1
     

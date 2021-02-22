@@ -2637,7 +2637,7 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
             for j in range(len(ht)):
                 new_temp[j,:] = np.interp(secs,tsecs,tmp_temp[j,:])
                 new_stemp[j,:] = np.interp(secs,tsecs,tmp_stemp[j,:])
-        
+
         # Set the interpolated data before and after the end external times to missing
         # but we will allow the interpolated data to be used over some delta_time
         # around the end times
@@ -2707,7 +2707,7 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
                     'timeflag':timeflag, 'wv_type':wv_prof_type, 'qunit':qunit,
                     'qtype':qtype})
     
-    elif external['nQtemp'] > 0:
+    elif external['nTprof'] > 0:
          external = ({'success':1, 'nTprof':external['nTprof'], 'nQprof':external['nQprof'], 'secs':secs, 'ht':ht,
                     'temp':new_temp, 'sig_temp':new_stemp,
                     'tempminht':temp_prof_minht, 'tempmaxht':temp_prof_maxht,
