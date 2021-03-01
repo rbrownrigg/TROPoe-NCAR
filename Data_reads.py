@@ -2730,7 +2730,7 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
             sfc_wv_type, sfc_path, sfc_temp_npts, sfc_wv_npts, sfc_temp_rep_error, sfc_wv_mult_error,
             sfc_wv_rep_error, sfc_time_delta, sfc_relative_height, co2_sfc_type,
             co2_sfc_npts, co2_sfc_rep_error, co2_sfc_path, co2_sfc_relative_height,
-            co2_sfc_time_delta, dostop, verbose):
+            co2_sfc_time_delta, use_ext_psfc, dostop, verbose):
             
     external = {'success':0, 'nTsfc':-1, 'nQsfc':-1, 'nCO2sfc':-1}
     ttype = 'None'
@@ -2749,6 +2749,11 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
     if co2_sfc_type > 0:
         if ((co2_sfc_npts < 1) | (maxpts < co2_sfc_npts)):
             estring = 'VIP input error; when co2_sfc_npts > 0, then 1 <= co2_sfc_npts < ' + str(maxpts)
+    if use_ext_psfc > 0:
+        if ((sfc_temp_type == 0) & (sfc_wv_type == 0)):
+            # TODO - Make this not rely on having another sfc observation
+            estring = 'VIP input error; if use_ext_psfc > 0, either ext_sfc_temp_type or ext_sfc_wv_type must be > 0'
+
     if estring != ' ':
         if verbose >= 1:
             print(estring)
@@ -2807,10 +2812,12 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
                     tsecs = bt+to
                     temp = np.copy(t)
                     stemp = np.ones(len(t))*sigma_t
+                    press = np.copy(p)
                 else:
                     tsecs = np.append(tsecs,bt+to)
                     temp = np.append(temp,t)
                     stemp = np.append(stemp,np.ones(len(t))*sigma_t)
+                    press = np.append(press, p)
                 external['nTsfc'] = len(tsecs)
         
         # Read in the NCAR ISFS data
@@ -2868,10 +2875,12 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
                     tsecs = bt+to
                     temp = np.copy(t)
                     stemp = np.ones(len(t))*sigma_t
+                    press = np.copy(p)
                 else:
                     tsecs = np.append(tsecs,bt+to)
                     temp = np.append(temp,t)
                     stemp = np.append(stemp,np.ones(len(t))*sigma_t)
+                    press = np.append(press, p)
                 external['nTsfc'] = len(tsecs)
         
         # Read in the microwave radiometer met data
@@ -2947,10 +2956,12 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
                     tsecs = bt+to
                     temp = np.copy(t)
                     stemp = np.ones(len(t))*sigma_t
+                    press = np.copy(p)
                 else:
                     tsecs = np.append(tsecs,bt+to)
                     temp = np.append(temp,t)
                     stemp = np.append(stemp,np.ones(len(t))*sigma_t)
+                    press = np.append(press, p)
                 external['nTsfc'] = len(tsecs)
         
         # An undefined external surface met temperature source was specified...
@@ -3020,10 +3031,12 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
                     qsecs = bt+to
                     wv = np.copy(w0)
                     swv = np.copy(sigma_w)
+                    press = np.copy(p)
                 else:
                     qsecs = np.append(qsecs,bt+to)
                     wv = np.append(wv,w0)
                     swv = np.append(swv,sigma_w)
+                    press = np.append(press, p)
                 external['nQsfc'] = len(qsecs)
         
         # Read in the NCAR ISFS data
@@ -3095,10 +3108,12 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
                     qsecs = bt+to
                     wv = np.copy(w0)
                     swv = np.copy(sigma_w)
+                    press = np.copy(p)
                 else:
                     qsecs = np.append(qsecs,bt+to)
                     wv = np.append(wv,w0)
                     swv = np.append(swv,sigma_w)
+                    press = np.append(press, p)
                 external['nQsfc'] = len(qsecs)
         
         # Read in the MWR met data
@@ -3185,10 +3200,12 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
                     qsecs = bt+to
                     wv = np.copy(w0)
                     swv = np.copy(sigma_w)
+                    press = np.copy(p)
                 else:
                     qsecs = np.append(qsecs,bt+to)
                     wv = np.append(wv,w0)
                     swv = np.append(swv,sigma_w)
+                    press = np.append(press, p)
                 external['nQsfc'] = len(qsecs)
         
         # An undefined external surface met water vapor source was specified
@@ -3216,39 +3233,48 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
             #Bin the data
             tt0 = np.zeros(len(secs))
             st0 = np.zeros(len(secs))
+            p0 = np.zeros(len(secs))
             for i in range(len(secs)):
                 foo = np.where((secs[i]-tres*60/2. <= tsecs) & (tsecs <= secs[i] + tres*60/2.))[0]
                 if len(foo) > 0:
                     tt0[i] = np.nanmean(temp[foo])
                     st0[i] = np.nanmean(stemp[foo])
+                    p0[i] = np.nanmean(press[foo])
                 else:
                     tt0[i] = -999.
                     st0[i] = -999.
+                    p0[i] = -999.
         else:
             tt0 = np.interp(secs,tsecs,temp)
             st0 = np.interp(secs,tsecs,stemp)
+            p0 = np.interp(secs,tsecs,press)
             foo = np.where(secs < tsecs[0]-sfc_time_delta*3600)[0]
             if len(foo) > 0:
                 tt0[foo] = -999.
                 st0[foo] = -999.
-            
+                p0[foo] = -999.
+
             # Make sure we did not interpolate out of bounds here.
             foo = np.where((tsecs[0]-sfc_time_delta*3600 <= secs) & (secs < tsecs[0]))[0]
             if len(foo) > 0:
                 tt0[foo] = temp[0]
                 st0[foo] = stemp[0]
+                p0[foo] = press[0]
             n = len(tsecs) - 1
             foo = np.where(tsecs[n]+sfc_time_delta*3600 < secs)[0]
             if len(foo) > 0:
                 tt0[foo] = -999.
                 st0[foo] = -999.
+                p0[foo] = -999.
             foo = np.where((tsecs[n] < secs) & (secs <= tsecs[n]+sfc_time_delta*3600))[0]
             if len(foo) > 0:
                 tt0[foo] = temp[0]
                 st0[foo] = stemp[0]
+                p0[foo] = press[0]
     else:
         tt0 = -999.
         st0 = -999.
+        p0 = -999.
     
     if external['nQsfc'] > 0:
         # Compute the median time interval between Tsfc measurements [minutes]
@@ -3261,40 +3287,49 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
             #Bin the data
             qq0 = np.zeros(len(secs))
             sq0 = np.zeros(len(secs))
+            p0 = np.zeros(len(secs))
             for i in range(len(secs)):
                 foo = np.where((secs[i]-tres*60/2. <= qsecs) & (qsecs <= secs[i] + tres*60/2.))[0]
                 if len(foo) > 0:
                     qq0[i] = np.nanmean(wv[foo])
                     sq0[i] = np.nanmean(swv[foo])
+                    p0[i] = np.nanmean(press[foo])
                 else:
                     qq0[i] = -999.
                     sq0[i] = -999.
+                    p0[i] = -999.
         else:
             qq0 = np.interp(secs,qsecs,wv)
             sq0 = np.interp(secs,qsecs,swv)
+            p0 = np.interp(secs,qsecs,press)
             foo = np.where(secs < qsecs[0]-sfc_time_delta*3600)[0]
             if len(foo) > 0:
                 qq0[foo] = -999.
                 sq0[foo] = -999.
+                p0[foo] = -999.
             
             # Make sure we did not interpolate out of bounds here.
             foo = np.where((qsecs[0]-sfc_time_delta*3600 <= secs) & (secs < qsecs[0]))[0]
             if len(foo) > 0:
                 qq0[foo] = wv[0]
                 sq0[foo] = swv[0]
+                p0[foo] = press[0]
             n = len(qsecs) - 1
             foo = np.where(qsecs[n]+sfc_time_delta*3600 < secs)[0]
             if len(foo) > 0:
                 qq0[foo] = -999.
                 sq0[foo] = -999.
+                p0[foo] = -999.
             foo = np.where((qsecs[n] < secs) & (secs <= qsecs[n]+sfc_time_delta*3600))[0]
             if len(foo) > 0:
                 qq0[foo] = wv[0]
                 sq0[foo] = swv[0]
+                p0[foo] = -999.
     else:
         qq0 = -999.
         sq0 = -999.
-        
+        p0 = -999.
+
     # This section is for the CO2 obs
     # Read in the surface in-situ CO2 data, if desired
     # No external surface CO2 source specified....
@@ -3455,5 +3490,5 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
           'sfc_wv_rep_error':sfc_wv_rep_error, 'sfc_wv_mult_error':sfc_wv_mult_error,
           'nCO2sfc':external['nCO2sfc'], 'co2unit':co2unit, 'nptsCO2':co2_sfc_npts,
           'co2type':co2type, 'co2':cco2a, 'sco2':scco2a, 'co2_sfc_rep_error':co2_sfc_rep_error,
-          'co2_sfc_relative_height':co2_sfc_relative_height}
+          'co2_sfc_relative_height':co2_sfc_relative_height, 'psfc': p0}
     return external

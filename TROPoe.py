@@ -1,4 +1,4 @@
-__version__ = '0.2.36'
+__version__ = '0.2.39'
 
 import os
 import sys
@@ -504,7 +504,7 @@ ext_tseries = Data_reads.read_external_timeseries(date, aeri['secs'], vip['tres'
               vip['ext_sfc_wv_mult_error'], vip['ext_sfc_wv_rep_error'], vip['ext_sfc_time_delta'],
               vip['ext_sfc_relative_height'], vip['co2_sfc_type'], vip['co2_sfc_npts'],
               vip['co2_sfc_rep_error'], vip['co2_sfc_path'], vip['co2_sfc_relative_height'],
-              vip['co2_sfc_time_delta'], dostop, verbose)
+              vip['co2_sfc_time_delta'], vip['use_ext_psfc'], dostop, verbose)
 
 if ext_tseries['success'] != 1:
     print('Error: there is some problem in the external time series data specification')
@@ -663,6 +663,11 @@ for i in range(len(aeri['secs'])):                        # { loop_i
     else:
         print(('Sample ' + str(i) + ' at ' + str(aeri['hour'][i]) + ' UTC is being processed (cbh is ' + str(aeri['cbh'][i]) + ' -- ' + str(cbh_string[int(np.nanmax([aeri['cbhflag'][i],0]))]) + ')'))
 
+
+    # See if we want to use the tower pressure instead of the aeri pressure
+    if vip['use_ext_psfc'] > 0:
+        print("Replacing AERI pressure with met tower pressure")
+        aeri['atmos_pres'] = ext_tseries['psfc']
 
     # Make sure the AERI's surface pressure is a valid value, as
     # this is needed to construct a pressure profile from the current X
@@ -1887,7 +1892,7 @@ for i in range(len(aeri['secs'])):                        # { loop_i
         xsamp.append(xtmp)
         print('Converged! (best RMS after max_iter)')
 
-   # Store the data, regardless whether it converges or not
+    # Store the data, regardless whether it converges or not
     if xret == []:
         xret = [copy.deepcopy(xsamp[len(xsamp)-1])]
     else:
