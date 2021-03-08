@@ -903,7 +903,7 @@ for i in range(len(aeri['secs'])):                        # { loop_i
             print('Using Tsfc with lapse rate and 60& RH as first guess')
         lapserate = -7.0        # C / km
         constRH = 60.           # percent RH
-        t = aeri['Tsfc'][i] + z*lapserate
+        t = aeri['tsfc'][i] + z*lapserate
         p = Calcs_Conversions.inv_hypsometric(z, t+273.16, aeri['atmos_pres'][i])  # [mb]
         q = Calcs_Conversions.rh2w(t, np.ones(len(z))*constRH/100., p)
 
