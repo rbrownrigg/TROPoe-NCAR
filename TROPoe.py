@@ -1,4 +1,4 @@
-__version__ = '0.2.39'
+__version__ = '0.2.41'
 
 import os
 import sys
@@ -814,7 +814,7 @@ for i in range(len(aeri['secs'])):                        # { loop_i
             VIP_Databases_functions.abort(lbltmpdir,date)
             sys.exit()
         Y = np.append(Y,mod_prof['wv'][foo,i])
-        nSy = np.diag(mod_prof['wv'][foo,i])
+        nSy = np.diag(mod_prof['sig_wv'][foo,i])
         zero = np.zeros((len(foo),len(sigY)))
         Sy = np.append(np.append(Sy,zero,axis=0),np.append(zero.T,nSy,axis=0),axis=1)
         sigY = np.append(sigY, mod_prof['sig_wv'][foo,i])
@@ -883,6 +883,7 @@ for i in range(len(aeri['secs'])):                        # { loop_i
     # the uncertainties in the forward model and the observations
 
     Sm = Sy + Sf
+    # print(Sy)
     SmInv = scipy.linalg.pinv2(Sm)
 
     # Get the other input variables that the forward model will need
