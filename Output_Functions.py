@@ -562,11 +562,12 @@ def write_output(vip, ext_prof, mod_prof, ext_tseries, globatt, xret, prior,
     if len(dindex_name) != len(dindex_units):
         print('Error in write_output: there is a dimension mismatch in the derived indices dindex_')
         return success, nfilename
+
     for i in range(npts):
         # Extract out the temperature and water vapor profiles
-        pp = np.copy(xret[i]['p'])
-        tt = np.copy(xret[i]['Xn'][0:nht])
-        ww = np.copy(xret[i]['Xn'][nht:2*nht])
+        pp = np.copy(xret[i+fsample]['p'])
+        tt = np.copy(xret[i+fsample]['Xn'][0:nht])
+        ww = np.copy(xret[i+fsample]['Xn'][nht:2*nht])
         
         # Extract out the apriori temperature and water vapor profiles
         ta = np.copy(prior['Xa'][0:nht])
@@ -575,6 +576,7 @@ def write_output(vip, ext_prof, mod_prof, ext_tseries, globatt, xret, prior,
         # Extract out the posterior covariance matrix
         Sop_tmp = np.copy(xret[i]['Sop'])
         Sop_tmp = Sop_tmp[0:2*nht,0:2*nht]
+        sig_t = np.sqrt(np.diag(Sop_tmp))[0:nht]
         
         # Perform SVD of posterior covariance matrix
         # Note that in order to follow the logic of the original IDL code I
@@ -600,9 +602,10 @@ def write_output(vip, ext_prof, mod_prof, ext_tseries, globatt, xret, prior,
             
             elif dindex_name[ii] == 'pblh':
                 minht = vip['min_PBL_height']
-                indices[ii,i] = Other_functions.compute_pblh(zz, tt, pp, minht = minht)
+                maxht = vip['max_PBL_height']
+                indices[ii,i] = Other_functions.compute_pblh(zz, tt, pp, sig_t, minht=minht, maxht=maxht)
                 for j in range(num_mc):
-                    tmp[j] = Other_functions.compute_pblh(zz,tprofs[:,j], pp, minht = minht)
+                    tmp[j] = Other_functions.compute_pblh(zz, tprofs[:, j], pp, sig_t, minht=minht, maxht=maxht)
                 foo = np.where(tmp > 0)[0]
                 if (len(foo) > 1) & (indices[ii,i] > 0):
                     sigma_indices[ii,i] = np.nanstd(indices[ii,i] - tmp[foo])

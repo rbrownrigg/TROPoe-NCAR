@@ -300,25 +300,33 @@ def inflate_prior_covariance(Sa, z, prior_t_ival, prior_t_iht, prior_q_ival,
 # even for radiosonde profiles)
 ################################################################################
 
-def compute_pblh(ht, t, p, nudge=0.5, minht=0.300):
-    theta = Calcs_Conversions.t2theta(t,np.zeros(len(t)),p)
-    foo = np.where(ht >= minht)[0]
-    if len(foo) <= 0:
-       sval = np.nanmean(theta[0:2])
-    else:
-       sval = np.nanmean([theta[foo[0]-1],theta[foo[0]]])
+def compute_pblh(ht, t, p, sigt, nudge=0.5, minht=0.300, maxht=6.0):
+    st = np.zeros_like(sigt)
+    st[0] = sigt[0]
+    theta = Calcs_Conversions.t2theta(t, np.zeros(len(t)), p)
+    foo = np.where(ht >= minht)
+    sval = theta[0]
     sval += nudge
-    foo = np.where((sval <= theta) & (ht >= minht))[0]
+    foo = np.where((sval < theta) & (ht >= minht))[0]
     if len(foo) == 0:
-        return minht
+        pblh = minht
     elif foo[0] == 0:
         pblh = ht[0]
     else:
-        tmpz = np.array([ht[foo[0]-1], ht[foo[0]]])
-        tmpt = np.array([theta[foo[0]-1], theta[foo[0]]])
-        pblh = np.interp(sval, tmpt, tmpz)
+        tmpz = ht[foo[0]-1:foo[0]+1]
+        tmpt = ht[foo[0]-1:foo[0]+1]
+
+        if np.abs(tmpt[0]-tmpt[1]) < 0.001:
+            pblh = ht[foo[0]]
+        else:
+            pblh = np.interp(sval, tmpt, tmpz)
+
     if pblh < minht:
-        pblh = -999.
+        pblh = minht
+
+    if pblh > maxht:
+        pblh = maxht
+
     return pblh
 
 ################################################################################

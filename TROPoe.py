@@ -1,4 +1,4 @@
-__version__ = '0.2.41'
+__version__ = '0.2.44'
 
 import os
 import sys
@@ -1008,7 +1008,12 @@ for i in range(len(aeri['secs'])):                        # { loop_i
         # then set that here. First, compute the current estimate of the PBL height,
         # then the coefficient and overwrite any current shape coefficient
 
-        pblh = Other_functions.compute_pblh(z, Xn[0:int(nX/2)], p, minht = vip['min_PBL_height'])
+        if itern == 0:
+            pblh = Other_functions.compute_pblh(z, Xn[0:int(nX/2)], p, np.sqrt(np.diag(Sa[0:int(nX/2), 0:int(nX/2)])),
+                                                minht=vip['min_PBL_height'], maxht=vip['max_PBL_height'])
+        else:
+            pblh = Other_functions.compute_pblh(z, Xn[0:int(nX / 2)], p, np.sqrt(np.diag(Sop[0:int(nX/2), 0:int(nX/2)])),
+                                                minht=vip['min_PBL_height'], maxht=vip['max_PBL_height'])
         coef = Other_functions.get_a2_pblh(pblh)           # Get the shape coef for this PBL height
         if ((vip['retrieve_co2'] == 1) & (vip['fix_co2_shape'] == 1)):
             Xn[nX+4+2] = coef
