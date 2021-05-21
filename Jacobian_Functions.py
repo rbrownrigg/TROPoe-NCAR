@@ -1522,11 +1522,6 @@ def compute_jacobian_microwavescan_3method(Xn, p, z, mwrscan, cbh, vip, workdir,
                 stdatmos, verbose):
     
     flag = 0               # Failure
-    k = len(z)
-    t = np.copy(Xn[0:k])          # degC
-    w = np.copy(Xn[k:2*k])        # g/kg
-    lwp = Xn[2*k]                 # g/m2
-    cth = cbh + 0.300             # km; define the cloud top at x m above the could base
     
     # Allocate space for the Jacobian and forward calculation
     Kij = np.zeros((len(mwrscan['dim']),len(Xn)))
@@ -1544,12 +1539,24 @@ def compute_jacobian_microwavescan_3method(Xn, p, z, mwrscan, cbh, vip, workdir,
     foo = np.where(elev > 90)[0]
     if len(foo) > 0:
         elev[foo] = 180-elev[foo]
-    uelev = np.unique(elev)
+    uelev = elev[0]
+    for ii in range(len(elev)):
+        unq = 1
+        for jj in range(uelev)
+            if(np.abs(elev[ii]-uelev[jj]) < 0.1): unq=0
+        if(unq == 1): uelev = np.append(uelev,elev[ii])
     
     # Loop overthe elevation angles, running the forward model
     # and computing the Jacobian
     
     for ii in range(len(uelev)):
+        # Extract out the information needed from the state vector
+        k = len(z)
+        t = np.copy(Xn[0:k])          # degC
+        w = np.copy(Xn[k:2*k])        # g/kg
+        lwp = Xn[2*k]                 # g/m2
+        cth = cbh + 0.300             # km; define the cloud top at x m above the could base
+
         # Perform the baseline calculation
         u = Calcs_Conversions.w2rh(w, p, t, 0) * 100
         Other_functions.write_arm_sonde_file(z*1000, p, t, u, workdir +'/' + monortm_tfile, silent = True)

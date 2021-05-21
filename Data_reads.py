@@ -276,7 +276,7 @@ def read_all_data(date, retz, tres, dostop, verbose, avg_instant, ch1_path,
     # few channels on the AERI because it makes the rest of the code easier
     # (fewer changes) to make
     
-    if ((aeri_type == -1) & (mwr_type > 0)):
+    if ((aeri_type <= -1) & (mwr_type > 0)):
         
         #In this example, the "replicate" keyword should be unity. Since we aren't
         # using AERI data in this case, it should not have any other value
@@ -288,11 +288,14 @@ def read_all_data(date, retz, tres, dostop, verbose, avg_instant, ch1_path,
     
         # I will read in the MWR data here and again later. I need to read it here
         # so that I can simulate AERI data (all as MISSING) so that the rest of the code
-        # can work ...
+        # code can work.  Note that AERI_type (which is a negative number) also
+        # defines the "step" used to read in the MWR data, which is pretty useful if
+        # we are reading in HATPRO data which can have >3000 samples per day (i.e., the
+        # aeri_type is used to subsample the MWR data)
         
         print(' Attempting to use MWR as the master instrument; no AERI data will be read in')
         
-        mwr_data = read_mwr(mwr_path, mwr_rootname, date, mwr_type, mwr_elev_field, mwr_n_tb_fields,
+        mwr_data = read_mwr(mwr_path, mwr_rootname, date, mwr_type, abs(aeri_type), mwr_elev_field, mwr_n_tb_fields,
                            mwr_tb_field_names, mwr_tb_freqs, mwr_tb_noise, mwr_tb_bias, mwr_tb_field1_tbmax,
                            mwr_pwv_field, mwr_pwv_scalar, mwr_lwp_field, mwr_lwp_scalar,
                            verbose, single_date=True)
@@ -419,7 +422,7 @@ def read_all_data(date, retz, tres, dostop, verbose, avg_instant, ch1_path,
         ret_tavg = tres
     
     #Read in the MWR zenith data
-    mwr_data = read_mwr(mwr_path, mwr_rootname, date, mwr_type, mwr_elev_field, mwr_n_tb_fields,
+    mwr_data = read_mwr(mwr_path, mwr_rootname, date, mwr_type, 1, mwr_elev_field, mwr_n_tb_fields,
                         mwr_tb_field_names, mwr_tb_freqs, mwr_tb_noise, mwr_tb_bias, mwr_tb_field1_tbmax,
                         mwr_pwv_field, mwr_pwv_scalar, mwr_lwp_field, mwr_lwp_scalar,
                         verbose)
@@ -497,7 +500,7 @@ def read_all_data(date, retz, tres, dostop, verbose, avg_instant, ch1_path,
 # This function is the one that actually reads in the MWR data.
 ################################################################################
 
-def read_mwr(path, rootname, date, mwr_type, mwr_elev_field, mwr_n_tb_fields,
+def read_mwr(path, rootname, date, mwr_type, step, mwr_elev_field, mwr_n_tb_fields,
             mwr_tb_field_names, mwr_tb_freqs, mwr_tb_noise, mwr_tb_bias,
             mwr_tb_field1_tbmax, mwr_pwv_field, mwr_pwv_scalar, mwr_lwp_field,
             mwr_lwp_scalar, verbose, single_date=False):
@@ -505,6 +508,15 @@ def read_mwr(path, rootname, date, mwr_type, mwr_elev_field, mwr_n_tb_fields,
     if verbose >= 2:
         print('Reading MWR data in ' + path)
     err = {'success':0, 'type':-1}
+        
+    # Check to make sure "step" is an integer greater than 0
+    if(type(step) != int): 
+        print("        Error: the step in read_mwr is not an integer -- aborting")
+        return err
+    elif(step < 0):
+        print("        Error: the step in read_mwr is not a positive integer -- aborting")
+        return err
+        
         
     # If single date is True, only read in the single date. This is used for MWR only mode upon the first
     # read of the mwr data. This is mainly to get the times. If we read in data from before and after the
@@ -748,15 +760,16 @@ def read_mwr(path, rootname, date, mwr_type, mwr_elev_field, mwr_n_tb_fields,
         dd = np.array([datetime.utcfromtimestamp(x).day for x in secs])
         hour = np.array([((datetime.utcfromtimestamp(x)-datetime(yy[0],mm[0],dd[0])).total_seconds())/3600. for x in secs])
         ymd = yy*10000 + mm*100 + dd
+        idx = np.arange(0,len(secs)/step)*step
         
         if mwr_n_tb_fields == 0:
-           return ({'success':1, 'secs':secs, 'ymd':ymd, 'hour':hour, 'pwv':pwv, 'lwp':lwp,
-                 'lat':lat, 'lon':lon, 'alt':alt, 'psfc':psfc, 'n_fields':mwr_n_tb_fields,
+           return ({'success':1, 'secs':secs[idx], 'ymd':ymd[idx], 'hour':hour[idx], 'pwv':pwv[idx], 'lwp':lwp[idx],
+                 'lat':lat, 'lon':lon, 'alt':alt, 'psfc':psfc[idx], 'n_fields':mwr_n_tb_fields,
                  'type':mwr_type, 'rootname':rootname})
         else:
-           return ({'success':1, 'secs':secs, 'ymd':ymd, 'hour':hour, 'pwv':pwv, 'lwp':lwp,
-                 'lat':lat, 'lon':lon, 'alt':alt, 'psfc':psfc, 'n_fields':mwr_n_tb_fields,
-                 'type':mwr_type, 'rootname':rootname, 'tbsky_orig':tbsky0, 'tbsky_corr':tbsky,
+           return ({'success':1, 'secs':secs[idx], 'ymd':ymd[idx], 'hour':hour[idx], 'pwv':pwv[idx], 'lwp':lwp[idx],
+                 'lat':lat, 'lon':lon, 'alt':alt, 'psfc':psfc[idx], 'n_fields':mwr_n_tb_fields,
+                 'type':mwr_type, 'rootname':rootname, 'tbsky_orig':tbsky0[:,idx], 'tbsky_corr':tbsky[:,idx],
                   'freq':freq, 'noise':noise, 'bias':bias}) 
                   
 ################################################################################
@@ -1523,6 +1536,7 @@ def grid_aeri(ch1, aerisum, avg_instant, hatchOpenSwitch, missingDataFlagSwitch,
                 cbhflag[i] = ch1['cbhflag'][foo]
                 hatflag[i] = ch1['hatchopen'][foo]
                 mssflag[i] = ch1['missingDataFlag'][foo]
+                atmos_pres[i] = ch1['atmos_pres'][foo]
             else:
                 rrad[:,i] = np.nansum(ch1['rad'][:,foo], axis = 1)/np.float(len(foo))
                 mssflag[i] = np.nanmax(ch1['missingDataFlag'][foo])

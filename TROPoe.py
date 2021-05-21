@@ -890,49 +890,45 @@ for i in range(len(aeri['secs'])):                        # { loop_i
     nX = len(z)*2                 # For both T and Q
 
     # Start building the first guess vector
+    #    T & Q, LWP, ReL, TauI, ReI, co2(3), ch4(3), n2o(3)
+    X0 = np.copy(Xa)     # Start with the prior, and overwrite portions of it if desired
+    first_guess = 'prior'
     if vip['first_guess'] == 1:
         # Use the prior as the first guess
         if verbose >= 3:
             print('Using prior as first guess')
-        t = np.copy(Xa[0:int(nX/2)])
-        q = np.copy(Xa[int(nX/2):nX])
     elif vip['first_guess'] == 2:
         # Build a first guess from the AERI-estimated surface temperture,
         # an assumed lapse rate, and a 60% RH as first guess
         if verbose >= 3:
             print('Using Tsfc with lapse rate and 60& RH as first guess')
+        first_guess = 'Tsfc with lapse rate and 60% RH'
         lapserate = -7.0        # C / km
         constRH = 60.           # percent RH
         t = aeri['tsfc'][i] + z*lapserate
         p = Calcs_Conversions.inv_hypsometric(z, t+273.16, aeri['atmos_pres'][i])  # [mb]
         q = Calcs_Conversions.rh2w(t, np.ones(len(z))*constRH/100., p)
-
+        X0 = np.append(t,q,Xa[nX:nX+12])    # T, Q, LWP, ReL, TauI, ReI, co2(3), ch4(3), n2o(3)
     elif vip['first_guess'] == 3:
         # Get first guess from the previous retrieval, if there is one
         # If there isn't a valid prior retrieval, use prior
         if verbose >= 3:
             print('Using previous good retrieval as first guess')
-        use_prior = 1
         if type(xret) == list:
             for j in range(len(xret)-1,-1,-1):            # We want to use the last good retrieval, so loop from back to front
-                if xret[j]['converged'] == 1:
-                    use_prior = 0
-                    t = np.copy(xret[j]['Xn'][0:nX/2])
-                    q = np.copy(xret[j]['Xn'][nX/2:nX])
+                if(xret[j]['converged'] == 1 and aeri['hour'][i] - xret[j]['hour'] < 1.01):
+                    first_guess = 'lastSample'
+                    X0 = np.copy(xret[j]['Xn'])
                     break
         if use_prior == 1:
             if verbose >= 3:
                 print('but there were no good retrievals yet')
-            t = np.copy(Xa[0:nX/2])
-            q = np.copy(Xa[nX/2:nX])
     else:
         print('Error: Undefined first guess option')
         VIP_Databases_functions.abort(lbltmpdir,date)
         sys.exit()
 
     # Build the first guess vector
-    X0 = np.append(t,q)          # T & Q, LWP, ReL, TauI, ReI, co2(3), ch4(3), n2o(3)
-    X0 = np.append(X0,Xa[nX:nX+13])
     itern = 0
     converged = 0
     Xn = np.copy(X0)
@@ -972,10 +968,13 @@ for i in range(len(aeri['secs'])):                        # { loop_i
     # Define the gamma factors needed to keep the retrieval sane
     # MWR-only retrievals are more linear and thus the gfactor can be more agressive
 
-    if vip['aeri_type'] == -1:
+    if vip['aeri_type'] <= -1:
         gfactor = np.array([100.,10.,3.,1.])
     else:
-        gfactor = np.array([1000.,300.,100.,30.,10.,3.,1.])
+        if(first_guess == 'lastSample'): 
+            gfactor = np.array([100.,10.,3.,1.])
+        else: 
+            gfactor = np.array([1000.,300.,100.,30.,10.,3.,1.])
     if len(gfactor) < vip['max_iterations']:
         gfactor = np.append(gfactor, np.ones(vip['max_iterations']-len(gfactor)+3))
 
@@ -1563,7 +1562,7 @@ for i in range(len(aeri['secs'])):                        # { loop_i
         # Set the initial RMS and di2 values to large numbers
 
             old_rmsa = 1e20          # RMS for all observations
-            old_rmsr = 1e20          # RMS for only the AERI radiance
+            old_rmsr = 1e20          # RMS for only the AERI and MWR radiance obs
             old_di2m = 1e20          # di-squared number
 
         di2n = ((Xn[:,None]-Xnp1).T.dot(SopInv).dot(Xn[:,None]-Xnp1))[0,0]
@@ -1694,7 +1693,7 @@ for i in range(len(aeri['secs'])):                        # { loop_i
 
         chi2 = np.sqrt(np.sum(((Y - FXn)/ Y)**2) / np.float(nY))
         rmsa = np.sqrt(np.sum(((Y - FXn)/sigY)**2) / np.float(nY))
-        feh = np.where(flagY == 1)[0]
+        feh = np.where(flagY == 1 or flagY == 2 and Y > -900)[0]
         if len(feh) > 0:
             rmsr = np.sqrt(np.sum(((Y[feh] - FXn[feh])/sigY[feh])**2) / np.float(len(feh)))
         else:
@@ -1705,7 +1704,7 @@ for i in range(len(aeri['secs'])):                        # { loop_i
         # positive or negative values. ONly compute this for the Tq part though
 
         feh = np.arange(nX)
-        rmsp = (Xa[feh] - Xn[feh])/sig_Xa[feh]
+        rmsp = np.mean( (Xa[feh] - Xn[feh])/sig_Xa[feh] )
 
         ########################
         # Add doplot code here #
@@ -1794,7 +1793,7 @@ for i in range(len(aeri['secs'])):                        # { loop_i
         elif itern > 2:
             # Test for "convergence by looking at the best RMS value
             if ((rmsa > np.sqrt(gfactor[old_iter])*old_rmsa) & (old_iter > 0)):
-                converged = 2                   # Converged in "rms" increased drastically sense
+                converged = 2                   # Converged in "rms increased drastically" sense
 
                 Xn = np.copy(xsamp[old_iter]['Xn'])
                 FXn = np.copy(xsamp[old_iter]['FXn'])

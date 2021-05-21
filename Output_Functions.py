@@ -173,7 +173,7 @@ def write_output(vip, ext_prof, mod_prof, ext_tseries, globatt, xret, prior,
         n_iter.units = 'unitless'
         
         rmsr = fid.createVariable('rmsr', 'f4', ('time',))
-        rmsr.long_name = 'root mean square error between AERI obs in the observation vector and the forward calculation'
+        rmsr.long_name = 'root mean square error between AERI and MWR obs in the observation vector and the forward calculation'
         rmsr.units = 'unitless'
         rmsr.comment1 = 'Computed as sqrt( sum_over_i[ ((Y_i - F(Xn_i)) / Y_i)^2 ] / sizeY)'
         rmsr.comment2 = 'Only AERI radiance observations in the observation vector are used'
