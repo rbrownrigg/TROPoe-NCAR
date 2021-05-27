@@ -760,8 +760,8 @@ def read_mwr(path, rootname, date, mwr_type, step, mwr_elev_field, mwr_n_tb_fiel
         dd = np.array([datetime.utcfromtimestamp(x).day for x in secs])
         hour = np.array([((datetime.utcfromtimestamp(x)-datetime(yy[0],mm[0],dd[0])).total_seconds())/3600. for x in secs])
         ymd = yy*10000 + mm*100 + dd
-        idx = np.arange(0,len(secs)/step)*step
-        
+        idx = np.arange(0, len(secs)/step, dtype=int)*step
+
         if mwr_n_tb_fields == 0:
            return ({'success':1, 'secs':secs[idx], 'ymd':ymd[idx], 'hour':hour[idx], 'pwv':pwv[idx], 'lwp':lwp[idx],
                  'lat':lat, 'lon':lon, 'alt':alt, 'psfc':psfc[idx], 'n_fields':mwr_n_tb_fields,

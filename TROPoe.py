@@ -1,4 +1,4 @@
-__version__ = '0.2.44'
+__version__ = '0.2.46'
 
 import os
 import sys
@@ -908,19 +908,19 @@ for i in range(len(aeri['secs'])):                        # { loop_i
         t = aeri['tsfc'][i] + z*lapserate
         p = Calcs_Conversions.inv_hypsometric(z, t+273.16, aeri['atmos_pres'][i])  # [mb]
         q = Calcs_Conversions.rh2w(t, np.ones(len(z))*constRH/100., p)
-        X0 = np.append(t,q,Xa[nX:nX+12])    # T, Q, LWP, ReL, TauI, ReI, co2(3), ch4(3), n2o(3)
+        X0 = np.concatenate([t, q, Xa[nX:nX+12]])    # T, Q, LWP, ReL, TauI, ReI, co2(3), ch4(3), n2o(3)
     elif vip['first_guess'] == 3:
         # Get first guess from the previous retrieval, if there is one
         # If there isn't a valid prior retrieval, use prior
         if verbose >= 3:
             print('Using previous good retrieval as first guess')
         if type(xret) == list:
-            for j in range(len(xret)-1,-1,-1):            # We want to use the last good retrieval, so loop from back to front
-                if(xret[j]['converged'] == 1 and aeri['hour'][i] - xret[j]['hour'] < 1.01):
+            for j in range(len(xret)-1, -1, -1):            # We want to use the last good retrieval, so loop from back to front
+                if (xret[j]['converged'] == 1) & (aeri['hour'][i] - xret[j]['hour'] < 1.01):
                     first_guess = 'lastSample'
                     X0 = np.copy(xret[j]['Xn'])
                     break
-        if use_prior == 1:
+        if first_guess == 'prior':
             if verbose >= 3:
                 print('but there were no good retrievals yet')
     else:
@@ -1079,7 +1079,7 @@ for i in range(len(aeri['secs'])):                        # { loop_i
                 adeltaod = adeltaod[foo]
                 read_deltaod = 1
 
-            if vip['aeri_type'] == -1:
+            if vip['aeri_type'] <= -1:
                 # If this type, then AERI data aren't being used in the retrieval
                 # so the forward calc should be missing and the Jacobian is 0
                 wnumc = np.copy(aeri['wnum'])
@@ -1693,7 +1693,7 @@ for i in range(len(aeri['secs'])):                        # { loop_i
 
         chi2 = np.sqrt(np.sum(((Y - FXn)/ Y)**2) / np.float(nY))
         rmsa = np.sqrt(np.sum(((Y - FXn)/sigY)**2) / np.float(nY))
-        feh = np.where(flagY == 1 or flagY == 2 and Y > -900)[0]
+        feh = np.where((flagY == 1) | (flagY == 2) & (Y > -900))[0]
         if len(feh) > 0:
             rmsr = np.sqrt(np.sum(((Y[feh] - FXn[feh])/sigY[feh])**2) / np.float(len(feh)))
         else:

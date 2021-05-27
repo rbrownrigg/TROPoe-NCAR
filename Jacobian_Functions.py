@@ -1542,9 +1542,9 @@ def compute_jacobian_microwavescan_3method(Xn, p, z, mwrscan, cbh, vip, workdir,
     uelev = elev[0]
     for ii in range(len(elev)):
         unq = 1
-        for jj in range(uelev)
-            if(np.abs(elev[ii]-uelev[jj]) < 0.1): unq=0
-        if(unq == 1): uelev = np.append(uelev,elev[ii])
+        for jj in range(uelev):
+            if np.abs(elev[ii]-uelev[jj]) < 0.1: unq = 0
+        if unq == 1: uelev = np.append(uelev, elev[ii])
     
     # Loop overthe elevation angles, running the forward model
     # and computing the Jacobian
