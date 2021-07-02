@@ -39,6 +39,8 @@ import Calcs_Conversions
 # compute_cgamma()
 # lcurve()
 # compute_vres_from_akern()
+# aeri_zerofill()
+# fix_aeri_vlaser_mod()
 ################################################################################
 
 ################################################################################
@@ -1603,3 +1605,100 @@ def compute_vres_from_akern(akern, z, do_area = False):
         return vres, area
     else:
         return vres
+
+################################################################################
+# Takes an AERI-like spectrum and performs Fourier interpolation from the nominal
+# order 2,000 to 4,000 points to 2^14+1 points.  Copied from Paul van Delst's code
+#  Inputs:
+#      iwnum is in cm-1
+#      irad  is in mW/(m2 sr cm-1)
+#      channel is 1 or 2 (like the AERI)
+#      epad is the number of wavenumbers to pad at the end of the input spectrum
+#  Output:
+#       2xn vector, where output(0,:) is the new wnum array
+#                     and output(1,:) is the new radiance spectrum
+################################################################################
+def aeri_zerofill(iwnum,irad,channel,epad=0):
+    eepad = np.abs(epad)
+    band  = channel - 1
+    v_laser = 15799.0
+    rf      = [4.0, 2.0]
+    v_nyquist = v_laser / (2. * rf[band])
+    if(channel == 1) then n_pts = 4097:
+    elif(channel == 2) then n_pts = 8193:
+    else:
+        print('ERROR in aeri_zerofill -- channel is not properly defined')
+        sys.exit()
+    
+    v = v_nyquist * np.arange(n_pts) / (n_pts - 1)
+
+    # Determine the temperature to use for the Planck function,
+    # which is used to help pad the data
+    v_teststart = [627.0, 2380.]
+    v_testend   = [632.0, 2384.]
+    loc = np.where(v_teststart[band] <= iwnum & iwnum <= v_testend[band])
+    tb = Calcs_Conversions.invplanck(iwnum[loc], irad[loc])
+    avg_tb = np.mean(tb)
+    r = Calcs_Conversions.planck(v, avg_tb)
+    r[0] = 0.
+
+    # Determine the bounds of the AERI data
+    n_apts = np.len(iwnum)
+    thres = 0.1
+    count = 0
+    ntries = 0
+    while(count != n_apts & ntries < 10):
+        loc = np.where(iwnum[0]-thres <= ownum and ownum <= iwnum[len(iwnum)-1]+thres)
+        count = len(loc)
+        thres += 0.05
+    if(ntries >= 10):
+        print('Error: unable to find the right bounds for the AERI in aeri_zerofill')
+        sys.exit()
+
+    # Replace the AERI data in the planck radiance curve
+    v[loc] = irad
+
+    # Fourier transform the radiance data
+    rr = np.append(r, np.flip(r[1:n_pts-2]))
+    # Quick trap to make sure we have this size right
+    if(len(rr) ne 2*n_pts-2):
+        print('Problem in aeri_zerofill: the length of the appended vector is not correct 1')
+        sys.exit()
+    ifg = np.fft.fft(rr)
+    
+    # Zerofill the inteferogram
+    n_total = 2^18
+    fill = np.zeros(n_total - len(ifg))
+    ifg  = np.append(ifg[0:n_pts-1], fill, ifg[n_pts:2*(n_pts-1)-1])
+    # Quick trap to make sure we have this size right
+    if(len(ifg) ne n_total):
+        print('Problem in aeri_zerofill: the length of the appended vector is not correct 2')
+        sys.exit()
+
+    # Fourier transform the zerofilled interferogram
+    spc = np.fft.ifft(ifg)
+    spc = spc(0:n_total/2)
+    v = v_nyquist * np.arange(n_total/2+1) / (n_total/2)
+    loc = np.where(iwnum[0]-eepad <= v & v <= iwnum[n_apts-1]+eepad)
+   
+    return [v[loc],spc[loc]]
+
+################################################################################
+# This function spectrally calibrates the AERi.  It requires input from a routine
+# like "check_aeri_vlaser".  It only works with one channel at a time
+################################################################################
+def fix_aeri_vlaser_mod(wnum,irad,multiplier):
+    # determine which channels this is
+    foo = np.where(wnum > 900 & wnum < 901)
+    if(len(foo) > 0):
+        channel = 1
+    else:
+        channel = 2
+
+    nrad = irad * 0.
+    for ii in range(0,len(irad[0,:])):
+        result = aeri_zerofill(wnum, irad[:,i], channel)
+        newrad = np.interp(wnum,result[0,:]*muliplier,result[1,:])
+        nrad[:,ii] = newrad
+
+    return nrad

@@ -51,6 +51,7 @@ def read_vip_file(filename,globatt,verbose,debug,dostop):
       'aeri_hatch_switch':1,        # 1 - only include hatchOpen=1 when averaging, 2 - include all AERI samples when averaging
       'aeri_fv':0.0,                # Apply a foreoptics obscuration correction
       'aeri_fa':0.0,                # Apply an aftoptics obscuration correction
+      'aeri_spectral_cal_factor':0.0, # The spectral calibration stretch factor to apply to the AERI data
       'aeri_lat':-999.,             # AERI latitude [degN]; if negative get value from AERI data file
       'aeri_lon':-999.,             # AERI longitude [degE]; if negative get value from AERI data file
       'aeri_alt':-999.,             # AERI altitude [m MSL]; if negative get value from AERI data file
@@ -143,6 +144,14 @@ def read_vip_file(filename,globatt,verbose,debug,dostop):
       'mwrscan_tb_bias':'0.0,0.0',   # Comma separated list of bias [K] in the MWR Tb fields; this value is ADDED to the MWR observations
       'mwrscan_time_delta':0.25,     # The maximum amount of time [hours] that the elevation scan must be to the sampling time to be used.
       
+      'rass_prof_type':0,           # 0 - none, 5 - RASS Tv field has units C (no other values work)
+      'rass_prof_path':'None',      # Path to the RASS data
+      'rass_prof_minht':0.0,        # Minimum height to use the data from the RASS [km AGL]
+      'rass_prof_maxht':5.0,        # Maximum height to use the data from the RASS [km AGL]
+      'rass_noise_adder_val':[0.0,0.0,0.0],  # 3-element comma delimited list of additive values to apply the noise profile of the RASS temperature profile (must be >= 0).
+      'rass_noise_adder_hts':[0.0,3,20],     # 3-element comma delimited list with the corresponding heights for the additive value [km AGL]
+      'rass_time_delta':2.5,                 # The maximum amount of time [hours] that the RASS sample must be to the sampling time to be used.
+
       'cbh_type':0,                  # 0 - output options and stop, 1 - VCEIL, 2 - Gregs ASOS CBH file, 3 - CLAMPS DLfp data, 4 - ARM dlprofwstats data
       'cbh_path':'None',               # Path to the CBH data
       'cbh_window_in':20,            # Inner temporal window (full-size) centered upon AERI time to look for cloud
@@ -288,6 +297,8 @@ def read_vip_file(filename,globatt,verbose,debug,dostop):
                           (key == 'mod_wv_noise_mult_hts') |
                           (key == 'mod_temp_noise_adder_val') |
                           (key == 'mod_temp_noise_adder_hts') |
+                          (key == 'rass_noise_adder_val') |
+                          (key == 'rass_noise_adder_hts') |
                           (key == 'prior_co2_mn') |
                           (key == 'prior_co2_sd') |
                           (key == 'prior_ch4_mn') |

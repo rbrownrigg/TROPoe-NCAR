@@ -1526,8 +1526,7 @@ def compute_jacobian_microwavescan_3method(Xn, p, z, mwrscan, cbh, vip, workdir,
     # Allocate space for the Jacobian and forward calculation
     Kij = np.zeros((len(mwrscan['dim']),len(Xn)))
     FXn = np.zeros(len(mwrscan['dim']))
-    KKij = np.zeros((mwrscan['n_fields'], len(Xn)))
-    FFXn = np.zeros(mwrscan['n_fields'])
+    missing = -999.
     
     if verbose >= 2:
         print('Computing the MWR-scan Jacobian using the 3method with MonoRTM')
@@ -1550,6 +1549,10 @@ def compute_jacobian_microwavescan_3method(Xn, p, z, mwrscan, cbh, vip, workdir,
     # and computing the Jacobian
     
     for ii in range(len(uelev)):
+            # Initialize these after every elevation height
+        KKij = np.zeros(mwrscan['n_fields'],len(Xn))
+        FFXn = np.zeros(mwrscan['n_fields'])*0 + missing
+
         # Extract out the information needed from the state vector
         k = len(z)
         t = np.copy(Xn[0:k])          # degC
@@ -1560,23 +1563,36 @@ def compute_jacobian_microwavescan_3method(Xn, p, z, mwrscan, cbh, vip, workdir,
         # Perform the baseline calculation
         u = Calcs_Conversions.w2rh(w, p, t, 0) * 100
         Other_functions.write_arm_sonde_file(z*1000, p, t, u, workdir +'/' + monortm_tfile, silent = True)
-        command = monortm_exec + ' ' + monortm_tfile + ' {:3.1f} {:8.2f} {:6.3f} {:6.3f} {:6.3f}'.format(1.0, lwp, cbh, cth, 90-uelev[ii])
+        elevOff = 0.1   # this is in degrees elevation
+        didfail = 0     # If I am unable to get an accurate computation along the slant angle, then didfail = 1
+        cnt = 0
+        command = monortm_exec + ' ' + monortm_tfile + ' {:3.1f} {:8.2f} {:6.3f} {:6.3f} {:6.3f}'.format(1.0, lwp, cbh, cth, 90-uelev[ii]+cnt*elevOff)
         a = LBLRTM_Functions.run_monortm(command, mwrscan['freq'], z, stdatmos)
+        while(a['status'] != 0 or cnt >= 2):
+            cnt += 1
+            command = monortm_exec + ' ' + monortm_tfile + ' {:3.1f} {:8.2f} {:6.3f} {:6.3f} {:6.3f}'.format(1.0, lwp, cbh, cth, 90-uelev[ii]+cnt*elevOff)
+            a = LBLRTM_Functions.run_monortm(command, mwrscan['freq'], z, stdatmos)
+
         if a['status'] == 0:
-            print('Problem with MonoRTM calc 0')
-            return flag, -999., -999., -999.
-        FFXn = np.copy(a['tb'])
+            print('    Bending angle problem with MonoRTM in mwrScan0')
+            didfail = 1
+        else: FFXn = np.copy(a['tb'])
         
         if fixt != 1:
             tpert = 1.0           # Additive perturbation of 1 K
             t0 = t + tpert
             u = Calcs_Conversions.w2rh(w, p, t0, 0) * 100
             Other_functions.write_arm_sonde_file(z*1000, p, t0, u, workdir +'/' + monortm_tfile, silent = True)
-            command = monortm_exec + ' ' + monortm_tfile + ' {:3.1f} {:8.2f} {:6.3f} {:6.3f} {:6.3f}'.format(1.0, lwp, cbh, cth, 90-uelev[ii])
+            cnt = 0
+            command = monortm_exec + ' ' + monortm_tfile + ' {:3.1f} {:8.2f} {:6.3f} {:6.3f} {:6.3f}'.format(1.0, lwp, cbh, cth, 90-uelev[ii]+cnt*elevOff)
             b = LBLRTM_Functions.run_monortm(command, mwrscan['freq'], z, stdatmos)
+            while(b['status'] != 0 or cnt >= 2):
+                cnt += 1
+                command = monortm_exec + ' ' + monortm_tfile + ' {:3.1f} {:8.2f} {:6.3f} {:6.3f} {:6.3f}'.format(1.0, lwp, cbh, cth, 90-uelev[ii]+cnt*elevOff)
+                b = LBLRTM_Functions.run_monortm(command, mwrscan['freq'], z, stdatmos)
             if b['status'] == 0:
-                print('Problem with MonoRTM calc 1 MWR-scan')
-                return flag, -999., -999., -999.
+                print('    Bending angle problem with MonoRTM in mwrScan1')
+                didfail = 1
         else:
             command = 'ls'
             
@@ -1585,11 +1601,16 @@ def compute_jacobian_microwavescan_3method(Xn, p, z, mwrscan, cbh, vip, workdir,
             w0 = w*h2opert
             u = Calcs_Conversions.w2rh(w0, p, t, 0) * 100
             Other_functions.write_arm_sonde_file(z*1000, p, t, u, workdir +'/' + monortm_tfile, silent = True)
-            command = monortm_exec + ' ' + monortm_tfile + ' {:3.1f} {:8.2f} {:6.3f} {:6.3f} {:6.3f}'.format(1.0, lwp, cbh, cth, 90-uelev[ii])
+            cnt = 0
+            command = monortm_exec + ' ' + monortm_tfile + ' {:3.1f} {:8.2f} {:6.3f} {:6.3f} {:6.3f}'.format(1.0, lwp, cbh, cth, 90-uelev[ii]+cnt*elevOff)
             c = LBLRTM_Functions.run_monortm(command, mwrscan['freq'], z, stdatmos)
+            while(c['status'] != 0 or cnt >= 2):
+                cnt += 1
+                command = monortm_exec + ' ' + monortm_tfile + ' {:3.1f} {:8.2f} {:6.3f} {:6.3f} {:6.3f}'.format(1.0, lwp, cbh, cth, 90-uelev[ii]+cnt*elevOff)
+                c = LBLRTM_Functions.run_monortm(command, mwrscan['freq'], z, stdatmos)
             if c['status'] == 0:
-                print('Problem with MonoRTM calc 2 MWR-scan')
-                return flag, -999., -999., -999.
+                print('    Bending angle problem with MonoRTM in mwrScan2')
+                didfail = 1
         else:
             command = 'ls'
         
@@ -1597,120 +1618,131 @@ def compute_jacobian_microwavescan_3method(Xn, p, z, mwrscan, cbh, vip, workdir,
             lwpp = lwp + 25.
             u = Calcs_Conversions.w2rh(w, p, t, 0) * 100
             Other_functions.write_arm_sonde_file(z*1000, p, t, u, workdir +'/' + monortm_tfile, silent = True)
-            command = monortm_exec + ' ' + monortm_tfile + ' {:3.1f} {:8.2f} {:6.3f} {:6.3f} {:6.3f}'.format(1.0, lwpp, cbh, cth, 90-uelev[ii])
+            cnt = 0
+            command = monortm_exec + ' ' + monortm_tfile + ' {:3.1f} {:8.2f} {:6.3f} {:6.3f} {:6.3f}'.format(1.0, lwp, cbh, cth, 90-uelev[ii]+cnt*elevOff)
             d = LBLRTM_Functions.run_monortm(command, mwrscan['freq'], z, stdatmos)
+            while(d['status'] != 0 or cnt >= 2):
+                cnt += 1
+                command = monortm_exec + ' ' + monortm_tfile + ' {:3.1f} {:8.2f} {:6.3f} {:6.3f} {:6.3f}'.format(1.0, lwp, cbh, cth, 90-uelev[ii]+cnt*elevOff)
+                d = LBLRTM_Functions.run_monortm(command, mwrscan['freq'], z, stdatmos)
             if d['status'] == 0:
-                print('Problem with MonoRTM calc 2 MWR-scan')
-                return flag, -999., -999., -999.
+                print('    Bending angle problem with MonoRTM in mwrScan3')
+                didfail = 1
         else:
             command = 'ls'
         
         # Capture the different optical depths into simple matrices
-        od0 = np.copy(a['od'].T)
-        if fixt != 1:
-            od1 = np.copy(b['od'].T)
-        if fixwv != 1:
-            od2 = np.copy(c['od'].T)
+        if(didfail == 1):
+            if(verbose >= 1):
+                print('    Bending angle problem at {:6.3f} degree elevation angle in mwrScan'.format(uelev(ii))
+        else:       # code did not fail
+            od0 = np.copy(a['od'].T)
+            if fixt != 1:
+                od1 = np.copy(b['od'].T)
+            if fixwv != 1:
+                od2 = np.copy(c['od'].T)
         
-        wnum = mwrscan['freq']/30.
-        if verbose >= 3:
-            print('Computing the baseline microwave brightness temperature spectrum MWR-scan')
+            wnum = mwrscan['freq']/30.
+            if verbose >= 3:
+                print('Computing the baseline microwave brightness temperature spectrum MWR-scan')
             
-        gasod = np.copy(od0)
-        t = t + 273.16  # Convert degC to degK
+            gasod = np.copy(od0)
+            t = t + 273.16  # Convert degC to degK
         
-        # Get the appropriate temperature profile for the calculation. Start by
-        # interpolating the Standard Atmosphere profile to our vertical microwave 
-        # RT grid, and then replace the lower part of the profile from what comes
-        # from the retrieval.
+            # Get the appropriate temperature profile for the calculation. Start by
+            # interpolating the Standard Atmosphere profile to our vertical microwave 
+            # RT grid, and then replace the lower part of the profile from what comes
+            # from the retrieval.
         
-        tt = np.interp(a['z'], stdatmos['z'], stdatmos['t'])
-        foo = np.where(a['z'] <= np.max(z))[0]
-        if len(foo) != len(t):
-            print('Problem here -- this should not be happen MWR-scan')
-        tt[foo] = np.copy(t)
+            tt = np.interp(a['z'], stdatmos['z'], stdatmos['t'])
+            foo = np.where(a['z'] <= np.max(z))[0]
+            if len(foo) != len(t):
+                print('Problem here -- this should not be happen MWR-scan')
+            tt[foo] = np.copy(t)
 
-        # Compute the baseline radiance
-        tb0 = Other_functions.radxfer_microwave(mwrscan['freq'], tt, gasod)
+            # Compute the baseline radiance
+            tb0 = Other_functions.radxfer_microwave(mwrscan['freq'], tt, gasod)
         
-        # Compute the temperature perturbation
-        # Note I'm changing both the optical depth spectrum for the layer
-        # (which has the impact on the temeprature dependence of the strength/
-        # width of the lines and on the continuum strength) as well as the
-        # emission temperature of the layer
+            # Compute the temperature perturbation
+            # Note I'm changing both the optical depth spectrum for the layer
+            # (which has the impact on the temeprature dependence of the strength/
+            # width of the lines and on the continuum strength) as well as the
+            # emission temperature of the layer
         
-        if fixt != 1:
-            if verbose >= 3:
-                print('Computing Jacobian for temperature MWR-scan')
-            for kk in range(k):
-                if z[kk] > maxht:
-                    KKij[:,kk] = 0.
-                else:
-                    gasod = np.copy(od0)       # Take baseline monochromatic ODs
-                    gasod[kk,:] = od1[kk,:]      # Insert in the mono OD from perturbed temp run
-                    
-                    t0 = np.copy(tt)
-                    t0[kk] += tpert
-                    tb1 = Other_functions.radxfer_microwave(mwrscan['freq'], t0, gasod)
-                    if kk == 0:
-                        mult = 0.5
+            if fixt != 1:
+                if verbose >= 3:
+                    print('Computing Jacobian for temperature MWR-scan')
+                for kk in range(k):
+                    if z[kk] > maxht:
+                        KKij[:,kk] = 0.
                     else:
-                        mult = 1.0
-                    mult = 1.0           # TODO: DDT -- I will keep the multiplier at 1 until I test it
-                    KKij[:,kk] = mult * (tb1-tb0) / tpert
-        else:
-            if verbose >= 3:
-                print('Temperature jacobian set to zero (fixed T profile) MWR-scan')
-            KKij[:,0:k] = 0.
-        
-        # Compute the water vapor perturbation
-        
-        if fixwv != 1:
-            if verbose >= 3:
-                print('Computing Jacobian for water vapor MWR-scan')
-            for kk in range(k):
-                if z[kk] > maxht:
-                    KKij[:,kk+k] = 0.
-                else:
-                    gasod = np.copy(od0)       # Take baseline monochromatic ODs
-                    gasod[kk,:] = od2[kk,:]      # Insert in the mono OD from perturbed H20 run
+                        gasod = np.copy(od0)       # Take baseline monochromatic ODs
+                        gasod[kk,:] = od1[kk,:]      # Insert in the mono OD from perturbed temp run
                     
-                    # Compute the baseline radiance
-                    tb1 = Other_functions.radxfer_microwave(mwrscan['freq'], tt, gasod)
-                    if kk == 0:
-                        mult = 0.5
-                    else:
-                        mult = 1.0
-                    mult = 1.          # DDT -- I will keep the multiplier at 1 until I test it
-                    KKij[:,kk+k] = mult * ( (tb1-tb0) / (w[kk]*h2opert - w[kk]) )
-        else:
-            if verbose >= 3:
-                print('Water vapor jacobian set to zero (fixed WV profile) MWR-scan')
-            KKij[:,k:2*k] = 0.
+                        t0 = np.copy(tt)
+                        t0[kk] += tpert
+                        tb1 = Other_functions.radxfer_microwave(mwrscan['freq'], t0, gasod)
+                        if kk == 0:
+                            mult = 0.5
+                        else:
+                            mult = 1.0
+                        mult = 1.0           # TODO: DDT -- I will keep the multiplier at 1 until I test it
+                        KKij[:,kk] = mult * (tb1-tb0) / tpert
+            else:
+                if verbose >= 3:
+                    print('Temperature jacobian set to zero (fixed T profile) MWR-scan')
+                KKij[:,0:k] = 0.
         
-        # Compute the liquid cloud property perturbation
-        if fixlcld != 1:
-            if verbose >= 3:
-                print(' Computing Jacobian for the liquid cloud properties (LWP) MWR-scan')
+            # Compute the water vapor perturbation
+        
+            if fixwv != 1:
+                if verbose >= 3:
+                    print('Computing Jacobian for water vapor MWR-scan')
+                for kk in range(k):
+                    if z[kk] > maxht:
+                        KKij[:,kk+k] = 0.
+                    else:
+                        gasod = np.copy(od0)       # Take baseline monochromatic ODs
+                        gasod[kk,:] = od2[kk,:]      # Insert in the mono OD from perturbed H20 run
+                    
+                        # Compute the baseline radiance
+                        tb1 = Other_functions.radxfer_microwave(mwrscan['freq'], tt, gasod)
+                        if kk == 0:
+                            mult = 0.5
+                        else:
+                            mult = 1.0
+                        mult = 1.          # DDT -- I will keep the multiplier at 1 until I test it
+                        KKij[:,kk+k] = mult * ( (tb1-tb0) / (w[kk]*h2opert - w[kk]) )
+            else:
+                if verbose >= 3:
+                    print('Water vapor jacobian set to zero (fixed WV profile) MWR-scan')
+                KKij[:,k:2*k] = 0.
+        
+            # Compute the liquid cloud property perturbation
+            if fixlcld != 1:
+                if verbose >= 3:
+                    print(' Computing Jacobian for the liquid cloud properties (LWP) MWR-scan')
             
-            KKij[:,2*k] = (d['tb']-a['tb']) / (lwpp-lwp)
-        else:
-            if verbose >= 3:
-                print('Cloud jacobian set to zero (fixed LWP) MWR-scan')
-            KKij[:,2*k] = 0.
+                KKij[:,2*k] = (d['tb']-a['tb']) / (lwpp-lwp)
+            else:
+                if verbose >= 3:
+                    print('Cloud jacobian set to zero (fixed LWP) MWR-scan')
+                KKij[:,2*k] = 0.
         
+            FFXn = np.copy(a['tb'])
+                # now I am at the end of "didfail != 1
+
         # Capture the most accurate forward calculation and Jacobian into the 
         # appropriate structures. Since it is possible that we may have symmetric
         # angles around zenith (i.e., elevation angles 20 and 160 degrees), there
         # was no need to make the same calculation twice -- I just have to replicate
         # the entry here.
         
-        FFXn = np.copy(a['tb'])
-        foo = np.where(elev == uelev[ii])[0]
-        idx = np.arange(mwrscan['n_fields'])
-        for kk in range(len(foo)):
-            FXn[foo[kk]*mwrscan['n_fields']+idx] = FFXn
-            Kij[foo[kk]*mwrscan['n_fields']+idx,:] = KKij
+    foo = np.where(elev == uelev[ii])[0]
+    idx = np.arange(mwrscan['n_fields'])
+    for kk in range(len(foo)):
+        FXn[foo[kk]*mwrscan['n_fields']+idx] = FFXn
+        Kij[foo[kk]*mwrscan['n_fields']+idx,:] = KKij
     
     # Capture the total time and return
     etime = datetime.now()

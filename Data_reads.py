@@ -31,8 +31,8 @@ import Output_Functions
 # This function reads the AERI channel data file
 ################################################################################
 
-def read_aeri_ch(path,date,aeri_type,fv,fa,engsecs,engtemp,bbcavfactor,
-                 get_aeri_missingDataFlag, verbose):
+def read_aeri_ch(path,date,aeri_type,fv,fa,aeri_spec_cal_factor,
+                engsecs,engtemp,bbcavfactor,get_aeri_missingDataFlag, verbose):
                  
     if verbose >= 2:
         print('Reading aeri_ch data in ' + path)
@@ -136,6 +136,14 @@ def read_aeri_ch(path,date,aeri_type,fv,fa,engsecs,engtemp,bbcavfactor,
     chsecs = np.copy(secs)
     mrad = mrad.T
     
+    # Apply the spectral recalibration, if desired
+    if(np.abs(aeri_spec_cal_factor - 1.0) > 0.0000001):
+        if(verbose >= 3): print('      Adjusting the AERIs spectral calibration')
+        tmp = mrad
+        for jj in range(0,len(mrad[0,:])):
+            tmp(:,jj) = fix_aeri_vlaser_mod(wnum,mrad[:,jj],aeri_spec_cal_factor)
+        mrad = tmp
+
     #I need to match the times of the AERI channel data with that from
     #the engineering file (which is the summary file).
     
@@ -317,7 +325,7 @@ def read_all_data(date, retz, tres, dostop, verbose, avg_instant, ch1_path,
                     wait = input('Stopping inside routine for debugging. Press enter to continue')
                 return fail, -999, -999, -999
             
-            wnum = np.arange(int((950-900)/0.5)+1)*0.5+900            #Simulated wavenumber array
+            wnum = np.arange(int((905-900)/0.5)+1)*0.5+900            #Simulated wavenumber array
             mrad = np.ones((len(wnum),len(mwr_data['secs'])))*-999.0   #Radiance is all missing
             noise = np.ones((len(wnum),len(mwr_data['secs'])))         #Set all noise values to 1
             yy = np.array([datetime.utcfromtimestamp(x).year for x in mwr_data['secs']])
@@ -350,7 +358,8 @@ def read_all_data(date, retz, tres, dostop, verbose, avg_instant, ch1_path,
             fail = 1
             return fail, -999, -999, -999
         
-        aerich1 = read_aeri_ch(ch1_path,date,aeri_type,fv,fa,aerieng['secs'],
+        aerich1 = read_aeri_ch(ch1_path,date,aeri_type,fv,fa,aeri_spec_cal_factor,
+                              aerieng['secs'],
                               aerieng['interferometerSecondPortTemp'],
                               aerieng['bbcavityfactor'], get_aeri_missingDataFlag, verbose)
         
@@ -608,7 +617,11 @@ def read_mwr(path, rootname, date, mwr_type, step, mwr_elev_field, mwr_n_tb_fiel
                    if len(foo) > 0:
                        psfcx = fid.variables['p_sfc'][:]
                    else:
-                       psfcx = np.ones(to.shape)*-999.0
+                       foo = np.where(np.array(list(fid.variables.keys())) == 'pres')[0] 
+                       if len(foo) > 0:
+                           psfcx = fid.variables['pres'][:]
+                       else:
+                           psfcx = np.ones(to.shape)*-999.0
             
             # See if the elevation variable exists. If so, read it in. If not then
             # assume all samples are zenith pointing and create the elev field as such
@@ -1744,6 +1757,10 @@ def grid_mwrscan(mwrscan, secs, n_elevations, elevations, timewindow, verbose):
         print(' Temporally gridding the MWR-scan data')
     err = {'success':0}
     
+        # An observation has to be within +/- this threshold to be considered at this angle
+        # This is needed because there is a bit of a jitter in HATPRO elevation angles
+    angle_threshold = 1.0       # degrees
+
     yy = np.array([datetime.utcfromtimestamp(x).year for x in secs])
     mm = np.array([datetime.utcfromtimestamp(x).month for x in secs])
     dd = np.array([datetime.utcfromtimestamp(x).day for x in secs])
@@ -1782,7 +1799,7 @@ def grid_mwrscan(mwrscan, secs, n_elevations, elevations, timewindow, verbose):
     for i in range(len(secs)):
         for j in range(n_elevations):
             foo = np.where((mwrscan['secs'] >= secs[i]-twin) & (mwrscan['secs'] < secs[i]+twin) &
-                            (np.abs(mwrscan['elev'] - delev[j]) < 1))[0]
+                            (np.abs(mwrscan['elev'] - delev[j]) < angle_threshold))[0]
             
             if len(foo) > 0:
                 dell = np.abs(secs[i] - mwrscan['secs'][foo])
@@ -1800,7 +1817,7 @@ def grid_mwrscan(mwrscan, secs, n_elevations, elevations, timewindow, verbose):
     idx = np.arange(mwrscan['n_fields'])
     for i in range(n_elevations):
         ntbsky[i*mwrscan['n_fields']+idx,:] = tbsky[i,:,:]
-        dim[i*mwrscan['n_fields']+idx] = mwrscan['freq']*1000. + delev[i]/1000.
+        dim[i*mwrscan['n_fields']+idx] = int(mwrscan['freq']*1000.) + delev[i]/1000.
         noise[i*mwrscan['n_fields']+idx] = mwrscan['noise']
 
     return ({'success': 1, 'secs': secs, 'ymd': ymd, 'hour': hour, 'n_elevations': n_elevations,

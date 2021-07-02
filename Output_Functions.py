@@ -15,10 +15,18 @@ import Calcs_Conversions
 ################################################################################
 
 ################################################################################
+# This function takes all of the entries in the VIP structure, and makes
+# them global attributes in the netCDF file that is currently open
+################################################################################
+def add_vip_to_global_atts():
+        # Tyler -- fill this in
+    return
+
+################################################################################
 # This function writes out netCDF files with the output
 ################################################################################
 
-def write_output(vip, ext_prof, mod_prof, ext_tseries, globatt, xret, prior,
+def write_output(vip, ext_prof, mod_prof, rass_prof, ext_tseries, globatt, xret, prior,
                 fsample, version, exectime, modeflag, nfilename, location,
                 cbh_string, verbose):
                 
@@ -429,36 +437,10 @@ def write_output(vip, ext_prof, mod_prof, ext_tseries, globatt, xret, prior,
         fid.Prior_dataset_TQ_correlation_reduction_factor = vip['prior_tq_cov_val']
         fid.Total_clock_execution_time_in_s = exectime
         fid.Retrieval_option_flags = '{:0d}, {:0d}, {:0d}, {:0d}, {:0d}, {:0d}, {:0d}, {:0d}, {:0d}'.format(modeflag[0], modeflag[1], modeflag[2], modeflag[3], modeflag[4], modeflag[5], modeflag[6], modeflag[7], modeflag[8])
-        fid.VIP_tres = (str(vip['tres']) + ' minutes. Note that the sample time corresponds to the '
+        fid.vip_tres = (str(vip['tres']) + ' minutes. Note that the sample time corresponds to the '
                       + 'center of the averaging intervale. A value of 0 implies that no averaging was performed')
-        fid.VIP_aeri_type = str(vip['aeri_type'])
-        fid.VIP_aeri_fv = str(vip['aeri_fv'])
-        fid.VIP_aeri_fa = str(vip['aeri_fa'])
-        fid.VIP_aeri_smooth_noise = str(vip['aeri_smooth_noise']) + ' minutes'
-        fid.VIP_mwr_type = str(vip['mwr_type'])
-        fid.VIP_mwr_rootname = vip['mwr_rootname']
-        if vip['mwr_n_tb_fields'] > 0:
-            fid.VIP_mwr_Tb_bias_applied = vip['mwr_tb_bias']
-        fid.VIP_cbh_type = str(vip['cbh_type'])
-        fid.VIP_cbh_window_in = str(vip['cbh_window_in'])
-        fid.VIP_cbh_window_out = str(vip['cbh_window_out'])
-        fid.VIP_external_temp_profile_type = str(vip['ext_temp_prof_type'])
-        fid.VIP_external_wv_profile_type = str(vip['ext_wv_prof_type'])
-        fid.VIP_model_temp_profile_type = str(vip['mod_temp_prof_type'])
-        fid.VIP_model_wv_profile_type = str(vip['mod_wv_prof_type'])
-        fid.VIP_lblrtm_home = vip['lbl_home']
-        fid.VIP_lblrtm_tape3 = vip['lbl_tape3']
-        fid.VIP_lblrtm_std_atmos = str(vip['lbl_std_atmos'])
-        fid.VIP_monortm_exec = vip['monortm_exec']
-        fid.VIP_monortm_spec = vip['monortm_spec']
-        fid.VIP_lblrtm_jac_option = str(vip['lblrtm_jac_option'])
-        fid.VIP_monortm_jac_option = str(vip['monortm_jac_option'])
-        fid.VIP_jac_max_ht = str(vip['jac_max_ht'])
-        fid.VIP_first_guess = str(vip['first_guess'])
-        fid.VIP_superadiabatic_maxht = str(vip['superadiabatic_maxht']*1000) + ' m AGL'
-        fid.VIP_chimney_height = str(vip['prior_chimney_ht']*1000) + ' m AGL'
-        fid.VIP_chimney_comment = 'All T/q/theta/thatae/dewpt/RH data below chimney height were change to ' + str(nochim)
-        
+        add_vip_to_global_atts(vip)
+
         # Add some of the static (non-time-dependent) data
         base_time[:] = xret[0]['secs']
         height[:] = xret[0]['z']
