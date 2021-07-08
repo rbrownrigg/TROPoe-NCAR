@@ -1624,8 +1624,8 @@ def aeri_zerofill(iwnum,irad,channel,epad=0):
     v_laser = 15799.0
     rf      = [4.0, 2.0]
     v_nyquist = v_laser / (2. * rf[band])
-    if(channel == 1) then n_pts = 4097:
-    elif(channel == 2) then n_pts = 8193:
+    if channel == 1: n_pts = 4097
+    elif channel == 2: n_pts = 8193
     else:
         print('ERROR in aeri_zerofill -- channel is not properly defined')
         sys.exit()
@@ -1636,52 +1636,54 @@ def aeri_zerofill(iwnum,irad,channel,epad=0):
     # which is used to help pad the data
     v_teststart = [627.0, 2380.]
     v_testend   = [632.0, 2384.]
-    loc = np.where(v_teststart[band] <= iwnum & iwnum <= v_testend[band])
+    loc = np.where((v_teststart[band] <= iwnum) & (iwnum <= v_testend[band]))
     tb = Calcs_Conversions.invplanck(iwnum[loc], irad[loc])
     avg_tb = np.mean(tb)
     r = Calcs_Conversions.planck(v, avg_tb)
     r[0] = 0.
 
     # Determine the bounds of the AERI data
-    n_apts = np.len(iwnum)
+    n_apts = len(iwnum)
     thres = 0.1
     count = 0
     ntries = 0
-    while(count != n_apts & ntries < 10):
-        loc = np.where(iwnum[0]-thres <= ownum and ownum <= iwnum[len(iwnum)-1]+thres)
+    while (count != n_apts) & (ntries < 10):
+        loc = np.where((iwnum[0]-thres <= v) & (v <= iwnum[len(iwnum)-1]+thres))[0]
         count = len(loc)
         thres += 0.05
-    if(ntries >= 10):
-        print('Error: unable to find the right bounds for the AERI in aeri_zerofill')
-        sys.exit()
+        ntries += 1
+
+        if ntries >= 10:
+            print('Error: unable to find the right bounds for the AERI in aeri_zerofill')
+            sys.exit()
 
     # Replace the AERI data in the planck radiance curve
-    v[loc] = irad
+    r[loc] = irad
 
     # Fourier transform the radiance data
-    rr = np.append(r, np.flip(r[1:n_pts-2]))
+    rr = np.append(r, np.flip(r[1:n_pts-1]))
     # Quick trap to make sure we have this size right
-    if(len(rr) ne 2*n_pts-2):
+    if(len(rr) != 2*n_pts-2):
         print('Problem in aeri_zerofill: the length of the appended vector is not correct 1')
         sys.exit()
     ifg = np.fft.fft(rr)
     
     # Zerofill the inteferogram
-    n_total = 2^18
+    n_total = 2**18
     fill = np.zeros(n_total - len(ifg))
-    ifg  = np.append(ifg[0:n_pts-1], fill, ifg[n_pts:2*(n_pts-1)-1])
+    ifg  = np.concatenate((ifg[0:n_pts], fill, ifg[n_pts:2*(n_pts-1)]))
     # Quick trap to make sure we have this size right
-    if(len(ifg) ne n_total):
+    if(len(ifg) != n_total):
         print('Problem in aeri_zerofill: the length of the appended vector is not correct 2')
         sys.exit()
 
     # Fourier transform the zerofilled interferogram
-    spc = np.fft.ifft(ifg)
-    spc = spc(0:n_total/2)
-    v = v_nyquist * np.arange(n_total/2+1) / (n_total/2)
-    loc = np.where(iwnum[0]-eepad <= v & v <= iwnum[n_apts-1]+eepad)
+    spc = np.fft.ifft(ifg) * len(ifg)
+    spc = spc[0:int(n_total/2)]
+    v2 = v_nyquist * np.arange(n_total/2) / (n_total/2)
+    loc = np.where((iwnum[0]-eepad <= v2) & (v2 <= iwnum[n_apts-1]+eepad))
    
-    return [v[loc],spc[loc]]
+    return [v2[loc],spc[loc]]
 
 ################################################################################
 # This function spectrally calibrates the AERi.  It requires input from a routine
@@ -1689,7 +1691,7 @@ def aeri_zerofill(iwnum,irad,channel,epad=0):
 ################################################################################
 def fix_aeri_vlaser_mod(wnum,irad,multiplier):
     # determine which channels this is
-    foo = np.where(wnum > 900 & wnum < 901)
+    foo = np.where((wnum > 900) & (wnum < 901))
     if(len(foo) > 0):
         channel = 1
     else:
@@ -1697,8 +1699,8 @@ def fix_aeri_vlaser_mod(wnum,irad,multiplier):
 
     nrad = irad * 0.
     for ii in range(0,len(irad[0,:])):
-        result = aeri_zerofill(wnum, irad[:,i], channel)
-        newrad = np.interp(wnum,result[0,:]*muliplier,result[1,:])
+        result = aeri_zerofill(wnum, irad[:,ii], channel)
+        newrad = np.interp(wnum, result[0,:]*multiplier, result[1,:])
         nrad[:,ii] = newrad
 
     return nrad
