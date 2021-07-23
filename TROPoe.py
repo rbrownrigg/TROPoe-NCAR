@@ -454,7 +454,7 @@ fail, aeri, mwr, mwrscan = Data_reads.read_all_data(date, z, vip['tres'], dostop
     vip['aerich1_path'], vip['aeri_pca_nf'], vip['aeri_fv'], vip['aeri_fa'],
     vip['aerisum_path'], vip['aerieng_path'], vip['aeri_type'], vip['aeri_calib_pres'],
     vip['aeri_smooth_noise'], vip['aeri_use_missingDataFlag'],
-    vip['aeri_min_675_bt'], vip['aeri_max_675_bt'],
+    vip['aeri_min_675_bt'], vip['aeri_max_675_bt'], vip['aeri_spec_cal_factor'], 
     vip['mwr_path'], vip['mwr_rootname'], vip['mwr_type'], vip['mwr_elev_field'], vip['mwr_n_tb_fields'],
     vip['mwr_tb_replicate'], vip['mwr_tb_field_names'], vip['mwr_tb_freqs'], vip['mwr_tb_noise'],
     vip['mwr_tb_bias'], vip['mwr_tb_field1_tbmax'], vip['mwr_pwv_field'], vip['mwr_pwv_scalar'],
@@ -497,6 +497,23 @@ if mod_prof['success'] != 1:
     VIP_Databases_functions.abort(lbltmpdir,date)
     sys.exit()
 
+# Read in any external sources of virtual temperature profiles (RASS)
+    # I will need to tweak this call a bit by turning off the WV part of the call
+if(vip['rass_prof_type'] == 0 | vip['rass_prof_type'] == 5):
+    rass_prof = Data_reads.read_external_profile_data(date, z, aeri['secs'], vip['tres'], vip['avg_instant'], 
+              0, '.', vip['ext_wv_noise_mult_hts'],
+              vip['ext_wv_noise_mult_val'], vip['ext_wv_prof_minht'], vip['ext_wv_prof_maxht'],
+              vip['ext_wv_time_delta'], vip['rass_prof_type'], vip['rass_prof_path'],
+              vip['rass_noise_adder_hts'], vip['rass_noise_adder_val'],
+              vip['rass_prof_minht'], vip['rass_prof_maxht'], vip['rass_time_delta'],
+              dostop, verbose)
+else:
+    print('Error: the RASS data weere assigned an invalid type in the VIP file (must be 0 or 5)'
+    VIP_Databases_functions.abort(lbltmpdir,date)
+    sys.exit()
+if(rass_prof['success'] != 1):
+    print('  Warning: there is some problem in the RASS temperature specification')
+    
 # Read in any external time series data that would be used
 ext_tseries = Data_reads.read_external_timeseries(date, aeri['secs'], vip['tres'], vip['avg_instant'],
               vip['ext_sfc_temp_type'], vip['ext_sfc_wv_type'], vip['ext_sfc_path'],
@@ -700,7 +717,8 @@ for i in range(len(aeri['secs'])):                        # { loop_i
     #                8 -- external NWP model water vapor profile (*)
     #                9 -- in-situ surface CO2 obs
     #               10 -- MWR non-zenith data
-    #               11, 12, ... -- IASI, CrIS, S-HIS, others...
+    #               11 -- RASS virtural temperature data
+    #               12, ... -- IASI, CrIS, S-HIS, others...
     #     (*) Note that the NWP input could come in two ways, but I wanted a way
     #         to bring in lidar and NWP data, while retaining backwards compatibility
 
@@ -843,6 +861,21 @@ for i in range(len(aeri['secs'])):                        # { loop_i
         sigY = np.append(sigY, noise)
         flagY = np.append(flagY, np.ones(len(mwrscan['dim']))*10)
         dimY = np.append(dimY, mwrscan['dim'])
+
+    if rass_prof['nTprof'] > 0:
+        foo = np.where(rass_prof['tempminht'] <= rass_prof['ht'] & rass_prof['ht'] <= rass_prof['tempmaxht'])
+        if(len(foo)) == 0):
+            print('  Error: the RASS heights were not found (and they should have been)')
+            VIP_Databases_functions.abort(lbltmpdir,date)
+            sys.exit()
+        Y = np.append(Y,rass_prof['temp'][foo,i])
+        nSy = np.diag(rass_prof['sig_temp'][foo,i])
+        zero = np.zeros((len(foo),len(sigY)))
+        Sy = np.append(np.append(Sy,zero,axis=0),np.append(zero.T,nSy,axis=0),axis=1)
+        sigY = np.append(sigY, rass_prof['sig_temp'][foo,i])
+        flagY = np.append(flagY, np.ones(len(foo))*11)
+        dimY = np.append(dimY, z[foo])
+      
     nY = len(Y)
 
     # Quick check: All of the 1-sigma uncertainties from the observations
@@ -1498,6 +1531,34 @@ for i in range(len(aeri['secs'])):                        # { loop_i
             Kij = np.append(Kij, KK, axis = 0)
             FXn = np.append(FXn,FF)
 
+        # Perform the forward model calculation and compute the Jacobian for the
+        # MWR-scan portion of the observation vector
+        foo = np.where(flagY == 11)[0]
+        if len(foo) > 0:
+            flag, KK, FF = Jacobian_Functions.compute_jacobian_external_temp_profiler(Xn, p, z,
+                            rass_prof['tempminht'], rass_prof['tempmaxht'], rass_prof['temp_type'])
+
+            if flag == 0:
+                print('Problem computing the Jacobian for the RASS profiler. Have to abort')
+                VIP_Databases_functions.abort(lbltmpdir,date)
+                sys.exit()
+            if len(foo) != len(FF):
+                print('Problem computing the Jacobian for the RASS profiler')
+                VIP_Databases_functions.abort(lbltmpdir,date)
+                sys.exit()
+
+            # Are there misssing values from the RASS? If so, then we want to make
+            # the forward model calculation have the same value and put no sensitivity
+            # in the Jacobian there so that the retrieval is unaffected
+
+            bar = np.where(Y[foo] < -900)[0]
+            if len(bar) > 0:
+                FF[bar] = Y[foo[bar]]
+                KK[bar,:] = 0.
+            Kij = np.append(Kij, KK, axis = 0)
+            FXn = np.append(FXn,FF)
+
+
         ########
         # Done computing forward calculation and Jacobians. Now the retrieval math
         ########
@@ -1948,8 +2009,8 @@ for i in range(len(aeri['secs'])):                        # { loop_i
     # Compute the various convective indices and other useful data
     # Write the data into the netCDF file
 
-    success, noutfilename = Output_Functions.write_output(vip, ext_prof, mod_prof, ext_tseries, globatt,
-              xret, prior, fsample, version, (endtime-starttime).total_seconds(),
+    success, noutfilename = Output_Functions.write_output(vip, ext_prof, mod_prof, rass_prof, ext_tseries, 
+              globatt, xret, prior, fsample, version, (endtime-starttime).total_seconds(),
               modeflag, noutfilename, location, cbh_string, verbose)
 
     if success == 0:

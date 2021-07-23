@@ -264,7 +264,8 @@ def read_aeri_ch(path,date,aeri_type,fv,fa,aeri_spec_cal_factor,
 def read_all_data(date, retz, tres, dostop, verbose, avg_instant, ch1_path,
               pca_nf, fv, fa, sum_path, eng_path, aeri_type, cal_aeri_pres,
               aeri_smooth_noise, get_aeri_missingDataFlag, aeri_min_675_tb,
-              aeri_max_675_tb, mwr_path, mwr_rootname, mwr_type, mwr_elev_field,
+              aeri_max_675_tb, aeri_spec_cal_factor, 
+              mwr_path, mwr_rootname, mwr_type, mwr_elev_field,
               mwr_n_tb_fields, mwr_tb_replicate, mwr_tb_field_names, mwr_tb_freqs,
               mwr_tb_noise, mwr_tb_bias, mwr_tb_field1_tbmax, mwr_pwv_field,
               mwr_pwv_scalar, mwr_lwp_field, mwr_lwp_scalar, vceil_path, vceil_type,
@@ -2373,7 +2374,7 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
                     # This handles the rlprofmr2news dataset
                         
                     ttype = 'ARM Raman lidar (rlprofmr2news)'
-                    htx = fid.variables['height'][:]
+                    htx   = fid.variables['height'][:]
                     tempx = fid.variables['temperature'][:]
                     stempx = fid.variables['temperature_error'][:]
                     
@@ -2394,12 +2395,12 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
                 
                 if nprof == 0:
                     tsecs = bt+to
-                    temp = np.copy(tempx)
+                    temp  = np.copy(tempx)
                     stemp = np.copy(stempx)
                 else:
                     tsecs = np.append(tsecs, bt+to)
-                    temp = np.append(temp,tempx, axis = 1)
-                    swv = np.append(stemp,stempx, axis = 1)
+                    temp  = np.append(temp,tempx, axis = 1)
+                    stemp = np.append(stemp,stempx, axis = 1)
                 nprof = len(tsecs)
             
             temp = temp - 273.16
@@ -2464,6 +2465,61 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
         tunit = 'C'
         ttype = 'NWP model output from ' + model_type + ' at ' + str(model_lat) + ' degN, ' + str(model_lon) + ' degE'
     
+            # Read in the RASS virtual temperature data
+    elif temp_prof_type == 4:
+        if verbose >= 1:
+            print('Reading in RASS virtual temperature data')
+        
+        ttype = 'RASS Tv data'
+        tunit = 'C'
+        
+        files = []
+        for i in range(len(dates)):
+            for j in range(len(cdf)):
+                files = files + (glob.glob(temp_prof_path + '/' + '*rass*' + dates[i] + '*.' + cdf[j]))
+                
+        if len(files) == 0:
+            if verbose >= 1:
+                print('No RASS data found in this directory for this date')
+            external['nTprof'] = 0      
+        else:
+            if verbose >= 2:
+                print('Reading ' + str(len(files)) + ' RASS data files')
+            
+            nprof = 0
+            for i in range(len(files)):
+                fid = Dataset(files[i], 'r')
+                bt = fid.variables['base_time'][0]
+                to = fid.variables['time_offset'][:]
+                htx    = fid.variables['height'][:]
+                tempx  = fid.variables['temp'][:]
+                stempx = fid.variables['sigma_temp'][:]
+                
+                # Now append the data to the growing structure
+                
+                if nprof == 0:
+                    tsecs = bt+to
+                    temp  = np.copy(tempx)
+                    stemp = np.copy(stempx)
+                else:
+                    tsecs = np.append(tsecs, bt+to)
+                    temp  = np.append(temp,tempx, axis = 1)
+                    stemp = np.append(stemp,stempx, axis = 1)
+                nprof = len(tsecs)
+            
+                # There can be missgin data in the middle of the RASS profile,
+                # and I don't want to interpolate over these gaps (or above
+                # or below  the good data).  I will replace all of the bad
+                # data with NaNs, and then trap these after the vertical 
+                # interpolation below.
+            foo = np.where(temp < -100 or temp > 100)
+            if(len(foo) > 0):
+                temp[foo] = np.nan
+
+            external['nTprof'] = len(tsecs)
+            zzt = np.copy(htx)
+        
+
     # Read in the RHUBC-2 radiosonde data from AER's files
     elif temp_prof_type == 99:
         if verbose >= 1:
@@ -2586,10 +2642,16 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
                 else:
                     tmp_water[bar[0]-1:len(ht),i] = np.nan
         
+        # Set the data below or above the instrument's min/max heights to missing value
+        foo = where((ht < min(zzq)) | (max(zzq) lt ht))
+        if(len(foo) > 0):
+            tmp_water[foo,:]  = np.nan
+            tmp_swater[foo,:] = np.nan
+
         # But set the data below or above the min/max values to a missing value
         foo = np.where((ht < wv_prof_minht) | (wv_prof_maxht < ht))[0]
         if len(foo) > 0:
-            tmp_water[foo,:] = np.nan
+            tmp_water[foo,:]  = np.nan
             tmp_swater[foo,:] = np.nan
         
 
@@ -2598,11 +2660,11 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
             # If there is only a single sample, then set all of the profiles to this
             # same profile
             for j in range(len(secs)):
-                new_water[:,j] = np.copy(tmp_water)
+                new_water[:,j]  = np.copy(tmp_water)
                 new_swater[:,j] = np.copy(tmp_swater)
         else:
             for j in range(len(ht)):
-                new_water[j,:] = np.interp(secs,qsecs,tmp_water[j,:])
+                new_water[j,:]  = np.interp(secs,qsecs,tmp_water[j,:])
                 new_swater[j,:] = np.interp(secs,qsecs,tmp_swater[j,:])
         
         # Set the interpolated data before and after the end external times to missing
@@ -2651,10 +2713,16 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
                 else:
                     tmp_temp[bar[0]-1:len(ht),i] = np.nan
         
+        # Set the data below or above the instrument's min/max heights to missing value
+        foo = where((ht < min(zzt)) | (max(zzt) lt ht))
+        if(len(foo) > 0):
+            tmp_temp[foo,:]  = np.nan
+            tmp_stemp[foo,:] = np.nan
+
         # But set the data below or above the min/max values to a missing value
         foo = np.where((ht < temp_prof_minht) | (temp_prof_maxht < ht))[0]
         if len(foo) > 0:
-            tmp_temp[foo,:] = np.nan
+            tmp_temp[foo,:]  = np.nan
             tmp_stemp[foo,:] = np.nan
     
         # Now interpolate to the AERIoe temporal grid

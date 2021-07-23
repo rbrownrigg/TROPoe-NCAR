@@ -1217,6 +1217,43 @@ def compute_jacobian_external_temp_profiler(Xn, p, z, minht, maxht, temp_type):
         for j in range(len(foo)):
             Kij[j,foo[j]] = 1.
         
+    # RASS virtual temperature
+    elif temp_type == 5:
+        foo = np.where((minht <= z) & (z <= maxht))[0]
+        if len(foo) == 0:
+            print('Error in external temperature profiler forward model -- no vertical levels found')
+            return flag, -999., -999
+        
+         # The RASS's temperature data is in virtual temperature [C]
+         t0 = np.copy(Xn[0:k])
+         q0 = np.copy(Xn[k:2*k])
+         p0 = np.copy(p) * 100  # convert pressure from mb to pascalls (only used in Tv calc)
+         rh = Calcs_Conversions.w2rh(q0, p, t0, 0) * 100
+         ttv = Calc_Conversions.tvirt(t0, rh, p0)   # virtual temperature in [C]
+        
+         # Compute the jacobian over the appropriate height range
+         Kij = np.zeros((len(foo),len(Xn)))
+         tpert = 1.0    # Additive
+         qpert = 0.95   # multiplicative
+         for i in range(len(foo)):
+                # Compute sensitivity to a perturbation in temperature
+             t1 = t0
+             t1[foo[i]] += tpert
+             rh = Calcs_Conversions.w2rh(q0, p, t1, 0) * 100
+             tmp = Calc_Conversions.tvirt(t1, rh, p0)   # virtual temperature in [C]
+             Kij[i,foo[i]] = (tmp[foo[i]]-ttv[foo[i]]) / (t1[foo[i]] - t0[foo[i]])
+
+                # Compute sensitivity to a perturbation in water vapor mixing ratio
+             q1 = q0
+             if(q1[foo[i]] <= 0):
+                 q1[foo[i]] = 0.05
+             else:
+                 q1[foo[i]] *= qpert
+             rh = Calcs_Conversions.w2rh(q1, p, t0, 0) * 100
+             tmp = Calc_Conversions.tvirt(t0, rh, p0)   # virtual temperature in [C]
+             Kij[i,foo[i]+k] = (tmp[foo[i]]-ttv[foo[i]]) / (q1[foo[i]] - q0[foo[i]])
+         FXn = ttv[foo]
+
     # AER's GVRP temperature retrievals from RHUBC-2
     elif temp_type == 99:
         # The radiosonde data were read in and are in degC

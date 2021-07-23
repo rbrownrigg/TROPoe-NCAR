@@ -21,6 +21,7 @@ import numpy as np
 # t2theta()
 # t2thetae()
 # theta2t()
+# tvirt()
 #################################################################################
 
 ################################################################################
@@ -461,4 +462,19 @@ def theta2t(theta, w, p, p0 = 1000.):
     t = th / ( (p0/p)**0.286 ) - 273.16
     
     return t
+
+################################################################################
+# This function computes the virtual temperature given the ambient temperature,
+# the relative humidty, and the ambient pressure
+#     Temp in [C]
+#     RH in unitless [between 0 and 1]
+#     pres in Pascals
+# Output Tv is in [C]
+################################################################################
+
+def tvirt(temp, rh, pres):
+    rvap = 461.5
+    tzero = 273.15
+    vt = (temp + tzero) / (1.0 - 0.378 * epres(temp,rh)/pres) - tzero
+    return vt
 
