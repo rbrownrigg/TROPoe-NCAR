@@ -1566,9 +1566,10 @@ def lcurve(ggamma, flagY, Y0, FXn0, Kij0, Xn0, Xa0, Sa0, Sm0, z0):
 # which is simpler than FwHM logic I was previously using...
 ################################################################################
 
-def compute_vres_from_akern(akern, z, do_area = False):
+def compute_vres_from_akern(akern, z, do_cdfs = False, do_area = False):
     
     vres = np.zeros((2,len(z)))
+    cdfs = np.zeros((2,len(z)))
     area = np.zeros((2,len(z)))
     
     # First get the vertical spacing between the retrieval levels
@@ -1591,7 +1592,15 @@ def compute_vres_from_akern(akern, z, do_area = False):
            tval = akern[i,i]
         if akern[k+i,k+i] > 0:
            qval = akern[k+i,k+i]
+        # capture the cumulative DFS profile
+        if(i == 0):
+            cdfs[0,i] = tval
+            cdfs[1,i] = qval
+        else:
+            cdfs[0,i] = tval + cdfs[0,i-1]
+            cdfs[1,i] = qval + cdfs[1,i-1]
 
+        # This is the Hewison method
         vres[0,i] = zres[i] / tval            # temperature profile
         vres[1,i] = zres[i] / qval        # water vapor profile
     
@@ -1601,7 +1610,11 @@ def compute_vres_from_akern(akern, z, do_area = False):
     tmp = np.copy(akern[k:2*k,k:2*k])
     area[1,:] = np.squeeze(tmp.dot(np.ones(k)[:,None]))
     
-    if do_area:
+    if do_cdfs and do_area:
+        return vres, area, cdfs
+    elif do_cdfs:
+        return vres, cdfs
+    elif do_area:
         return vres, area
     else:
         return vres

@@ -218,10 +218,16 @@ def write_output(vip, ext_prof, mod_prof, rass_prof, ext_tseries, globatt, xret,
         vres_temp = fid.createVariable('vres_temperature', 'f4', ('time','height',))
         vres_temp.long_name = 'Vertical resolution of the temperature profile'
         vres_temp.units = 'km'
-        
         vres_wv = fid.createVariable('vres_waterVapor', 'f4', ('time','height',))
         vres_wv.long_name = 'Vertical resolution of the water vapor profile'
         vres_wv.units = 'km'
+        
+        cdfs_temp = fid.createVariable('cdfs_temperature', 'f4', ('time','height',))
+        cdfs_temp.long_name = 'Vertical profile of the cumulative degrees of freedom of signal for temperature'
+        cdfs_temp.units = 'unitless'
+        cdfs_wv = fid.createVariable('cdfs_waterVapor', 'f4', ('time','height',))
+        cdfs_wv.long_name = 'Vertical profile of the cumulative degrees of freedom of signal for water vapor'
+        cdfs_wv.units = 'unitless'
         
         hatchOpen = fid.createVariable('hatchOpen', 'i2', ('time',))
         hatchOpen.long_name = 'Flag indicating if the AERIs hatch was open'
@@ -666,6 +672,8 @@ def write_output(vip, ext_prof, mod_prof, rass_prof, ext_tseries, globatt, xret,
     sic = fid.variables['sic']
     vres_temp = fid.variables['vres_temperature']
     vres_wv = fid.variables['vres_waterVapor']
+    cdfs_temp = fid.variables['cdfs_temperature']
+    cdfs_wv = fid.variables['cdfs_waterVapor']
     
     hatchOpen = fid.variables['hatchOpen']
     cbh = fid.variables['cbh']
@@ -737,6 +745,8 @@ def write_output(vip, ext_prof, mod_prof, rass_prof, ext_tseries, globatt, xret,
         sic[fsample+i] = xret[fsample+i]['sic']
         vres_temp[fsample+i,:] = xret[fsample+i]['vres'][0,:]
         vres_wv[fsample+i,:] = xret[fsample+i]['vres'][1,:]
+        cdfs_temp[fsample+i,:] = xret[fsample+i]['cdfs'][0,:]
+        cdfs_wv[fsample+i,:] = xret[fsample+i]['cdfs'][1,:]
         
         hatchOpen[fsample+i] = xret[fsample+i]['hatchopen']
         cbh[fsample+i] = xret[fsample+i]['cbh']
@@ -814,6 +824,7 @@ def create_xret(xret, fsample, vip, aeri, Xa, Sa, z, bands, obsdim, obsflag):
     Gain = np.zeros((len(Xa),nY))
     Akern = np.copy(Sop)
     vres = np.zeros((2,len(z)))
+    cdfs = np.zeros((2,len(z)))
     dfs = np.zeros(16)
     sic = 0.0
     
@@ -861,7 +872,7 @@ def create_xret(xret, fsample, vip, aeri, Xa, Sa, z, bands, obsdim, obsflag):
              'z':z, 'p':np.zeros(len(z)), 'hatchopen':0,
              'mwr_pwv':0., 'mwr_lwp':0., 'cbh':0., 'cbhflag':0,
              'x0':Xa*0, 'Xn':Xa*0, 'Fxn':Y*0, 'Sop':Sop, 'K':Kij, 'Gain':Gain, 'Akern':Akern,
-             'vres':vres, 'gamma':0., 'qcflag':0, 'sic':sic, 'dfs':dfs, 'di2m':0.,
+             'vres':vres, 'cdfs':cdfs, 'gamma':0., 'qcflag':0, 'sic':sic, 'dfs':dfs, 'di2m':0.,
              'rmsa':0., 'rmsr':0., 'rmsp':0., 'chi2':0., 'converged':0}
 
     xret = []

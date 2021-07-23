@@ -1617,7 +1617,7 @@ for i in range(len(aeri['secs'])):                        # { loop_i
                     tmp[nX+7], tmp[nX+8], tmp[nX+9], tmp[nX+10], tmp[nX+11], tmp[nX+12]])
 
         sic = 0.5 * np.log(scipy.linalg.det(Sa.dot(SopInv)))
-        vres = Other_functions.compute_vres_from_akern(Akern, z)
+        vres,cdfs = Other_functions.compute_vres_from_akern(Akern, z, do_cdfs=True)
         # Compute the N-form and M-form convergence criteria (X and Y spaces, resp)
         if itern == 0:
         # Set the initial RMS and di2 values to large numbers
@@ -1844,6 +1844,7 @@ for i in range(len(aeri['secs'])):                        # { loop_i
             gfac = xsamp[itern-1]['gamma']
             sic = xsamp[itern-1]['sic']
             dfs = np.copy(xsamp[itern-1]['dfs'])
+            cdfs = np.copy(xsamp[itern-1]['cdfs'])
             di2m = xsamp[itern-1]['di2m']
             rmsa = xsamp[itern-1]['rmsa']
             rmsr = xsamp[itern-1]['rmsr']
@@ -1866,6 +1867,7 @@ for i in range(len(aeri['secs'])):                        # { loop_i
                 gfac = xsamp[old_iter]['gamma']
                 sic = xsamp[old_iter]['sic']
                 dfs = np.copy(xsamp[old_iter]['dfs'])
+                cdfs = np.copy(xsamp[old_iter]['cdfs'])
                 di2m = xsamp[old_iter]['di2m']
                 rmsa = xsamp[old_iter]['rmsa']
                 rmsr = xsamp[old_iter]['rmsr']
@@ -1894,7 +1896,7 @@ for i in range(len(aeri['secs'])):                        # { loop_i
                 'mwr_pwv':mwr['pwv'][i], 'mwr_lwp':mwr['lwp'][i], 'cbh':cbh, 'cbhflag':cbhflag,
                 'X0':np.copy(X0), 'Xn':np.copy(Xn), 'FXn':np.copy(FXn), 'Sop':np.copy(Sop),
                 'K':np.copy(Kij), 'Gain':np.copy(Gain), 'Akern':np.copy(Akern), 'vres':np.copy(vres),
-                'gamma':gfac, 'qcflag':0, 'sic':sic, 'dfs':np.copy(dfs), 'di2m':di2m, 'rmsa':rmsa,
+                'gamma':gfac, 'qcflag':0, 'sic':sic, 'dfs':np.copy(dfs), 'cdfs':np.copy(cdfs), 'di2m':di2m, 'rmsa':rmsa,
                 'rmsr':rmsr, 'rmsp':rmsp, 'chi2':chi2, 'converged':converged}
 
         # And store each iteration in case I would like to investigate how
@@ -1918,7 +1920,7 @@ for i in range(len(aeri['secs'])):                        # { loop_i
         print('Converged (found NaN in Xnp1 so abort sample)')
     else:
 
-        # If the retrieval did not convreged but performed max_iter iterations
+        # If the retrieval did not converged but performed max_iter iterations
         # means that the RMS didn't really increase drastically at any one step.
         # Let's select the sample that has the best RMS but weight the value
         # so that we are picking it towards the end ofthe iterations (use gamma
@@ -1941,6 +1943,7 @@ for i in range(len(aeri['secs'])):                        # { loop_i
         gfac = xsamp[itern]['gamma']
         sic = xsamp[itern]['sic']
         dfs = np.copy(xsamp[itern]['dfs'])
+        cdfs = np.copy(xsamp[itern]['cdfs'])
         di2m = xsamp[itern]['di2m']
         rmsa = xsamp[itern]['rmsa']
         rmsr = xsamp[itern]['rmsr']
@@ -1952,7 +1955,7 @@ for i in range(len(aeri['secs'])):                        # { loop_i
                 'mwr_pwv':mwr['pwv'][i], 'mwr_lwp':mwr['lwp'][i], 'cbh':cbh, 'cbhflag':cbhflag,
                 'X0':np.copy(X0), 'Xn':np.copy(Xn), 'FXn':np.copy(FXn), 'Sop':np.copy(Sop),
                 'K':np.copy(Kij), 'Gain':np.copy(Gain), 'Akern':np.copy(Akern), 'vres':np.copy(vres),
-                'gamma':gfac, 'qcflag':0, 'sic':sic, 'dfs':np.copy(dfs), 'di2m':di2m, 'rmsa':rmsa,
+                'gamma':gfac, 'qcflag':0, 'sic':sic, 'dfs':np.copy(dfs), 'cdfs':np.copy(cdfs), 'di2m':di2m, 'rmsa':rmsa,
                 'rmsr':rmsr, 'rmsp':rmsp, 'chi2':chi2, 'converged':converged}
 
         xsamp.append(xtmp)

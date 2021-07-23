@@ -1304,6 +1304,11 @@ def read_vceil(path, date, vceil_type, ret_secs, verbose):
         print('             JOYCE-style Vaisala ceilometer input')
         print('                     Files named "*ct25k*nc" ')
         print('                     Reads field "first_cbh", which has units m AGL')
+        print('   cbh_type=6 --->')
+        print('             JOYCE-style Jenoptic ceilometer input')
+        print('                     Files named "*CHM*nc" ')
+        print('                     Reads field "cbh", which has units m AGL')
+        print('                     Time field is weird (starts at 1904)')
         print('-------------------------------------------------------')
         print(' ')
         err = {'success':-1}
@@ -1432,6 +1437,34 @@ def read_vceil(path, date, vceil_type, ret_secs, verbose):
                 cbh = np.append(cbh,cbhx)
         cbh = cbh/1000.              # Convert m AGL to km AGL
     
+    elif vceil_type == 6:
+        ftype = ['nc','cdf']
+        if verbose == 3:
+            print(' Reading in JOYCE Jenoptic data')
+        for i in range(len(udate)):
+            for j in range(len(ftype)):
+                files = files + (glob.glob(path +'/' + '*CHM*' + udate[i] + '*.' + ftype[j]))
+        if len(files) == 0:
+            print('No CBH files found for this date')
+            return err
+        
+        for i in range(len(files)):
+            if verbose == 3:
+                print(' Reading the file ' + files[i])
+            fid = Dataset(files[i],'r')
+            to  = fid.variables['time'][:]
+            cbhx = fid.variables['cbh'][:]
+            fid.close()
+            
+            if i == 0:
+                secs = to
+                cbh = np.copy(cbhx)
+            else:
+                secs = np.append(secs,to)
+                cbh = np.append(cbh,cbhx)
+        secs -= 2.0828448e+09   # This is the appropriate offset to apply to get to unix time
+        cbh = cbh/1000.              # Convert m AGL to km AGL
+
     else:
         print('Error in read_vceil: Undefined ceilometer type')
         return err
