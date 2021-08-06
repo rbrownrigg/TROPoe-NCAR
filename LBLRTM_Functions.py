@@ -1000,7 +1000,7 @@ def rundecker(model, aprofile, z, p, t, w, co2_profile= None, o3_profile=None,
         # Add in the stuff for the aerosols, if desired, here
         
         if inst == 1:
-            opd = 1.203702766         # AERI
+            opd = 1.03702766          # AERI
         elif inst == 2:
             opd = 2.000000000         # IASI
         else:
@@ -1019,11 +1019,11 @@ def rundecker(model, aprofile, z, p, t, w, co2_profile= None, o3_profile=None,
         
         if scan == 3:                 # Only if the filter-function is turned to FFT
             if model == 1:
-               lun.write('1.03702766 497.575891803.71268    1   -4     0.48214700   12    1    1   13\n')
-               lun.write('1.03702766 497.575891803.71268    0   -4     0.48214700   12    1    1   14\n')
+               lun.write('1.03702766 497.575891803.71268    1   -4     0.48214722   12    1    1   13\n')
+               lun.write('1.03702766 497.575891803.71268    0   -4     0.48214722   12    1    1   14\n')
             elif model == 2:
-                lun.write('1.037027661796.480423022.09850    1   -4     0.48214700   12    1    1   13\n')
-                lun.write('1.037027661796.480423022.09850    0   -4     0.48214700   12    1    1   14\n')
+                lun.write('1.037027661796.480423022.09850    1   -4     0.48214722   12    1    1   13\n')
+                lun.write('1.037027661796.480423022.09850    0   -4     0.48214722   12    1    1   14\n')
             elif model == 3:
                 
                 # I will only take the wavenumbers that are +50 cm-1 away
