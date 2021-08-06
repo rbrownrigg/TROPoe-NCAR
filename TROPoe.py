@@ -1,4 +1,4 @@
-__version__ = '0.2.48'
+__version__ = '0.2.51'
 
 import os
 import sys
@@ -454,7 +454,7 @@ fail, aeri, mwr, mwrscan = Data_reads.read_all_data(date, z, vip['tres'], dostop
     vip['aerich1_path'], vip['aeri_pca_nf'], vip['aeri_fv'], vip['aeri_fa'],
     vip['aerisum_path'], vip['aerieng_path'], vip['aeri_type'], vip['aeri_calib_pres'],
     vip['aeri_smooth_noise'], vip['aeri_use_missingDataFlag'],
-    vip['aeri_min_675_bt'], vip['aeri_max_675_bt'], vip['aeri_spec_cal_factor'], 
+    vip['aeri_min_675_bt'], vip['aeri_max_675_bt'], vip['aeri_spec_cal_factor'],
     vip['mwr_path'], vip['mwr_rootname'], vip['mwr_type'], vip['mwr_elev_field'], vip['mwr_n_tb_fields'],
     vip['mwr_tb_replicate'], vip['mwr_tb_field_names'], vip['mwr_tb_freqs'], vip['mwr_tb_noise'],
     vip['mwr_tb_bias'], vip['mwr_tb_field1_tbmax'], vip['mwr_pwv_field'], vip['mwr_pwv_scalar'],
@@ -500,7 +500,7 @@ if mod_prof['success'] != 1:
 # Read in any external sources of virtual temperature profiles (RASS)
     # I will need to tweak this call a bit by turning off the WV part of the call
 if(vip['rass_prof_type'] == 0 | vip['rass_prof_type'] == 5):
-    rass_prof = Data_reads.read_external_profile_data(date, z, aeri['secs'], vip['tres'], vip['avg_instant'], 
+    rass_prof = Data_reads.read_external_profile_data(date, z, aeri['secs'], vip['tres'], vip['avg_instant'],
               0, '.', vip['ext_wv_noise_mult_hts'],
               vip['ext_wv_noise_mult_val'], vip['ext_wv_prof_minht'], vip['ext_wv_prof_maxht'],
               vip['ext_wv_time_delta'], vip['rass_prof_type'], vip['rass_prof_path'],
@@ -508,12 +508,12 @@ if(vip['rass_prof_type'] == 0 | vip['rass_prof_type'] == 5):
               vip['rass_prof_minht'], vip['rass_prof_maxht'], vip['rass_time_delta'],
               dostop, verbose)
 else:
-    print('Error: the RASS data weere assigned an invalid type in the VIP file (must be 0 or 5)'
+    print('Error: the RASS data weere assigned an invalid type in the VIP file (must be 0 or 5)')
     VIP_Databases_functions.abort(lbltmpdir,date)
     sys.exit()
 if(rass_prof['success'] != 1):
     print('  Warning: there is some problem in the RASS temperature specification')
-    
+
 # Read in any external time series data that would be used
 ext_tseries = Data_reads.read_external_timeseries(date, aeri['secs'], vip['tres'], vip['avg_instant'],
               vip['ext_sfc_temp_type'], vip['ext_sfc_wv_type'], vip['ext_sfc_path'],
@@ -863,8 +863,8 @@ for i in range(len(aeri['secs'])):                        # { loop_i
         dimY = np.append(dimY, mwrscan['dim'])
 
     if rass_prof['nTprof'] > 0:
-        foo = np.where(rass_prof['tempminht'] <= rass_prof['ht'] & rass_prof['ht'] <= rass_prof['tempmaxht'])
-        if(len(foo)) == 0):
+        foo = np.where((rass_prof['tempminht'] <= rass_prof['ht']) & (rass_prof['ht'] <= rass_prof['tempmaxht']))[0]
+        if(len(foo) == 0):
             print('  Error: the RASS heights were not found (and they should have been)')
             VIP_Databases_functions.abort(lbltmpdir,date)
             sys.exit()
@@ -1004,9 +1004,9 @@ for i in range(len(aeri['secs'])):                        # { loop_i
     if vip['aeri_type'] <= -1:
         gfactor = np.array([100.,10.,3.,1.])
     else:
-        if(first_guess == 'lastSample'): 
+        if(first_guess == 'lastSample'):
             gfactor = np.array([100.,10.,3.,1.])
-        else: 
+        else:
             gfactor = np.array([1000.,300.,100.,30.,10.,3.,1.])
     if len(gfactor) < vip['max_iterations']:
         gfactor = np.append(gfactor, np.ones(vip['max_iterations']-len(gfactor)+3))
@@ -1298,7 +1298,7 @@ for i in range(len(aeri['secs'])):                        # { loop_i
         if len(foo) > 0:
             flag, KK, FF = Jacobian_Functions.compute_jacobian_external_wv_profiler(Xn, p, z,
                             ext_prof['wvminht'], ext_prof['wvmaxht'], ext_prof['wv_type'], ext_prof['wvmultiplier'])
-            
+
 
             if flag == 0:
                 print('Problem computing the Jacobian for the external wv profiler. Have to abort')
@@ -2012,7 +2012,7 @@ for i in range(len(aeri['secs'])):                        # { loop_i
     # Compute the various convective indices and other useful data
     # Write the data into the netCDF file
 
-    success, noutfilename = Output_Functions.write_output(vip, ext_prof, mod_prof, rass_prof, ext_tseries, 
+    success, noutfilename = Output_Functions.write_output(vip, ext_prof, mod_prof, rass_prof, ext_tseries,
               globatt, xret, prior, fsample, version, (endtime-starttime).total_seconds(),
               modeflag, noutfilename, location, cbh_string, verbose)
 

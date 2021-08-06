@@ -18,9 +18,9 @@ import scipy.io
 ################################################################################
 
 def read_vip_file(filename,globatt,verbose,debug,dostop):
-    
+
     maxbands = 200 #The maximum number of bands to enable for the retrieval
-    
+
     # This is the stucture with all of the input that we need.
     # The code below will be searching the VIP input file for the same keys
     # that are listed in this structure. If a line is found with the same
@@ -34,7 +34,7 @@ def read_vip_file(filename,globatt,verbose,debug,dostop):
     # The code will ouput how many of the keys in this structure were found.
     # Note that not all of them have to be in the VIP file; if a key in this
     # structure is not found in the VIP file then it maintains it default value
-    
+
     vip = ({'success':0,
       'tres':0,                     #Temporal resolution [min], 0 implies native AERI temporal resolution
       'avg_instant':0,              #A flag to specify if this is an average (0) over the tres period, or instantaneous (1) sample (i.e. do not average the data)
@@ -59,7 +59,9 @@ def read_vip_file(filename,globatt,verbose,debug,dostop):
       'psfc_max':1030.,             # Default maximum surface pressure [mb] (note this comes from the AERI)
       'aeri_min_675_bt':263.,       # Minimum brightness temp [K] in the 675-680 cm-1 window -- this is QC screen
       'aeri_max_675_bt':313.,       # Maximum brightness temp [K] in the 675-680 cm-1 window -- this is QC screen
-      
+      'aeri_spec_cal_factor': 1.0,
+
+
       'ext_wv_prof_type':0,         # External WV profile source: 0-none; 1-sonde; 2-ARM Raman lidar (rlprofmr), 3-NCAR WV DIAL, 4-Model sounding
       'ext_wv_prof_path':'None',      # Path to the external profile of WV data
       'ext_wv_prof_minht':0.0,      # Minimum height to use the data from the external WV profiler [km AGL]
@@ -68,7 +70,7 @@ def read_vip_file(filename,globatt,verbose,debug,dostop):
       'ext_wv_noise_mult_hts':[0.0,3,20],  # 3-element comma delimited list with the corresponding heights for the noise multipliers [km AGL]
       'ext_wv_add_rel_error':0.0,   # When using the RLID, I may want to include a relative error contribution to the uncertainty to account for calibration. This is a correlated error component, and thus effects the off-diagonal elements of the observation covariance matrix. Units are [%]
       'ext_wv_time_delta':1.0,      # Maximum amount of time from endpoints of external WV dataset to extrapolate [hours]
-      
+
       'ext_temp_prof_type':0,       # External temperature profile source: 0-none; 1-sonde; 2-ARM Raman lidar (rlproftemp); 4-Model sounding
       'ext_temp_prof_path':'None',    # Path to external profile of temp data
       'ext_temp_prof_minht':0.0,    # Minimum height to use the data from the external temp profiler [km AGL]
@@ -77,7 +79,7 @@ def read_vip_file(filename,globatt,verbose,debug,dostop):
       'ext_temp_noise_adder_val':[0.0,0,0], # 3-element comma delimited list of additive values to apply the noise profile of the external temperature profile (must be >= 0)
       'ext_temp_noise_adder_hts':[0.0,3,20], # 3-element comma delimited list with the corresponding heights for the additive value [km AGL]
       'ext_temp_time_delta':1.0,    # Maximum amount of time from endpoints of external temp dataset to extrapolate [hours]
-      
+
       'mod_wv_prof_type':0,         # NWP model WV profile source: 0-none; 4-Model sounding
       'mod_wv_prof_path':'None',      # Path to the model profile of WV data
       'mod_wv_prof_minht':0.0,      # Minimum height to use the data from the model WV profiler [km AGL]
@@ -85,7 +87,7 @@ def read_vip_file(filename,globatt,verbose,debug,dostop):
       'mod_wv_noise_mult_val':[1.0,1,1.0], # 3-element comma delimited list with the multipliers to apply the noise profile of the model water vapor profile (must be > 1)
       'mod_wv_noise_mult_hts':[0.0,3,20],  # 3-element comma delimited list with the corresponding heights for the noise multipliers [km AGL]
       'mod_wv_time_delta':1.0,      # Maximum amount of time from endpoints of model WV dataset to extrapolate [hours]
-      
+
       'mod_temp_prof_type':0,       # NWP model temperature profile source: 0-none; 4-Model sounding
       'mod_temp_prof_path':'None',    # Path to the model profile of temp data
       'mod_temp_prof_minht':0.0,    # Minimum height to use the data from the model temp profiler [km AGL]
@@ -94,7 +96,7 @@ def read_vip_file(filename,globatt,verbose,debug,dostop):
       'mod_temp_noise_adder_val':[0.0,0,0], # 3-element comma delimited list of additive values to apply the noise profile of the model temperature profile (must be >= 0)
       'mod_temp_noise_adder_hts':[0.0,3,20], # 3-element comma delimited list with the corresponding heights for the additive value [km AGL]
       'mod_temp_time_delta':1.0,    # Maximum amount of time from endpoints of model WV dataset to extrapolate [hours]
-      
+
       'ext_sfc_temp_type':0,        # External surface temperature met data type: 0-none, 1-ARM met data [degC], 2-NCAR ISFS data [degC], 3-CLAMPS MWR met data [degC]
       'ext_sfc_temp_npts':1,        # Number of surface temperature met points to use in the retrieval.  Minimum=1, maximum=1000.  Larger number increases the weight of the observation
       'ext_sfc_temp_rep_error':0.0, # Representativeness error for the surface temperature measurement [degC], which is added to the typical assumed uncertainty of 0.5 degC
@@ -113,7 +115,7 @@ def read_vip_file(filename,globatt,verbose,debug,dostop):
       'co2_sfc_path':'None',          # Path to the external surface CO2 data
       'co2_sfc_relative_height':0,  # Relative height of the CO2 surface measurement to the AERI zenith port [m]; note if in-situ obs is below AERI port then the value should be negative
       'co2_sfc_time_delta':1.5,     # Maximum amount of time from endpoints of external CO2 in-situ dataset to extrapolate [hours]
-      
+
       'mwr_type':0,                 # 0 - none, 1 - Tb fields are individual time series, 2 - Tb field is 2-d array
       'mwr_path':'None',              # Path to the MWR data
       'mwr_rootname':'mwr',         # Rootname of the MWR data files
@@ -129,7 +131,7 @@ def read_vip_file(filename,globatt,verbose,debug,dostop):
       'mwr_pwv_scalar':1.,          # Scalar used to multiply the MWR PWV field to convert to units of [cm]
       'mwr_lwp_field':'lwp',        # Name of the LWP field in the MWR file
       'mwr_lwp_scalar':1.,          # Scalar used to multiply the MWR LWP field to convert to units of [g/m2]
-      
+
       'mwrscan_type':0,             # 0 - none, 1 - Tb fields are individual time series, 2 - Tb field is 2-d array
       'mwrscan_path':'None',          # Path to the MWRscan data
       'mwrscan_rootname':'mwr',     # Rootname of the MWRscan data files
@@ -143,7 +145,7 @@ def read_vip_file(filename,globatt,verbose,debug,dostop):
       'mwrscan_tb_noise':'0.3,0.3',  # Comma separated list of noise levels [K] in the MWR Tb fields
       'mwrscan_tb_bias':'0.0,0.0',   # Comma separated list of bias [K] in the MWR Tb fields; this value is ADDED to the MWR observations
       'mwrscan_time_delta':0.25,     # The maximum amount of time [hours] that the elevation scan must be to the sampling time to be used.
-      
+
       'rass_prof_type':0,           # 0 - none, 5 - RASS Tv field has units C (no other values work)
       'rass_prof_path':'None',      # Path to the RASS data
       'rass_prof_minht':0.0,        # Minimum height to use the data from the RASS [km AGL]
@@ -162,7 +164,7 @@ def read_vip_file(filename,globatt,verbose,debug,dostop):
       'output_path':'None',            # Path where the output file will be placed
       'output_clobber':0,            # 0 - do not clobber preexisting output files, 1 - clobber them, 2 - append to the last file of this day
       'output_file_keep_small':0,    # 0 - all fields written; 1 - keep output file small by not including Sop, Akern, others
-      
+
       'lbl_home':'/home/tropoe/vip/src/lblrtm_v12.1/lblrtm',               # String with the LBL_HOME path (environment variable)
       'lbl_version':'v12.1',         # String with the version information on LBLRTM
       'lbl_temp_dir':'/tmp',         # Temporary working directory for the retrieval
@@ -173,7 +175,7 @@ def read_vip_file(filename,globatt,verbose,debug,dostop):
       'monortm_wrapper':'/home/tropoe/vip/src/monortm_v5.0/wrapper/monortm_v5', # Turner wrapper to run MonoRTM
       'monortm_exec':'/home/tropoe/vip/src/monortm_v5.0/monortm/monortm_v5.0_linux_gnu_sgl', # AERs MonoRTM executable
       'monortm_spec':'/home/tropoe/vip/src/monortm_v5.0/monolnfl_v1.0/TAPE3.spectral_lines.dat.0_55.v5.0_veryfast', # MonoRTM spectral database
-      
+
       'lblrtm_jac_option':3,         # 1 - LBLRTM Finite Diffs, 2 - 3calc method, 3 - deltaOD method
       'lblrtm_forward_threshold':0., # The upper LWP threshold [g/m2] to use LBLRTM vs. radxfer in forward calculation
       'monortm_jac_option':2,        # 1 - MonoRTM Finite Diffs, 2 - 3calc method
@@ -217,14 +219,14 @@ def read_vip_file(filename,globatt,verbose,debug,dostop):
       'max_PBL_height':5.0,           # The maximum height of the planetary boundary layer (used for trace gases) [km AGL]
       'vip_filename':'None'}          # Just for tracability
       )
-    
+
     # Read in the file all at once
-    
+
     if os.path.exists(filename):
-        
+
         if verbose >= 1:
             print('Reading the VIP file: ' + filename)
-        
+
         try:
             # inputt = np.genfromtxt(filename, dtype=str,comments='#', usecols = (0,1,2))
             inputt = np.genfromtxt(filename, dtype=str, comments='#', delimiter='=', autostrip=True)
@@ -233,13 +235,13 @@ def read_vip_file(filename,globatt,verbose,debug,dostop):
     else:
         print('The VIP file ' + filename + ' does not exist')
         return vip
-    
+
     if len(inputt) == 0:
         print('There were no valid lines found in the VIP file')
         return vip
-     
+
     # Look for these tags
-    
+
     nfound = 1
     for key in vip.keys():
         if key != 'success':
@@ -251,18 +253,18 @@ def read_vip_file(filename,globatt,verbose,debug,dostop):
                 if len(foo) > 1:
                     print('Error: There were multiple lines with the same key in VIP file: ' + key)
                     return vip
-                    
+
                 elif len(foo) == 1:
                     if verbose == 3:
                         print('Loading the key ' + key)
                     if key == 'spectral_bands':
                         bands = vip['spectral_bands']-1
                         tmp = inputt[foo,1][0].split(',')
-                        
+
                         if len(tmp) >= maxbands:
                             print('Error: There were more spectral bands defined than maximum allowed (maxbands = ' + str(maxbands) + ')')
                             return vip
-                            
+
                         for j in range(len(tmp)):
                             feh = tmp[j].split('-')
                             if len(feh) != 2:
@@ -273,7 +275,7 @@ def read_vip_file(filename,globatt,verbose,debug,dostop):
                             bands[0,j] = float(feh[0])
                             bands[1,j] = float(feh[1])
                         vip['spectral_bands'] = bands
-                        
+
                     elif key == 'aeri_calib_pres':
                         feh = inputt[foo,1][0].split(',')
                         if len(feh) != 2:
@@ -288,7 +290,7 @@ def read_vip_file(filename,globatt,verbose,debug,dostop):
                             if dostop:
                                 wait = input('Stopping inside to debug this bad boy. Press enter to continue')
                             return vip
-                            
+
                     elif ((key == 'ext_wv_noise_mult_val') |
                           (key == 'ext_wv_noise_mult_hts') |
                           (key == 'ext_temp_noise_adder_val') |
@@ -305,126 +307,126 @@ def read_vip_file(filename,globatt,verbose,debug,dostop):
                           (key == 'prior_ch4_sd') |
                           (key == 'prior_n2o_mn') |
                           (key == 'prior_n2o_sd') ):
-                        
+
                         feh = inputt[foo,1][0].split(',')
                         if len(feh) != len(vip[key]):
                             print('Error: The key ' + key + ' in VIP file must be a ' + str(len(vip[key])) + ' element array')
                             if dostop:
                                 wait = input('Stopping inside to debug this bad boy. Press enter to continue')
                             return vip
-                        
+
                         vip[key][0] = float(feh[0])
                         vip[key][1] = float(feh[1])
                         vip[key][2] = float(feh[2])
-                        
+
                     else:
                         vip[key] = type(vip[key])(inputt[foo,1][0])
                 else:
                     if verbose == 3:
                         print('UNABLE to find the key ' + key)
                     nfound -= 1
-    
+
     if verbose == 3:
         print(vip)
     if verbose >= 2:
         print('There were ' + str(nfound) + ' entries found out of ' + str(len(list(vip.keys()))))
-    
+
     # Now look for any global attributes that might have been entered in the file
-    
+
     matching = [s for s in inputt[:,0] if "globatt" in s]
-    
+
     if verbose >= 2:
         print('There were ' + str(len(matching)) + ' global attributes found')
-    
+
     for i in range(len(matching)):
         foo = np.where(matching[i] == inputt[:,0])[0]
         globatt[matching[i][8:]] = inputt[foo,1][0]
-    
+
     vip['success'] = 1
-    
+
     if dostop:
         wait = input('Stopping inside to debug this bad boy. Press enter to continue')
-    return vip 
-    
+    return vip
+
 ################################################################################
-# This code performs some QC on the entries in the VIP structure to ensure 
+# This code performs some QC on the entries in the VIP structure to ensure
 # that they are within a valid range.  Not every entry is checked...
 ################################################################################
 
 def check_vip(vip):
     flag = 0           # Default is that everything is ok
-    
+
     if ((vip['output_clobber'] < 0) | (vip['output_clobber'] > 2)):
         print('Error: The output_clobber flag can only be set to 0, 1, or 2')
         flag = 1
-    
+
     if ((vip['aeri_fv'] < 0.0) | (vip['aeri_fv'] > 0.03)):
         print('Error: The AERI fv is too small or too large')
         flag = 1
-   
+
     if ((vip['aeri_fa'] < 0.0) | (vip['aeri_fa'] > 0.03)):
         print('Error: The AERI fa is too small or too large')
         flag = 1
-    
-    if vip['jac_max_ht'] <= 1.0:    
+
+    if vip['jac_max_ht'] <= 1.0:
         print('Error: The maximum height to compute the Jacobian is too small; please increase')
-        flag = 1 
-        
+        flag = 1
+
     if ((vip['max_iterations'] <= 0) | (vip['max_iterations'] >= 25)):
         print('Error: The maximum number of iterations is not positive (or too big)')
         flag = 1
-    
+
     if ((vip['lbl_std_atmos'] < 1) | (vip['lbl_std_atmos'] > 6)):
         print('Error: The LBLRTM standard atmosphere must be an integer between 1 and 6')
         flag = 1
-        
+
     if ((vip['aeri_use_missingDataFlag'] < 0) | (vip['aeri_use_missingDataFlag'] > 1)):
         print('Error: The aeri_use_missingDataFlag must be either 0 or 1')
         flag = 1
-        
+
     if ((vip['aeri_hatch_switch'] < 1) | (vip['aeri_hatch_switch'] > 2)):
         print('Error: The aeri_hatch_switch must be either 1 or 2')
         flag = 1
-    
+
     return flag
-    
+
 ################################################################################
 # This routine is called when AERIoe aborts
 ################################################################################
 
 def abort(lbltmpdir, date):
-    
+
     if os.path.exists(lbltmpdir):
         shutil.rmtree(lbltmpdir)
-    
+
     print('>>> AERI retrieval on ' + str(date) + ' FAILED and ABORTED <<<')
     print('--------------------------------------------------------------------')
     print(' ')
 
-################################################################################ 
+################################################################################
 #   This routine reads in the scattering properties from databases that were
 #   created by Mie code (newmie_iteration) and by Ping Yang's computations (that
 #   database was compiled by write_database.pro in IceScatProperties), and other
-#   similar scattering property databases.  Rectangular matrices are returned, 
-#   which can then be processed by the routine get_scat_properties.pro to extract 
-#   out the properties depending on wavelength and effective radius.  Note that 
+#   similar scattering property databases.  Rectangular matrices are returned,
+#   which can then be processed by the routine get_scat_properties.pro to extract
+#   out the properties depending on wavelength and effective radius.  Note that
 #   there are two Mie databases: one for ice particles and one for water particles.
 ################################################################################
 
 def read_scat_databases(dbname):
 
     #See if the database actually exists
-    
+
     if not os.path.exists(dbname):
         print('ERROR: Unable to find the scattering database')
         return [], 1
-    
+
     #Number of header lines (before the phase function angles)
     nheader = 5
-    
+
     #Number of columns of data (not including the phase function)
     ncols = 13
-    
+
     #Open and read the single scattering property database
     print('Reading: ' + dbname)
     f = open(dbname, 'r')
@@ -432,51 +434,51 @@ def read_scat_databases(dbname):
     f.readline()
     nlines = int(f.readline().split()[0])
     nphase = int(f.readline().split()[0])
-    
+
     if nlines <= 0:
         print('ERROR: There were no datalines found in this database -- this should not occur')
         f.close()
         return [], 1
-    
+
     if nphase <= 0:
         print('ERROR: The scattering phase function was not defined in this database')
         f.close()
         return [], 1
     f.close()
-    
+
     pangle = np.genfromtxt(dbname ,skip_header = nheader, max_rows = 1)
-    
+
     data = np.genfromtxt(dbname ,skip_header = nheader+2).T
-    
+
     fields = (['wavelength [um]','wavenumber [cm-1]','effective radius',
               'extinction cross section', 'scattering cross section',
               'absorption cross section', 'single scatter albedo',
               'asymmetry parameter', 'Extinction efficiency',
               'Absorption efficiency', 'Scattering efficiency', 'Volume',
               'Projected area','Rest of the elements are phase function'])
-    
+
     database = ({'dbname':dbname, 'ncols':ncols, 'nphase':nphase, 'pangle':pangle,
                 'data':data, 'columns':fields})
-    
+
     return database, 0
-    
+
 ################################################################################
 # This function reads in the standard atmosphere profiles
 ################################################################################
 
 def read_stdatmos(filename, stdatmos, verbose):
-    
+
     if not os.path.exists(filename):
         print('Error: Unable to find the IDL save file with the standard atmosphere information in it')
         return {'status':0}
-        
+
     temp = scipy.io.readsav(filename, python_dict = True)
     idx = stdatmos-1
     if ((idx < 0) | (idx >= len(temp['name']))):
         print('Error: the standard atmosphere specified is out-of-range')
         return {'status':0}
-    
+
     if verbose >= 1:
         print('Using standard atmosphere: ' + temp['name'][idx].decode())
-    
+
     return {'status':1, 'z':temp['z'][idx,:], 'p':temp['p'][idx,:], 't':temp['t'][idx,:], 'w':temp['w'][idx,:], 'pwv':temp['pwv'][idx], 'name':temp['name'][idx]}
