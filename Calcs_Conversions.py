@@ -14,6 +14,7 @@ import numpy as np
 # esat()
 # w2e()
 # w2rh()
+# w2rho()
 # wsat()
 # w2pwv()
 # tq2wvdens()
@@ -222,6 +223,17 @@ def w2rh(w, p, t, ice):
     
     return rh
     
+################################################################################
+# This function computes water vapor density [g/m3], given the mixing ratio [g/kg]
+# pressure [mb], and temperature [degC]
+################################################################################
+
+def w2rho(w, t, p):
+
+    rho = w * p * 0.3477 / (t + 273.16)
+
+    return rho
+
 ################################################################################
 # This function computes the saturation water vapor mixing ratio given the 
 # temperature and pressure. Note that for pressures less than 50 mb, wsat

@@ -39,9 +39,13 @@ import Calcs_Conversions
 # compute_cgamma()
 # lcurve()
 # compute_vres_from_akern()
-# aeri_zerofill()
+# aeri_zerofill()           -- TODO -- need to update to be consistent
 # fix_aeri_vlaser_mod()
+# compute_extra_layers()
+# aeri_ffovc()              -- TODO -- add this bad boy
+# change_aeri_ffovc()       -- TODO -- add this bad boy
 ################################################################################
+
 
 ################################################################################
 # This function takes two arrays of julian times and compares the two to find where
@@ -305,9 +309,8 @@ def inflate_prior_covariance(Sa, z, prior_t_ival, prior_t_iht, prior_q_ival,
 def compute_pblh(ht, t, p, sigt, nudge=0.5, minht=0.300, maxht=6.0):
     st = np.zeros_like(sigt)
     st[0] = sigt[0]
-    theta = Calcs_Conversions.t2theta(t, np.zeros(len(t)), p)
-    foo = np.where(ht >= minht)
-    sval = theta[0]
+    theta = Calcs_Conversions.t2theta(t+st, np.zeros(len(t)), p)
+    sval  = theta[0]
     sval += nudge
     foo = np.where((sval < theta) & (ht >= minht))[0]
     if len(foo) == 0:
@@ -315,8 +318,8 @@ def compute_pblh(ht, t, p, sigt, nudge=0.5, minht=0.300, maxht=6.0):
     elif foo[0] == 0:
         pblh = ht[0]
     else:
-        tmpz = ht[foo[0]-1:foo[0]+1]
-        tmpt = ht[foo[0]-1:foo[0]+1]
+        tmpz = ht[foo[0]-1:foo[0]]
+        tmpt = theta[foo[0]-1:foo[0]]
 
         if np.abs(tmpt[0]-tmpt[1]) < 0.001:
             pblh = ht[foo[0]]
@@ -1717,3 +1720,30 @@ def fix_aeri_vlaser_mod(wnum,irad,multiplier):
         nrad[:,ii] = newrad
 
     return nrad
+
+################################################################################
+# This routine creates a vertical grid that can be added to the top of our profile
+################################################################################
+def compute_extra_layers(maxz):
+    max_step_size = 5    # This is the maximum step size, in km
+    max_ht        = 40   # This is the maximum height to take the extra RT layers
+    stepsize = np.round(maxz / 4. * 10) / 10.
+    rt_extra_layers = maxz + stepsize
+    while(np.max(rt_extra_layers) < max_ht):
+        stepsize = np.round(np.max(rt_extra_layers) / 4. * 10) / 10.
+        if(stepsize > max_step_size):
+            stepsize = max_step_size
+        rt_extra_layers = np.append(rt_extra_layers, np.max(rt_extra_layers) + stepsize)
+    
+    return rt_extra_layers
+
+################################################################################
+# This function removes the original finite field of view correction applied 
+# to the AERI data, and replaces it with a new one.  The correction is determined
+# by the half angle of the field of view of the instrument (assuming the detector
+# is perfectly on axis -- following Knuteson et al. 2004)
+################################################################################
+def change_aeri_ffovc(wnum,orad,orig_halfAngle,new_halfAngle):
+    print('Stubbing this change_aeri_ffovc function out -- it does nothing')
+    return orad
+

@@ -32,7 +32,8 @@ import Output_Functions
 ################################################################################
 
 def read_aeri_ch(path,date,aeri_type,fv,fa,aeri_spec_cal_factor,
-                engsecs,engtemp,bbcavfactor,get_aeri_missingDataFlag, verbose):
+                engsecs,engtemp,bbcavfactor,get_aeri_missingDataFlag, 
+                old_ffov_halfangle, new_ffov_halfangle, verbose):
 
     if verbose >= 2:
         print('Reading aeri_ch data in ' + path)
@@ -47,6 +48,9 @@ def read_aeri_ch(path,date,aeri_type,fv,fa,aeri_spec_cal_factor,
         filename = path + '/' + '*' + str(date % 2000000) + 'C1_rnc.cdf'
     elif aeri_type == 3:
         filename = path + '/' + '*' + str(date % 2000000) + 'C1.RNC.cdf'
+    elif aeri_type == 5:
+        filename = path + '/' + '*assist*ch*' + str(date) + '*cdf'
+            # TODO: find Regex way to search for "*.{cdf,nc} in all netCDF files (not only above)
     else:
         print('Error in read_aeri_ch: unable to decode aeri_type')
         return err
@@ -88,21 +92,54 @@ def read_aeri_ch(path,date,aeri_type,fv,fa,aeri_spec_cal_factor,
             foo = np.where((xhatchOpen > 2.5) | (xhatchOpen < -0.5))[0]
             if len(foo) > 0:
                 xhatchOpen[foo] = 3
+        elif  len(np.where(np.array(list(fid.variables.keys())) == 'hatch_open_indicator')[0]) > 0:
+                    # The ASSIST has two flags that have to be merged together to mimic the AERI's hatchOpen flag
+            xopen  = fid.variables['hatch_open_indicator'][:]
+            xclose = fid.variables['hatch_closed_indicator'][:]
+            xhatchOpen = np.full_like(-3,xopen)
+            foo = np.where(xopen == 1 and xclose == 0)[0]
+            if(len(foo) > 0): 
+                xhatchOpen[foo] = 1
+            foo = np.where(xopen == 0 and xclose == 1)[0]
+            if(len(foo) > 0): 
+                xhatchOpen[foo] = 0
         else:
             print(('Warning: Unable to find AERI hatchOpen or hatchIndicator field in ' +
                   'data file -- assuming hatch is always open'))
             xhatchOpen = np.ones(len(to))
 
-        xbbsupport = fid.variables['BBsupportStructureTemp'][:]
-        xcalibambt = fid.variables['calibrationAmbientTemp'][:]
-        xcalibcbbt = fid.variables['calibrationCBBtemp'][:]
-        xcalibhbbt = fid.variables['calibrationHBBtemp'][:]
-        xambPres = fid.variables['atmosphericPressure'][:]
+        if len(np.where(np.array(list(fid.variables.keys())) == 'BBsupportStructureTemp')[0]) > 0:
+            xbbsupport = fid.variables['BBsupportStructureTemp'][:]
+        else
+            xbbsupport = fid.variables['abb_thermistor_top'][:]
+            xbbsupport += 273.15
+        if len(np.where(np.array(list(fid.variables.keys())) == 'calibrationAmbientTemp')[0]) > 0:
+            xcalibambt = fid.variables['calibrationAmbientTemp'][:]
+        else
+            xcalibambt = fid.variables['abb_thermistor_top'][:]
+            xcalibambt += 273.15
+        if len(np.where(np.array(list(fid.variables.keys())) == 'calibrationCBBtemp')[0]) > 0:
+            xcalibcbbt = fid.variables['calibrationCBBtemp'][:]
+        else
+            xcalibcbbt = fid.variables['abb_mean_temp'][:]
+            xcalibcbbt += 273.15
+        if len(np.where(np.array(list(fid.variables.keys())) == 'calibrationHBBtemp')[0]) > 0:
+            xcalibhbbt = fid.variables['calibrationHBBtemp'][:]
+        else
+            xcalibhbbt = fid.variables['hbb_mean_temp'][:]
+            xcalibhbbt += 273.15
+        if len(np.where(np.array(list(fid.variables.keys())) == 'atmosphericPressure')[0]) > 0:
+            xambPres = fid.variables['atmosphericPressure'][:]
+        else
+            xambPres = np.full_like(-999,to)
 
         #Read in the field "missingDataFlag". If it does not exist, then abort
         if get_aeri_missingDataFlag == 1:
             if len(np.where(np.array(list(fid.variables.keys())) == 'missingDataFlag')[0]) > 0:
                 xmissingDataFlag = fid.variables['missingDataFlag'][:]
+                xmissingDataFlag = xmissingDataFlag.astype('int')
+            elif:
+                xmissingDataFlag = np.zeros_like(to)
                 xmissingDataFlag = xmissingDataFlag.astype('int')
             else:
                 print('Error in read_aeri_ch: unable to find the field missingDataFlag')
@@ -136,6 +173,21 @@ def read_aeri_ch(path,date,aeri_type,fv,fa,aeri_spec_cal_factor,
     chsecs = np.copy(secs)
     mrad = mrad.T
 
+    # If this is ASSIST data, then interpolate it onto the AERI's spectral grid
+    if(aeri_type == 5):
+        if(verbose >= 1):
+            print('    Interpolating ASSIST to the AERI spectral grid')
+        for jj in range(0,len(chsecs)):
+            zf = aeri_zerofill(wnum,mrad[:,jj],1)
+            fx = convolve_to_aeri(zf[0,:],zf[1,:])
+            if(jj == 0):
+                wnum0 = fx['wnum']
+                mrad0 = fx['spec'].T
+            else:
+                mrad0 = np.append(mrad0,fx['spec'].T)
+        wnum = wnum0
+        mrad = mrad0.T
+
     # Apply the spectral recalibration, if desired
     if(np.abs(aeri_spec_cal_factor - 1.0) > 0.0000001):
         if(verbose >= 3): print('      Adjusting the AERIs spectral calibration')
@@ -143,6 +195,18 @@ def read_aeri_ch(path,date,aeri_type,fv,fa,aeri_spec_cal_factor,
         for jj in range(0,len(mrad[0,:])):
             tmp[:,jj] = Other_functions.fix_aeri_vlaser_mod(wnum,mrad[:,jj],aeri_spec_cal_factor)
         mrad = tmp
+
+    # Apply the new finite field-of-view correction, if desired
+    if(10 <= new_ffov_halfangle & new_ffov_halfangle < 50):
+        if(verbose >= 1):
+            print(f'    Adjusting the AERIs FFOV correction half angle from {old_ffov_halfangle} to {new_ffov_halfangle} mrad')
+        tmp = mrad
+        for jj in range(0,len(chsecs)):
+            tmp[:,jj] = change_aeri_ffovc(wnum,mrad[:,jj],old_ffov_halfangle,new_ffov_halfangle)
+        mrad = tmp
+    elif:
+        if(verbose >= 1 & new_ffov_halfangle > 0):
+            print('      The desired new FFOV correction half angle is outside realistic bounds -- not applied')
 
     #I need to match the times of the AERI channel data with that from
     #the engineering file (which is the summary file).
@@ -222,6 +286,10 @@ def read_aeri_ch(path,date,aeri_type,fv,fa,aeri_spec_cal_factor,
         print('          was not found in the input data. Thus we must abort this')
         print('          processing. Please either rerun with fa == 0 or modify the')
         print('          code so that a different field is used as the aft optic temperature')
+        return err
+
+    if(aeri_type == 5 & (fa > 0 | fv > 0)):
+        print('Error: The Fa and Fv corrections should both be off for the ASSIST -- aborting')
         return err
 
     if fa > 0:
@@ -362,7 +430,8 @@ def read_all_data(date, retz, tres, dostop, verbose, avg_instant, ch1_path,
         aerich1 = read_aeri_ch(ch1_path,date,aeri_type,fv,fa,aeri_spec_cal_factor,
                               aerieng['secs'],
                               aerieng['interferometerSecondPortTemp'],
-                              aerieng['bbcavityfactor'], get_aeri_missingDataFlag, verbose)
+                              aerieng['bbcavityfactor'], get_aeri_missingDataFlag, 
+                              vip['aeri_old_ffov_halfangle'], vip['aeri_new_ffov_halfangle'], verbose)
 
         aerisum = read_aeri_sum(sum_path,date,aeri_type,aeri_smooth_noise,verbose)
 
@@ -488,7 +557,7 @@ def read_all_data(date, retz, tres, dostop, verbose, avg_instant, ch1_path,
         fail = 1
         return fail, -999, -999, -999
 
-    mwr = grid_mwr(mwr_data, avg_instant, ret_secs, ret_tavg, verbose)
+    mwr = grid_mwr(mwr_data, avg_instant, ret_secs, ret_tavg, vip['mwr_time_delta'], verbose)
 
     if mwr['success'] == 0:
         fail = 1
@@ -1036,6 +1105,9 @@ def read_aeri_eng(path, date, aeri_type, verbose):
         print('   aeri_type=4 --->')
         print('             ARM-style ch1/ch2/sum AERI datastream names, but all of the')
         print('                     engineering data is found in the summary file (dmv2ncdf)')
+        print('   aeri_type=5 --->')
+        print('             ARM-style ch1/ch2/sum ASSIST datastream names, but all of the')
+        print('                     engineering data is found in the summary file')
         print('-----------------------------------------------------------------')
         print(' ')
         err = {'success':0}
@@ -1049,6 +1121,9 @@ def read_aeri_eng(path, date, aeri_type, verbose):
         filename = path + '/' + '*' + str(date % 2000000) + '.SUM.cdf'
     elif aeri_type == 4:
         filename = path + '/' + '*aeri*sum*' + str(date) + '*cdf'
+    elif aeri_type == 5:
+        filename = path + '/' + '*assist*sum*' + str(date) + '*cdf'
+## TODO (for Tyler): glob for allowing above searchs to find both .cdf and .nc files (everywhere in this read file)
     else:
         print('Error in read_aeri_eng: unable to decode aeri_type')
         return err
@@ -1075,6 +1150,9 @@ def read_aeri_eng(path, date, aeri_type, verbose):
             xinterferometerSecondPortTemp = fid.variables['interferometerSecondPortTemp'][:]
         elif len(np.where(np.array(list(fid.variables.keys())) == 'airNearInterferometerTemp')[0]) > 0:
             xinterferometerSecondPortTemp = fid.variables['airNearInterferometerTemp'][:]
+        elif len(np.where(np.array(list(fid.variables.keys())) == 'port2_bb_temp')[0]) > 0:
+            xinterferometerSecondPortTemp  = fid.variables['airNearInterferometerTemp'][:]
+            xinterferometerSecondPortTemp += 273.15
         else:
             xinterferometerSecondPortTemp = np.ones(len(to))*-999.0
 
@@ -1142,6 +1220,9 @@ def read_aeri_sum(path,date,aeri_type,smooth_noise,verbose):
         filename = path + '/' + '*' + str(date % 2000000) + '_sum.cdf'
     elif aeri_type == 3:
         filename = path + '/' + '*' + str(date % 2000000) + '.SUM.cdf'
+    elif aeri_type == 5:
+        filename = path + '/' + '*assist*sum*' + str(date) + '*cdf'
+            # Same TODO as above with {cdf,nc} 
     else:
         print('Error in read_aeri_sum: unable to decode aeri_type')
         return err
@@ -1168,6 +1249,8 @@ def read_aeri_sum(path,date,aeri_type,smooth_noise,verbose):
             xnoise1 = fid.variables['SkyNENCh1'][:]
         elif len(np.where(np.array(list(fid.variables.keys())) == 'SkyNENch1')[0]) > 0:
             xnoise1 = fid.variables['SkyNENch1'][:]
+        elif len(np.where(np.array(list(fid.variables.keys())) == 'ch1_sky_nen')[0]) > 0:
+            xnoise1 = fid.variables['SkyNENch1'][:]
         else:
             print('Error in read_aeri_sum: unable to find the SkyNENCh1 field')
             return err
@@ -1175,6 +1258,8 @@ def read_aeri_sum(path,date,aeri_type,smooth_noise,verbose):
         if len(np.where(np.array(list(fid.variables.keys())) == 'SkyNENCh2')[0]) > 0:
             xnoise2 = fid.variables['SkyNENCh2'][:]
         elif len(np.where(np.array(list(fid.variables.keys())) == 'SkyNENch2')[0]) > 0:
+            xnoise2 = fid.variables['SkyNENch2'][:]
+        elif len(np.where(np.array(list(fid.variables.keys())) == 'ch2_sky_nen')[0]) > 0:
             xnoise2 = fid.variables['SkyNENch2'][:]
         else:
             print('Error in read_aeri_sum: unable to find the SkyNENCh2 field')
@@ -1698,7 +1783,7 @@ def grid_aeri(ch1, aerisum, avg_instant, hatchOpenSwitch, missingDataFlagSwitch,
 # This function puts the MWR data onto a common temporal grid.
 ################################################################################
 
-def grid_mwr(mwr, avg_instant, secs, tavg, verbose):
+def grid_mwr(mwr, avg_instant, secs, tavg, time_delta, verbose):
 
     if verbose == 3:
         print('Temporally gridding the MWR data')
@@ -1722,6 +1807,8 @@ def grid_mwr(mwr, avg_instant, secs, tavg, verbose):
         twin = 2
     else:
         twin = tavg
+    # Now directly specifying the averaging time for the window
+    twin = time_delta*3600*2
 
     # Allocate the needed space
     pwv = np.ones(len(secs))*-999.
@@ -1886,6 +1973,7 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
     dates = [(datetime.strptime(str(date), '%Y%m%d') - timedelta(days=1)).strftime('%Y%m%d') ,
             str(date) ,  (datetime.strptime(str(date), '%Y%m%d') + timedelta(days=1)).strftime('%Y%m%d') ]
 
+# TODO (Tyler) update to be unified with the search for both .cdf and .nc everywhere
     cdf = ['nc','cdf']
     if wv_prof_type == 0:
         a = 0           # Do nothing -- read nothing -- make no noise at all
@@ -1904,10 +1992,10 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
             for j in range(len(cdf)):
                 files = files + sorted(glob.glob(wv_prof_path + '/' + '*sonde*' + dates[i] + '*.' + cdf[j]))
 
+        external['nQprof'] = 0.0
         if len(files) == 0:
             if verbose >= 1:
                 print('No ARM radiosondes found in this directory for this date')
-            external['nQprof'] = 0.0
         else:
             maxht = int(wv_prof_maxht+0.1)
             if maxht < wv_prof_maxht:
@@ -2053,7 +2141,7 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
             swv = wv/wvmultiplier
 
 
-    # Read in the NCAR WV DIAL data
+    # Read in the NCAR WV DIAL data (for 2014-2017 time period)
 
     elif wv_prof_type == 3:
         if verbose >= 1:
@@ -2209,6 +2297,70 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
         qunit = 'g/kg'
         qtype = 'Vaisala WV DIAL data'
 
+    # Read in the NCAR water vapor DIAL profiles (from 2019, after Turner QC applied)
+    
+    elif wv_prof_type == 6:
+        if verbose >= 1:
+            print('Reading in NCAR WV DIAL data (after QC) to constrain the WV profile')
+
+        files = []
+        for i in range(len(dates)):
+            for j in range(len(cdf)):
+                files = files + (glob.glob(wv_prof_path + '/' + '*dial*' + str(int(dates[i])) + '*.' + cdf[j]))
+
+        if len(files) == 0:
+            if verbose >= 1:
+                print('No NCAR WV DIAL found in this directory for this date')
+            external['nQprof'] = 0.0
+        else:
+            if verbose >= 2:
+                print('Reading ' + str(len(files)) + ' NCAR WV DIAL data files')
+            for i in range(len(files)):
+                fid = Dataset(files[i],'r')
+                bt = fid.variables['base_time'][0]
+                to = fid.variables['time_offset'][:]
+                zzq = fid.variables['height'][:]
+                wwx = fid.variables['qc_waterVapor'][:]
+                ssx = fid.variables['sigma_waterVapor'][:]
+                mhtx = fid.variables['maxht'][:]
+                fid.close()
+
+                if i == 0:
+                    qsecs = bt+to
+                    wv = np.copy(wwx)
+                    swv = np.copy(ssx)
+                    maxht = np.copy(mhtx)
+                else:
+                    qsecs = np.append(qsecs,bt+to)
+                    wv = np.append(wv,wwx, axis = 1)
+                    swv = np.append(swv,ssx, axis = 1)
+                    maxht = np.append(maxht,mhtx)
+
+                external['nQprof'] = len(qsecs)
+
+            zzq = zzq / 1000.           # Convert m AGL to km AGL
+
+# TODO: Tyler -- please make sure the columns/rows are correct (logic below is assuming [height,time])
+        wv = wv.T
+        swv = swv.T
+
+            # Set all of the points above the maximum height to -999.
+        for i in range(len(qsecs)):
+          foo = np.where(zzq > maxht[i])[0]
+          if(len(foo) > 0):
+              wv[foo,i]  = -999.
+              swv[foo,i] = -999.
+
+        if external['nQprof'] > 0:
+            qunit = 'g/m3'
+            qtype = 'NCAR WV DIAL data'
+
+            # Set all WV values less than 0 to -999 also
+        foo = np.where(zzq < 0)
+        if(len(foo) > 0):
+            wv[foo]  = -999
+            swv[foo] = -999
+
     elif wv_prof_type == 99:
         if verbose >= 1:
             print('Reading in RHUBC-2 AER GVRP-retrieval radiosonde data to constrain the WV profile')
@@ -2269,7 +2421,7 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
                     wv = np.vstack((wv, np.interp(zzq,z,w)))
                     swv = np.vstack((swv, np.interp(zzq,z,we)))
 
-                external['nQprof'] += 1
+                external['nQprof'] = len(qsecs)
 
             if external['nQprof'] > 0:
                 wv = wv.T
@@ -2299,10 +2451,10 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
             for j in range(len(cdf)):
                 files = files + sorted(glob.glob(temp_prof_path + '/' + '*sonde*' + dates[i] + '*.' + cdf[j]))
 
+        external['nTprof'] = 0.
         if len(files) == 0:
             if verbose >= 1:
                 print('No ARM radiosondes found in this directory for this date')
-            external['nTprof'] = 0.
 
         else:
             if verbose >= 2:

@@ -28,7 +28,7 @@ from subprocess import Popen, PIPE
 def rundecker(model, aprofile, z, p, t, w, co2_profile= None, o3_profile=None,
            ch4_profile=None, n2o_profile=None, co_profile = None, p_units=None,
            t_units=None, w_units=None, o3_units=None, iout=0, icld=0, numangs=0,
-           comment='None', p_comment='User_supplied profile', cntnm=None,xsec=1,
+           comment='None', p_comment='User_supplied profile', cntnm=None, xsec=1,
            od_only=0, sc = None, co2_mix=None, ccl4_sfactor=None, f11_sfactor=None,
            f12_sfactor=None, h2o_sfactor=None, co2_sfactor = None, o3_sfactor=None,
            co_sfactor=None, ch4_sfactor=None, n2o_sfactor=None, o2_sfactor=None,
@@ -262,6 +262,7 @@ def rundecker(model, aprofile, z, p, t, w, co2_profile= None, o3_profile=None,
         inst = sc
         
     # Handle the continuum options and scale factors
+    # TODO -- make sure that the "cntnm" variable is consistent with the IDL code (may be ok, maybe not)
     cntnm_default = 1
     reset_cntnm = False
     if cntnm is None:

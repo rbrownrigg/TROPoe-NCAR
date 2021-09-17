@@ -12,6 +12,7 @@ import scipy.io
 # read_stdatmos()
 ################################################################################
 
+# TODO -- add function that write out default VIP file to stdout and exits
 
 ################################################################################
 #This routine reads in the controlling parameters from the VIP file.
@@ -51,16 +52,18 @@ def read_vip_file(filename,globatt,verbose,debug,dostop):
       'aeri_hatch_switch':1,        # 1 - only include hatchOpen=1 when averaging, 2 - include all AERI samples when averaging
       'aeri_fv':0.0,                # Apply a foreoptics obscuration correction
       'aeri_fa':0.0,                # Apply an aftoptics obscuration correction
+      'aeri_old_ffov_halfangle':23.0, # Original Half angle [millirad] of the finite field of view of the instrument
+      'aeri_new_ffov_halfangle':0.0,  # New half angle [millirad] of the finite field of view of the instrument (values <= 0 will result in no correction being applied)
       'aeri_spectral_cal_factor':0.0, # The spectral calibration stretch factor to apply to the AERI data
-      'aeri_lat':-999.,             # AERI latitude [degN]; if negative get value from AERI data file
-      'aeri_lon':-999.,             # AERI longitude [degE]; if negative get value from AERI data file
-      'aeri_alt':-999.,             # AERI altitude [m MSL]; if negative get value from AERI data file
-      'psfc_min':800.,              # Default minimum surface pressure [mb] (note this comes from the AERI)
-      'psfc_max':1030.,             # Default maximum surface pressure [mb] (note this comes from the AERI)
       'aeri_min_675_bt':263.,       # Minimum brightness temp [K] in the 675-680 cm-1 window -- this is QC screen
       'aeri_max_675_bt':313.,       # Maximum brightness temp [K] in the 675-680 cm-1 window -- this is QC screen
       'aeri_spec_cal_factor': 1.0,
 
+      'station_lat':-999.,             # Station latitude [degN]; if negative get value from AERI data file
+      'station_lon':-999.,             # Station longitude [degE]; if negative get value from AERI data file
+      'station_alt':-999.,             # Station altitude [m MSL]; if negative get value from AERI data file
+      'station_psfc_min':800.,         # Default minimum surface pressure [mb]
+      'station_psfc_max':1030.,        # Default maximum surface pressure [mb]
 
       'ext_wv_prof_type':0,         # External WV profile source: 0-none; 1-sonde; 2-ARM Raman lidar (rlprofmr), 3-NCAR WV DIAL, 4-Model sounding
       'ext_wv_prof_path':'None',      # Path to the external profile of WV data
@@ -131,6 +134,7 @@ def read_vip_file(filename,globatt,verbose,debug,dostop):
       'mwr_pwv_scalar':1.,          # Scalar used to multiply the MWR PWV field to convert to units of [cm]
       'mwr_lwp_field':'lwp',        # Name of the LWP field in the MWR file
       'mwr_lwp_scalar':1.,          # Scalar used to multiply the MWR LWP field to convert to units of [g/m2]
+      'mwr_time_delta':0.083,       # The maximum amount of time [hours] that the MWR zenith obs must be to the sampling time to be used
 
       'mwrscan_type':0,             # 0 - none, 1 - Tb fields are individual time series, 2 - Tb field is 2-d array
       'mwrscan_path':'None',          # Path to the MWRscan data
@@ -178,12 +182,15 @@ def read_vip_file(filename,globatt,verbose,debug,dostop):
 
       'lblrtm_jac_option':3,         # 1 - LBLRTM Finite Diffs, 2 - 3calc method, 3 - deltaOD method
       'lblrtm_forward_threshold':0., # The upper LWP threshold [g/m2] to use LBLRTM vs. radxfer in forward calculation
+      'lblrtm_jac_interpol_npts_wnum':10, # The number of points per wnum to use in the compute_jacobian_interpol() function
       'monortm_jac_option':2,        # 1 - MonoRTM Finite Diffs, 2 - 3calc method
       'jac_max_ht':8.0,             # Maximum height to compute the Jacobian [km AGL]
       'max_iterations':10,           # The maximum number of iterations to use
       'first_guess':0,               # 1 - use prior as FG, 2 - use lapse rate and 60% RH profile as FG, 3 - use previous sample as FG
       'superadiabatic_maxht':0.300,  # The maximum height a superadiabatic layer at the surface can have [km AGL]
       'spectral_bands':np.zeros((2,maxbands)), # An array of spectral bands to use
+      'retrieve_temp':1,             # 0 - do not retrieve temp, 1 - do retrieve temp (default)
+      'retrieve_wvmr':1,             # 0 - do not retrieve wvmr, 1 - do retrieve wvmr (default)
       'retrieve_co2':0,              # 0 - do not retrieve co2, 1 - do retrieve co2 (exponential model), 2 - do retrieve co2 (step model)
       'fix_co2_shape':0,             # (This option only works with retrieve_co2=1): 0 - retrieve all three coefs, 1 - shape coef is f(PBLH) and fixed
       'retrieve_ch4':0,              # 0 - do not retrieve ch4, 1 - do retrieve ch4 (exponential model), 2 - do retrieve co2 (step model)
@@ -217,6 +224,7 @@ def read_vip_file(filename,globatt,verbose,debug,dostop):
       'prior_iReff_sd':8.0,           # 1-sigma uncertainty in ice cloud Reff [Reff]
       'min_PBL_height':0.3,           # The minimum height of the planetary boundary layer (used for trace gases) [km AGL]
       'max_PBL_height':5.0,           # The maximum height of the planetary boundary layer (used for trace gases) [km AGL]
+      'nudge_PBL_height':0.5,         # The temperature offset (nudge) added to the surface temp to find PBL height [C]
       'vip_filename':'None'}          # Just for tracability
       )
 
@@ -239,6 +247,20 @@ def read_vip_file(filename,globatt,verbose,debug,dostop):
     if len(inputt) == 0:
         print('There were no valid lines found in the VIP file')
         return vip
+
+    # Look for obsolete tags, and abort if they are found (forcing user to update their VIP file)
+    obsolete_tags = ['AERI_LAT','AERI_LON','AERI_ALT','PSFC_MIN','PSFC_MAX']
+    obsolete_idx  = np.zeros_like(obsolete_tags)
+    for i in range(len(obsolete_tags)):
+        foo = np.where(obsolete_tags[i].upper() == vip.keys().upper())[0]
+        if(len(foo) > 0):
+            obsolete_idx[i] = 1
+    foo = np.where(obsolete_idx > 0)[0]
+    if(len(foo) > 0):
+        print('Error: there were obsolete tags in the VIP file:')
+        for i in range(len(foo)):
+            print('     '+obsolete_tags[foo[i]])
+            return vip
 
     # Look for these tags
 
@@ -384,8 +406,8 @@ def check_vip(vip):
         print('Error: The aeri_use_missingDataFlag must be either 0 or 1')
         flag = 1
 
-    if ((vip['aeri_hatch_switch'] < 1) | (vip['aeri_hatch_switch'] > 2)):
-        print('Error: The aeri_hatch_switch must be either 1 or 2')
+    if ((vip['aeri_hatch_switch'] < 0) | (vip['aeri_hatch_switch'] > 1)):
+        print('Error: The aeri_hatch_switch must be either 0 or 1')
         flag = 1
 
     return flag

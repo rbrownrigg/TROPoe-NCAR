@@ -15,11 +15,22 @@ import Calcs_Conversions
 ################################################################################
 
 ################################################################################
+# This function will write out an example VIP file, and then stop
+################################################################################
+def write_example_vip_file():
+        # TODO: Tyler -- fill this in
+        #    Perhaps only write out the "standard" VIP key/value options, 
+        #    not the ones that are extreme "sciency"
+        #    I.e., make a "ignore" variable
+    sys.exit()
+    return
+
+################################################################################
 # This function takes all of the entries in the VIP structure, and makes
 # them global attributes in the netCDF file that is currently open
 ################################################################################
 def add_vip_to_global_atts():
-        # Tyler -- fill this in
+        # TODO: Tyler -- fill this in
     return
 
 ################################################################################
@@ -596,14 +607,17 @@ def write_output(vip, ext_prof, mod_prof, rass_prof, ext_tseries, globatt, xret,
             elif dindex_name[ii] == 'pblh':
                 minht = vip['min_PBL_height']
                 maxht = vip['max_PBL_height']
-                indices[ii,i] = Other_functions.compute_pblh(zz, tt, pp, sig_t, minht=minht, maxht=maxht)
+                nudge = vip['nudge_PBL_height']
+                indices[ii,i] = Other_functions.compute_pblh(zz, tt, pp, sig_t, minht=minht, maxht=maxht, nudge=nudge)
                 for j in range(num_mc):
-                    tmp[j] = Other_functions.compute_pblh(zz, tprofs[:, j], pp, sig_t, minht=minht, maxht=maxht)
+                    tmp[j] = Other_functions.compute_pblh(zz, tprofs[:, j], pp, sig_t, minht=minht, maxht=maxht, nudge=nudge)
                 foo = np.where(tmp > 0)[0]
                 if (len(foo) > 1) & (indices[ii,i] > 0):
                     sigma_indices[ii,i] = np.nanstd(indices[ii,i] - tmp[foo])
                 else:
                     sigma_indices[ii,i] = -999.
+                if (sigma_indices[ii,i] < vip['min_PBL_height']) & (indices[ii,i] <= vip['min_PBL_height']):
+                    sigma_indices[ii,i] = vip['min_PBL_height']
 
             elif dindex_name[ii] == 'sbih':
                 indices[ii,i] = Other_functions.compute_sbi(zz,tt)['sbih']

@@ -291,11 +291,20 @@ if vip['retrieve_icloud'] >= 1:
 else:
     doicloud = 0
     fixicloud = 1          # Jacobian flag (for some reason 1 is on)
+if vip['retrieve_temp'] >= 1:
+    dotemp = 1
+    fixtemp = 0
+else:
+    dotemp = 0
+    fixtemp = 1
+if vip['retrieve_wvmr'] >= 1:
+    dowvmr = 1
+    fixwvmr = 0
+else:
+    dowvmr = 0
+    fixwvmr = 1
 
-modeflag = [1, 1, dolcloud, dolcloud, doicloud, doicloud, doco2, doch4, don2o]
-
-fixtemp = 0             #Right now this is always on
-fixwvmr = 0             #Right now this is always on
+modeflag = [dotemp, dowvmr, dolcloud, dolcloud, doicloud, doicloud, doco2, doch4, don2o]
 
 # Select the LBLRTM version to use
 print(' ')
@@ -365,18 +374,22 @@ if vip['mwr_type'] > 0:
 
 # Echo to the user the type of retrieval being performed
 print(' ')
-tmp = 'Performing T and Q'
+tmp = '  Retrieving: '
+if dotemp == 1:
+    tmp = tmp + 'T '
+if dowvmr == 1:
+    tmp = tmp + 'Q '
 if dolcloud == 1:
-    tmp = tmp + ' & Liq_Cloud'
+    tmp = tmp + 'Liq_Cloud '
 if doicloud == 1:
-    tmp = tmp + ' & Ice_Cloud'
+    tmp = tmp + 'Ice_Cloud '
 if doco2 == 1:
-    tmp = tmp + ' & CO2'
+    tmp = tmp + 'CO2 '
 if doch4 == 1:
-    tmp = tmp + ' & CH4'
+    tmp = tmp + 'CH4 '
 if don2o == 1:
-    tmp = tmp + ' & N2O'
-print((tmp+' retrieval'))
+    tmp = tmp + 'N2O '
+print(tmp)
 
 
 # Read in the a priori covariance matrix of T/Q for this study
@@ -528,6 +541,15 @@ if ext_tseries['success'] != 1:
     VIP_Databases_functions.abort(lbltmpdir,date)
     sys.exit()
 
+# If this is the ASSIST data, then replace the surface pressure field (which is currently
+# all missing values) with valid values for the retrieval.  Note that I am currently not
+# reading in the surface pressure from the met station, so I can't use that here (yet)
+if(vip['aeri_type'] == 5):
+    if(vip['assist_pressure'] < 0):
+        print('    Error: When using the ASSIST data as input, the keyword "assist_pressure" must be set in the VIP file')
+        sys.exit()
+    aeri['atmos_pres'][:] = vip['assist_pressure']
+
 # If ehour < 0, then set it to the time of the last AERI sample. (This was needed
 # for those cases when the AERI did not automatically reboot at 0 Z.)
 if ehour < 0:
@@ -537,10 +559,15 @@ if ehour < 0:
 
 # Capture the lat/lon/alt data in a structure
 location = {'lat':aeri['lat'], 'lon':aeri['lon'], 'alt':aeri['alt']}
-if vip['aeri_alt'] >= 0:
+if vip['station_alt'] >= 0:
     if verbose >= 2:
         print('Overriding lat/lon/alt with info from VIP file')
-    location = {'lat':vip['aeri_lat'], 'lon':vip['aeri_lon'], 'alt':vip['aeri_alt']}
+    location = {'lat':vip['station_lat'], 'lon':vip['station_lon'], 'alt':vip['station_alt']}
+
+# Very simple check to make sure station altitude makes sense [m MSL]
+if(location['alt'] <= 0):
+    print('    Error: the station altitude must be > 0 [m MSL]')
+    sys.exit()
 
 # Apply the AERI bias spectrum
 if remove_bias == 1:
@@ -655,6 +682,18 @@ already_saved = 0          # Flag to say if saved already or not...
 fsample = 0                # Counter for number of spectra processed
 cbh_string = ['Clear Sky', 'Inner Window', 'Outer Window', 'Default CBH']
 
+# Quick check to make sure that the spectral bands being selected are actually
+# valid for this interferometer (this ensures spectral range matches calculation below)
+if(vip['aeri_type'] >= 1):
+    minv = np.min(aeri['wnum'])
+    maxv = np.max(aeri['wnum'])
+    foo = np.where(bands < minv)
+    if(len(foo) > 0):
+        bands[foo] = minv+0.1
+    foo = np.where(bands > maxv)
+    if(len(foo) > 0):
+        bands[foo] = maxv-0.1
+
 # If clobber == 2, then we will try to append. But this requires that
 # I perform a check to make sure that we are appending to a file that was
 # created by a version of the code that makes sense. I only need to make this
@@ -663,6 +702,10 @@ if vip['output_clobber'] == 2:
     check_clobber = 1
 else:
     check_clobber = 0
+
+# This defines the extra vertical layers that will be added to both
+# the infrared and microwave radiative transfer calculations
+rt_extra_layers = Other_functions.compute_extra_layers(np.max(z))
 
 version = ''
 noutfilename = ''
@@ -675,7 +718,11 @@ for i in range(len(aeri['secs'])):                        # { loop_i
 
     # Make sure that the AERI data aren't missing or considered bad
     if ((aeri['missingDataFlag'][i] > 0) | (aeri['missingDataFlag'][i] <= -1)):
-        print(('Sample ' + str(i) + ' at ' + str(aeri['hour'][i]) + ' UTC -- no valid AERI data found'))
+        if(vip['aeri_type'] <= -1):
+            itype = 'MWR'
+        else:
+            ityle = 'AERI'
+        print(('Sample ' + str(i) + ' at ' + str(aeri['hour'][i]) + ' UTC -- no valid '+itype+' data found'))
         continue
     else:
         print(('Sample ' + str(i) + ' at ' + str(aeri['hour'][i]) + ' UTC is being processed (cbh is ' + str(aeri['cbh'][i]) + ' -- ' + str(cbh_string[int(np.nanmax([aeri['cbhflag'][i],0]))]) + ')'))
@@ -685,11 +732,12 @@ for i in range(len(aeri['secs'])):                        # { loop_i
     if vip['use_ext_psfc'] > 0:
         print("Replacing AERI pressure with met tower pressure")
         aeri['atmos_pres'] = ext_tseries['psfc']
+# TODO -- make sure that this replacement of the surface pressure from met station works as desired
 
     # Make sure the AERI's surface pressure is a valid value, as
     # this is needed to construct a pressure profile from the current X
 
-    if ((vip['psfc_min'] > aeri['atmos_pres'][i]) | (aeri['atmos_pres'][i] > vip['psfc_max'])):
+    if ((vip['station_psfc_min'] > aeri['atmos_pres'][i]) | (aeri['atmos_pres'][i] > vip['station_psfc_max'])):
         print('Error: AERI surface pressure is not within range set in VIP -- skipping sample')
         continue
 
@@ -1042,10 +1090,10 @@ for i in range(len(aeri['secs'])):                        # { loop_i
 
         if itern == 0:
             pblh = Other_functions.compute_pblh(z, Xn[0:int(nX/2)], p, np.sqrt(np.diag(Sa[0:int(nX/2), 0:int(nX/2)])),
-                                                minht=vip['min_PBL_height'], maxht=vip['max_PBL_height'])
+                                   minht=vip['min_PBL_height'], maxht=vip['max_PBL_height'], nudge=vip['nudge_PBL_height'])
         else:
             pblh = Other_functions.compute_pblh(z, Xn[0:int(nX / 2)], p, np.sqrt(np.diag(Sop[0:int(nX/2), 0:int(nX/2)])),
-                                                minht=vip['min_PBL_height'], maxht=vip['max_PBL_height'])
+                                   minht=vip['min_PBL_height'], maxht=vip['max_PBL_height'], nudge=vip['nudge_PBL_height'])
         coef = Other_functions.get_a2_pblh(pblh)           # Get the shape coef for this PBL height
         if ((vip['retrieve_co2'] == 1) & (vip['fix_co2_shape'] == 1)):
             Xn[nX+4+2] = coef
@@ -1068,26 +1116,44 @@ for i in range(len(aeri['secs'])):                        # { loop_i
         # This function makes the forward calculation and computes the Jacobian
         # for the AERI component of the forward model
         if vip['lblrtm_jac_option'] == 1:
-            print('DDT needs to update the compute_jacobian_finitediff function. Have to abort... Sorry!!')
-            VIP_Databases_functions.abort(lbltmpdir,date)
-            sys.exit()
-            flag, Kij, FXn, wnumc, version_compute_jacobian, totaltime  = Jacobian_Functions.compute_jacobian_finitediff(Xn, p, z,
+            if vip['aeri_type'] <= -1:
+                    # If this type, then AERI data aren't being used in the retrieval
+                    # so the forward calc should be missing and the Jacobian is 0
+                flag = 1
+                version_compute_jacobian = 'No AERI data in retrieval, so LBLRTM not used'
+            else:
+                print('Need to port the compute_jacobian_finitediff function. Have to abort... Sorry!!')
+                VIP_Databases_functions.abort(lbltmpdir,date)
+                sys.exit()
+                flag, Kij, FXn, wnumc, version_compute_jacobian, totaltime  = 
+                           Jacobian_Functions.compute_jacobian_finitediff(Xn, p, z,
                            vip['lbl_home'], lbldir, lbltmp, vip['lbl_std_atmos'], lbltp5, lbltp3,
                            cbh, sspl, sspi, lblwnum1, lblwnum2,
                            fixtemp, fixwvmr, doco2, doch4, don2o, fixlcloud, fixicloud,
                            vip['fix_co2_shape'], vip['fix_ch4_shape'], vip['fix_n2o_shape'],
-                           vip['jac_max_ht'], vip['lblrtm_forward_threshold'], verbose, debug, doapidize=True)
+                           vip['jac_max_ht'], vip['lblrtm_forward_threshold'], 
+                           location['alt'], rt_extra_layers, stdatmos, 
+                           verbose, debug, doapidize=True)
 
         elif vip['lblrtm_jac_option'] == 2:
-            print('DDT needs to update the compute_jacobian_3method function. Have to abort... Sorry!!')
+            print('Need to port the compute_jacobian_3method function. Have to abort... Sorry!!')
             VIP_Databases_functions.abort(lbltmpdir,date)
             sys.exit()
-            flag, Kij, FXn, wnumc, version_compute_jacobian, totaltime  = Jacobian_Functions.compute_jacobian_3method(Xn, p, z,
+            if vip['aeri_type'] <= -1:
+                    # If this type, then AERI data aren't being used in the retrieval
+                    # so the forward calc should be missing and the Jacobian is 0
+                flag = 1
+                version_compute_jacobian = 'No AERI data in retrieval, so LBLRTM not used'
+            else:
+                flag, Kij, FXn, wnumc, version_compute_jacobian, totaltime  = 
+                           Jacobian_Functions.compute_jacobian_3method(Xn, p, z,
                            vip['lbl_home'], lbldir, lbltmp, vip['lbl_std_atmos'], lbltp5, lbltp3,
                            cbh, sspl, sspi, lblwnum1, lblwnum2,
                            fixtemp, fixwvmr, doco2, doch4, don2o, fixlcloud, fixicloud,
                            vip['fix_co2_shape'], vip['fix_ch4_shape'], vip['fix_n2o_shape'],
-                           vip['jac_max_ht'], vip['lblrtm_forward_threshold'], verbose, debug, doapidize=True)
+                           vip['jac_max_ht'], vip['lblrtm_forward_threshold'], 
+                           location['alt'], rt_extra_layers, stdatmos, 
+                           verbose, debug, doapidize=True)
 
         elif vip['lblrtm_jac_option'] == 3:
             # If I am here, read in the delta OD information
@@ -1122,14 +1188,37 @@ for i in range(len(aeri['secs'])):                        # { loop_i
                 version_compute_jacobian = 'No AERI data in retrieval, so LBLRTM not used'
             else:
                 # Otherwise, run the forward model and compute the Jacobian
+                flag, Kij, FXn, wnumc, version_compute_jacobian, totaltime  = 
+                           Jacobian_Functions.compute_jacobian_deltaod(Xn, p, z,
+                           vip['lbl_home'], lbldir, lbltmp, vip['lbl_std_atmos'], lbltp5, lbltp3,
+                           cbh, sspl, sspi, lblwnum1, lblwnum2,
+                           fixtemp, fixwvmr, doco2, doch4, don2o, fixlcloud, fixicloud,
+                           vip['fix_co2_shape'], vip['fix_ch4_shape'], vip['fix_n2o_shape'],
+                           vip['jac_max_ht'], awnum, adeltaod, vip['lblrtm_forward_threshold'],
+                           location['alt'], rt_extra_layers, stdatmos, 
+                           verbose, debug, doapidize=True)
 
-                flag, Kij, FXn, wnumc, version_compute_jacobian, totaltime = Jacobian_Functions.compute_jacobian_deltaod(Xn, p, z,
-                            vip['lbl_home'], lbldir, lbltmp, vip['lbl_std_atmos'], lbltp5, lbltp3,
-                            cbh, sspl, sspi, lblwnum1, lblwnum2,
-                            fixtemp, fixwvmr, doco2, doch4, don2o, fixlcloud, fixicloud,
-                            vip['fix_co2_shape'], vip['fix_ch4_shape'], vip['fix_n2o_shape'],
-                            vip['jac_max_ht'], awnum, adeltaod, vip['lblrtm_forward_threshold'],
-                            verbose, debug, doapodize=True)
+        elif vip['lblrtm_jac_option'] == 4:
+                # Will use the jacobian_interpol method
+            if vip['aeri_type'] <= -1:
+                # If this type, then AERI data aren't being used in the retrieval
+                # so the forward calc should be missing and the Jacobian is 0
+                wnumc = np.copy(aeri['wnum'])
+                FXn = np.ones(len(wnumc))*-999.
+                Kij = np.zeros((len(wnumc),len(Xn)))
+                flag = 1
+                version_compute_jacobian = 'No AERI data in retrieval, so LBLRTM not used'
+            else:
+                # Otherwise, run the forward model and compute the Jacobian
+                flag, Kij, FXn, wnumc, version_compute_jacobian, totaltime  = 
+                           Jacobian_Functions.compute_jacobian_interpol(Xn, p, z,
+                           vip['lbl_home'], lbldir, lbltmp, vip['lbl_std_atmos'], lbltp5, lbltp3,
+                           cbh, sspl, sspi, lblwnum1, lblwnum2,
+                           fixtemp, fixwvmr, doco2, doch4, don2o, fixlcloud, fixicloud,
+                           vip['fix_co2_shape'], vip['fix_ch4_shape'], vip['fix_n2o_shape'],
+                           vip['jac_max_ht'], awnum, adeltaod, vip['lblrtm_forward_threshold'],
+                           location['alt'], rt_extra_layers, stdatmos, vip['lblrtm_jac_interpol_npts_wnum'], 
+                           verbose, debug, doapidize=True)
         else:
             print('Error: Undefined jacobian option selected')
             VIP_Databases_functions.abort(lbltmpdir,date)
@@ -1171,14 +1260,6 @@ for i in range(len(aeri['secs'])):                        # { loop_i
         foo = np.where(flagY == 2)[0]
         if len(foo) > 0:
             if create_monortm_config == 1:
-                extra_layers = []
-                for gg in range(int(np.max(z)+2),40,2):
-                    if len(extra_layers) == 0:
-                        extra_layers.append(np.float(gg))
-                    else:
-                        extra_layers.append(gg)
-                extra_layers = np.array(extra_layers)
-
                 # Create the MonoRTM configuration file
                 lun = open(lbltmpdir + '/' + monortm_config, 'w')
                 lun.write(vip['monortm_exec'] + '\n')
@@ -1189,11 +1270,15 @@ for i in range(len(aeri['secs'])):                        # { loop_i
                 for gg in range(6):       # The 6 continuum multipliers
                     lun.write('1.0\n')
                 lun.write('{:7.3f}\n'.format(np.max(z)-0.01))
-                lun.write('{:0d}\n'.format(len(z)+len(extra_layers)))
+                lun.write('{:0d}\n'.format(len(z)+len(rt_extra_layers)))
+                        # Eventually, I need to add location.alt/1000. to the z(gg) and
+                        # the rt_extra_layers(gg) in the next two lines.  But I need to resolve
+                        # the issue with the surface offset in monortm_v5 first. See comment
+                        # in the routine compute_jacobian_microwavescan_3method.
                 for gg in range(len(z)):
                     lun.write('{:7.3f}\n'.format(z[gg]))
-                for gg in range(len(extra_layers)):
-                    lun.write('{:7.3f}\n'.format(extra_layers[gg]))
+                for gg in range(len(rt_extra_layers)):
+                    lun.write('{:7.3f}\n'.format(rt_extra_layers[gg]))
                 lun.close()
 
                 # Turn the flag off, as we only need to create these files once
@@ -1217,12 +1302,12 @@ for i in range(len(aeri['secs'])):                        # { loop_i
             if vip['monortm_jac_option'] == 1:
                 flag, KK, FF, m_comp_time = Jacobian_Functions.compute_jacobian_microwave_finitediff(Xn, p, z,
                             mwr['freq'], cbh, vip, lbltmpdir, monortm_tfile, monortm_zexec,
-                            fixtemp, fixwvmr, fixlcloud, vip['jac_max_ht'], stdatmos, verbose)
+                            fixtemp, fixwvmr, fixlcloud, vip['jac_max_ht'], stdatmos, location['alt'], verbose)
 
             elif vip['monortm_jac_option'] == 2:
                     flag, KK, FF, m_comp_time = Jacobian_Functions.compute_jacobian_microwave_3method(Xn, p, z,
                             mwr['freq'], cbh, vip, lbltmpdir, monortm_tfile, monortm_zexec,
-                            fixtemp, fixwvmr, fixlcloud, vip['jac_max_ht'], stdatmos, verbose)
+                            fixtemp, fixwvmr, fixlcloud, vip['jac_max_ht'], stdatmos, location['alt'], verbose)
 
             else:
                 print('Error: Undefined option for monortm_jac_option')
@@ -1454,14 +1539,6 @@ for i in range(len(aeri['secs'])):                        # { loop_i
                 # may have already been created. (The config is the same in both
                 # -zenith and -scan)
 
-                extra_layers = []
-                for gg in range(int(np.max(z)+2),40,2):
-                    if len(extra_layers) == 0:
-                        extra_layers.append(np.float(gg))
-                    else:
-                        extra_layers.append(gg)
-                extra_layers = np.array(extra_layers)
-
                 # Create the MonoRTM configuration file
                 lun = open(lbltmpdir + '/' + monortm_config, 'w')
                 lun.write(vip['monortm_exec'] + '\n')
@@ -1472,11 +1549,13 @@ for i in range(len(aeri['secs'])):                        # { loop_i
                 for gg in range(6):       # The 6 continuum multipliers
                     lun.write('1,0\n')
                 lun.write('{:7.3f}\n'.format(np.max(z)-0.01))
-                lun.write('{:0d}\n'.format(len(z)+len(extra_layers)))
+                lun.write('{:0d}\n'.format(len(z)+len(rt_extra_layers)))
+                        # See the comment above about "compute_jacobian_microwavescan_3method"
+                        # associated with the development of the monortm_config file. 
                 for gg in range(len(z)):
                     lun.write('{:7.3f}\n'.format(z[gg]))
-                for gg in range(len(extra_layers)):
-                    lun.write('{:7.3f}\n'.format(extra_layers[gg]))
+                for gg in range(len(rt_extra_layers)):
+                    lun.write('{:7.3f}\n'.format(rt_extra_layers[gg]))
                 lun.close()
 
                 # Turn the flag off, as we only need to create these files once
@@ -1500,7 +1579,7 @@ for i in range(len(aeri['secs'])):                        # { loop_i
             elif vip['monortm_jac_option'] == 2:
                 flag, KK, FF, m_comp_time = Jacobian_Functions.compute_jacobian_microwavescan_3method(Xn, p, z,
                                         mwrscan, cbh, vip, lbltmpdir, monortm_tfile, monortm_sexec,
-                                        fixtemp, fixwvmr, fixlcloud, vip['jac_max_ht'], stdatmos,
+                                        fixtemp, fixwvmr, fixlcloud, vip['jac_max_ht'], stdatmos, location['alt'], 
                                         verbose)
             else:
                 print('Error: Undefined option for monortm_jac_option')
