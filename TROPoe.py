@@ -512,7 +512,7 @@ if mod_prof['success'] != 1:
 
 # Read in any external sources of virtual temperature profiles (RASS)
     # I will need to tweak this call a bit by turning off the WV part of the call
-if(vip['rass_prof_type'] == 0 | vip['rass_prof_type'] == 5):
+if((vip['rass_prof_type'] == 0) | (vip['rass_prof_type'] == 5)):
     rass_prof = Data_reads.read_external_profile_data(date, z, aeri['secs'], vip['tres'], vip['avg_instant'],
               0, '.', vip['ext_wv_noise_mult_hts'],
               vip['ext_wv_noise_mult_val'], vip['ext_wv_prof_minht'], vip['ext_wv_prof_maxht'],

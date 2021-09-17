@@ -266,7 +266,6 @@ def compute_prior(z, sonde_path, sonde_rootname, month_idx, outfile=None, deltao
     # Calculate the prior covariance matrix
     Sa, Xa, surfp = compute_Xa_Sa(sonde, mint, maxt, minq, maxq)
 
-
     nsonde = sonde['nsonde']
     minpwv = min(sonde['pwv'])
     maxpwv = max(sonde['pwv'])
@@ -274,12 +273,13 @@ def compute_prior(z, sonde_path, sonde_rootname, month_idx, outfile=None, deltao
 
     # Build some profiles for the LBLRTM calculation of the prior Xa
     nht = len(z)
-    t = Xa[0:nht]
-    w = Xa[nht:2*nht]
+    t = Xa[0:nht].copy()
+    w = Xa[nht:2*nht].copy()
     p = inv_hypsometric(z, t + 273.16, surfp)
 
     if deltaod:
-        t += 274.15
+        t += 273.15
+        print(Xa)
         rundecker(3, stdatmos, z, p, t, w, mlayers=z, wnum1=300, wnum2=1799.99, tape5=tp5, v10=True, od_only=True)
 
         command = ' uname -a ; echo $LBL_HOME ; lblrun ' + tp5 + ' ' + lblout+'1'
@@ -373,9 +373,6 @@ def compute_prior(z, sonde_path, sonde_rootname, month_idx, outfile=None, deltao
             idx[i] = np.argmin(sqdiff)
             crad[i] = np.squeeze(brad[idx[i], i])
 
-
-
-
     # Write out the netcdf
     nc = Dataset(outfile, 'w')
 
@@ -393,10 +390,10 @@ def compute_prior(z, sonde_path, sonde_rootname, month_idx, outfile=None, deltao
     var = nc.createVariable('mean_pressure', 'f4', ('height',))
     var.setncattr('long_name', 'mean_pressure')
     var.setncattr('units', 'mb')
-    var[:] = z
+    var[:] = p
 
     var = nc.createVariable('mean_temperature', 'f4', ('height',))
-    var.setncattr('long_name', 'Mean termperature')
+    var.setncattr('long_name', 'Mean temperature')
     var.setncattr('units', 'C')
     var[:] = t - 273.15
 
@@ -493,4 +490,4 @@ if __name__ == "__main__":
               9.6017380e+00, 1.0571912e+01, 1.1639103e+01,
               1.2813013e+01, 1.4104314e+01, 1.5524745e+01,
               1.7087219e+01])
-    Sa, Xa = compute_prior(height, '/raid/clamps/clamps/priors/Shreveport', 'SHVsonde', 8, doplot=False, deltaod=True)
+    Sa, Xa = compute_prior(height, '/raid/clamps/clamps/priors/Shreveport/data/', 'SHVsonde', 8, doplot=False, deltaod=True)
