@@ -44,6 +44,7 @@ from datetime import datetime
 from glob import glob
 from subprocess import Popen, PIPE
 
+import numpy as np
 from netCDF4 import Dataset
 
 from Calcs_Conversions import *
@@ -184,8 +185,32 @@ def read_sonde(path, rootname, ht, mm, minpwv, maxpwv):
 
     pwv = np.array([w2pwv(ww[i, :], pp[i, :]) for i in range(nsonde)])
 
+    superadiabatic_maxht = np.array([calc_superadiabatic_maxht(tt[i, :], ht, pp[i, :]) for i in range(nsonde)])
+
     return {'success': 1, 'secs': ssecs, 'date': datetime.utcnow(),
-            'z': ht, 'p': pp, 't': tt, 'w': ww, 'pwv': pwv, 'nsonde': nsonde}
+            'z': ht, 'p': pp, 't': tt, 'w': ww, 'pwv': pwv, 'nsonde': nsonde,
+            'superadiabatic_maxht': superadiabatic_maxht}
+
+
+def calc_superadiabatic_maxht(t, z, p, max_height=1.0):
+
+    # Compute the theta profile
+    theta = t2theta(t, np.zeros_like(t), p)
+
+    # Find where theta change with height is negative
+    diff = theta[1:] - theta[:-1]
+    foo = np.where(diff < 0)[0]
+
+    # Get the max height of the superadiabatic layer
+    maxht = -999.
+    if len(foo) > 0:
+        maxht = np.max(z[1:][foo])
+
+    # Return the value, cross checking with max_height
+    if maxht > max_height:
+        return max_height
+    else:
+        return maxht
 
 
 def compute_prior(z, sonde_path, sonde_rootname, month_idx, outfile=None, deltaod=False, comment="None",
@@ -445,6 +470,11 @@ def compute_prior(z, sonde_path, sonde_rootname, month_idx, outfile=None, deltao
         var.setncattr('long_name', 'atmospheric transmittance (truth)')
         var.setncattr('units', 'unitless')
         var[:] = crad
+
+    var = nc.createVariable('superadiabatic_maxht', 'f4', ('sonde_num',))
+    var.setncattr('long_name', "Max height of the superadiabatic layer from each sonde")
+    var.setncattr('units', 'm agl')
+    var[:] = sonde['superadiabatic_maxht']
 
     nc.setncattr('Date Created', datetime.utcnow().isoformat())
     nc.setncattr('Comment', comment)

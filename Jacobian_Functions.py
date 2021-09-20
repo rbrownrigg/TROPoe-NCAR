@@ -44,7 +44,7 @@ def compute_jacobian_deltaod(X, p, zz, lblhome, lbldir, lblroot, lbl_std_atmos, 
     if sfc_alt is None:
         sfcz = 0
     else:
-        sfcz = sfc_alt[0] / 1000.
+        sfcz = sfc_alt / 1000.
 
     doapo = False         # I never want to apodize in this routine, because of the delta-OD...
 
@@ -74,7 +74,7 @@ def compute_jacobian_deltaod(X, p, zz, lblhome, lbldir, lblroot, lbl_std_atmos, 
     # Define the model layers
     if len(extra_layers) > 0:
         mlayerz = sfcz + np.append(zz, extra_layers)
-        mlayert = np.interp(sfcz+extra_layers, stdatmos['z'], stdatmos['t'])
+        mlayert = np.append(t, np.interp(sfcz+extra_layers, stdatmos['z'], stdatmos['t']))
     else:
         mlayerz = sfcz + zz
         mlayert = t
@@ -203,7 +203,7 @@ def compute_jacobian_deltaod(X, p, zz, lblhome, lbldir, lblroot, lbl_std_atmos, 
     # TODO -- revisit this; can we make this a simple "files1 = sorted(glob.glob(lbldir+'.1/OD*'))" ??
     files1 = []
     files1 = files1 + sorted(glob.glob(lbldir+'.1/OD*'))
-    if len(files1) != len(mlayersz)-1:
+    if len(files1) != len(mlayerz)-1:
         print('This should not happen (0) in compute_jacobian_deltaod')
         if verbose >= 3:
             print('The working LBLRTM directory is ' +lbldir+ '.1')
@@ -488,7 +488,7 @@ def compute_jacobian_deltaod(X, p, zz, lblhome, lbldir, lblroot, lbl_std_atmos, 
                 gasod[cldidx,:] += lcldodir + icldodir
 
                 # Compute the perturbed radiance
-                radc1 = Other_functions.radxfer(wnum,mlayert,gasod)
+                radc1 = Other_functions.radxfer(wnum, mlayert, gasod)
                 radc1 += cldrefrad
                 if doapo:
                     radc1 = np.real(Other_functions.apodizer(radc1,0))
@@ -923,7 +923,7 @@ def compute_jacobian_interpol(X, p, zz, lblhome, lbldir, lblroot, lbl_std_atmos,
     if sfc_alt is None:
         sfcz = 0
     else:
-        sfcz = sfc_alt[0] / 1000.
+        sfcz = sfc_alt / 1000.
 
     if npts_per_wnum is None:
         npts_per_wnum = 10
@@ -956,7 +956,7 @@ def compute_jacobian_interpol(X, p, zz, lblhome, lbldir, lblroot, lbl_std_atmos,
     # Define the model layers
     if len(extra_layers) > 0:
         mlayerz = sfcz + np.append(zz, extra_layers)
-        mlayert = np.interp(sfcz+extra_layers, stdatmos['z'], stdatmos['t'])
+        mlayert = np.append(t, np.interp(sfcz+extra_layers, stdatmos['z'], stdatmos['t']))
     else:
         mlayerz = sfcz + zz
         mlayert = t
@@ -1083,7 +1083,7 @@ def compute_jacobian_interpol(X, p, zz, lblhome, lbldir, lblroot, lbl_std_atmos,
     # Now read in the baseline optical depths
     files1 = []
     files1 = files1 + sorted(glob.glob(lbldir+'.1/OD*'))
-    if len(files1) != len(mlayersz)-1:
+    if len(files1) != len(mlayerz)-1:
         print('This should not happen (0) in compute_jacobian_interpol')
         if verbose >= 3:
             print('The working LBLRTM directory is ' +lbldir+ '.1')
@@ -1798,7 +1798,7 @@ def compute_jacobian_microwave_finitediff(Xn, p, z, freq, cbh, vip, workdir,
         # See the note on sfcz in compute_jacobian_microwavescan_3method
     if(sfc_alt == None): 
         sfcz=0 
-    else
+    else:
         sfcz = sfc_alt[0] / 1000.
 
     # Allocate space for the Jacobian and forward calculation
@@ -1910,7 +1910,7 @@ def compute_jacobian_microwave_3method(Xn, p, z, freq, cbh, vip, workdir,
         # See the note on sfcz in compute_jacobian_microwavescan_3method
     if(sfc_alt == None): 
         sfcz=0 
-    else
+    else:
         sfcz = sfc_alt[0] / 1000.
 
     # Allocate space for the Jacobian and forward calculation
@@ -2526,7 +2526,7 @@ def compute_jacobian_microwavescan_3method(Xn, p, z, mwrscan, cbh, vip, workdir,
         # So I am not doing anything about this right now...
     if(sfc_alt == None): 
         sfcz=0 
-    else
+    else:
         sfcz = sfc_alt[0] / 1000.
 
     if verbose >= 2:

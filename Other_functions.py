@@ -318,8 +318,8 @@ def compute_pblh(ht, t, p, sigt, nudge=0.5, minht=0.300, maxht=6.0):
     elif foo[0] == 0:
         pblh = ht[0]
     else:
-        tmpz = ht[foo[0]-1:foo[0]]
-        tmpt = theta[foo[0]-1:foo[0]]
+        tmpz = ht[foo[0]-1:foo[0]+1]
+        tmpt = theta[foo[0]-1:foo[0]+1]
 
         if np.abs(tmpt[0]-tmpt[1]) < 0.001:
             pblh = ht[foo[0]]
@@ -1152,8 +1152,7 @@ def convolve_to_aeri(wnum, radiance):
     y[v_rolloff2] = bar * np.mean(y[feh])
     weight = np.arange(len(feh))/(len(feh)-1.)
     y[feh] = y[feh]*(1-weight) + weight*np.mean(y[feh])
-    
-    
+
     # If the wavenumber resolution is "coarse", then we need to zeropad
     # the spectrum to allow us to interpolate to a multiple of the AERI
     # resolution...
@@ -1181,8 +1180,8 @@ def convolve_to_aeri(wnum, radiance):
         if i < 18:
             npts = 2**18 - 2**i
             factor = 2**18/(2**i)
-            yyi_pad = np.append(np.zeros(npts/2), yyi)
-            yyi_pad = np.append(yyi_pad, np.zeros(npts/2))
+            yyi_pad = np.append(np.zeros(int(npts/2)), yyi)
+            yyi_pad = np.append(yyi_pad, np.zeros(int(npts/2)))
         else:
             factor = 1
             yyi_pad = np.copy(yyi)

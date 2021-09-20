@@ -32,7 +32,7 @@ import Output_Functions
 ################################################################################
 
 def read_aeri_ch(path,date,aeri_type,fv,fa,aeri_spec_cal_factor,
-                engsecs,engtemp,bbcavfactor,get_aeri_missingDataFlag, 
+                engsecs,engtemp,bbcavfactor,get_aeri_missingDataFlag,
                 old_ffov_halfangle, new_ffov_halfangle, verbose):
 
     if verbose >= 2:
@@ -98,10 +98,10 @@ def read_aeri_ch(path,date,aeri_type,fv,fa,aeri_spec_cal_factor,
             xclose = fid.variables['hatch_closed_indicator'][:]
             xhatchOpen = np.full_like(-3,xopen)
             foo = np.where(xopen == 1 and xclose == 0)[0]
-            if(len(foo) > 0): 
+            if(len(foo) > 0):
                 xhatchOpen[foo] = 1
             foo = np.where(xopen == 0 and xclose == 1)[0]
-            if(len(foo) > 0): 
+            if(len(foo) > 0):
                 xhatchOpen[foo] = 0
         else:
             print(('Warning: Unable to find AERI hatchOpen or hatchIndicator field in ' +
@@ -110,27 +110,27 @@ def read_aeri_ch(path,date,aeri_type,fv,fa,aeri_spec_cal_factor,
 
         if len(np.where(np.array(list(fid.variables.keys())) == 'BBsupportStructureTemp')[0]) > 0:
             xbbsupport = fid.variables['BBsupportStructureTemp'][:]
-        else
+        else:
             xbbsupport = fid.variables['abb_thermistor_top'][:]
             xbbsupport += 273.15
         if len(np.where(np.array(list(fid.variables.keys())) == 'calibrationAmbientTemp')[0]) > 0:
             xcalibambt = fid.variables['calibrationAmbientTemp'][:]
-        else
+        else:
             xcalibambt = fid.variables['abb_thermistor_top'][:]
             xcalibambt += 273.15
         if len(np.where(np.array(list(fid.variables.keys())) == 'calibrationCBBtemp')[0]) > 0:
             xcalibcbbt = fid.variables['calibrationCBBtemp'][:]
-        else
+        else:
             xcalibcbbt = fid.variables['abb_mean_temp'][:]
             xcalibcbbt += 273.15
         if len(np.where(np.array(list(fid.variables.keys())) == 'calibrationHBBtemp')[0]) > 0:
             xcalibhbbt = fid.variables['calibrationHBBtemp'][:]
-        else
+        else:
             xcalibhbbt = fid.variables['hbb_mean_temp'][:]
             xcalibhbbt += 273.15
         if len(np.where(np.array(list(fid.variables.keys())) == 'atmosphericPressure')[0]) > 0:
             xambPres = fid.variables['atmosphericPressure'][:]
-        else
+        else:
             xambPres = np.full_like(-999,to)
 
         #Read in the field "missingDataFlag". If it does not exist, then abort
@@ -138,7 +138,7 @@ def read_aeri_ch(path,date,aeri_type,fv,fa,aeri_spec_cal_factor,
             if len(np.where(np.array(list(fid.variables.keys())) == 'missingDataFlag')[0]) > 0:
                 xmissingDataFlag = fid.variables['missingDataFlag'][:]
                 xmissingDataFlag = xmissingDataFlag.astype('int')
-            elif:
+            elif len(np.where(np.array(list(fid.variables.keys())) == 'missingDataFlag')[0]) == 0:
                 xmissingDataFlag = np.zeros_like(to)
                 xmissingDataFlag = xmissingDataFlag.astype('int')
             else:
@@ -178,8 +178,8 @@ def read_aeri_ch(path,date,aeri_type,fv,fa,aeri_spec_cal_factor,
         if(verbose >= 1):
             print('    Interpolating ASSIST to the AERI spectral grid')
         for jj in range(0,len(chsecs)):
-            zf = aeri_zerofill(wnum,mrad[:,jj],1)
-            fx = convolve_to_aeri(zf[0,:],zf[1,:])
+            zf = Other_functions.aeri_zerofill(wnum,mrad[:,jj],1)
+            fx = Other_functions.convolve_to_aeri(zf[0,:],zf[1,:])
             if(jj == 0):
                 wnum0 = fx['wnum']
                 mrad0 = fx['spec'].T
@@ -197,15 +197,15 @@ def read_aeri_ch(path,date,aeri_type,fv,fa,aeri_spec_cal_factor,
         mrad = tmp
 
     # Apply the new finite field-of-view correction, if desired
-    if(10 <= new_ffov_halfangle & new_ffov_halfangle < 50):
+    if((10 <= new_ffov_halfangle) & (new_ffov_halfangle < 50)):
         if(verbose >= 1):
             print(f'    Adjusting the AERIs FFOV correction half angle from {old_ffov_halfangle} to {new_ffov_halfangle} mrad')
         tmp = mrad
         for jj in range(0,len(chsecs)):
-            tmp[:,jj] = change_aeri_ffovc(wnum,mrad[:,jj],old_ffov_halfangle,new_ffov_halfangle)
+            tmp[:,jj] = Other_functions.change_aeri_ffovc(wnum,mrad[:,jj],old_ffov_halfangle,new_ffov_halfangle)
         mrad = tmp
-    elif:
-        if(verbose >= 1 & new_ffov_halfangle > 0):
+    else:
+        if((verbose >= 1) & (new_ffov_halfangle > 0.0)):
             print('      The desired new FFOV correction half angle is outside realistic bounds -- not applied')
 
     #I need to match the times of the AERI channel data with that from
@@ -288,7 +288,7 @@ def read_aeri_ch(path,date,aeri_type,fv,fa,aeri_spec_cal_factor,
         print('          code so that a different field is used as the aft optic temperature')
         return err
 
-    if(aeri_type == 5 & (fa > 0 | fv > 0)):
+    if (aeri_type == 5) & ((fa > 0) | (fv > 0)):
         print('Error: The Fa and Fv corrections should both be off for the ASSIST -- aborting')
         return err
 
@@ -430,7 +430,7 @@ def read_all_data(date, retz, tres, dostop, verbose, avg_instant, ch1_path,
         aerich1 = read_aeri_ch(ch1_path,date,aeri_type,fv,fa,aeri_spec_cal_factor,
                               aerieng['secs'],
                               aerieng['interferometerSecondPortTemp'],
-                              aerieng['bbcavityfactor'], get_aeri_missingDataFlag, 
+                              aerieng['bbcavityfactor'], get_aeri_missingDataFlag,
                               vip['aeri_old_ffov_halfangle'], vip['aeri_new_ffov_halfangle'], verbose)
 
         aerisum = read_aeri_sum(sum_path,date,aeri_type,aeri_smooth_noise,verbose)
@@ -1222,7 +1222,7 @@ def read_aeri_sum(path,date,aeri_type,smooth_noise,verbose):
         filename = path + '/' + '*' + str(date % 2000000) + '.SUM.cdf'
     elif aeri_type == 5:
         filename = path + '/' + '*assist*sum*' + str(date) + '*cdf'
-            # Same TODO as above with {cdf,nc} 
+            # Same TODO as above with {cdf,nc}
     else:
         print('Error in read_aeri_sum: unable to decode aeri_type')
         return err
@@ -2298,7 +2298,7 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
         qtype = 'Vaisala WV DIAL data'
 
     # Read in the NCAR water vapor DIAL profiles (from 2019, after Turner QC applied)
-    
+
     elif wv_prof_type == 6:
         if verbose >= 1:
             print('Reading in NCAR WV DIAL data (after QC) to constrain the WV profile')

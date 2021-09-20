@@ -250,9 +250,10 @@ def read_vip_file(filename,globatt,verbose,debug,dostop):
 
     # Look for obsolete tags, and abort if they are found (forcing user to update their VIP file)
     obsolete_tags = ['AERI_LAT','AERI_LON','AERI_ALT','PSFC_MIN','PSFC_MAX']
-    obsolete_idx  = np.zeros_like(obsolete_tags)
+    obsolete_idx  = np.zeros_like(obsolete_tags, dtype=int)
+    vip_keys = [k.upper() for k in vip.keys()]
     for i in range(len(obsolete_tags)):
-        foo = np.where(obsolete_tags[i].upper() == vip.keys().upper())[0]
+        foo = np.where(obsolete_tags[i].upper() == vip_keys)[0]
         if(len(foo) > 0):
             obsolete_idx[i] = 1
     foo = np.where(obsolete_idx > 0)[0]

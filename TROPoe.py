@@ -1,4 +1,4 @@
-__version__ = '0.2.51'
+__version__ = '0.2.57'
 
 import os
 import sys
@@ -1125,7 +1125,7 @@ for i in range(len(aeri['secs'])):                        # { loop_i
                 print('Need to port the compute_jacobian_finitediff function. Have to abort... Sorry!!')
                 VIP_Databases_functions.abort(lbltmpdir,date)
                 sys.exit()
-                flag, Kij, FXn, wnumc, version_compute_jacobian, totaltime  = 
+                flag, Kij, FXn, wnumc, version_compute_jacobian, totaltime  = \
                            Jacobian_Functions.compute_jacobian_finitediff(Xn, p, z,
                            vip['lbl_home'], lbldir, lbltmp, vip['lbl_std_atmos'], lbltp5, lbltp3,
                            cbh, sspl, sspi, lblwnum1, lblwnum2,
@@ -1145,7 +1145,7 @@ for i in range(len(aeri['secs'])):                        # { loop_i
                 flag = 1
                 version_compute_jacobian = 'No AERI data in retrieval, so LBLRTM not used'
             else:
-                flag, Kij, FXn, wnumc, version_compute_jacobian, totaltime  = 
+                flag, Kij, FXn, wnumc, version_compute_jacobian, totaltime  = \
                            Jacobian_Functions.compute_jacobian_3method(Xn, p, z,
                            vip['lbl_home'], lbldir, lbltmp, vip['lbl_std_atmos'], lbltp5, lbltp3,
                            cbh, sspl, sspi, lblwnum1, lblwnum2,
@@ -1188,7 +1188,7 @@ for i in range(len(aeri['secs'])):                        # { loop_i
                 version_compute_jacobian = 'No AERI data in retrieval, so LBLRTM not used'
             else:
                 # Otherwise, run the forward model and compute the Jacobian
-                flag, Kij, FXn, wnumc, version_compute_jacobian, totaltime  = 
+                flag, Kij, FXn, wnumc, version_compute_jacobian, totaltime  = \
                            Jacobian_Functions.compute_jacobian_deltaod(Xn, p, z,
                            vip['lbl_home'], lbldir, lbltmp, vip['lbl_std_atmos'], lbltp5, lbltp3,
                            cbh, sspl, sspi, lblwnum1, lblwnum2,
@@ -1196,7 +1196,7 @@ for i in range(len(aeri['secs'])):                        # { loop_i
                            vip['fix_co2_shape'], vip['fix_ch4_shape'], vip['fix_n2o_shape'],
                            vip['jac_max_ht'], awnum, adeltaod, vip['lblrtm_forward_threshold'],
                            location['alt'], rt_extra_layers, stdatmos, 
-                           verbose, debug, doapidize=True)
+                           verbose, debug, doapodize=True)
 
         elif vip['lblrtm_jac_option'] == 4:
                 # Will use the jacobian_interpol method
@@ -1210,7 +1210,7 @@ for i in range(len(aeri['secs'])):                        # { loop_i
                 version_compute_jacobian = 'No AERI data in retrieval, so LBLRTM not used'
             else:
                 # Otherwise, run the forward model and compute the Jacobian
-                flag, Kij, FXn, wnumc, version_compute_jacobian, totaltime  = 
+                flag, Kij, FXn, wnumc, version_compute_jacobian, totaltime  = \
                            Jacobian_Functions.compute_jacobian_interpol(Xn, p, z,
                            vip['lbl_home'], lbldir, lbltmp, vip['lbl_std_atmos'], lbltp5, lbltp3,
                            cbh, sspl, sspi, lblwnum1, lblwnum2,
@@ -1218,7 +1218,7 @@ for i in range(len(aeri['secs'])):                        # { loop_i
                            vip['fix_co2_shape'], vip['fix_ch4_shape'], vip['fix_n2o_shape'],
                            vip['jac_max_ht'], awnum, adeltaod, vip['lblrtm_forward_threshold'],
                            location['alt'], rt_extra_layers, stdatmos, vip['lblrtm_jac_interpol_npts_wnum'], 
-                           verbose, debug, doapidize=True)
+                           verbose, debug, doapodize=True)
         else:
             print('Error: Undefined jacobian option selected')
             VIP_Databases_functions.abort(lbltmpdir,date)

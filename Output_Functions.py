@@ -2,6 +2,7 @@ import os
 import numpy as np
 import scipy.io
 import glob
+import sys
 from datetime import datetime
 from netCDF4 import Dataset
 
