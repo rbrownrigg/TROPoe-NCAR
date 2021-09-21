@@ -725,12 +725,12 @@ for i in range(len(aeri['secs'])):                        # { loop_i
         continue
     else:
         print(('Sample ' + str(i) + ' at ' + str(aeri['hour'][i]) + ' UTC is being processed (cbh is ' + str(aeri['cbh'][i]) + ' -- ' + str(cbh_string[int(np.nanmax([aeri['cbhflag'][i],0]))]) + ')'))
-
-    # See if we want to use the tower pressure instead of aeri pressure
+    
+    # See if we want to use the external sfc pressure instead of aeri pressure
+    # and check to make sure external data read went okay
     if ((vip['ext_sfc_p_type'] > 0) & (ext_tseries['nPsfc'] >= 0)):
         print("Replacing AERI pressure with " +  ext_tseries['ptype'] + " pressure")
         aeri['atmos_pres'][i] = ext_tseries['psfc'][i]
-        print(aeri['atmos_pres'][i])
 
     # Make sure the AERI's surface pressure is a valid value, as
     # this is needed to construct a pressure profile from the current X
