@@ -83,7 +83,7 @@ def compute_jacobian_deltaod(X, p, zz, lblhome, lbldir, lblroot, lbl_std_atmos, 
     if verbose >= 3:
         print('Making the LBLRTM runs for the Jacobian')
 
-    LBLRTM_Functions.rundecker(3, lbl_std_atmos, zz, p, t, w, 
+    LBLRTM_Functions.rundecker(3, lbl_std_atmos, zz+sfcz, p, t, w, 
              co2_profile=co2prof, ch4_profile=ch4prof, n2o_profile = n2oprof,
              od_only = 1, mlayers=mlayerz, wnum1=lblwnum1, wnum2=lblwnum2, tape5=tp5+'.1', 
              v10=True, silent=True)
@@ -98,7 +98,7 @@ def compute_jacobian_deltaod(X, p, zz, lblhome, lbldir, lblroot, lbl_std_atmos, 
     if fixt != 1:
         tpert = 1.0            # Additive perturbation of 1 K
 
-        LBLRTM_Functions.rundecker(3, lbl_std_atmos, zz, p, t+tpert, w, 
+        LBLRTM_Functions.rundecker(3, lbl_std_atmos, zz+sfcz, p, t+tpert, w, 
              co2_profile=co2prof, ch4_profile=ch4prof, n2o_profile = n2oprof,
              od_only = 1, mlayers=mlayerz, wnum1=lblwnum1, wnum2=lblwnum2, tape5=tp5+'.2', 
              v10=True, silent=True)
@@ -115,7 +115,7 @@ def compute_jacobian_deltaod(X, p, zz, lblhome, lbldir, lblroot, lbl_std_atmos, 
     if fixwv != 1:
         h2opert = 0.99
 
-        LBLRTM_Functions.rundecker(3, lbl_std_atmos, zz, p, t, w*h2opert, 
+        LBLRTM_Functions.rundecker(3, lbl_std_atmos, zz+sfcz, p, t, w*h2opert, 
              co2_profile=co2prof, ch4_profile=ch4prof, n2o_profile = n2oprof,
              od_only = 1, mlayers=mlayerz, wnum1=lblwnum1, wnum2=lblwnum2, tape5=tp5+'.3', 
              v10=True, silent=True)
@@ -135,7 +135,7 @@ def compute_jacobian_deltaod(X, p, zz, lblhome, lbldir, lblroot, lbl_std_atmos, 
         c0[0] += co2pert        #An additive perturbation [ppm]
         co2prof2 = Other_functions.trace_gas_prof(doco2, zz, c0)
 
-        LBLRTM_Functions.rundecker(3, lbl_std_atmos, zz, p, t, w*h2opert, 
+        LBLRTM_Functions.rundecker(3, lbl_std_atmos, zz+sfcz, p, t, w, 
              co2_profile=co2prof2, ch4_profile=ch4prof, n2o_profile = n2oprof,
              od_only = 1, mlayers=mlayerz, wnum1=lblwnum1, wnum2=lblwnum2, tape5=tp5+'.4', 
              v10=True, silent=True)
@@ -155,7 +155,7 @@ def compute_jacobian_deltaod(X, p, zz, lblhome, lbldir, lblroot, lbl_std_atmos, 
         c0[0] += ch4pert        #An additive perturbation [ppm]
         ch4prof2 = Other_functions.trace_gas_prof(doch4, zz, c0)
 
-        LBLRTM_Functions.rundecker(3, lbl_std_atmos, zz, p, t, w, 
+        LBLRTM_Functions.rundecker(3, lbl_std_atmos, zz+sfcz, p, t, w, 
              co2_profile=co2prof, ch4_profile=ch4prof2, n2o_profile = n2oprof,
              od_only = 1, mlayers=mlayerz, wnum1=lblwnum1, wnum2=lblwnum2, tape5=tp5+'.5', 
              v10=True, silent=True)
@@ -176,7 +176,7 @@ def compute_jacobian_deltaod(X, p, zz, lblhome, lbldir, lblroot, lbl_std_atmos, 
         c0[0] += n2opert      #An additive perturbation [ppm]
         n2oprof2 = Other_functions.trace_gas_prof(don2o, zz, c0)
 
-        LBLRTM_Functions.rundecker(3, lbl_std_atmos, zz, p, t, w, 
+        LBLRTM_Functions.rundecker(3, lbl_std_atmos, zz+sfcz, p, t, w, 
              co2_profile=co2prof, ch4_profile=ch4prof, n2o_profile = n2oprof2,
              od_only = 1, mlayers=mlayerz, wnum1=lblwnum1, wnum2=lblwnum2, tape5=tp5+'.6', 
              v10=True, silent=True)
@@ -812,7 +812,7 @@ def compute_jacobian_deltaod(X, p, zz, lblhome, lbldir, lblroot, lbl_std_atmos, 
         if verbose >= 3:
             print('Forward model F(Xn) using LBLRTM and assuming no clouds')
 
-        LBLRTM_Functions.rundecker(3, lbl_std_atmos, zz, p, t, w, 
+        LBLRTM_Functions.rundecker(3, lbl_std_atmos, zz+sfcz, p, t, w, 
              co2_profile=co2prof, ch4_profile=ch4prof, n2o_profile = n2oprof,
              mlayers=mlayerz, wnum1=lblwnum1-100, wnum2=lblwnum2+100, tape5=tp5+'.99', 
              v10=True, silent=True)
@@ -911,7 +911,7 @@ def compute_jacobian_deltaod(X, p, zz, lblhome, lbldir, lblroot, lbl_std_atmos, 
 def compute_jacobian_interpol(X, p, zz, lblhome, lbldir, lblroot, lbl_std_atmos, tp5, tp3,
                     cbh, sspl, sspi, lblwnum1, lblwnum2, fixt, fixwv, doco2, doch4, don2o,
                     fixlcld, fixicld, fix_co2_shape, fix_ch4_shape, fix_n2o_shape,
-                    jac_maxht, awnum, adeltaod, forward_threshold, sfc_alt, extra_layers, 
+                    jac_maxht, forward_threshold, sfc_alt, extra_layers, 
                     stdatmos, npts_per_wnum,
                     verbose, debug, doapodize):
 

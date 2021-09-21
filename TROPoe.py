@@ -726,11 +726,11 @@ for i in range(len(aeri['secs'])):                        # { loop_i
     else:
         print(('Sample ' + str(i) + ' at ' + str(aeri['hour'][i]) + ' UTC is being processed (cbh is ' + str(aeri['cbh'][i]) + ' -- ' + str(cbh_string[int(np.nanmax([aeri['cbhflag'][i],0]))]) + ')'))
 
-    # See if we want to use the external sfc pressure instead of aeri pressure
-    # and check to make sure external data read went okay
+    # See if we want to use the tower pressure instead of aeri pressure
     if ((vip['ext_sfc_p_type'] > 0) & (ext_tseries['nPsfc'] >= 0)):
         print("Replacing AERI pressure with " +  ext_tseries['ptype'] + " pressure")
         aeri['atmos_pres'][i] = ext_tseries['psfc'][i]
+        print(aeri['atmos_pres'][i])
 
     # Make sure the AERI's surface pressure is a valid value, as
     # this is needed to construct a pressure profile from the current X
@@ -1214,7 +1214,7 @@ for i in range(len(aeri['secs'])):                        # { loop_i
                            cbh, sspl, sspi, lblwnum1, lblwnum2,
                            fixtemp, fixwvmr, doco2, doch4, don2o, fixlcloud, fixicloud,
                            vip['fix_co2_shape'], vip['fix_ch4_shape'], vip['fix_n2o_shape'],
-                           vip['jac_max_ht'], awnum, adeltaod, vip['lblrtm_forward_threshold'],
+                           vip['jac_max_ht'], vip['lblrtm_forward_threshold'],
                            location['alt'], rt_extra_layers, stdatmos, vip['lblrtm_jac_interpol_npts_wnum'], 
                            verbose, debug, doapodize=True)
         else:

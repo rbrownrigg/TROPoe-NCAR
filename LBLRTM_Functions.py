@@ -36,7 +36,7 @@ def rundecker(model, aprofile, z, p, t, w, co2_profile= None, o3_profile=None,
            wnum1=None, wnum2=None, short=False, mlayers=None, mlay_pres=False,
            altitude=0.0, v10=False, sample=4.0, tape5=None, tape7=None, monortm=False,
            freqs=None, silent=False, juldate=None, sza=None):
-           
+
    # For capturing the version number
     rcsid = '$Id: rundecker.py,v 0.1 2019/07/29 Josh.Gebauer Exp $'
     parts = rcsid.split(' ')
@@ -328,7 +328,7 @@ def rundecker(model, aprofile, z, p, t, w, co2_profile= None, o3_profile=None,
         if len(o3_profile) != len(p):
             print('Ozone profile does not have same number of levels as pressure profile')
             return
-    
+
     if co2_profile is not None:
         if len(co2_profile) != len(p):
             print('Carbon dioxide profile does not have same number of levels as pressure profile')
@@ -950,7 +950,11 @@ def rundecker(model, aprofile, z, p, t, w, co2_profile= None, o3_profile=None,
             if mlay_pres:
                 foo = np.where(mlayers < pp[inlayers-1])[0]
             else:
-                foo = np.where(mlayers > zz[inlayers-1])[0]
+                # Precision errors between mlayers and zz can cause pressure
+                # to increase at top of profile. Since the tape5 file only
+                # writes to four sig figs, make sure the difference is
+                # greater than 0.00009
+                foo = np.where(mlayers > zz[inlayers-1]+0.00009)[0]
             if len(foo) >= 1:
                 foo = foo[0:len(foo)]
                 zz = np.append(zz, mlayers[foo])
@@ -975,7 +979,7 @@ def rundecker(model, aprofile, z, p, t, w, co2_profile= None, o3_profile=None,
             JCHAR = '{:0d}{:0d}{:0d}{:0d}{:0d}{:0d}{:0d}'.format(aprofile,aprofile,aprofile,aprofile,aprofile,aprofile,aprofile)
             
             for i in range(inlayers-len(foo),inlayers):
-                lun.write('{:10.3f}{:10.3E}{:10.3E}     '.format(zz[i],pp[i],tt[i]) + JCHARP + JCHART + '   ' + JCHAR + '\n')
+                lun.write('{:10.4f}{:10.3E}{:10.3E}     '.format(zz[i],pp[i],tt[i]) + JCHARP + JCHART + '   ' + JCHAR + '\n')
                 lun.write('{:10.3f}{:10.3E}{:10.3E}{:10.3E}{:10.3E}{:10.3E}{:10.3E}\n'.format(ww[i],oo3[i],0,0,0,0,0))
             
         # If it is ch1 or ch2 rundecks, then we can add options for heavy molecule
