@@ -3698,8 +3698,7 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
     else:
         tt0 = -999.
         st0 = -999
-        if use_ext_psfc ==  0:
-            p0 = -999.
+        p0 = -999.
 
     if external['nQsfc'] > 0:
         # Compute the median time interval between Tsfc measurements [minutes]
