@@ -110,7 +110,7 @@ def read_vip_file(filename,globatt,verbose,debug,dostop):
       'ext_sfc_path':'None',          # Path to the external surface met data
       'ext_sfc_time_delta':0.2,     # Maximum amount of time from endpoints of external surface met dataset to extrapolate [hours]
       'ext_sfc_relative_height':0,  # Relative height of the met station to the AERI zenith port [m]; note if met station is below AERI port then the value should be negative
-      'use_ext_psfc': 0,            # 0 - Use the internal AERI pressure sensor for psfc; 1 - use psfc from sfc met data
+      'ext_sfc_p_type': 0,          # 0 - Use the internal AERI pressure sensor for psfc; 1-ARM met data, 2-NCAR ISFS data, 3-CLAMPS MWR met data
 
       'co2_sfc_type':0,             # External CO2 surface data type: 0-none, 1-DDT QC PGS data
       'co2_sfc_npts':1,             # Number of surface CO2 in-situ points to use in the retrieval.  Minimum=1, maximum=1000.  Larger number increases the weight of the observation

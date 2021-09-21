@@ -3014,11 +3014,12 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
             sfc_wv_type, sfc_path, sfc_temp_npts, sfc_wv_npts, sfc_temp_rep_error, sfc_wv_mult_error,
             sfc_wv_rep_error, sfc_time_delta, sfc_relative_height, co2_sfc_type,
             co2_sfc_npts, co2_sfc_rep_error, co2_sfc_path, co2_sfc_relative_height,
-            co2_sfc_time_delta, use_ext_psfc, dostop, verbose):
+            co2_sfc_time_delta, sfc_p_type, dostop, verbose):
 
-    external = {'success':0, 'nTsfc':-1, 'nQsfc':-1, 'nCO2sfc':-1}
+    external = {'success':0, 'nTsfc':-1, 'nQsfc':-1, 'nPsfc':-1, 'nCO2sfc':-1}
     ttype = 'None'
     qtype = 'None'
+    ptype = 'None'
     co2type = 'None'
 
     # Some quick QC of the input entries in the VIP file
@@ -3033,10 +3034,6 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
     if co2_sfc_type > 0:
         if ((co2_sfc_npts < 1) | (maxpts < co2_sfc_npts)):
             estring = 'VIP input error; when co2_sfc_npts > 0, then 1 <= co2_sfc_npts < ' + str(maxpts)
-    if use_ext_psfc > 0:
-        if ((sfc_temp_type == 0) & (sfc_wv_type == 0)):
-            # TODO - Make this not rely on having another sfc observation
-            estring = 'VIP input error; if use_ext_psfc > 0, either ext_sfc_temp_type or ext_sfc_wv_type must be > 0'
 
     if estring != ' ':
         if verbose >= 1:
@@ -3497,6 +3494,149 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
         print('Error in read_external_tseries: Undefined external met water vapor source')
         return external
 
+    # Read the external surface pressure data next
+    # No external  source specified...
+
+    if 'sfc_p_type' == 0:
+        a = 0                # Do nothing -- read nothing -- make no noise at all
+        ptype = 'none'
+        external['nPsfc'] = 0
+
+    # Read in the ARM met water vapor data
+
+    elif sfc_p_type == 1:
+        if verbose >= 1:
+            print('Reading in ARM met pressure  data')
+
+        files = []
+        for i in range(len(dates)):
+            for j in range(len(cdf)):
+                files = files + (glob.glob(sfc_path + '/' + '*met*' + dates[i] + '*.' + cdf[j]))
+
+        if len(files) == 0:
+            if verbose >= 1:
+                print('No ARM met found in this directory for this date, using AERI psfc')
+        else:
+            for i in range(len(files)):
+                fid = Dataset(files[i], 'r')
+                bt = fid.variables['base_time'][:]
+                to = fid.variables['time_offset'][:]
+                p = fid.variables['atmos_pressure'][:]        # kPa
+                fid.close()
+                p *= 10.                 # Convert kPa to hPa
+                foo = np.where((p > 0) & (p < 1050))[0]
+                if len(foo) < 2:
+                    continue
+                p = p[foo].squeeze()
+                ptype = 'ARM met station'
+
+                # Append the data to the growing structure
+
+                if external['nPsfc'] <= 0:
+                    psecs = bt+to
+                    press = np.copy(p)
+                else:
+                    psecs = np.append(psecs,bt+to)
+                    press = np.append(press, p)
+                external['nPsfc'] = len(psecs)
+
+        # Read in the NCAR ISFS data
+
+    elif sfc_p_type == 2:
+        if verbose >= 1:
+            print('Reading in NCAR ISFS pressure data')
+
+        files = []
+        for i in range(len(dates)):
+            for j in range(len(cdf)):
+                files = files + (glob.glob(sfc_path + '/' + '*isfs*' + dates[i] + '*.' + cdf[j]))
+
+        # Some folks are creating surface met data with the same data format
+        # as the EOL ISFS dataset, but using "met" as the rootname. So if there
+        # are no ISFS files found,then try looking for met instead before aborting.
+
+        if len(files) == 0:
+           for i in range(len(dates)):
+                for j in range(len(cdf)):
+                    files = files + (glob.glob(sfc_path + '/' + '*met*' + dates[i] + '*.' + cdf[j]))
+
+        if len(files) == 0:
+            if verbose >= 1:
+                print('No NCAR ISFS met found in this directory for this date, using AERI psfc')
+
+        else:
+            for i in range(len(files)):
+                fid = Dataset(files[i],'r')
+                bt = fid.variables['base_time'][:]
+                if len(np.where(np.array(list(fid.variables.keys())) == 'time')[0]) > 0:
+                    to = fid.variables['time'][:]
+                elif len(np.where(np.array(list(fid.variables.keys())) == 'time_offset')[0]) > 0:
+                    to = fid.variables['time_offset'][:]
+                else:
+                    print('Error: Unable to find the time field in the ISFS data file')
+                    fid.close()
+                    return external
+                p = fid.variables['pres'][:]            # hPa
+
+                foo = np.where((p > 0) & (p < 1050))[0]
+                if len(foo) < 2:
+                    continue
+                to = to[foo]
+                p = p[foo]
+                ptype = 'NCAR ISFS met station'
+
+                if external['nPsfc'] <= 0:
+                    psecs = bt+to
+                    press = np.copy(p)
+                else:
+                    psecs = np.append(psecs,bt+to)
+                    press = np.append(press, p)
+                external['nPsfc'] = len(psecs)
+
+        # Read in the MWR met data
+    elif sfc_p_type == 3:
+        if verbose >= 1:
+            print('Reading in MWR met water vapor data')
+
+        names = ['mwr','met']
+        for i in range(len(dates)):
+            for j in range(len(cdf)):
+                for k in range(len(names)):
+                    files = files + (glob.glob(sfc_path + '/' + '*' + names[k] + '*' + dates[i] + '*.' + cdf[j]))
+
+        if len(files) == 0:
+            if verbose >= 1:
+                print('No MWR met found in this directory for this date, using AERI psfc')
+        else:
+            for i in range(len(files)):
+                fid = Dataset(files[i],'r')
+                bt = fid.variables['base_time'][:]
+                to = fid.variables['time_offset'][:]
+
+                #This field could be sfc_pres or p_sfc
+
+                if len(np.where(np.array(list(fid.variables.keys())) == 'sfc_pres')[0]) > 0:
+                    p = fid.variables['sfc_pres'][:]
+                elif len(np.where(np.array(list(fid.variables.keys())) == 'p_sfc')[0]) > 0:
+                    p = fid.variables['p_sfc'][:]
+                else:
+                    p = np.ones(len(to))*-999.
+
+                foo = np.where((p > 0) & (p < 1050))[0]
+                if len(foo) < 2:
+                    continue
+                to = to[foo]
+                p = p[foo]
+                ptype = 'Microwave radiometer met station'
+
+                if external['nPsfc'] <= 0:
+                    psecs = bt+to
+                    press = np.copy(p)
+                else:
+                    psecs = np.append(psecs,bt+to)
+                    press = np.append(press, p)
+                external['nPsfc'] = len(psecs)
+
     # Add on the representativeness errors that were specified
     if ((external['nTsfc'] > 0) & (sfc_temp_rep_error > 0)):
         stemp += sfc_temp_rep_error
@@ -3557,8 +3697,9 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
                 p0[foo] = press[0]
     else:
         tt0 = -999.
-        st0 = -999.
-        p0 = -999.
+        st0 = -999
+        if use_ext_psfc ==  0:
+            p0 = -999.
 
     if external['nQsfc'] > 0:
         # Compute the median time interval between Tsfc measurements [minutes]
@@ -3613,6 +3754,42 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
         qq0 = -999.
         sq0 = -999.
         p0 = -999.
+
+    if external['nPsfc'] > 0:
+        # Compute the median time interval between Psfc measurements [minutes]
+        tdel = np.nanmedian(psecs[1:len(psecs)] - psecs[0:len(psecs)-1]) / 60.
+
+        # If the median time interval is much smaller than tavg, then we will
+        # bin up the data. Otherwise, we will just interpolate linearly
+
+        if (tdel*4 < tres):
+            #Bin the data
+            p0 = np.zeros(len(secs))
+            for i in range(len(secs)):
+                foo = np.where((secs[i]-tres*60/2. <= tsecs) & (tsecs <= secs[i] + tres*60/2.))[0]
+                if len(foo) > 0:
+                    p0[i] = np.nanmean(press[foo])
+                else:
+                    p0[i] = -999.
+        else:
+            p0 = np.interp(secs,tsecs,press)
+            foo = np.where(secs < psecs[0]-sfc_time_delta*3600)[0]
+            if len(foo) > 0:
+                p0[foo] = -999.
+
+            # Make sure we did not interpolate out of bounds here.
+            foo = np.where((psecs[0]-sfc_time_delta*3600 <= secs) & (secs < psecs[0]))[0]
+            if len(foo) > 0:
+                p0[foo] = press[0]
+            n = len(psecs) - 1
+            foo = np.where(psecs[n]+sfc_time_delta*3600 < secs)[0]
+            if len(foo) > 0:
+                p0[foo] = -999.
+            foo = np.where((psecs[n] < secs) & (secs <= psecs[n]+sfc_time_delta*3600))[0]
+            if len(foo) > 0:
+                p0[foo] = press[0]
+    else:
+        p0 = -999.        
 
     # This section is for the CO2 obs
     # Read in the surface in-situ CO2 data, if desired
@@ -3774,5 +3951,6 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
           'sfc_wv_rep_error':sfc_wv_rep_error, 'sfc_wv_mult_error':sfc_wv_mult_error,
           'nCO2sfc':external['nCO2sfc'], 'co2unit':co2unit, 'nptsCO2':co2_sfc_npts,
           'co2type':co2type, 'co2':cco2a, 'sco2':scco2a, 'co2_sfc_rep_error':co2_sfc_rep_error,
-          'co2_sfc_relative_height':co2_sfc_relative_height, 'psfc': p0}
+          'co2_sfc_relative_height':co2_sfc_relative_height, 'nPsfc':external['nPsfc'],
+          'ptype':ptype, 'psfc': p0}
     return external

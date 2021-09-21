@@ -534,7 +534,7 @@ ext_tseries = Data_reads.read_external_timeseries(date, aeri['secs'], vip['tres'
               vip['ext_sfc_wv_mult_error'], vip['ext_sfc_wv_rep_error'], vip['ext_sfc_time_delta'],
               vip['ext_sfc_relative_height'], vip['co2_sfc_type'], vip['co2_sfc_npts'],
               vip['co2_sfc_rep_error'], vip['co2_sfc_path'], vip['co2_sfc_relative_height'],
-              vip['co2_sfc_time_delta'], vip['use_ext_psfc'], dostop, verbose)
+              vip['co2_sfc_time_delta'], vip['ext_sfc_p_type'], dostop, verbose)
 
 if ext_tseries['success'] != 1:
     print('Error: there is some problem in the external time series data specification')
@@ -542,8 +542,7 @@ if ext_tseries['success'] != 1:
     sys.exit()
 
 # If this is the ASSIST data, then replace the surface pressure field (which is currently
-# all missing values) with valid values for the retrieval.  Note that I am currently not
-# reading in the surface pressure from the met station, so I can't use that here (yet)
+# all missing values) with valid values for the retrieval.
 if(vip['aeri_type'] == 5):
     if(vip['assist_pressure'] < 0):
         print('    Error: When using the ASSIST data as input, the keyword "assist_pressure" must be set in the VIP file')
@@ -727,18 +726,17 @@ for i in range(len(aeri['secs'])):                        # { loop_i
     else:
         print(('Sample ' + str(i) + ' at ' + str(aeri['hour'][i]) + ' UTC is being processed (cbh is ' + str(aeri['cbh'][i]) + ' -- ' + str(cbh_string[int(np.nanmax([aeri['cbhflag'][i],0]))]) + ')'))
 
-
-    # See if we want to use the tower pressure instead of the aeri pressure
-    if vip['use_ext_psfc'] > 0:
-        print("Replacing AERI pressure with met tower pressure")
-        aeri['atmos_pres'] = ext_tseries['psfc']
-# TODO -- make sure that this replacement of the surface pressure from met station works as desired
+    # See if we want to use the external sfc pressure instead of aeri pressure
+    # and check to make sure external data read went okay
+    if ((vip['ext_sfc_p_type'] > 0) & (ext_tseries['nPsfc'] >= 0)):
+        print("Replacing AERI pressure with " +  ext_tseries['ptype'] + " pressure")
+        aeri['atmos_pres'][i] = ext_tseries['psfc'][i]
 
     # Make sure the AERI's surface pressure is a valid value, as
     # this is needed to construct a pressure profile from the current X
 
     if ((vip['station_psfc_min'] > aeri['atmos_pres'][i]) | (aeri['atmos_pres'][i] > vip['station_psfc_max'])):
-        print('Error: AERI surface pressure is not within range set in VIP -- skipping sample')
+        print('Error: Surface pressure is not within range set in VIP -- skipping sample')
         continue
 
     # Select the spectral range to use for the retrieval
