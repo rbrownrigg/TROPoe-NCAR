@@ -720,7 +720,7 @@ for i in range(len(aeri['secs'])):                        # { loop_i
         if(vip['aeri_type'] <= -1):
             itype = 'MWR'
         else:
-            ityle = 'AERI'
+            itype = 'AERI'
         print(('Sample ' + str(i) + ' at ' + str(aeri['hour'][i]) + ' UTC -- no valid '+itype+' data found'))
         continue
     else:
