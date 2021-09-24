@@ -1799,7 +1799,7 @@ def compute_jacobian_microwave_finitediff(Xn, p, z, freq, cbh, vip, workdir,
     if(sfc_alt == None): 
         sfcz=0 
     else:
-        sfcz = sfc_alt[0] / 1000.
+        sfcz = sfc_alt / 1000.
 
     # Allocate space for the Jacobian and forward calculation
     Kij = np.zeros((len(freq),len(Xn)))
@@ -1911,7 +1911,7 @@ def compute_jacobian_microwave_3method(Xn, p, z, freq, cbh, vip, workdir,
     if(sfc_alt == None): 
         sfcz=0 
     else:
-        sfcz = sfc_alt[0] / 1000.
+        sfcz = sfc_alt / 1000.
 
     # Allocate space for the Jacobian and forward calculation
     Kij = np.zeros((len(freq),len(Xn)))
@@ -2527,7 +2527,7 @@ def compute_jacobian_microwavescan_3method(Xn, p, z, mwrscan, cbh, vip, workdir,
     if(sfc_alt == None): 
         sfcz=0 
     else:
-        sfcz = sfc_alt[0] / 1000.
+        sfcz = sfc_alt / 1000.
 
     if verbose >= 2:
         print('Computing the MWR-scan Jacobian using the 3method with MonoRTM')
