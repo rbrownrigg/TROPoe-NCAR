@@ -1808,7 +1808,7 @@ def grid_mwr(mwr, avg_instant, secs, tavg, time_delta, verbose):
     else:
         twin = tavg
     # Now directly specifying the averaging time for the window
-    twin = time_delta*3600*2
+    twin = time_delta*60*2
 
     # Allocate the needed space
     pwv = np.ones(len(secs))*-999.
