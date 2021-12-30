@@ -918,10 +918,10 @@ def compute_jacobian_interpol(X, p, zz, lblhome, lbldir, lblroot, lbl_std_atmos,
     success = 0
     quiet   = 1              # this is for the lbl_read() function
 
-    version = '$Id: compute_jacobian_interpol.pro,v 1.2 2021/01/13'
+    version = '$Id: compute_jacobian_interpol.pro,v 1.5 2021/10/03'
 
     if sfc_alt is None:
-        sfcz = 0
+        sfcz = 0.
     else:
         sfcz = sfc_alt / 1000.
 
@@ -933,13 +933,13 @@ def compute_jacobian_interpol(X, p, zz, lblhome, lbldir, lblroot, lbl_std_atmos,
     stime = datetime.now()
 
     k = len(zz)
-    t = np.copy(X[0:k])                     # degC
-    w = np.copy(X[k:2*k])                   # g/kg
+    t = np.copy(X[0:k])            # degC
+    w = np.copy(X[k:2*k])          # g/kg
     lwp = X[2*k]                   # g/m2
     reffl = X[2*k+1]               # um
-    taui = X[2*k+2]                # (ice optical depth) unitless
+    taui  = X[2*k+2]               # (ice optical depth) unitless
     reffi = X[2*k+3]               # um
-    co2 =  np.copy(X[2*k+4:2*k+7])           # [ppmv,ppmv,unitless], but depends on the model used
+    co2 = np.copy(X[2*k+4:2*k+7])           # [ppmv,ppmv,unitless], but depends on the model used
     ch4 = np.copy(X[2*k+7:2*k+10])          # [ppmv,ppmv,unitless], but depends on the model used
     n2o = np.copy(X[2*k+10:2*k+13])         # [ppmv,ppmv,unitless], but depends on the model used
 
@@ -1125,7 +1125,7 @@ def compute_jacobian_interpol(X, p, zz, lblhome, lbldir, lblroot, lbl_std_atmos,
                 files2 = []
                 files2 = files2 + sorted(glob.glob(lbldir+'.2/OD*'))
                 if len(files2) != len(files1):
-                    print('This should not happen (1) in compute jacobian_interpol')
+                    print('This should not happen (1) in compute_jacobian_interpol')
                     if verbose >= 3:
                         print('The working LBLRTM directory is ' +lbldir+ '.2')
                     if debug:
@@ -1143,7 +1143,7 @@ def compute_jacobian_interpol(X, p, zz, lblhome, lbldir, lblroot, lbl_std_atmos,
                 files3 = []
                 files3 = files3 + sorted(glob.glob(lbldir+'.3/OD*'))
                 if len(files3) != len(files1):
-                    print('This should not happen (2) in compute jacobian_interpol')
+                    print('This should not happen (2) in compute_jacobian_interpol')
                     if verbose >= 3:
                         print('The working LBLRTM directory is ' +lbldir+ '.3')
                     if debug:
@@ -1161,7 +1161,7 @@ def compute_jacobian_interpol(X, p, zz, lblhome, lbldir, lblroot, lbl_std_atmos,
                 files4 = []
                 files4 = files4 + sorted(glob.glob(lbldir+'.4/OD*'))
                 if len(files4) != len(files1):
-                    print('This should not happen (3) in compute jacobian_interpol')
+                    print('This should not happen (3) in compute_jacobian_interpol')
                     if verbose >= 3:
                         print('The working LBLRTM directory is ' +lbldir+ '.4')
                     if debug:
@@ -1179,7 +1179,7 @@ def compute_jacobian_interpol(X, p, zz, lblhome, lbldir, lblroot, lbl_std_atmos,
                 files5 = []
                 files5 = files5 + sorted(glob.glob(lbldir+'.5/OD*'))
                 if len(files5) != len(files1):
-                    print('This should not happen (5) in compute jacobian_interpol')
+                    print('This should not happen (5) in compute_jacobian_interpol')
                     if verbose >= 3:
                         print('The working LBLRTM directory is ' +lbldir+ '.5')
                     if debug:
@@ -1197,7 +1197,7 @@ def compute_jacobian_interpol(X, p, zz, lblhome, lbldir, lblroot, lbl_std_atmos,
                 files6 = []
                 files6 = files6 + sorted(glob.glob(lbldir+'.6/OD*'))
                 if len(files6) != len(files1):
-                    print('This should not happen (6) in compute jacobian_interpol')
+                    print('This should not happen (6) in compute_jacobian_interpol')
                     if verbose >= 3:
                         print('The working LBLRTM directory is ' +lbldir+ '.6')
                     if debug:
@@ -1253,6 +1253,9 @@ def compute_jacobian_interpol(X, p, zz, lblhome, lbldir, lblroot, lbl_std_atmos,
     # Compute the baseline radiance
     radc0 = Other_functions.radxfer(wnum, mlayert, gasod)
     radc0 += cldrefrad              # Add the cloud reflected radiance to this value
+    tmp   = Other_functions.convolve_to_aeri(wnum, radc0)
+    Kwnum = np.copy(tmp['wnum'])
+    radc0 = np.copy(tmp['spec'])
     if doapo:
         radc0 = np.real(Other_functions.apodizer(radc0,0))
 
@@ -1353,6 +1356,8 @@ def compute_jacobian_interpol(X, p, zz, lblhome, lbldir, lblroot, lbl_std_atmos,
         # Compute the perturbed radiance
         radc1 = Other_functions.radxfer(wnum, mlayert, gasod)
         radc1 += cldrefrad
+        tmp   = Other_functions.convolve_to_aeri(wnum, radc1)
+        radc1 = np.copy(tmp['spec'])
         if doapo:
             radc1 = np.real(Other_functions.apodizer(radc1,0))
         Kij[:,2*k+4] = (radc1-radc0) / co2pert
@@ -1372,7 +1377,7 @@ def compute_jacobian_interpol(X, p, zz, lblhome, lbldir, lblroot, lbl_std_atmos,
         # Compute the perturbed radiance
         radc1 = Other_functions.radxfer(wnum, mlayert, gasod)
         radc1 += cldrefrad
-        tmp = Other_functions.convolve_to_aeri(wnum, radc1)
+        tmp   = Other_functions.convolve_to_aeri(wnum, radc1)
         radc1 = np.copy(tmp['spec'])
 
         if doapo:
@@ -1409,7 +1414,7 @@ def compute_jacobian_interpol(X, p, zz, lblhome, lbldir, lblroot, lbl_std_atmos,
             # Compute the perturbed radiance
             radc1 = Other_functions.radxfer(wnum, mlayert, gasod)
             radc1 += cldrefrad
-            tmp = Other_functions.convolve_to_aeri(wnum, radc1)
+            tmp   = Other_functions.convolve_to_aeri(wnum, radc1)
             radc1 = np.copy(tmp['spec'])
 
             if doapo:
@@ -1434,7 +1439,7 @@ def compute_jacobian_interpol(X, p, zz, lblhome, lbldir, lblroot, lbl_std_atmos,
         # Compute the perturbed radiance
         radc1 = Other_functions.radxfer(wnum, mlayert, gasod)
         radc1 += cldrefrad
-        tmp = Other_functions.convolve_to_aeri(wnum, radc1)
+        tmp   = Other_functions.convolve_to_aeri(wnum, radc1)
         radc1 = np.copy(tmp['spec'])
 
         if doapo:
@@ -1456,7 +1461,7 @@ def compute_jacobian_interpol(X, p, zz, lblhome, lbldir, lblroot, lbl_std_atmos,
         # Compute the perturbed radiance
         radc1 = Other_functions.radxfer(wnum, mlayert, gasod)
         radc1 += cldrefrad
-        tmp = Other_functions.convolve_to_aeri(wnum, radc1)
+        tmp   = Other_functions.convolve_to_aeri(wnum, radc1)
         radc1 = np.copy(tmp['spec'])
 
         if doapo:
@@ -1490,7 +1495,7 @@ def compute_jacobian_interpol(X, p, zz, lblhome, lbldir, lblroot, lbl_std_atmos,
             # Compute the perturbed radiance
             radc1 = Other_functions.radxfer(wnum, mlayert, gasod)
             radc1 += cldrefrad
-            tmp = Other_functions.convolve_to_aeri(wnum, radc1)
+            tmp   = Other_functions.convolve_to_aeri(wnum, radc1)
             radc1 = np.copy(tmp['spec'])
 
             if doapo:
@@ -1515,7 +1520,7 @@ def compute_jacobian_interpol(X, p, zz, lblhome, lbldir, lblroot, lbl_std_atmos,
         # Compute the perturbed radiance
         radc1 = Other_functions.radxfer(wnum, mlayert, gasod)
         radc1 += cldrefrad
-        tmp = Other_functions.convolve_to_aeri(wnum, radc1)
+        tmp   = Other_functions.convolve_to_aeri(wnum, radc1)
         radc1 = np.copy(tmp['spec'])
 
         if doapo:
@@ -1537,7 +1542,7 @@ def compute_jacobian_interpol(X, p, zz, lblhome, lbldir, lblroot, lbl_std_atmos,
         # Compute the perturbed radiance
         radc1 = Other_functions.radxfer(wnum, mlayert, gasod)
         radc1 += cldrefrad
-        tmp = Other_functions.convolve_to_aeri(wnum, radc1)
+        tmp   = Other_functions.convolve_to_aeri(wnum, radc1)
         radc1 = np.copy(tmp['spec'])
 
         if doapo:
@@ -1571,7 +1576,7 @@ def compute_jacobian_interpol(X, p, zz, lblhome, lbldir, lblroot, lbl_std_atmos,
             # Compute the perturbed radiance
             radc1 = Other_functions.radxfer(wnum, mlayert, gasod)
             radc1 += cldrefrad
-            tmp = Other_functions.convolve_to_aeri(wnum, radc1)
+            tmp   = Other_functions.convolve_to_aeri(wnum, radc1)
             radc1 = np.copy(tmp['spec'])
 
             if doapo:
@@ -1601,7 +1606,7 @@ def compute_jacobian_interpol(X, p, zz, lblhome, lbldir, lblroot, lbl_std_atmos,
 
         radc1 = Other_functions.radxfer(wnum, mlayert, gasod)
         radc1 += cldrefrad             # Not changing cloud reflectivity component here
-        tmp = Other_functions.convolve_to_aeri(wnum, radc1)
+        tmp   = Other_functions.convolve_to_aeri(wnum, radc1)
         radc1 = np.copy(tmp['spec'])
 
         if doapo:
@@ -1615,7 +1620,7 @@ def compute_jacobian_interpol(X, p, zz, lblhome, lbldir, lblroot, lbl_std_atmos,
 
         radc2 = Other_functions.radxfer(wnum, mlayert, gasod)
         radc2 += cldrefrad             # Not changing cloud reflectivity component here
-        tmp = Other_functions.convolve_to_aeri(wnum, radc2)
+        tmp   = Other_functions.convolve_to_aeri(wnum, radc2)
         radc2 = np.copy(tmp['spec'])
 
         if doapo:
@@ -1646,7 +1651,7 @@ def compute_jacobian_interpol(X, p, zz, lblhome, lbldir, lblroot, lbl_std_atmos,
 
         radc1 = Other_functions.radxfer(wnum, mlayert, gasod)
         radc1 += cldrefrad             # Not changing cloud reflectivity component here
-        tmp = Other_functions.convolve_to_aeri(wnum, radc1)
+        tmp   = Other_functions.convolve_to_aeri(wnum, radc1)
         radc1 = np.copy(tmp['spec'])
 
         if doapo:
@@ -1660,7 +1665,7 @@ def compute_jacobian_interpol(X, p, zz, lblhome, lbldir, lblroot, lbl_std_atmos,
 
         radc2 = Other_functions.radxfer(wnum, mlayert, gasod)
         radc2 += cldrefrad                     # Not changing cloud reflectivity component here
-        tmp = Other_functions.convolve_to_aeri(wnum, radc2)
+        tmp   = Other_functions.convolve_to_aeri(wnum, radc2)
         radc2 = np.copy(tmp['spec'])
 
         if doapo:
@@ -1676,15 +1681,16 @@ def compute_jacobian_interpol(X, p, zz, lblhome, lbldir, lblroot, lbl_std_atmos,
 
     # Cut down the Jacobian to match this spectral interval
     wpad = 5  # TODO - is this supposed to be 5?
-    foo = np.where((np.min(wnum)+wpad <= wnum) & (wnum <= np.max(wnum)-wpad))[0]
+    foo = np.where((np.min(awnum)+wpad <= Kwnum) & (Kwnum <= np.max(awnum)-wpad))[0]
     Kij = Kij[foo,:]
     radc0 = radc0[foo]
-    wnumc = wnum[foo]
+    wnumc = Kwnum[foo]
 
 
     # The forward calculation above is not as accurate as it could be, which
     # will hammer the retrieval. Improve on its accuracy here.
 
+    # TODO: DDT -- I believe that this block that recomputes the forward calculation can be removed forever.
     if lwp < forward_threshold:
         # If the LWP is less than the desired threshold then assume that
         # we don't need to worry about clouds and use the LBLRTM as the forward model
@@ -1774,7 +1780,7 @@ def compute_jacobian_interpol(X, p, zz, lblhome, lbldir, lblroot, lbl_std_atmos,
     etime = datetime.now()
     totaltime = (etime-stime).total_seconds()
     if verbose >= 3:
-        print(' It took ' + str(totaltime) + ' s to compute Jacobian (delta od)')
+        print(' It took ' + str(totaltime) + ' s to compute Jacobian (interpol)')
     success = 1
 
     return success, Kij, FXn, wnumc, version, totaltime
