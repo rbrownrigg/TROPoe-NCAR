@@ -12,7 +12,215 @@ import scipy.io
 # read_stdatmos()
 ################################################################################
 
-# TODO -- add function that write out default VIP file to stdout and exits
+
+# This is the stucture with all of the input that we need.
+# The code below will be searching the VIP input file for the same keys
+# that are listed in this structure. If a line is found with the same
+# name , then the code will determine the type for the value
+# (e.g., is the value for that key a float, string, integer, etc) and then
+# will cast the value provided in the VIP file as that.
+# There are three exceptions to this
+#   1) "Success" has the status of this routine -- it is not set by VIP file
+#   2) "aeri_calib_pres" is a 2-elements floating point array
+#   3) "vip_filename" captures the name of the input VIP file itself
+# The code will ouput how many of the keys in this structure were found.
+# Note that not all of them have to be in the VIP file; if a key in this
+# structure is not found in the VIP file then it maintains it default value
+
+maxbands = 200  # The maximum number of bands to enable for the retrieval
+
+full_vip = ({
+    'success': {'value': 0, 'comment': "Interal success flag. Not for outside use", 'default': False},
+    'tres': {'value': 0, 'comment': 'Temporal resolution [min], 0 implies native AERI temporal resolution', 'default': True},
+    'avg_instant': {'value': 0, 'comment': 'A flag to specify if this is an average (0) over the tres period, or instantaneous (1) sample (i.e. do not average the data)', 'default': True},
+    'tag': {'value': 'tropoe', 'comment': 'String for temporary files / directories\n', 'default': True},
+
+    'aeri_type': {'value': 0, 'comment': '0- output, options, and stop, 1 - ARM AERI data, 2 - dmv2cdf AERI data (C1_rnc.cdf and _sum.cdf), 3 - dmv2ncdf (C1.RNC.cdf and .SUM.cdf) , -1 - MWR data is to be used as MASTER dataset (no AERI data being read in)', 'default': True},
+    'aeri_pca_nf': {'value': 1, 'comment': '0 - AERI data was NOT PCA noise filtered, 1 - AERI data was PCA noise filtered', 'default': True},
+    'aerich1_path': {'value': "None", 'comment': 'Path to the AERI ch1 radiance files', 'default': True},
+    'aerisum_path': {'value': "None", 'comment': 'Path to the AERI summary files', 'default': True},
+    'aerieng_path': {'value': "None", 'comment': 'Path to the AERI engineering files', 'default': True},
+    'aeri_smooth_noise': {'value': 0, 'comment': 'The temporal window [minutes] used to smooth the AERI noise with time', 'default': True},
+    'aeri_calib_pres': {'value': [0.0, 1.0], 'comment': 'Intercept [mb] and slope [mb/mb to calib (newP = int = slope*obsP) (need comma between them)', 'default': True},
+    'aeri_use_missingDataFlag': {'value': 1, 'comment': 'Set this to 1 to use the field \'missingDataFlag\' (from the ch1 file) to remove bad AERI data from analysis. If not zero, then all AERI data will be processed,', 'default': True},
+    'aeri_hatch_switch': {'value': 1, 'comment': '1 - only include hatchOpen=1 when averaging, 2 - include all AERI samples when averaging', 'default': True},
+    'aeri_fv': {'value': 0.0, 'comment': 'Apply a foreoptics obscuration correction', 'default': False},
+    'aeri_fa': {'value': 0.0, 'comment': 'Apply an aftoptics obscuration correction', 'default': False},
+    'aeri_old_ffov_halfangle': {'value': 23.0, 'comment': 'Original Half angle [millirad] of the finite field of view of the instrument', 'default': False},
+    'aeri_new_ffov_halfangle': {'value': 0.0, 'comment': 'New half angle [millirad] of the finite field of view of the instrument (values} <= 0 will result in no correction being applied)', 'default': False},
+    'aeri_spectral_cal_factor': {'value': 0.0, 'comment': 'The spectral calibration stretch factor to apply to the AERI data', 'default': False},
+    'aeri_min_675_bt': {'value': 263., 'comment': 'Minimum brightness temp [K] in the 675-680 cm-1 window -- this is QC screen', 'default': True},
+    'aeri_max_675_bt': {'value': 313., 'comment': 'Maximum brightness temp [K] in the 675-680 cm-1 window -- this is QC screen\n', 'default': True},
+    'aeri_spec_cal_factor': {'value': 1.0, 'comment': ' ', 'default': False},
+
+    'station_lat': {'value': -999., 'comment': 'Station latitude [degN]; if negative get value from AERI data file', 'default': True},
+    'station_lon': {'value': -999., 'comment': 'Station longitude [degE]; if negative get value from AERI data file', 'default': True},
+    'station_alt': {'value': -999., 'comment': 'Station altitude [m MSL]; if negative get value from AERI data file', 'default': True},
+    'station_psfc_min': {'value': 800., 'comment': 'Default minimum surface pressure [mb]', 'default': True},
+    'station_psfc_max': {'value': 1030., 'comment': 'Default maximum surface pressure [mb]\n', 'default': True},
+
+    'ext_wv_prof_type': {'value': 0, 'comment': 'External WV profile source: 0-none; 1-sonde; 2-ARM Raman lidar (rlprofmr), 3-NCAR WV DIAL, 4-Model sounding', 'default': True},
+    'ext_wv_prof_path': {'value': 'None', 'comment': 'Path to the external profile of WV data', 'default': True},
+    'ext_wv_prof_minht': {'value': 0.0, 'comment': 'Minimum height to use the data from the external WV profiler [km AGL]', 'default': True},
+    'ext_wv_prof_maxht': {'value': 10.0, 'comment': 'Maximum height to use the data from the external WV profiler [km AGL]', 'default': True},
+    'ext_wv_noise_mult_val': {'value': [1.0, 1, 1.0], 'comment': '3-element comma delimited list with the multipliers to apply the noise profile of the external water vapor profile (must be > 1)', 'default': True},
+    'ext_wv_noise_mult_hts': {'value': [0.0, 3, 20], 'comment': '3-element comma delimited list with the corresponding heights for the noise multipliers [km AGL]', 'default': True},
+    'ext_wv_add_rel_error': {'value': 0.0, 'comment': 'When using the RLID, I may want to include a relative error contribution to the uncertainty to account for calibration. This is a correlated error component, and thus effects the off-diagonal elements of the observation covariance matrix. Units are [%]', 'default': True},
+    'ext_wv_time_delta': {'value': 1.0, 'comment': 'Maximum amount of time from endpoints of external WV dataset to extrapolate [hours]\n', 'default': True},
+
+    'ext_temp_prof_type': {'value': 0, 'comment': 'External temperature profile source: 0-none; 1-sonde; 2-ARM Raman lidar (rlproftemp); 4-Model sounding', 'default': True},
+    'ext_temp_prof_path': {'value': 'None', 'comment': 'Path to external profile of temp data', 'default': True},
+    'ext_temp_prof_minht': {'value': 0.0, 'comment': 'Minimum height to use the data from the external temp profiler [km AGL]', 'default': True},
+    'ext_temp_prof_maxht': {'value': 10.0, 'comment': 'Maximum height to use the data from the external temp profiler [km AGL]', 'default': True},
+    'ext_temp_noise_mult': {'value': 1.0, 'comment': 'Multiplicative value to apply the noise profile of the external temperature profile (must be >= 0)', 'default': True},
+    'ext_temp_noise_adder_val': {'value': [0.0, 0, 0], 'comment': '3-element comma delimited list of additive values to apply the noise profile of the external temperature profile (must be >= 0)', 'default': True},
+    'ext_temp_noise_adder_hts': {'value': [0.0, 3, 20], 'comment': '3-element comma delimited list with the corresponding heights for the additive value [km AGL]', 'default': True},
+    'ext_temp_time_delta': {'value': 1.0, 'comment': 'Maximum amount of time from endpoints of external temp dataset to extrapolate [hours]\n', 'default': True},
+
+    'mod_wv_prof_type': {'value': 0, 'comment': 'NWP model WV profile source: 0-none; 4-Model sounding', 'default': True},
+    'mod_wv_prof_path': {'value': 'None', 'comment': 'Path to the model profile of WV data', 'default': True},
+    'mod_wv_prof_minht': {'value': 0.0, 'comment': 'Minimum height to use the data from the model WV profiler [km AGL]', 'default': True},
+    'mod_wv_prof_maxht': {'value': 10.0, 'comment': 'Maximum height to use the data from the model WV profiler [km AGL]', 'default': True},
+    'mod_wv_noise_mult_val': {'value': [1.0, 1, 1.0], 'comment': '3-element comma delimited list with the multipliers to apply the noise profile of the model water vapor profile (must be > 1)', 'default': True},
+    'mod_wv_noise_mult_hts': {'value': [0.0, 3, 20], 'comment': '3-element comma delimited list with the corresponding heights for the noise multipliers [km AGL]', 'default': True},
+    'mod_wv_time_delta': {'value': 1.0, 'comment': 'Maximum amount of time from endpoints of model WV dataset to extrapolate [hours]\n', 'default': True},
+
+    'mod_temp_prof_type': {'value': 0, 'comment': 'NWP model temperature profile source: 0-none; 4-Model sounding', 'default': True},
+    'mod_temp_prof_path': {'value': 'None', 'comment': 'Path to the model profile of temp data', 'default': True},
+    'mod_temp_prof_minht': {'value': 0.0, 'comment': 'Minimum height to use the data from the model temp profiler [km AGL]', 'default': True},
+    'mod_temp_prof_maxht': {'value': 10.0, 'comment': 'Maximum height to use the data from the model temp profiler [km AGL]', 'default': True},
+    'mod_temp_noise_mult': {'value': 1.0, 'comment': 'Multiplicative value to apply the noise profile of the model temperature profile (must be >= 0)', 'default': True},
+    'mod_temp_noise_adder_val': {'value': [0.0, 0, 0], 'comment': '3-element comma delimited list of additive values to apply the noise profile of the model temperature profile (must be >= 0)', 'default': True},
+    'mod_temp_noise_adder_hts': {'value': [0.0, 3, 20], 'comment': '3-element comma delimited list with the corresponding heights for the additive value [km AGL]', 'default': True},
+    'mod_temp_time_delta': {'value': 1.0, 'comment': 'Maximum amount of time from endpoints of model WV dataset to extrapolate [hours]\n', 'default': True},
+
+    'ext_sfc_temp_type': {'value': 0, 'comment': 'External surface temperature met data type: 0-none, 1-ARM met data [degC], 2-NCAR ISFS data [degC], 3-CLAMPS MWR met data [degC]', 'default': True},
+    'ext_sfc_temp_npts': {'value': 1, 'comment': 'Number of surface temperature met points to use in the retrieval.  Minimum=1, maximum=1000.  Larger number increases the weight of the observation', 'default': True},
+    'ext_sfc_temp_rep_error': {'value': 0.0, 'comment': 'Representativeness error for the surface temperature measurement [degC], which is added to the typical assumed uncertainty of 0.5 degC', 'default': True},
+    'ext_sfc_wv_type': {'value': 0, 'comment': 'External surface water vapor met data type: 0-none, 1-ARM met data [g/kg], 2-NCAR ISFS data [g/kg], 3-CLAMPS MWR met data [g/kg]', 'default': True},
+    'ext_sfc_wv_npts': {'value': 1, 'comment': 'Number of surface water vapor met points to use in the retrieval.  Minimum=1, maximum=1000.  Larger number increases the weight of the observation', 'default': True},
+    'ext_sfc_wv_mult_error': {'value': 1.0, 'comment': 'Multiplier for the error in the surface water vapor measurement.  This is applied BEFORE the \'rep_error\' value', 'default': True},
+    'ext_sfc_wv_rep_error': {'value': 0.0, 'comment': 'Representativeness error for the surface water vapor measurement [g/kg], which is added to the typical assumed uncertainty of 0.5 degC and 3%RH', 'default': True},
+    'ext_sfc_path': {'value': 'None', 'comment': 'Path to the external surface met data', 'default': True},
+    'ext_sfc_time_delta': {'value': 0.2, 'comment': 'Maximum amount of time from endpoints of external surface met dataset to extrapolate [hours]', 'default': True},
+    'ext_sfc_relative_height': {'value': 0, 'comment': 'Relative height of the met station to the AERI zenith port [m]; note if met station is below AERI port then the value should be negative', 'default': True},
+    'ext_sfc_p_type': {'value': 0, 'comment': '0 - Use the internal AERI pressure sensor for psfc; 1-ARM met data, 2-NCAR ISFS data, 3-CLAMPS MWR met data\n', 'default': True},
+
+    'co2_sfc_type': {'value': 0, 'comment': 'External CO2 surface data type: 0-none, 1-DDT QC PGS data', 'default': False},
+    'co2_sfc_npts': {'value': 1, 'comment': 'Number of surface CO2 in-situ points to use in the retrieval.  Minimum=1, maximum=1000.  Larger number increases the weight of the observation', 'default': False},
+    'co2_sfc_rep_error': {'value': 0.0, 'comment': 'Representativeness error for the CO2 surface measurement [ppm], which is added to the uncertainty of the obs in the input file', 'default': False},
+    'co2_sfc_path': {'value': 'None', 'comment': 'Path to the external surface CO2 data', 'default': False},
+    'co2_sfc_relative_height': {'value': 0, 'comment': 'Relative height of the CO2 surface measurement to the AERI zenith port [m]; note if in-situ obs is below AERI port then the value should be negative', 'default': False},
+    'co2_sfc_time_delta': {'value': 1.5, 'comment': 'Maximum amount of time from endpoints of external CO2 in-situ dataset to extrapolate [hours] \n', 'default': False},
+
+    'mwr_type': {'value': 0, 'comment': '0 - none, 1 - Tb fields are individual time series, 2 - Tb field is 2-d array', 'default': True},
+    'mwr_path': {'value': 'None', 'comment': 'Path to the MWR data', 'default': True},
+    'mwr_rootname': {'value': 'mwr', 'comment': 'Rootname of the MWR data files', 'default': True},
+    'mwr_elev_field': {'value': 'elev', 'comment': 'Name of the scene mirror elevation field; use \'none\' if all data are zenith', 'default': True},
+    'mwr_n_tb_fields': {'value': 0, 'comment': 'Number of fields to read in', 'default': True},
+    'mwr_tb_field_names': {'value': 'tbsky23,tbsky31', 'comment': 'Comma separated list of field names for the Tb fields', 'default': True},
+    'mwr_tb_field1_tbmax': {'value': '100.', 'comment': 'Maximum value [K] in the first Tb field, used for QC', 'default': True},
+    'mwr_tb_freqs': {'value': '23.8,31.4', 'comment': 'Comma separated list of frequency [GHz] of MWR Tb fields', 'default': True},
+    'mwr_tb_noise': {'value': '0.3,0.3', 'comment': 'Comma separated list of noise levels [K] in the MWR Tb fields', 'default': True},
+    'mwr_tb_bias': {'value': '0.0,0.0', 'comment': 'Comma separated list of bias [K] in the MWR Tb fields; this value is ADDED to the MWR observations', 'default': True},
+    'mwr_tb_replicate': {'value': 1, 'comment': 'Number of times to replicate the obs -- this allows us to change the weight of the MWR data in the retr}ieval (useful for LWP)', 'default': True},
+    'mwr_pwv_field': {'value': 'pwv', 'comment': 'Name of the PWV field in the MWR file', 'default': True},
+    'mwr_pwv_scalar': {'value': '1.', 'comment': 'Scalar used to multiply the MWR PWV field to convert to units of [cm]', 'default': True},
+    'mwr_lwp_field': {'value': 'lwp', 'comment': 'Name of the LWP field in the MWR file', 'default': True},
+    'mwr_lwp_scalar': {'value': '1.', 'comment': 'Scalar used to multiply the MWR LWP field to convert to units of [g/m2]', 'default': True},
+    'mwr_time_delta': {'value': 0.083, 'comment': 'The maximum amount of time [hours] that the MWR zenith obs must be to the sampling time to be used \n', 'default': True},
+
+    'mwrscan_type': {'value': 0, 'comment': '0 - none, 1 - Tb fields are individual time series, 2 - Tb field is 2-d array', 'default': True},
+    'mwrscan_path': {'value': 'None', 'comment': 'Path to the MWRscan data', 'default': True},
+    'mwrscan_rootname': {'value': 'mwr', 'comment': 'Rootname of the MWRscan data files', 'default': True},
+    'mwrscan_elev_field': {'value': 'elev', 'comment': 'Name of the scene mirror elevation field; this field must exist', 'default': True},
+    'mwrscan_n_tb_fields': {'value': 0, 'comment': 'Number of fields to read in', 'default': True},
+    'mwrscan_n_elevations': {'value': 2, 'comment': 'The number of elevations to use in retrieval (put zenith obs in \'mwr_type\')', 'default': True},
+    'mwrscan_elevations': {'value': '20,160', 'comment': 'The elevation angles to use in deg, where 90 is zenith.  The code will look for these obs within the averaging interval', 'default': True},
+    'mwrscan_tb_field1_tbmax': {'value': '330.', 'comment': 'Maximum value [K] in the first Tb field, used for QC', 'default': True},
+    'mwrscan_tb_field_names': {'value': 'tbsky23,tbsky31', 'comment': 'Comma separated list of field names for the Tb fields', 'default': True},
+    'mwrscan_tb_freqs': {'value': '23.8,31.4', 'comment': 'Comma separated list of frequency [GHz] of MWR', 'default': True},
+    'mwrscan_tb_noise': {'value': '0.3,0.3', 'comment': 'Comma separated list of noise levels [K] in the MWR Tb fields', 'default': True},
+    'mwrscan_tb_bias': {'value': '0.0,0.0', 'comment': 'Comma separated list of bias [K] in the MWR Tb fields; this value is ADDED to the MWR observations', 'default': True},
+    'mwrscan_time_delta': {'value': 0.25, 'comment': 'The maximum amount of time [hours] that the elevation scan must be to the sampling time to be used.\n', 'default': True},
+
+    'rass_prof_type': {'value': 0, 'comment': '0 - none, 5 - RASS Tv field has units C (no other values work)', 'default': True},
+    'rass_prof_path': {'value': 'None', 'comment': 'Path to the RASS data', 'default': True},
+    'rass_prof_minht': {'value': 0.0, 'comment': 'Minimum height to use the data from the RASS [km AGL]', 'default': True},
+    'rass_prof_maxht': {'value': 5.0, 'comment': 'Maximum height to use the data from the RASS [km AGL]', 'default': True},
+    'rass_noise_adder_val': {'value': [0.0, 0.0, 0.0], 'comment': '3-element comma delimited list of additive values to apply the noise profile of the RASS temperature profile (must be >= 0).', 'default': True},
+    'rass_noise_adder_hts': {'value': [0.0, 3, 20], 'comment': '3-element comma delimited list with the corresponding heights for the additive value [km AGL]', 'default': True},
+    'rass_time_delta': {'value': 2.5, 'comment': 'The maximum amount of time [hours] that the RASS sample must be to the sampling time to be used. \n', 'default': True},
+
+    'cbh_type': {'value': 0, 'comment': '0 - output options and stop, 1 - VCEIL, 2 - Gregs ASOS CBH file, 3 - CLAMPS DLfp data, 4 - ARM dlprofwstats data', 'default': True},
+    'cbh_path': {'value': 'None', 'comment': 'Path to the CBH data', 'default': True},
+    'cbh_window_in': {'value': 20, 'comment': 'Inner temporal window (full-size) centered upon AERI time to look for cloud', 'default': True},
+    'cbh_window_out': {'value': 180, 'comment': 'Outer temporal window (full-size) centered upon AERI time to look for cloud}', 'default': True},
+    'cbh_default_ht': {'value': 2.0, 'comment': 'Default CBH height [km AGL], if no CBH data found \n', 'default': True},
+
+    'output_rootname': {'value': 'None', 'comment': 'String with the rootname of the output file', 'default': True},
+    'output_path': {'value': 'None', 'comment': 'Path where the output file will be placed', 'default': True},
+    'output_clobber': {'value': 0, 'comment': '0 - do not clobber preexisting output files, 1 - clobber them, 2 - append to the last file of this day', 'default': True},
+    'output_file_keep_small': {'value': 0, 'comment': '0 - all fields written; 1 - keep output file small by not including Sop, Akern, others \n', 'default': True},
+
+    'lbl_home': {'value': '/home/tropoe/vip/src/lblrtm_v12.1/lblrtm', 'comment': 'String with the LBL_HOME path (environment variable)', 'default': False},
+    'lbl_version': {'value': 'v12.1', 'comment': 'String with the version information on LBLRTM', 'default': False},
+    'lbl_temp_dir': {'value': '/tmp', 'comment': 'Temporary working directory for the retrieval', 'default': False},
+    'lbl_std_atmos': {'value': 6, 'comment': 'Standard atmosphere to use in LBLRTM and MonoRTM calcs', 'default': False},
+    'path_std_atmos': {'value': '/home/tropoe/vip/src/input/std_atmosphere.idl', 'comment': 'The path to the IDL save file with the standard atmosphere info in it', 'default': False},
+    'lbl_tape3': {'value': 'tape3.data', 'comment': 'The TAPE3 file to use in the lblrtm calculation.  Needs to be in the directory lbl_home/hitran/', 'default': False},
+    'monortm_version': {'value': 'v5.0', 'comment': 'String with the version information on MonoRTM', 'default': False},
+    'monortm_wrapper': {'value': '/home/tropoe/vip/src/monortm_v5.0/wrapper/monortm_v5', 'comment': 'Turner wrapper to run MonoRTM', 'default': False},
+    'monortm_exec': {'value': '/home/tropoe/vip/src/monortm_v5.0/monortm/monortm_v5.0_linux_gnu_sgl', 'comment': 'AERs MonoRTM executable', 'default': False},
+    'monortm_spec': {'value': '/home/tropoe/vip/src/monortm_v5.0/monolnfl_v1.0/TAPE3.spectral_lines.dat.0_55.v5.0_veryfast', 'comment': 'MonoRTM spectral database\n', 'default': False},
+
+    'lblrtm_jac_option': {'value': 3, 'comment': '1 - LBLRTM Finite Diffs, 2 - 3calc method, 3 - deltaOD method', 'default': True},
+    'lblrtm_forward_threshold': {'value': '0.', 'comment': 'The upper LWP threshold [g/m2] to use LBLRTM vs. radxfer in forward calculation', 'default': True},
+    'lblrtm_jac_interpol_npts_wnum': {'value': 10, 'comment': 'The number of points per wnum to use in the compute_jacobian_interpol() function', 'default': True},
+    'monortm_jac_option': {'value': 2, 'comment': '1 - MonoRTM Finite Diffs, 2 - 3calc method', 'default': True},
+    'jac_max_ht': {'value': 8.0, 'comment': 'Maximum height to compute the Jacobian [km AGL]', 'default': True},
+    'max_iterations': {'value': 10, 'comment': 'The maximum number of iterations to use', 'default': True},
+    'first_guess': {'value': 0, 'comment': '1 - use prior as FG, 2 - use lapse rate and 60% RH profile as FG, 3 - use previous sample as FG', 'default': True},
+    'superadiabatic_maxht': {'value': 0.300, 'comment': 'The maximum height a superadiabatic layer at the surface can have [km AGL]', 'default': True},
+    'spectral_bands': {'value': "None", 'comment': 'An array of spectral bands to use (e.g. 612-618,624-660,674-713,713-722,538-588,860.1-864.0,872.2-877.5,898.2-905.4)', 'default': True},
+    'retrieve_temp': {'value': 1, 'comment': '0 - do not retrieve temp, 1 - do retrieve temp (default)', 'default': True},
+    'retrieve_wvmr': {'value': 1, 'comment': '0 - do not retrieve wvmr, 1 - do retrieve wvmr (default)', 'default': True},
+    'retrieve_co2': {'value': 0, 'comment': '0 - do not retrieve co2, 1 - do retrieve co2 (exponential model), 2 - do retrieve co2 (step model)', 'default': False},
+    'fix_co2_shape': {'value': 0, 'comment': '(This option only works with retrieve_co2=1): 0 - retrieve all three coefs, 1 - shape coef is f(PBLH) and fixed', 'default': False},
+    'retrieve_ch4': {'value': 0, 'comment': '0 - do not retrieve ch4, 1 - do retrieve ch4 (exponential model), 2 - do retrieve co2 (step model)', 'default': False},
+    'fix_ch4_shape': {'value': 0, 'comment': '(This option only works with retrieve_ch4=1): 0 - retrieve all three coefs, 1 - shape coef is f(PBLH) and fixed', 'default': False},
+    'retrieve_n2o': {'value': 0, 'comment': '0 - do not retrieve n2o, 1 - do retrieve n2o (exponential model), 2 - do retrieve co2 (step model)', 'default': False},
+    'fix_n2o_shape': {'value': 0, 'comment': '(This option only works with retrieve_n2o=1): 0 - retrieve all three coefs, 1 - shape coef is f(PBLH) and fixed', 'default': False},
+    'retrieve_lcloud': {'value': 1, 'comment': '0 - do not retrieve liquid clouds, 1 - retrieve liquid cloud properties', 'default': True},
+    'retrieve_icloud': {'value': 0, 'comment': '0 - do not retrieve   ice  clouds, 1 - retrieve   ice  cloud properties', 'default': True},
+    'lcloud_ssp': {'value': '/home/tropoe/vip/src/input/ssp_db.mie_wat.gamma_sigma_0p100', 'comment': 'SSP file for liquid cloud properties', 'default': False},
+    'icloud_ssp': {'value': '/home/tropoe/vip/src/input/ssp_db.mie_ice.gamma_sigma_0p100', 'comment': 'SSP file for   ice  cloud properties', 'default': False},
+    'qc_rms_value': {'value': 10.0, 'comment': 'The RMS value between ((obs minus calc)/obs_uncert) spectra, with values less than this being \'good\'.  In short, if the solution is within n-sigma of the observation (where \'n\' is given by this value, then the retrieval is good', 'default': True},
+    'prior_t_ival': {'value': 1.0, 'comment': 'The prior inflation factor (>= 1) to apply at the surface for temperature', 'default': True},
+    'prior_t_iht': {'value': 1.0, 'comment': 'The height [km AGL] where the inflation factor goes to 1 (linear) for temperature', 'default': True},
+    'prior_q_ival': {'value': 1.0, 'comment': 'The prior inflation factor (>= 1) to apply at the surface for water vapor mixing ratio', 'default': True},
+    'prior_q_iht': {'value': 1.0, 'comment': 'The height [km AGL] where the inflation factor goes to 1 (linear) for water vapor mixing ratio', 'default': True},
+    'prior_tq_cov_val': {'value': 1.0, 'comment': 'A multiplicative value (0 < val <= 1) that is used to decrease the covariance in the prior between temperature and WVMR at all heights', 'default': False},
+    'prior_chimney_ht': {'value': 0.0, 'comment': 'The height of any \'chimney\' [km AGL]; prior data below this height are totally decorrelated', 'default': False},
+    'prior_co2_mn': {'value': [-1.0, 5, -5], 'comment': 'Mean co2 concentration [ppm] (see \'retrieve_co2\' above)', 'default': False},
+    'prior_co2_sd': {'value': [2.0, 15, 3], 'comment': '1-sigma uncertainty in co2 [ppm]', 'default': False},
+    'prior_ch4_mn': {'value': [1.793, 0, -5], 'comment': 'Mean ch4 concentration [ppm] (se}e \'retrieve_ch4\' above)', 'default': False},
+    'prior_ch4_sd': {'value': [0.0538, 0.0015, 3], 'comment': '1-sigma uncertainty in ch4 [ppm]', 'default': False},
+    'prior_n2o_mn': {'value': [0.310, 0, -5], 'comment': 'Mean n2o concentration [ppm] (see \'retrieve_n2o\' above)', 'default': False},
+    'prior_n2o_sd': {'value': [0.0093, 0, 3], 'comment': '1-sigma uncertainty in n2o [ppm]', 'default': False},
+    'prior_lwp_mn': {'value': 10.0, 'comment': 'Mean LWP [g/m2]', 'default': True},
+    'prior_lwp_sd': {'value': 50.0, 'comment': '1-sigma uncertainty in LWP [g/m2]', 'default': True},
+    'prior_lReff_mn': {'value': 8.0, 'comment': 'Mean liquid Reff [microns]', 'default': True},
+    'prior_lReff_sd': {'value': 4.0, 'comment': '1-sigma uncertainty in liquid Reff [microns]', 'default': True},
+    'prior_itau_mn': {'value': 1.0, 'comment': 'Mean ice cloud optical depth (geometric limit)', 'default': True},
+    'prior_itau_sd': {'value': 5.0, 'comment': '1-sigma uncertainty in ice cloud optical depth', 'default': True},
+    'prior_iReff_mn': {'value': 25.0, 'comment': 'Mean ice cloud Reff [microns]', 'default': True},
+    'prior_iReff_sd': {'value': 8.0, 'comment': '1-sigma uncertainty in ice cloud} Reff [Reff]', 'default': True},
+    'min_PBL_height': {'value': 0.3, 'comment': 'The minimum height of the planetary boundary l}ayer (used for trace gases) [km AGL]', 'default': False},
+    'max_PBL_height': {'value': 5.0, 'comment': 'The maximum height of the planetary boundary layer (used for trace gases) [km AGL]', 'default': False},
+    'nudge_PBL_height': {'value': 0.5, 'comment': 'The temperature offset (nudge) added to the surface temp to find PBL height [C]', 'default': False},
+}
+)
 
 ################################################################################
 #This routine reads in the controlling parameters from the VIP file.
@@ -20,215 +228,10 @@ import scipy.io
 
 def read_vip_file(filename,globatt,verbose,debug,dostop):
 
-    maxbands = 200 #The maximum number of bands to enable for the retrieval
-
-    # This is the stucture with all of the input that we need.
-    # The code below will be searching the VIP input file for the same keys
-    # that are listed in this structure. If a line is found with the same
-    # name , then the code will determine the type for the value
-    # (e.g., is the value for that key a float, string, integer, etc) and then
-    # will cast the value provided in the VIP file as that.
-    # There are three exceptions to this
-    #   1) "Success" has the status of this routine -- it is not set by VIP file
-    #   2) "aeri_calib_pres" is a 2-elements floating point array
-    #   3) "vip_filename" captures the name of the input VIP file itself
-    # The code will ouput how many of the keys in this structure were found.
-    # Note that not all of them have to be in the VIP file; if a key in this
-    # structure is not found in the VIP file then it maintains it default value
-
-    vip = ({'success':0,
-      'tres':0,                     #Temporal resolution [min], 0 implies native AERI temporal resolution
-      'avg_instant':0,              #A flag to specify if this is an average (0) over the tres period, or instantaneous (1) sample (i.e. do not average the data)
-      'tag':'tag',                  #String for temporary files / directories
-
-      'aeri_type':0,                # 0- output, options, and stop, 1 - ARM AERI data, 2 - dmv2cdf AERI data (C1_rnc.cdf and _sum.cdf), 3 - dmv2ncdf (C1.RNC.cdf and .SUM.cdf) , -1 - MWR data is to be used as MASTER dataset (no AERI data being read in)
-      'aeri_pca_nf':1,              # 0 - AERI data was NOT PCA noise filtered, 1 - AERI data was PCA noise filtered
-      'aerich1_path':'None',          # Path to the AERI ch1 radiance files
-      'aerisum_path':'None',          # Path to the AERI summary files
-      'aerieng_path':'None',          # Path to the AERI engineering files
-      'aeri_smooth_noise':0,        # The temporal window [minutes] used to smooth the AERI noise with time
-      'aeri_calib_pres': [0.0,1.0], # Intercept [mb] and slope [mb/mb to calib (newP = int = slope*obsP) (need comma between them)
-      'aeri_use_missingDataFlag':1, # Set this to 1 to use the field "missingDataFlag" (from the ch1 file) to remove bad AERI data from analysis. If not zero, then all AERI data will be processed,
-      'aeri_hatch_switch':1,        # 1 - only include hatchOpen=1 when averaging, 2 - include all AERI samples when averaging
-      'aeri_fv':0.0,                # Apply a foreoptics obscuration correction
-      'aeri_fa':0.0,                # Apply an aftoptics obscuration correction
-      'aeri_old_ffov_halfangle':23.0, # Original Half angle [millirad] of the finite field of view of the instrument
-      'aeri_new_ffov_halfangle':0.0,  # New half angle [millirad] of the finite field of view of the instrument (values <= 0 will result in no correction being applied)
-      'aeri_spectral_cal_factor':0.0, # The spectral calibration stretch factor to apply to the AERI data
-      'aeri_min_675_bt':263.,       # Minimum brightness temp [K] in the 675-680 cm-1 window -- this is QC screen
-      'aeri_max_675_bt':313.,       # Maximum brightness temp [K] in the 675-680 cm-1 window -- this is QC screen
-      'aeri_spec_cal_factor': 1.0,
-
-      'station_lat':-999.,             # Station latitude [degN]; if negative get value from AERI data file
-      'station_lon':-999.,             # Station longitude [degE]; if negative get value from AERI data file
-      'station_alt':-999.,             # Station altitude [m MSL]; if negative get value from AERI data file
-      'station_psfc_min':800.,         # Default minimum surface pressure [mb]
-      'station_psfc_max':1030.,        # Default maximum surface pressure [mb]
-
-      'ext_wv_prof_type':0,         # External WV profile source: 0-none; 1-sonde; 2-ARM Raman lidar (rlprofmr), 3-NCAR WV DIAL, 4-Model sounding
-      'ext_wv_prof_path':'None',      # Path to the external profile of WV data
-      'ext_wv_prof_minht':0.0,      # Minimum height to use the data from the external WV profiler [km AGL]
-      'ext_wv_prof_maxht':10.0,     # Maximum height to use the data from the external WV profiler [km AGL]
-      'ext_wv_noise_mult_val':[1.0,1,1.0], # 3-element comma delimited list with the multipliers to apply the noise profile of the external water vapor profile (must be > 1)
-      'ext_wv_noise_mult_hts':[0.0,3,20],  # 3-element comma delimited list with the corresponding heights for the noise multipliers [km AGL]
-      'ext_wv_add_rel_error':0.0,   # When using the RLID, I may want to include a relative error contribution to the uncertainty to account for calibration. This is a correlated error component, and thus effects the off-diagonal elements of the observation covariance matrix. Units are [%]
-      'ext_wv_time_delta':1.0,      # Maximum amount of time from endpoints of external WV dataset to extrapolate [hours]
-
-      'ext_temp_prof_type':0,       # External temperature profile source: 0-none; 1-sonde; 2-ARM Raman lidar (rlproftemp); 4-Model sounding
-      'ext_temp_prof_path':'None',    # Path to external profile of temp data
-      'ext_temp_prof_minht':0.0,    # Minimum height to use the data from the external temp profiler [km AGL]
-      'ext_temp_prof_maxht':10.0,   # Maximum height to use the data from the external temp profiler [km AGL]
-      'ext_temp_noise_mult':1.0,    # Multiplicative value to apply the noise profile of the external temperature profile (must be >= 0)
-      'ext_temp_noise_adder_val':[0.0,0,0], # 3-element comma delimited list of additive values to apply the noise profile of the external temperature profile (must be >= 0)
-      'ext_temp_noise_adder_hts':[0.0,3,20], # 3-element comma delimited list with the corresponding heights for the additive value [km AGL]
-      'ext_temp_time_delta':1.0,    # Maximum amount of time from endpoints of external temp dataset to extrapolate [hours]
-
-      'mod_wv_prof_type':0,         # NWP model WV profile source: 0-none; 4-Model sounding
-      'mod_wv_prof_path':'None',      # Path to the model profile of WV data
-      'mod_wv_prof_minht':0.0,      # Minimum height to use the data from the model WV profiler [km AGL]
-      'mod_wv_prof_maxht':10.0,     # Maximum height to use the data from the model WV profiler [km AGL]
-      'mod_wv_noise_mult_val':[1.0,1,1.0], # 3-element comma delimited list with the multipliers to apply the noise profile of the model water vapor profile (must be > 1)
-      'mod_wv_noise_mult_hts':[0.0,3,20],  # 3-element comma delimited list with the corresponding heights for the noise multipliers [km AGL]
-      'mod_wv_time_delta':1.0,      # Maximum amount of time from endpoints of model WV dataset to extrapolate [hours]
-
-      'mod_temp_prof_type':0,       # NWP model temperature profile source: 0-none; 4-Model sounding
-      'mod_temp_prof_path':'None',    # Path to the model profile of temp data
-      'mod_temp_prof_minht':0.0,    # Minimum height to use the data from the model temp profiler [km AGL]
-      'mod_temp_prof_maxht':10.0,   # Maximum height to use the data from the model temp profiler [km AGL]
-      'mod_temp_noise_mult':1.0,    # Multiplicative value to apply the noise profile of the model temperature profile (must be >= 0)
-      'mod_temp_noise_adder_val':[0.0,0,0], # 3-element comma delimited list of additive values to apply the noise profile of the model temperature profile (must be >= 0)
-      'mod_temp_noise_adder_hts':[0.0,3,20], # 3-element comma delimited list with the corresponding heights for the additive value [km AGL]
-      'mod_temp_time_delta':1.0,    # Maximum amount of time from endpoints of model WV dataset to extrapolate [hours]
-
-      'ext_sfc_temp_type':0,        # External surface temperature met data type: 0-none, 1-ARM met data [degC], 2-NCAR ISFS data [degC], 3-CLAMPS MWR met data [degC]
-      'ext_sfc_temp_npts':1,        # Number of surface temperature met points to use in the retrieval.  Minimum=1, maximum=1000.  Larger number increases the weight of the observation
-      'ext_sfc_temp_rep_error':0.0, # Representativeness error for the surface temperature measurement [degC], which is added to the typical assumed uncertainty of 0.5 degC
-      'ext_sfc_wv_type':0,          # External surface water vapor met data type: 0-none, 1-ARM met data [g/kg], 2-NCAR ISFS data [g/kg], 3-CLAMPS MWR met data [g/kg]
-      'ext_sfc_wv_npts':1,          # Number of surface water vapor met points to use in the retrieval.  Minimum=1, maximum=1000.  Larger number increases the weight of the observation
-      'ext_sfc_wv_mult_error':1.0,  # Multiplier for the error in the surface water vapor measurement.  This is applied BEFORE the "rep_error" value
-      'ext_sfc_wv_rep_error':0.0,   # Representativeness error for the surface water vapor measurement [g/kg], which is added to the typical assumed uncertainty of 0.5 degC and 3%RH
-      'ext_sfc_path':'None',          # Path to the external surface met data
-      'ext_sfc_time_delta':0.2,     # Maximum amount of time from endpoints of external surface met dataset to extrapolate [hours]
-      'ext_sfc_relative_height':0,  # Relative height of the met station to the AERI zenith port [m]; note if met station is below AERI port then the value should be negative
-      'ext_sfc_p_type': 0,          # 0 - Use the internal AERI pressure sensor for psfc; 1-ARM met data, 2-NCAR ISFS data, 3-CLAMPS MWR met data
-
-      'co2_sfc_type':0,             # External CO2 surface data type: 0-none, 1-DDT QC PGS data
-      'co2_sfc_npts':1,             # Number of surface CO2 in-situ points to use in the retrieval.  Minimum=1, maximum=1000.  Larger number increases the weight of the observation
-      'co2_sfc_rep_error':0.0,      # Representativeness error for the CO2 surface measurement [ppm], which is added to the uncertainty of the obs in the input file
-      'co2_sfc_path':'None',          # Path to the external surface CO2 data
-      'co2_sfc_relative_height':0,  # Relative height of the CO2 surface measurement to the AERI zenith port [m]; note if in-situ obs is below AERI port then the value should be negative
-      'co2_sfc_time_delta':1.5,     # Maximum amount of time from endpoints of external CO2 in-situ dataset to extrapolate [hours]
-
-      'mwr_type':0,                 # 0 - none, 1 - Tb fields are individual time series, 2 - Tb field is 2-d array
-      'mwr_path':'None',              # Path to the MWR data
-      'mwr_rootname':'mwr',         # Rootname of the MWR data files
-      'mwr_elev_field':'elev',      # Name of the scene mirror elevation field; use "none" if all data are zenith
-      'mwr_n_tb_fields':0,          # Number of fields to read in
-      'mwr_tb_field_names':'tbsky23,tbsky31', # Comma separated list of field names for the Tb fields
-      'mwr_tb_field1_tbmax':100.,   # Maximum value [K] in the first Tb field, used for QC
-      'mwr_tb_freqs': '23.8,31.4',   # Comma separated list of frequency [GHz] of MWR Tb fields
-      'mwr_tb_noise':'0.3,0.3',     # Comma separated list of noise levels [K] in the MWR Tb fields
-      'mwr_tb_bias':'0.0,0.0',      # Comma separated list of bias [K] in the MWR Tb fields; this value is ADDED to the MWR observations
-      'mwr_tb_replicate':1,         # Number of times to replicate the obs -- this allows us to change the weight of the MWR data in the retrieval (useful for LWP)
-      'mwr_pwv_field':'pwv',        # Name of the PWV field in the MWR file
-      'mwr_pwv_scalar':1.,          # Scalar used to multiply the MWR PWV field to convert to units of [cm]
-      'mwr_lwp_field':'lwp',        # Name of the LWP field in the MWR file
-      'mwr_lwp_scalar':1.,          # Scalar used to multiply the MWR LWP field to convert to units of [g/m2]
-      'mwr_time_delta':0.083,       # The maximum amount of time [hours] that the MWR zenith obs must be to the sampling time to be used
-
-      'mwrscan_type':0,             # 0 - none, 1 - Tb fields are individual time series, 2 - Tb field is 2-d array
-      'mwrscan_path':'None',          # Path to the MWRscan data
-      'mwrscan_rootname':'mwr',     # Rootname of the MWRscan data files
-      'mwrscan_elev_field':'elev',  # Name of the scene mirror elevation field; this field must exist
-      'mwrscan_n_tb_fields':0,      # Number of fields to read in
-      'mwrscan_n_elevations':2,     # The number of elevations to use in retrieval (put zenith obs in "mwr_type")
-      'mwrscan_elevations':'20,160', # The elevation angles to use in deg, where 90 is zenith.  The code will look for these obs within the averaging interval
-      'mwrscan_tb_field1_tbmax':330., # Maximum value [K] in the first Tb field, used for QC
-      'mwrscan_tb_field_names':'tbsky23,tbsky31', # Comma separated list of field names for the Tb fields
-      'mwrscan_tb_freqs':'23.8,31.4', # Comma separated list of frequency [GHz] of MWR
-      'mwrscan_tb_noise':'0.3,0.3',  # Comma separated list of noise levels [K] in the MWR Tb fields
-      'mwrscan_tb_bias':'0.0,0.0',   # Comma separated list of bias [K] in the MWR Tb fields; this value is ADDED to the MWR observations
-      'mwrscan_time_delta':0.25,     # The maximum amount of time [hours] that the elevation scan must be to the sampling time to be used.
-
-      'rass_prof_type':0,           # 0 - none, 5 - RASS Tv field has units C (no other values work)
-      'rass_prof_path':'None',      # Path to the RASS data
-      'rass_prof_minht':0.0,        # Minimum height to use the data from the RASS [km AGL]
-      'rass_prof_maxht':5.0,        # Maximum height to use the data from the RASS [km AGL]
-      'rass_noise_adder_val':[0.0,0.0,0.0],  # 3-element comma delimited list of additive values to apply the noise profile of the RASS temperature profile (must be >= 0).
-      'rass_noise_adder_hts':[0.0,3,20],     # 3-element comma delimited list with the corresponding heights for the additive value [km AGL]
-      'rass_time_delta':2.5,                 # The maximum amount of time [hours] that the RASS sample must be to the sampling time to be used.
-
-      'cbh_type':0,                  # 0 - output options and stop, 1 - VCEIL, 2 - Gregs ASOS CBH file, 3 - CLAMPS DLfp data, 4 - ARM dlprofwstats data
-      'cbh_path':'None',               # Path to the CBH data
-      'cbh_window_in':20,            # Inner temporal window (full-size) centered upon AERI time to look for cloud
-      'cbh_window_out':180,          # Outer temporal window (full-size) centered upon AERI time to look for cloud
-      'cbh_default_ht':2.0,          # Default CBH height [km AGL], if no CBH data found
-
-      'output_rootname':'None',        # String with the rootname of the output file
-      'output_path':'None',            # Path where the output file will be placed
-      'output_clobber':0,            # 0 - do not clobber preexisting output files, 1 - clobber them, 2 - append to the last file of this day
-      'output_file_keep_small':0,    # 0 - all fields written; 1 - keep output file small by not including Sop, Akern, others
-
-      'lbl_home':'/home/tropoe/vip/src/lblrtm_v12.1/lblrtm',               # String with the LBL_HOME path (environment variable)
-      'lbl_version':'v12.1',         # String with the version information on LBLRTM
-      'lbl_temp_dir':'/tmp',         # Temporary working directory for the retrieval
-      'lbl_std_atmos':6,             # Standard atmosphere to use in LBLRTM and MonoRTM calcs
-      'path_std_atmos':'/home/tropoe/vip/src/input/std_atmosphere.idl', # The path to the IDL save file with the standard atmosphere info in it
-      'lbl_tape3':'tape3.data',      # The TAPE3 file to use in the lblrtm calculation.  Needs to be in the directory lbl_home/hitran/
-      'monortm_version':'v5.0',        # String with the version information on MonoRTM
-      'monortm_wrapper':'/home/tropoe/vip/src/monortm_v5.0/wrapper/monortm_v5', # Turner wrapper to run MonoRTM
-      'monortm_exec':'/home/tropoe/vip/src/monortm_v5.0/monortm/monortm_v5.0_linux_gnu_sgl', # AERs MonoRTM executable
-      'monortm_spec':'/home/tropoe/vip/src/monortm_v5.0/monolnfl_v1.0/TAPE3.spectral_lines.dat.0_55.v5.0_veryfast', # MonoRTM spectral database
-
-      'lblrtm_jac_option':3,         # 1 - LBLRTM Finite Diffs, 2 - 3calc method, 3 - deltaOD method
-      'lblrtm_forward_threshold':0., # The upper LWP threshold [g/m2] to use LBLRTM vs. radxfer in forward calculation
-      'lblrtm_jac_interpol_npts_wnum':10, # The number of points per wnum to use in the compute_jacobian_interpol() function
-      'monortm_jac_option':2,        # 1 - MonoRTM Finite Diffs, 2 - 3calc method
-      'jac_max_ht':8.0,             # Maximum height to compute the Jacobian [km AGL]
-      'max_iterations':10,           # The maximum number of iterations to use
-      'first_guess':0,               # 1 - use prior as FG, 2 - use lapse rate and 60% RH profile as FG, 3 - use previous sample as FG
-      'superadiabatic_maxht':0.300,  # The maximum height a superadiabatic layer at the surface can have [km AGL]
-      'spectral_bands':np.zeros((2,maxbands)), # An array of spectral bands to use
-      'retrieve_temp':1,             # 0 - do not retrieve temp, 1 - do retrieve temp (default)
-      'retrieve_wvmr':1,             # 0 - do not retrieve wvmr, 1 - do retrieve wvmr (default)
-      'retrieve_co2':0,              # 0 - do not retrieve co2, 1 - do retrieve co2 (exponential model), 2 - do retrieve co2 (step model)
-      'fix_co2_shape':0,             # (This option only works with retrieve_co2=1): 0 - retrieve all three coefs, 1 - shape coef is f(PBLH) and fixed
-      'retrieve_ch4':0,              # 0 - do not retrieve ch4, 1 - do retrieve ch4 (exponential model), 2 - do retrieve co2 (step model)
-      'fix_ch4_shape':0,             # (This option only works with retrieve_ch4=1): 0 - retrieve all three coefs, 1 - shape coef is f(PBLH) and fixed
-      'retrieve_n2o':0,             # 0 - do not retrieve n2o, 1 - do retrieve n2o (exponential model), 2 - do retrieve co2 (step model)
-      'fix_n2o_shape':0,            # (This option only works with retrieve_n2o=1): 0 - retrieve all three coefs, 1 - shape coef is f(PBLH) and fixed
-      'retrieve_lcloud':1,           # 0 - do not retrieve liquid clouds, 1 - retrieve liquid cloud properties
-      'retrieve_icloud':0,           # 0 - do not retrieve   ice  clouds, 1 - retrieve   ice  cloud properties
-      'lcloud_ssp':'/home/tropoe/vip/src/input/ssp_db.mie_wat.gamma_sigma_0p100',  # SSP file for liquid cloud properties
-      'icloud_ssp':'/home/tropoe/vip/src/input/ssp_db.mie_ice.gamma_sigma_0p100',  # SSP file for   ice  cloud properties
-      'qc_rms_value':10.0,            # The RMS value between ((obs minus calc)/obs_uncert) spectra, with values less than this being "good".  In short, if the solution is within n-sigma of the observation (where "n" is given by this value, then the retrieval is good
-      'prior_t_ival':1.0,            # The prior inflation factor (>= 1) to apply at the surface for temperature
-      'prior_t_iht':1.0,             # The height [km AGL] where the inflation factor goes to 1 (linear) for temperature
-      'prior_q_ival':1.0,            # The prior inflation factor (>= 1) to apply at the surface for water vapor mixing ratio
-      'prior_q_iht':1.0,             # The height [km AGL] where the inflation factor goes to 1 (linear) for water vapor mixing ratio
-      'prior_tq_cov_val':1.0,        # A multiplicative value (0 < val <= 1) that is used to decrease the covariance in the prior between temperature and WVMR at all heights
-      'prior_chimney_ht':0.0,        # The height of any "chimney" [km AGL]; prior data below this height are totally decorrelated
-      'prior_co2_mn':[-1.0, 5, -5],  # Mean co2 concentration [ppm] (see "retrieve_co2" above)
-      'prior_co2_sd':[ 2.0, 15,  3], # 1-sigma uncertainty in co2 [ppm]
-      'prior_ch4_mn':[1.793, 0, -5], # Mean ch4 concentration [ppm] (see "retrieve_ch4" above)
-      'prior_ch4_sd':[0.0538, 0.0015,  3], # 1-sigma uncertainty in ch4 [ppm]
-      'prior_n2o_mn':[0.310,  0, -5], # Mean n2o concentration [ppm] (see "retrieve_n2o" above)
-      'prior_n2o_sd':[0.0093, 0.00026,  3], # 1-sigma uncertainty in n2o [ppm]
-      'prior_lwp_mn':10.0,            # Mean LWP [g/m2]
-      'prior_lwp_sd':50.0,            # 1-sigma uncertainty in LWP [g/m2]
-      'prior_lReff_mn':8.0,           # Mean liquid Reff [microns]
-      'prior_lReff_sd':4.0,           # 1-sigma uncertainty in liquid Reff [microns]
-      'prior_itau_mn':1.0,            # Mean ice cloud optical depth (geometric limit)
-      'prior_itau_sd':5.0,            # 1-sigma uncertainty in ice cloud optical depth
-      'prior_iReff_mn':25.0,          # Mean ice cloud Reff [microns]
-      'prior_iReff_sd':8.0,           # 1-sigma uncertainty in ice cloud Reff [Reff]
-      'min_PBL_height':0.3,           # The minimum height of the planetary boundary layer (used for trace gases) [km AGL]
-      'max_PBL_height':5.0,           # The maximum height of the planetary boundary layer (used for trace gases) [km AGL]
-      'nudge_PBL_height':0.5,         # The temperature offset (nudge) added to the surface temp to find PBL height [C]
-      'vip_filename':'None'}          # Just for tracability
-      )
-
-    # Read in the file all at once
+    # Read in the all the values from the full vip dict and create a smaller vip file
+    vip = {}
+    for key in full_vip.keys():
+        vip[key] = full_vip[key]['value']
 
     if os.path.exists(filename):
 
