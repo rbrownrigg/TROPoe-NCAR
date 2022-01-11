@@ -8,6 +8,7 @@ from netCDF4 import Dataset
 
 import Other_functions
 import Calcs_Conversions
+import VIP_Databases_functions
 
 ################################################################################
 # This file contains the following functions:
@@ -18,13 +19,37 @@ import Calcs_Conversions
 ################################################################################
 # This function will write out an example VIP file, and then stop
 ################################################################################
-def write_example_vip_file():
-        # TODO: Tyler -- fill this in
-        #    Perhaps only write out the "standard" VIP key/value options, 
-        #    not the ones that are extreme "sciency"
-        #    I.e., make a "ignore" variable
+def write_example_vip_file(experimental=False, console=False):
+
+    # Grab the full vip from VIP_Databases_functions
+    vip = VIP_Databases_functions.full_vip.copy()
+
+    # build a list of vip entries
+    # output_lines = [f"{key}: {data['value']} # {data['comment']}" for key, data in vip.items() if data['default'] is True]
+    output_lines = []
+    for key, data in vip.items():
+        # See if the value is a list. If so change to a string to keep things consistent
+        if type(data['value']) is list:
+            data['value'] = str(data['value'])[1:-1]  # Convert to string and remove the brackets
+
+        if experimental:
+            output_lines.append(f"{key} = {data['value']} # {data['comment']}")
+        elif not experimental and data['default']:
+            output_lines.append(f"{key} = {data['value']} # {data['comment']}")
+        else:
+            continue
+
+    # Write out the default vip to a file
+    with open('default_pyVIP.txt', 'w') as fh:
+        for line in output_lines:
+            fh.write(line + '\n')
+
+    # If desired, write to console
+    if console:
+        for l in output_lines:
+            print(l)
+
     sys.exit()
-    return
 
 ################################################################################
 # This function takes all of the entries in the VIP structure, and makes

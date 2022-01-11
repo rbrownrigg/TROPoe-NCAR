@@ -5,8 +5,6 @@
 # hook feature. You can configure this in .git/hooks/pre-commit
 #
 
-
-
 # Get the version from git describe
 set VERSION = `git describe --tags `
 

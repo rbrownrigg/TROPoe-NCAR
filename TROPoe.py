@@ -1,4 +1,4 @@
-__version__ = '0.2.57'
+__version__ = '0.2.69'
 
 import os
 import sys
@@ -19,6 +19,18 @@ import Calcs_Conversions
 import Data_reads
 import Jacobian_Functions
 import Output_Functions
+
+# Check to see if we are just writing out a blank vip
+if '--vip' in sys.argv:
+    # Write out a default vip file
+    print("Writing default vip file to console")
+
+    if '--experimental' in sys.argv:
+        Output_Functions.write_example_vip_file(console=True, experimental=True)
+    else:
+        Output_Functions.write_example_vip_file(console=True)
+
+    sys.exit()
 
 #Create parser for command line arguments
 parser = ArgumentParser()
