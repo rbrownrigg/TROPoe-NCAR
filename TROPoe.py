@@ -142,7 +142,7 @@ print(('>>> Starting TROPoe retrieval for ' + str(date) + ' (from ' + str(shour)
 vip = VIP_Databases_functions.read_vip_file(vip_filename, globatt = globatt, debug = debug, verbose = verbose, dostop = dostop)
 
 if vip['success'] != 1:
-    print(('>>> AERI retrieval on ' + str(date) + ' FAILED and ABORTED <<<'))
+    print(('>>> TROPoe retrieval on ' + str(date) + ' FAILED and ABORTED <<<'))
     print('--------------------------------------------------------------------')
     print(' ')
     sys.exit()
@@ -163,7 +163,7 @@ if debug:
 if not os.path.exists(vip['lbl_home'] + '/bin/lblrun'):
     print('Error: Unable to find the script "lblrun" in the "lbl_home"/bin directory')
     print('This is a critical component of the LBLRTM configuration - aborting')
-    print(('>>> AERI retrieval on ' + str(date) + ' FAILED and ABORTED <<<'))
+    print(('>>> TROPoe retrieval on ' + str(date) + ' FAILED and ABORTED <<<'))
     print('--------------------------------------------------------------------')
     print(' ')
     sys.exit()
@@ -171,7 +171,7 @@ if not os.path.exists(vip['lbl_home'] + '/bin/lblrun'):
 # Check if the prior data exists
 if not os.path.exists(prior_filename):
     print(('Error: Unable to find the prior data file: ' + prior_filename))
-    print(('>>> AERI retrieval on ' + str(date) + ' FAILED and ABORTED <<<'))
+    print(('>>> TROPoe retrieval on ' + str(date) + ' FAILED and ABORTED <<<'))
     print('--------------------------------------------------------------------')
     print(' ')
     sys.exit()
@@ -182,7 +182,7 @@ print(('Using the prior file: ' + prior_filename))
 # Make sure that the output directory exists
 if not os.path.exists(vip['output_path']):
     print('Error: The output directory does not exist')
-    print(('>>> AERI retrieval on ' + str(date) + ' FAILED and ABORTED <<<'))
+    print(('>>> TROPoe retrieval on ' + str(date) + ' FAILED and ABORTED <<<'))
     print('--------------------------------------------------------------------')
     print(' ')
     sys.exit()
@@ -196,7 +196,7 @@ if vip['lbl_temp_dir'][0] == '$':
     tmpdir = os.getenv(envpath[0])
     if not tmpdir:
         print('Error: The LBLRTM temporary directory is being set to an environment variable that does not exist')
-        print(('>>> AERI retrieval on ' + str(date) + ' FAILED and ABORTED <<<'))
+        print(('>>> TROPoe retrieval on ' + str(date) + ' FAILED and ABORTED <<<'))
         print('--------------------------------------------------------------------')
         print(' ')
         sys.exit()
@@ -213,7 +213,7 @@ try:
     os.makedirs(lbltmpdir)
 except:
     print('Error making the temporary directory')
-    print(('>>> AERI retrieval on ' + str(date) + ' FAILED and ABORTED <<<'))
+    print(('>>> TROPoe retrieval on ' + str(date) + ' FAILED and ABORTED <<<'))
     print('--------------------------------------------------------------------')
     print(' ')
 
@@ -309,8 +309,8 @@ modeflag = [dotemp, dowvmr, dolcloud, dolcloud, doicloud, doicloud, doco2, doch4
 # Select the LBLRTM version to use
 print(' ')
 print(('Working with the LBLRTM version ' + vip['lbl_version']))
-print(('in the directory ' + vip['lbl_home']))
-print(('and the TAPE3 file ' + vip['lbl_tape3']))
+print(('  in the directory ' + vip['lbl_home']))
+print(('  and the TAPE3 file ' + vip['lbl_tape3']))
 print(' ')
 
 # Quick check: make sure the LBLRTM path is properly set
@@ -374,7 +374,7 @@ if vip['mwr_type'] > 0:
 
 # Echo to the user the type of retrieval being performed
 print(' ')
-tmp = '  Retrieving: '
+tmp = 'Retrieving: '
 if dotemp == 1:
     tmp = tmp + 'T '
 if dowvmr == 1:
@@ -390,7 +390,7 @@ if doch4 == 1:
 if don2o == 1:
     tmp = tmp + 'N2O '
 print(tmp)
-
+print(' ')
 
 # Read in the a priori covariance matrix of T/Q for this study
 nsonde_prior = -1
@@ -615,7 +615,7 @@ if ((nfooco2 > 0) | (nfooch4 > 0) | (nfoon2o > 0)):
 # I am assuming no correlations between the TGs and clouds and the T/Q profiles
 # The state vector is going to be defined to be:
 # X = [T(z), q(z), LWP, ReL, tauI, ReI, CO2(3), CH4(3), N2O(3)
-minsd = 1e-14
+minsd = 1e-5        # Smallest value that doesn't result in problems in the matrix inversions below
 diag = np.diag([np.max([vip['prior_lwp_sd'],minsd])**2,           # LWP : index 0
                np.max([vip['prior_lReff_sd'],minsd])**2,         # liquid Reff : index 1
                np.max([vip['prior_itau_sd'],minsd])**2,          # ice optical depth : index 2
@@ -721,11 +721,11 @@ for i in range(len(aeri['secs'])):                        # { loop_i
             itype = 'MWR'
         else:
             itype = 'AERI'
-        print(('Sample ' + str(i) + ' at ' + str(aeri['hour'][i]) + ' UTC -- no valid '+itype+' data found'))
+        print(f"  Sample {i:2d} at {aeri['hour'][i]:.4f} UTC -- no valid {itype:s} data found")
         continue
     else:
-        print(('Sample ' + str(i) + ' at ' + str(aeri['hour'][i]) + ' UTC is being processed (cbh is ' + str(aeri['cbh'][i]) + ' -- ' + str(cbh_string[int(np.nanmax([aeri['cbhflag'][i],0]))]) + ')'))
-    
+        print(f"  Sample {i:2d} at {aeri['hour'][i]:.4f} UTC is being processed (cbh is {aeri['cbh'][i]:.3f})")
+
     # See if we want to use the external sfc pressure instead of aeri pressure
     # and check to make sure external data read went okay
     if ((vip['ext_sfc_p_type'] > 0) & (ext_tseries['nPsfc'] >= 0)):
@@ -1214,9 +1214,10 @@ for i in range(len(aeri['secs'])):                        # { loop_i
                            cbh, sspl, sspi, lblwnum1, lblwnum2,
                            fixtemp, fixwvmr, doco2, doch4, don2o, fixlcloud, fixicloud,
                            vip['fix_co2_shape'], vip['fix_ch4_shape'], vip['fix_n2o_shape'],
-                           vip['jac_max_ht'], vip['lblrtm_forward_threshold'],
+                           vip['jac_max_ht'], aeri['wnum'], vip['lblrtm_forward_threshold'],
                            location['alt'], rt_extra_layers, stdatmos, vip['lblrtm_jac_interpol_npts_wnum'], 
                            verbose, debug, doapodize=True)
+                print(f'        DDT - compute_jacobian_interpol took {totaltime:.1f} seconds')
         else:
             print('Error: Undefined jacobian option selected')
             VIP_Databases_functions.abort(lbltmpdir,date)
@@ -1654,13 +1655,28 @@ for i in range(len(aeri['secs'])):                        # { loop_i
             gfac = gfactor[itern]
 
         # Retrieval Calculations
-        B = (gfac * SaInv) + Kij.T.dot(SmInv).dot(Kij)
-        Binv = scipy.linalg.pinv2(B)
-        Gain = Binv.dot(Kij.T).dot(SmInv)
-        Xnp1 = Xa[:,None] + Gain.dot(Y[:,None] - FXn[:,None] + Kij.dot((Xn-Xa)[:,None]))
-        Sop = Binv.dot(gfac*gfac*SaInv + Kij.T.dot(SmInv).dot(Kij)).dot(Binv)
+        B      = (gfac * SaInv) + Kij.T.dot(SmInv).dot(Kij)
+        Binv   = scipy.linalg.pinv2(B)
+        Gain   = Binv.dot(Kij.T).dot(SmInv)
+        Xnp1   = Xa[:,None] + Gain.dot(Y[:,None] - FXn[:,None] + Kij.dot((Xn-Xa)[:,None]))
+        Sop    = Binv.dot(gfac*gfac*SaInv + Kij.T.dot(SmInv).dot(Kij)).dot(Binv)
         SopInv = scipy.linalg.pinv2(Sop)
-        Akern = Binv.dot(Kij.T).dot(SmInv).dot(Kij)
+        Akern  = (Binv.dot(Kij.T).dot(SmInv).dot(Kij)).T
+
+        if(vip['max_iterations'] == 0):
+            print('DDT -- writing variables from retrieval calcs in the directory '+vip['lbl_temp_dir'])
+            Output_Functions.write_variable(B,vip['lbl_temp_dir']+'/output_B.cdf')
+            Output_Functions.write_variable(SaInv,vip['lbl_temp_dir']+'/output_SaInv.cdf')
+            Output_Functions.write_variable(SmInv,vip['lbl_temp_dir']+'/output_SmInv.cdf')
+            Output_Functions.write_variable(Kij,vip['lbl_temp_dir']+'/output_Kij.cdf')
+            Output_Functions.write_variable(gfac,vip['lbl_temp_dir']+'/output_gfac.cdf')
+            Output_Functions.write_variable(Xa,vip['lbl_temp_dir']+'/output_Xa.cdf')
+            Output_Functions.write_variable(Gain,vip['lbl_temp_dir']+'/output_Gain.cdf')
+            Output_Functions.write_variable(Sop,vip['lbl_temp_dir']+'/output_Sop.cdf')
+            Output_Functions.write_variable(FXn,vip['lbl_temp_dir']+'/output_FXn.cdf')
+            Output_Functions.write_variable(Xnp1,vip['lbl_temp_dir']+'/output_Xnp1.cdf')
+            Output_Functions.write_variable(Akern,vip['lbl_temp_dir']+'/output_Akern.cdf')
+            #sys.exit()
 
         # If we are trying to fix the shape of the TG profiles as a function of the
         # PBLH, then we need to make a special tweak here. The gain matrix for the
@@ -1694,6 +1710,7 @@ for i in range(len(aeri['secs'])):                        # { loop_i
                     tmp[nX+7], tmp[nX+8], tmp[nX+9], tmp[nX+10], tmp[nX+11], tmp[nX+12]])
 
         sic = 0.5 * np.log(scipy.linalg.det(Sa.dot(SopInv)))
+
         vres,cdfs = Other_functions.compute_vres_from_akern(Akern, z, do_cdfs=True)
         # Compute the N-form and M-form convergence criteria (X and Y spaces, resp)
         if itern == 0:
@@ -1929,7 +1946,7 @@ for i in range(len(aeri['secs'])):                        # { loop_i
             chi2 = xsamp[itern-1]['chi2']
             itern = -1
 
-        elif itern > 2:
+        elif itern > 1:
             # Test for "convergence by looking at the best RMS value
             if ((rmsa > np.sqrt(gfactor[old_iter])*old_rmsa) & (old_iter > 0)):
                 converged = 2                   # Converged in "rms increased drastically" sense
@@ -1964,7 +1981,7 @@ for i in range(len(aeri['secs'])):                        # { loop_i
             Fxnm1 = np.copy(FXn)
             itern += 1
             if verbose >= 1:
-                print(('       iter is ' + str(itern) + ' di2m is ' + str(di2m) + ' and RMS is ' + str(rmsa)))
+                print(f"    iter is {itern:2d}, di2m is {di2m:.3e}, and RMS is {rmsa:.3e}")
 
         # Place the data into a structure
         xtmp = {'idx':i, 'secs':aeri['secs'][i], 'ymd':aeri['ymd'][i], 'hour':aeri['hour'][i],
@@ -1990,11 +2007,11 @@ for i in range(len(aeri['secs'])):                        # { loop_i
     # If the retrieval converged, then let's store the various
     # pieces of information for later. Otherwise, let's just move on...
     if converged == 1:
-        print('Converged! (di2m << nY)')
+        print('    Converged! (di2m << nY)')
     elif converged == 2:
-        print('Converged (best RMS as RMS drastically increased)')
+        print('    Converged (best RMS as RMS drastically increased)')
     elif converged == 9:
-        print('Converged (found NaN in Xnp1 so abort sample)')
+        print('    Converged (found NaN in Xnp1 so abort sample)')
     else:
 
         # If the retrieval did not converged but performed max_iter iterations
@@ -2005,9 +2022,9 @@ for i in range(len(aeri['secs'])):                        # { loop_i
 
         vval = []
         for samp in xsamp:
-            vval.append(samp['gamma'] * samp['rmsa'])
+            vval.append(np.sqrt(samp['gamma']) * samp['rmsa'])
         vval = np.array(vval)
-        foo = np.where(np.abs(np.min(vval) - vval) < np.min(vval)*1.00001)[0]
+        foo = np.where(vval < np.min(vval)*1.00001)[0]
         converged = 3           # Converged in "best rms after max_iter" sense
         itern = int(foo[0])
         Xn = np.copy(xsamp[itern]['Xn'])
@@ -2112,6 +2129,6 @@ print(('Processing took ' + str(totaltime) + ' seconds'))
 shutil.rmtree(lbltmpdir)
 
 # Successful exit
-print(('>>> AERI retrieval on ' + str(date) + ' ended properly <<<'))
+print(('>>> TROPoe retrieval on ' + str(date) + ' ended properly <<<'))
 print('--------------------------------------------------------------------')
 print(' ')

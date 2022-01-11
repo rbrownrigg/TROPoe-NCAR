@@ -457,7 +457,7 @@ def read_all_data(date, retz, tres, dostop, verbose, avg_instant, ch1_path,
         # The scaling is wavenumber dependent, and I need to find a function that does this well...
 
         if pca_nf > 0:
-            print('The AERI data have been PCA noise filtered. Someone needs to scale the AERI noise spectrum (not yet implimented)')
+            print('The AERI data have been PCA noise filtered. Someone needs to scale the AERI noise spectrum (not yet implemented)')
 
         if ((fail == 1) & (dostop != 0)):
             wait = input('Stopping inside routine for debugging. Press enter to continue')

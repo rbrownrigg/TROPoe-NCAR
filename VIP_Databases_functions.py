@@ -213,7 +213,7 @@ def read_vip_file(filename,globatt,verbose,debug,dostop):
       'prior_ch4_mn':[1.793, 0, -5], # Mean ch4 concentration [ppm] (see "retrieve_ch4" above)
       'prior_ch4_sd':[0.0538, 0.0015,  3], # 1-sigma uncertainty in ch4 [ppm]
       'prior_n2o_mn':[0.310,  0, -5], # Mean n2o concentration [ppm] (see "retrieve_n2o" above)
-      'prior_n2o_sd':[0.0093, 0,  3], # 1-sigma uncertainty in n2o [ppm]
+      'prior_n2o_sd':[0.0093, 0.00026,  3], # 1-sigma uncertainty in n2o [ppm]
       'prior_lwp_mn':10.0,            # Mean LWP [g/m2]
       'prior_lwp_sd':50.0,            # 1-sigma uncertainty in LWP [g/m2]
       'prior_lReff_mn':8.0,           # Mean liquid Reff [microns]
@@ -395,8 +395,8 @@ def check_vip(vip):
         print('Error: The maximum height to compute the Jacobian is too small; please increase')
         flag = 1
 
-    if ((vip['max_iterations'] <= 0) | (vip['max_iterations'] >= 25)):
-        print('Error: The maximum number of iterations is not positive (or too big)')
+    if ((vip['max_iterations'] < 0) | (vip['max_iterations'] > 25)):
+        print('Error: The maximum number of iterations must be between 0 and 25')
         flag = 1
 
     if ((vip['lbl_std_atmos'] < 1) | (vip['lbl_std_atmos'] > 6)):

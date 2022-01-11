@@ -911,7 +911,7 @@ def compute_jacobian_deltaod(X, p, zz, lblhome, lbldir, lblroot, lbl_std_atmos, 
 def compute_jacobian_interpol(X, p, zz, lblhome, lbldir, lblroot, lbl_std_atmos, tp5, tp3,
                     cbh, sspl, sspi, lblwnum1, lblwnum2, fixt, fixwv, doco2, doch4, don2o,
                     fixlcld, fixicld, fix_co2_shape, fix_ch4_shape, fix_n2o_shape,
-                    jac_maxht, forward_threshold, sfc_alt, extra_layers, 
+                    jac_maxht, awnum, forward_threshold, sfc_alt, extra_layers, 
                     stdatmos, npts_per_wnum,
                     verbose, debug, doapodize):
 

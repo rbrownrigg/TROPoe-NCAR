@@ -6,6 +6,7 @@ from datetime import datetime
 from netCDF4 import Dataset
 
 import Calcs_Conversions
+import Output_Functions
 
 ################################################################################
 # This file contains the following functions:
@@ -384,8 +385,8 @@ def compute_lcl(tsfc, wsfc, psfc, p, z):
     foo = np.where(wsfc >= ws)[0]
     if len(foo) <= 0:
         return -999.
-    zlcl = np.interp(pp[foo[0]],p,z)
-    
+    fct = scipy.interpolate.interp1d(p,z)
+    zlcl = fct(pp[foo[0]])
     return zlcl
     
 ################################################################################

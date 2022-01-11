@@ -35,6 +35,36 @@ def add_vip_to_global_atts():
     return
 
 ################################################################################
+# This function writes a variable into a netCDF files for debugging purposes
+################################################################################
+
+def write_variable(variable, filename):
+    print(f'  DEBUG -- Creating the file {filename:s}')
+    dims = np.shape(variable)
+    if len(dims) == 0:
+        print(f'     The variable is a single variable')
+    elif len(dims) == 1:
+        print(f'     The variable is a vector')
+        print(f'        with a dimension of {dims[0]:d}')
+        fid = Dataset(filename, 'w')
+        did = fid.createDimension('dim', dims[0])
+        var = fid.createVariable('var','f8',('dim',))
+        var[:] = variable
+        fid.close()
+    elif len(dims) == 2:
+        print(f'     The variable is a matrix')
+        print(f'        with dimensions of {dims[0]:d} and {dims[1]:d}')
+        fid = Dataset(filename, 'w')
+        did = fid.createDimension('dim1', dims[0])
+        did = fid.createDimension('dim2', dims[1])
+        var = fid.createVariable('var','f8',('dim1','dim2',))
+        var[:] = variable
+        fid.close()
+    else:
+        print('    This is a 3+ dimension variable ??  This code needs to be modified to handle this...')
+    return
+
+################################################################################
 # This function writes out netCDF files with the output
 ################################################################################
 
@@ -654,7 +684,7 @@ def write_output(vip, ext_prof, mod_prof, rass_prof, ext_tseries, globatt, xret,
     if verbose >= 3:
         print('Appending data to ' + nfilename)
     fid = Dataset(nfilename, 'a')
-    fid.Total_cloack_execution_time_in_s = str(exectime)
+    fid.Total_clock_execution_time_in_s = str(exectime)
 
     time_offset = fid.variables['time_offset']
     hour = fid.variables['hour']
