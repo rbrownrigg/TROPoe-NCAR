@@ -829,7 +829,7 @@ def write_output(vip, ext_prof, mod_prof, rass_prof, ext_tseries, globatt, xret,
         pressure[fsample+i,:] = xret[fsample+i]['p'][0:nht]
 
         theta[fsample+i,:] = np.transpose(theta_tmp[:,fsample+i])
-        thetae[fsample+i,:] = np.transpose(theta_tmp[:,fsample+i])
+        thetae[fsample+i,:] = np.transpose(thetae_tmp[:,fsample+i])
         rh[fsample+i,:] = np.transpose(rh_tmp[:,fsample+i])
         dewpt[fsample+i,:] = np.transpose(dewpt_tmp[:,fsample+i])
         dindices[fsample+i,:] = np.transpose(indices[:,i])
