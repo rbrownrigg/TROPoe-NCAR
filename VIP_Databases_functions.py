@@ -284,7 +284,7 @@ def read_vip_file(filename,globatt,verbose,debug,dostop):
                     if verbose == 3:
                         print('Loading the key ' + key)
                     if key == 'spectral_bands':
-                        bands = vip['spectral_bands']-1
+                        bands = np.zeros((2, maxbands))-1
                         tmp = inputt[foo,1][0].split(',')
 
                         if len(tmp) >= maxbands:
