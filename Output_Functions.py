@@ -324,7 +324,7 @@ def write_output(vip, ext_prof, mod_prof, rass_prof, ext_tseries, globatt, xret,
         theta.comment = 'This field is derived from the retrieved fields'
 
         thetae = fid.createVariable('thetae', 'f4', ('time','height',))
-        thetae.long_name = 'euivalent potential temperature'
+        thetae.long_name = 'equivalent potential temperature'
         thetae.units = 'K'
         thetae.comment = 'This field is derived from the retrieved fields'
 
@@ -588,7 +588,7 @@ def write_output(vip, ext_prof, mod_prof, rass_prof, ext_tseries, globatt, xret,
         stemp_tmp[:,i] = np.copy(sig[0:nht])
         swvmr_tmp[:,i] = np.copy(sig[nht:2*nht])
         theta_tmp[:,i] = Calcs_Conversions.t2theta(xret[i]['Xn'][0:nht], 0*xret[i]['Xn'][nht:2*nht], xret[i]['p'])
-        thetae_tmp[:,i] = Calcs_Conversions.t2thetae(xret[i]['Xn'][0:nht], 0*xret[i]['Xn'][nht:2*nht], xret[i]['p'])
+        thetae_tmp[:,i] = Calcs_Conversions.t2thetae(xret[i]['Xn'][0:nht], xret[i]['Xn'][nht:2*nht], xret[i]['p'])
         rh_tmp[:,i] = Calcs_Conversions.w2rh(xret[i]['Xn'][nht:2*nht], xret[i]['p'], xret[i]['Xn'][0:nht],0) * 100
         dewpt_tmp[:,i] = Calcs_Conversions.rh2dpt(xret[i]['Xn'][0:nht], rh_tmp[:,i]/100.)
 
