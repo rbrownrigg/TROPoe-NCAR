@@ -1,3 +1,4 @@
+import os, re
 import numpy as np
 import glob
 from netCDF4 import Dataset
@@ -13,6 +14,7 @@ import Output_Functions
 
 ################################################################################
 # This file containts the following functions:
+# findfile()
 # read_all_data()
 # read_mwr()
 # read_mwrscan()
@@ -26,6 +28,50 @@ import Output_Functions
 # read_external_profile_data()'
 # read_external_timeseries()
 ################################################################################
+
+################################################################################
+# This function finds all of the files that match the inputted pattern
+################################################################################
+
+def findfile(path,pattern):
+    #print('Input path is: '+path)
+    #print('Input pattern is: '+pattern)
+
+        # We want to preserve periods (dots) in the pattern, 
+        # as many of our file patterns have periods in the name
+    pattern = pattern.replace('.','\.')
+        # Regex requires that we replace any asterisks with .*
+    pattern = pattern.replace('*','.*')
+        # Regex uses a period as a single character wildcard
+    pattern = pattern.replace('?','.')
+
+        # Trap the first and last character of the pattern
+    first = pattern[0]
+    lastl = pattern[-1]
+
+        # If the first letter is an * or ?, then we prepend a dot
+    if(first == '*'):
+      pattern = '.'+pattern
+    elif(first == '?'):
+      pattern = '.'+pattern
+    else:
+      pattern = '^'+pattern
+
+        # If the last letter is not a *, then we append a $
+    if(lastl != '*'):
+      pattern = pattern+'$'
+
+    #print('Modified pattern is: '+pattern)
+    # Good idea to write out the pattern to StdErr for future debugging
+
+         # Compile the regex expression, and return the files that are found
+    prog  = re.compile(pattern)
+    files = [f for f in os.listdir(path) if re.search(prog, f)]
+
+        # Now prepend the path to each files
+    for i in range(len(files)):
+        files[i] = path+'/'+files[i]
+    return files
 
 ################################################################################
 # This function reads the AERI channel data file
@@ -43,14 +89,13 @@ def read_aeri_ch(path,date,aeri_type,fv,fa,aeri_spec_cal_factor,
                'in read_aeri_eng() earlier'))
         return err
     elif ((aeri_type == 1) | (aeri_type == 4)):
-        filename = path + '/' + '*aeri*ch*' + str(date) + '*cdf'
+        filename = '*aeri*ch*' + str(date) + '*(cdf|nc)'
     elif aeri_type == 2:
-        filename = path + '/' + '*' + str(date % 2000000) + 'C1_rnc.cdf'
+        filename = '*' + str(date % 2000000) + 'C1_rnc.(cdf|nc)'
     elif aeri_type == 3:
-        filename = path + '/' + '*' + str(date % 2000000) + 'C1.RNC.cdf'
+        filename = '*' + str(date % 2000000) + 'C1.RNC.(cdf|nc)'
     elif aeri_type == 5:
-        filename = path + '/' + '*assist*ch*' + str(date) + '*cdf'
-            # TODO: find Regex way to search for "*.{cdf,nc} in all netCDF files (not only above)
+        filename = '*assist*ch*' + str(date) + '*(cdf|nc)'
     else:
         print('Error in read_aeri_ch: unable to decode aeri_type')
         return err
@@ -58,7 +103,7 @@ def read_aeri_ch(path,date,aeri_type,fv,fa,aeri_spec_cal_factor,
     if verbose >= 3:
         print('Looking for AERI channel data as ' + filename)
 
-    files = glob.glob(filename)
+    files = findfile(path,filename)
     if len(files) == 0:
         print('Error: Unable to find any AERI channel data -- aborting')
         return err
@@ -651,7 +696,7 @@ def read_mwr(path, rootname, date, mwr_type, step, mwr_elev_field, mwr_n_tb_fiel
     files = []
     if mwr_type > 0:
         for i in range(len(udate)):
-            files = files + (glob.glob(path + '/' + '*' + rootname + '*' + udate[i] + '*cdf'))
+            files = files + (findfile(path,'*' + rootname + '*' + udate[i] + '*(cdf|nc)'))
         if len(files) == 0:
             print('Warning: No MWR files found for this date')
             mwr_type = 0
@@ -927,7 +972,7 @@ def read_mwrscan(path, rootname, date, mwrscan_type, mwrscan_elev_field, mwrscan
     files = []
     if mwrscan_type > 0:
         for i in range(len(udate)):
-            files = files + (glob.glob(path + '/' + '*' + rootname + '*' + udate[i] + '*cdf'))
+            files = files + (findfile(path,'*' + rootname + '*' + udate[i] + '*(cdf|nc)'))
         if len(files) == 0:
             print('Warning: No MWR files found for this date')
             mwrscan_type = 0
@@ -1114,16 +1159,15 @@ def read_aeri_eng(path, date, aeri_type, verbose):
         return err
 
     elif aeri_type == 1:
-        filename = path + '/' + '*aeri*eng*' + str(date) + '*cdf'
+        filename = '*aeri*eng*' + str(date) + '*(cdf|nc)'
     elif aeri_type == 2:
-        filename = path + '/' + '*' + str(date % 2000000) + '_sum.cdf'
+        filename = '*' + str(date % 2000000) + '_sum.(cdf|nc)'
     elif aeri_type == 3:
-        filename = path + '/' + '*' + str(date % 2000000) + '.SUM.cdf'
+        filename = '*' + str(date % 2000000) + '.SUM.(cdf|nc)'
     elif aeri_type == 4:
-        filename = path + '/' + '*aeri*sum*' + str(date) + '*cdf'
+        filename = '*aeri*sum*' + str(date) + '*(cdf|nc)'
     elif aeri_type == 5:
-        filename = path + '/' + '*assist*sum*' + str(date) + '*cdf'
-## TODO (for Tyler): glob for allowing above searchs to find both .cdf and .nc files (everywhere in this read file)
+        filename = '*assist*sum*' + str(date) + '*(cdf|nc)'
     else:
         print('Error in read_aeri_eng: unable to decode aeri_type')
         return err
@@ -1131,7 +1175,7 @@ def read_aeri_eng(path, date, aeri_type, verbose):
     if verbose == 3:
         print('Looking for AERI engineering data as ' + filename)
 
-    files = glob.glob(filename)
+    files = findfile(path,filename)
     if len(files) == 0:
         print('Error: Unable to find any AERI engineering data - aborting')
         print('Set aeri_type=0 and rerun to compare format of AERI data to aeri_type options')
@@ -1215,14 +1259,13 @@ def read_aeri_sum(path,date,aeri_type,smooth_noise,verbose):
                'be screened in read_aeri_eng() earlier'))
         return err
     elif ((aeri_type == 1) | (aeri_type == 4)):
-        filename = path + '/' + '*aeri*sum*' + str(date) + '*cdf'
+        filename = '*aeri*sum*' + str(date) + '*(cdf|nc)'
     elif aeri_type == 2:
-        filename = path + '/' + '*' + str(date % 2000000) + '_sum.cdf'
+        filename = '*' + str(date % 2000000) + '_sum.(cdf|nc)'
     elif aeri_type == 3:
-        filename = path + '/' + '*' + str(date % 2000000) + '.SUM.cdf'
+        filename = '*' + str(date % 2000000) + '.SUM.(cdf|nc)'
     elif aeri_type == 5:
-        filename = path + '/' + '*assist*sum*' + str(date) + '*cdf'
-            # Same TODO as above with {cdf,nc}
+        filename = '*assist*sum*' + str(date) + '*(cdf|nc)'
     else:
         print('Error in read_aeri_sum: unable to decode aeri_type')
         return err
@@ -1230,7 +1273,7 @@ def read_aeri_sum(path,date,aeri_type,smooth_noise,verbose):
     if verbose >= 3:
         print('Looking for AERI summary data as ' + filename)
 
-    files = glob.glob(filename)
+    files = findfile(path,filename)
     if len(files) == 0:
         print('Error: Unable to find any AERI summary data - aborting')
 
@@ -1409,16 +1452,7 @@ def read_vceil(path, date, vceil_type, ret_secs, verbose):
         if verbose == 3:
             print('Reading in VCEIL data')
         for i in range(len(udate)):
-            files = files + (glob.glob(path + '/' + '*ceil*' + udate[i] + '*.cdf'))
-        if len(files) == 0:
-            for i in range(len(udate)):
-                files = files + (glob.glob(path + '/' + '*ceil*' + udate[i] + '*.nc'))
-            if len(files) == 0:
-                for i in range(len(vdate)):
-                    files = files + (glob.glob(path + '/' + vdate[i] + '*ct25k*' + '*.cdf'))
-                if len(files) == 0:
-                    for i in range(len(vdate)):
-                        files = files + (glob.glob(path + '/' + vdate[i] + '*ct25k*' + '*.nc'))
+            files = files + (findfile(path,'*(ceil,ct25)*' + udate[i] + '*.(cdf|nc)'))
         if len(files) == 0:
             print('No CBH files found for this date')
             return err
@@ -1450,13 +1484,10 @@ def read_vceil(path, date, vceil_type, ret_secs, verbose):
             print('Reading in ASOS/AWOS')
 
         for i in range(len(udate)):
-            files = files + (glob.glob(path + '/' + '*ceil*' + udate[i] + '*.cdf'))
+            files = files + (findfile(path,'*(ceil,cbh)*' + udate[i] + '*.(cdf|nc)'))
         if len(files) == 0:
-            for i in range(len(udate)):
-                files = files + (glob.glob(path + '/' + '*cbh*' + udate[i] + '*.cdf'))
-            if len(files) == 0:
-                print('No CBH files found for this data')
-                return err
+            print('No CBH files found for this data')
+            return err
 
         for i in range(len(files)):
             if verbose == 3:
@@ -1479,7 +1510,7 @@ def read_vceil(path, date, vceil_type, ret_secs, verbose):
         if verbose == 3:
             print('Reading in CLAMPS dlfp data')
         for i in range(len(udate)):
-            files = files + (glob.glob(path + '/' + '*dlfp*' + udate[i] + '*.cdf'))
+            files = files + (findfile(path,'*dlfp*' + udate[i] + '*.(cdf|nc)'))
         if len(files) == 0:
             print('No CBH files found for this date')
             return err
@@ -1501,12 +1532,10 @@ def read_vceil(path, date, vceil_type, ret_secs, verbose):
                 cbh = np.append(cbh,cbhx)
 
     elif vceil_type == 4:
-        ftype = ['nc','cdf']
         if verbose == 3:
             print(' Reading in ARM dlprofwstats data')
         for i in range(len(udate)):
-            for j in range(len(ftype)):
-                files = files + (glob.glob(path +'/' + '*dlprofwstats*' + udate[i] + '*.' + ftype[j]))
+            files = files + (findfile(path,'*dlprofwstats*' + udate[i] + '*.(cdf|nc)'))
         if len(files) == 0:
             print('No CBH files found for this date')
             return err
@@ -1529,12 +1558,10 @@ def read_vceil(path, date, vceil_type, ret_secs, verbose):
         cbh = cbh/1000.              # Convert m AGL to km AGL
 
     elif vceil_type == 6:
-        ftype = ['nc','cdf']
         if verbose == 3:
             print(' Reading in JOYCE Jenoptic data')
         for i in range(len(udate)):
-            for j in range(len(ftype)):
-                files = files + (glob.glob(path +'/' + '*CHM*' + udate[i] + '*.' + ftype[j]))
+            files = files + (findfile(path,'*CHM*' + udate[i] + '*.(cdf|nc)'))
         if len(files) == 0:
             print('No CBH files found for this date')
             return err
@@ -1979,8 +2006,6 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
     dates = [(datetime.strptime(str(date), '%Y%m%d') - timedelta(days=1)).strftime('%Y%m%d') ,
             str(date) ,  (datetime.strptime(str(date), '%Y%m%d') + timedelta(days=1)).strftime('%Y%m%d') ]
 
-# TODO (Tyler) update to be unified with the search for both .cdf and .nc everywhere
-    cdf = ['nc','cdf']
     if wv_prof_type == 0:
         a = 0           # Do nothing -- read nothing -- make no noise at all
         qtype = 'None'
@@ -1995,8 +2020,7 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
 
         files = []
         for i in range(len(dates)):
-            for j in range(len(cdf)):
-                files = files + sorted(glob.glob(wv_prof_path + '/' + '*sonde*' + dates[i] + '*.' + cdf[j]))
+            files = files + sorted(findfile(wv_prof_path,'*sonde*' + dates[i] + '*.(cdf|nc)'))
 
         external['nQprof'] = 0.0
         if len(files) == 0:
@@ -2066,8 +2090,7 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
         qunit = 'g/kg'
         files = []
         for i in range(len(dates)):
-            for j in range(len(cdf)):
-                files = files + (glob.glob(wv_prof_path + '/' + '*rlprofmr*' + dates[i] + '*.' + cdf[j]))
+            files = files + (findfile(wv_prof_path,'*rlprofmr*' + dates[i] + '*.(cdf|nc)'))
         if len(files) == 0:
             if verbose >= 1:
                 print('No ARM RLID WV found in this directory for this date')
@@ -2155,8 +2178,7 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
 
         files = []
         for i in range(len(dates)):
-            for j in range(len(cdf)):
-                files = files + (glob.glob(wv_prof_path + '/' + '*' + str(int(dates[i])%1000000) + '*.' + cdf[j]))
+            files = files + (findfile(wv_prof_path,'*' + str(int(dates[i])%1000000) + '*.(cdf|nc)'))
 
         if len(files) == 0:
             if verbose >= 1:
@@ -2202,8 +2224,7 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
 
         files = []
         for i in range(len(dates)):
-            for j in range(len(cdf)):
-                files = files + (glob.glob(wv_prof_path + '/' + '*model*' + dates[i] + '*.' + cdf[j]))
+            files = files + (findfile(wv_prof_path,'*model*' + dates[i] + '*.(cdf|nc)'))
         if len(files) == 0:
             if verbose >= 1:
                 print('No NWP model output data ound in this directory for this date')
@@ -2259,8 +2280,7 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
 
         files = []
         for i in range(len(dates)):
-            for j in range(len(cdf)):
-                files = files + (glob.glob(wv_prof_path + '/' + '*dial*' + dates[i] + '*.' + cdf[j]))
+            files = files + (findfile(wv_prof_path,'*dial*' + dates[i] + '*.(cdf|nc)'))
 
         if len(files) == 0:
             if verbose >= 1:
@@ -2311,8 +2331,7 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
 
         files = []
         for i in range(len(dates)):
-            for j in range(len(cdf)):
-                files = files + (glob.glob(wv_prof_path + '/' + '*dial*' + str(int(dates[i])) + '*.' + cdf[j]))
+            files = files + (findfile(wv_prof_path,'*dial*' + str(int(dates[i])) + '*.(cdf|nc)'))
 
         if len(files) == 0:
             if verbose >= 1:
@@ -2373,8 +2392,7 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
 
         files = []
         for i in range(len(dates)):
-            for j in range(len(cdf)):
-                files = files + sorted(glob.glob(wv_prof_path + '/' + '*sonde*' + dates[i] + '*.' + cdf[j]))
+            files = files + sorted(findfile(wv_prof_path,'*sonde*' + dates[i] + '*.(cdf|nc)'))
 
         if len(files) == 0:
             if verbose >=1:
@@ -2454,8 +2472,7 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
 
         files = []
         for i in range(len(dates)):
-            for j in range(len(cdf)):
-                files = files + sorted(glob.glob(temp_prof_path + '/' + '*sonde*' + dates[i] + '*.' + cdf[j]))
+            files = files + sorted(findfile(temp_prof_path,'*sonde*' + dates[i] + '*.(cdf|nc)'))
 
         external['nTprof'] = 0.
         if len(files) == 0:
@@ -2524,8 +2541,7 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
 
         files = []
         for i in range(len(dates)):
-            for j in range(len(cdf)):
-                files = files + (glob.glob(temp_prof_path + '/' + '*rlproftemp*' + dates[i] + '*.' + cdf[j]))
+            files = files + (findfile(temp_prof_path,'*rlproftemp*' + dates[i] + '*.(cdf|nc)'))
 
         if len(files) == 0:
             if verbose >= 1:
@@ -2605,8 +2621,7 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
 
         files = []
         for i in range(len(dates)):
-            for j in range(len(cdf)):
-                files = files + (glob.glob(temp_prof_path + '/' + '*model*' + dates[i] + '*.' + cdf[j]))
+            files = files + (findfile(temp_prof_path,'*model*' + dates[i] + '*.(cdf|nc)'))
 
         if len(files) == 0:
             if verbose >= 1:
@@ -2666,8 +2681,7 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
 
         files = []
         for i in range(len(dates)):
-            for j in range(len(cdf)):
-                files = files + (glob.glob(temp_prof_path + '/' + '*rass*' + dates[i] + '*.' + cdf[j]))
+            files = files + (findfile(temp_prof_path,'*rass*' + dates[i] + '*.(cdf|nc)'))
 
         if len(files) == 0:
             if verbose >= 1:
@@ -2718,8 +2732,7 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
 
         files = []
         for i in range(len(dates)):
-            for j in range(len(cdf)):
-                files = files + sorted(glob.glob(temp_prof_path + '/' + '*sonde*' + dates[i] + '*.' + cdf[j]))
+            files = files + sorted(findfile(temp_prof_path,'*sonde*' + dates[i] + '*.(cdf|nc)'))
 
         if len(files) == 0:
             if verbose >= 1:
@@ -3054,8 +3067,6 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
     dates = [(datetime.strptime(str(date), '%Y%m%d') - timedelta(days=1)).strftime('%Y%m%d') ,
             str(date) ,  (datetime.strptime(str(date), '%Y%m%d') + timedelta(days=1)).strftime('%Y%m%d') ]
 
-    cdf = ['nc','cdf']
-
     if sfc_temp_type == 0:
         a = 0                 # Do nothing -- read nothing -- make no noise at all
         ttype = 'none'
@@ -3068,8 +3079,7 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
 
         files = []
         for i in range(len(dates)):
-            for j in range(len(cdf)):
-                files = files + (glob.glob(sfc_path + '/' + '*met*' + dates[i] + '*.' + cdf[j]))
+            files = files + (findfile(sfc_path,'*met*' + dates[i] + '*.(cdf|nc)'))
         if len(files) == 0:
             if verbose >= 1:
                 print('No ARM met found in this directory for this date')
@@ -3115,8 +3125,7 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
 
         files = []
         for i in range(len(dates)):
-            for j in range(len(cdf)):
-                files = files + (glob.glob(sfc_path + '/' + '*isfs*' + dates[i] + '*.' + cdf[j]))
+            files = files + (findfile(sfc_path,'*isfs*' + dates[i] + '*.(cdf|nc)'))
 
         # Some folks are creating surface met data with the same data format
         # as the EOL ISFS dataset, but using "met" as the rootname. So if there
@@ -3124,8 +3133,7 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
 
         if len(files) == 0:
            for i in range(len(dates)):
-                for j in range(len(cdf)):
-                    files = files + (glob.glob(sfc_path + '/' + '*met*' + dates[i] + '*.' + cdf[j]))
+                files = files + (findfile(sfc_path,'*met*' + dates[i] + '*.(cdf|nc)'))
 
         if len(files) == 0:
             if verbose >= 1:
@@ -3177,11 +3185,8 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
             print('Reading in MWR met temperature data')
 
         files = []
-        names = ['mwr','met']
         for i in range(len(dates)):
-            for j in range(len(cdf)):
-                for k in range(len(names)):
-                    files = files + (glob.glob(sfc_path + '/' + '*' + names[k] + '*' + dates[i] + '*.' + cdf[j]))
+            files = files + (findfile(sfc_path,'*(mwr|met)*' + dates[i] + '*.(cdf|nc)'))
 
         if len(files) == 0:
             if verbose >= 1:
@@ -3274,8 +3279,7 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
 
         files = []
         for i in range(len(dates)):
-            for j in range(len(cdf)):
-                files = files + (glob.glob(sfc_path + '/' + '*met*' + dates[i] + '*.' + cdf[j]))
+            files = files + (findfile(sfc_path,'*met*' + dates[i] + '*.(cdf|nc)'))
 
         if len(files) == 0:
             if verbose >= 1:
@@ -3334,8 +3338,7 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
 
         files = []
         for i in range(len(dates)):
-            for j in range(len(cdf)):
-                files = files + (glob.glob(sfc_path + '/' + '*isfs*' + dates[i] + '*.' + cdf[j]))
+            files = files + (findfile(sfc_path,'*isfs*' + dates[i] + '*.(cdf|nc)'))
 
         # Some folks are creating surface met data with the same data format
         # as the EOL ISFS dataset, but using "met" as the rootname. So if there
@@ -3343,8 +3346,7 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
 
         if len(files) == 0:
            for i in range(len(dates)):
-                for j in range(len(cdf)):
-                    files = files + (glob.glob(sfc_path + '/' + '*met*' + dates[i] + '*.' + cdf[j]))
+                files = files + (findfile(sfc_path,'*met*' + dates[i] + '*.(cdf|nc)'))
 
         if len(files) == 0:
             if verbose >= 1:
@@ -3410,9 +3412,7 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
 
         names = ['mwr','met']
         for i in range(len(dates)):
-            for j in range(len(cdf)):
-                for k in range(len(names)):
-                    files = files + (glob.glob(sfc_path + '/' + '*' + names[k] + '*' + dates[i] + '*.' + cdf[j]))
+            files = files + (findfile(sfc_path,'*(mwr|met)*' + dates[i] + '*.(cdf|nc)'))
 
         if len(files) == 0:
             if verbose >= 1:
@@ -3516,8 +3516,7 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
 
         files = []
         for i in range(len(dates)):
-            for j in range(len(cdf)):
-                files = files + (glob.glob(sfc_path + '/' + '*met*' + dates[i] + '*.' + cdf[j]))
+            files = files + (findfile(sfc_path,'*met*' + dates[i] + '*.(cdf|nc)'))
 
         if len(files) == 0:
             if verbose >= 1:
@@ -3554,8 +3553,7 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
 
         files = []
         for i in range(len(dates)):
-            for j in range(len(cdf)):
-                files = files + (glob.glob(sfc_path + '/' + '*isfs*' + dates[i] + '*.' + cdf[j]))
+            files = files + (findfile(sfc_path,'*isfs*' + dates[i] + '*.(cdf|nc)'))
 
         # Some folks are creating surface met data with the same data format
         # as the EOL ISFS dataset, but using "met" as the rootname. So if there
@@ -3563,8 +3561,7 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
 
         if len(files) == 0:
            for i in range(len(dates)):
-                for j in range(len(cdf)):
-                    files = files + (glob.glob(sfc_path + '/' + '*met*' + dates[i] + '*.' + cdf[j]))
+                files = files + (findfile(sfc_path,'*met*' + dates[i] + '*.(cdf|nc)'))
 
         if len(files) == 0:
             if verbose >= 1:
@@ -3606,9 +3603,7 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
 
         names = ['mwr','met']
         for i in range(len(dates)):
-            for j in range(len(cdf)):
-                for k in range(len(names)):
-                    files = files + (glob.glob(sfc_path + '/' + '*' + names[k] + '*' + dates[i] + '*.' + cdf[j]))
+            files = files + (findfile(sfc_path,'*(mwr|met)*' + dates[i] + '*.(cdf|nc)'))
 
         if len(files) == 0:
             if verbose >= 1:
@@ -3812,8 +3807,7 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
 
         files = []
         for i in range(len(dates)):
-            for j in range(len(cdf)):
-                files = files + (glob.glob(co2_sfc_path + '/' + '*pgs*' + dates[i] + '*.' + cdf[j]))
+            files = files + (findfile(co2_sfc_path,'*pgs*' + dates[i] + '*.(cdf|nc)'))
 
         if len(files) == 0:
             if verbose >= 1:
