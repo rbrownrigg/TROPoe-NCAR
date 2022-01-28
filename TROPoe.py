@@ -1,4 +1,4 @@
-__version__ = '0.2.72'
+__version__ = '0.2.75'
 
 import os
 import sys
@@ -1229,7 +1229,6 @@ for i in range(len(aeri['secs'])):                        # { loop_i
                            vip['jac_max_ht'], aeri['wnum'], vip['lblrtm_forward_threshold'],
                            location['alt'], rt_extra_layers, stdatmos, vip['lblrtm_jac_interpol_npts_wnum'], 
                            verbose, debug, doapodize=True)
-                print(f'        DDT - compute_jacobian_interpol took {totaltime:.1f} seconds')
         else:
             print('Error: Undefined jacobian option selected')
             VIP_Databases_functions.abort(lbltmpdir,date)
@@ -1676,18 +1675,20 @@ for i in range(len(aeri['secs'])):                        # { loop_i
         Akern  = (Binv.dot(Kij.T).dot(SmInv).dot(Kij)).T
 
         if(vip['max_iterations'] == 0):
-            print('DDT -- writing variables from retrieval calcs in the directory '+vip['lbl_temp_dir'])
-            Output_Functions.write_variable(B,vip['lbl_temp_dir']+'/output_B.cdf')
-            Output_Functions.write_variable(SaInv,vip['lbl_temp_dir']+'/output_SaInv.cdf')
-            Output_Functions.write_variable(SmInv,vip['lbl_temp_dir']+'/output_SmInv.cdf')
-            Output_Functions.write_variable(Kij,vip['lbl_temp_dir']+'/output_Kij.cdf')
-            Output_Functions.write_variable(gfac,vip['lbl_temp_dir']+'/output_gfac.cdf')
-            Output_Functions.write_variable(Xa,vip['lbl_temp_dir']+'/output_Xa.cdf')
-            Output_Functions.write_variable(Gain,vip['lbl_temp_dir']+'/output_Gain.cdf')
-            Output_Functions.write_variable(Sop,vip['lbl_temp_dir']+'/output_Sop.cdf')
-            Output_Functions.write_variable(FXn,vip['lbl_temp_dir']+'/output_FXn.cdf')
-            Output_Functions.write_variable(Xnp1,vip['lbl_temp_dir']+'/output_Xnp1.cdf')
-            Output_Functions.write_variable(Akern,vip['lbl_temp_dir']+'/output_Akern.cdf')
+            print(f'        DDT - compute_jacobian_xx took {totaltime:.1f} seconds')
+            print('Special debug mode -- writing variables from retrieval calcs in the directory '+vip['lbl_temp_dir'])
+            #Output_Functions.write_variable(    B,vip['lbl_temp_dir']+'/tropoe_python_output.B.cdf')
+            #Output_Functions.write_variable(SaInv,vip['lbl_temp_dir']+'/tropoe_python_output.SaInv.cdf')
+            #Output_Functions.write_variable( gfac,vip['lbl_temp_dir']+'/tropoe_python_output.gfac.cdf')
+            #Output_Functions.write_variable(   Xa,vip['lbl_temp_dir']+'/tropoe_python_output.Xa.cdf')
+            #Output_Functions.write_variable( Gain,vip['lbl_temp_dir']+'/tropoe_python_output.Gain.cdf')
+            #Output_Functions.write_variable(  Sop,vip['lbl_temp_dir']+'/tropoe_python_output.Sop.cdf')
+            #Output_Functions.write_variable( Xnp1,vip['lbl_temp_dir']+'/tropoe_python_output.Xnp1.cdf')
+            #Output_Functions.write_variable(Akern,vip['lbl_temp_dir']+'/tropoe_python_output.Akern.cdf')
+            Output_Functions.write_variable(SmInv,vip['lbl_temp_dir']+'/tropoe_python_output.SmInv.cdf')
+            Output_Functions.write_variable(  Kij,vip['lbl_temp_dir']+'/tropoe_python_output.Kij.cdf')
+            Output_Functions.write_variable(    Y,vip['lbl_temp_dir']+'/tropoe_python_output.Y.cdf')
+            Output_Functions.write_variable(  FXn,vip['lbl_temp_dir']+'/tropoe_python_output.FXn.cdf')
             #sys.exit()
 
         # If we are trying to fix the shape of the TG profiles as a function of the

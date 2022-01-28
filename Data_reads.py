@@ -1238,12 +1238,18 @@ def read_aeri_sum(path,date,aeri_type,smooth_noise,verbose):
         fid = Dataset(files[jj],'r')
         bt = fid.variables['base_time'][:]
         to = fid.variables['time_offset'][:]
-        if aeri_type == 1:
+        if len(np.where(np.array(list(fid.variables.keys())) == 'wnumsum5')[0]) > 0:
             wnum1 = fid.variables['wnumsum5'][:]
             wnum2 = fid.variables['wnumsum6'][:]
-        else:
+        elif len(np.where(np.array(list(fid.variables.keys())) == 'wnumsum1')[0]) > 0:
+            wnum1 = fid.variables['wnumsum1'][:]
+            wnum2 = fid.variables['wnumsum2'][:]
+        elif len(np.where(np.array(list(fid.variables.keys())) == 'wnum1')[0]) > 0:
             wnum1 = fid.variables['wnum1'][:]
             wnum2 = fid.variables['wnum2'][:]
+        else:
+            print('Error in read_aeri_sum: unable to find the wnumsum fields')
+            return err
 
         if len(np.where(np.array(list(fid.variables.keys())) == 'SkyNENCh1')[0]) > 0:
             xnoise1 = fid.variables['SkyNENCh1'][:]

@@ -12,6 +12,9 @@ import VIP_Databases_functions
 
 ################################################################################
 # This file contains the following functions:
+# write_example_vip_file()
+# add_vip_to_global_atts()
+# write_variable()
 # write_output()
 # create_xret()
 ################################################################################
