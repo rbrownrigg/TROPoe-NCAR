@@ -31,6 +31,9 @@ import Output_Functions
 
 ################################################################################
 # This function finds all of the files that match the inputted pattern
+# Inputs:
+#   path:       the directory (relative or absolute); must not have any wildcards
+#   pattern:    the file pattern to find.  Can have wildcards or python options (t1|t2|t3)
 ################################################################################
 
 def findfile(path,pattern):
@@ -95,7 +98,7 @@ def read_aeri_ch(path,date,aeri_type,fv,fa,aeri_spec_cal_factor,
     elif aeri_type == 3:
         filename = '*' + str(date % 2000000) + 'C1.RNC.(cdf|nc)'
     elif aeri_type == 5:
-        filename = '*assist*ch*' + str(date) + '*(cdf|nc)'
+        filename = '*assist*(Ch|ch)*' + str(date) + '*(cdf|nc)'
     else:
         print('Error in read_aeri_ch: unable to decode aeri_type')
         return err
@@ -218,21 +221,6 @@ def read_aeri_ch(path,date,aeri_type,fv,fa,aeri_spec_cal_factor,
     chsecs = np.copy(secs)
     mrad = mrad.T
 
-    # If this is ASSIST data, then interpolate it onto the AERI's spectral grid
-    if(aeri_type == 5):
-        if(verbose >= 1):
-            print('    Interpolating ASSIST to the AERI spectral grid')
-        for jj in range(0,len(chsecs)):
-            zf = Other_functions.aeri_zerofill(wnum,mrad[:,jj],1)
-            fx = Other_functions.convolve_to_aeri(zf[0,:],zf[1,:])
-            if(jj == 0):
-                wnum0 = fx['wnum']
-                mrad0 = fx['spec'].T
-            else:
-                mrad0 = np.append(mrad0,fx['spec'].T)
-        wnum = wnum0
-        mrad = mrad0.T
-
     # Apply the spectral recalibration, if desired
     if(np.abs(aeri_spec_cal_factor - 1.0) > 0.0000001):
         if(verbose >= 3): print('      Adjusting the AERIs spectral calibration')
@@ -331,10 +319,6 @@ def read_aeri_ch(path,date,aeri_type,fv,fa,aeri_spec_cal_factor,
         print('          was not found in the input data. Thus we must abort this')
         print('          processing. Please either rerun with fa == 0 or modify the')
         print('          code so that a different field is used as the aft optic temperature')
-        return err
-
-    if (aeri_type == 5) & ((fa > 0) | (fv > 0)):
-        print('Error: The Fa and Fv corrections should both be off for the ASSIST -- aborting')
         return err
 
     if fa > 0:
