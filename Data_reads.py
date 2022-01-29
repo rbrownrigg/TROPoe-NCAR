@@ -180,6 +180,10 @@ def read_aeri_ch(path,date,aeri_type,fv,fa,aeri_spec_cal_factor,
             xambPres = fid.variables['atmosphericPressure'][:]
         else:
             xambPres = np.full_like(-999,to)
+        if len(np.where(np.array(list(fid.variables.keys())) == 'sceneMirrorAngle')[0]) > 0:
+            xscenemirrorangle = fid.variables['sceneMirrorAngle'][:]
+        else:
+            xscenemirrorangle = np.full_like(0,to)  # Assume all zenith views if field not found
 
         #Read in the field "missingDataFlag". If it does not exist, then abort
         if get_aeri_missingDataFlag == 1:
@@ -207,6 +211,7 @@ def read_aeri_ch(path,date,aeri_type,fv,fa,aeri_spec_cal_factor,
             calibhbbt = np.copy(xcalibhbbt)
             ambPres = np.copy(xambPres)
             missingDataFlag = np.copy(xmissingDataFlag)
+            scenemirrorangle = np.copy(xscenemirrorangle)
         else:
             secs = np.append(secs,bt+to)
             mrad = np.append(mrad,xmrad, axis = 0)
@@ -217,9 +222,26 @@ def read_aeri_ch(path,date,aeri_type,fv,fa,aeri_spec_cal_factor,
             calibhbbt = np.append(calibhbbt,xcalibhbbt)
             ambPres = np.append(ambPres,xambPres)
             missingDataFlag = np.append(missingDataFlag,xmissingDataFlag)
+            scenemirrorangle = np.append(scenemirrorangle,xscenemirrorangle)
 
     chsecs = np.copy(secs)
     mrad = mrad.T
+
+    # Keep only the zenith pointing data (primarily affects only the ASSIST, which includes BB views in its data)
+    foo = np.where(sceneMirrorAngle < 3 | sceneMirrorAngle > 357)[0]
+    if len(foo) == 0:
+        print('Error in read_aeri_ch: Unable to find any zenith pointing AERI/ASSIST data'
+        return err
+    chsecs           = np.copy(chsecs[foo])
+    mrad             = np.copy(mrad[:,foo])
+    hatchOpen        = np.copy(hatchOpen[foo])
+    bbsupport        = np.copy(bbsupport[foo])
+    calibambt        = np.copy(calibambt[foo])
+    calibcbbt        = np.copy(calibcbbt[foo])
+    calibhbbt        = np.copy(calibhbbt[foo])
+    ambPres          = np.copy(ambPres[foo])
+    missingDataFlag  = np.copy(missingDataFlag[foo])
+    sceneMirrorAngle = np.copy(sceneMirrorAngle[foo])
 
     # Apply the spectral recalibration, if desired
     if(np.abs(aeri_spec_cal_factor - 1.0) > 0.0000001):
@@ -263,6 +285,7 @@ def read_aeri_ch(path,date,aeri_type,fv,fa,aeri_spec_cal_factor,
     calibcbbt = np.copy(calibcbbt[foo])
     calibhbbt = np.copy(calibhbbt[foo])
     ambPres = np.copy(ambPres[foo])
+    sceneMirrorAngle = np.copy(sceneMirrorAngle[foo])
 
     #And now the reverse
     flag, prob = Other_functions.matchtimes(chsecs,engsecs,0.5)
