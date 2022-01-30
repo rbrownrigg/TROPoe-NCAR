@@ -183,7 +183,7 @@ def read_aeri_ch(path,date,aeri_type,fv,fa,aeri_spec_cal_factor,
         if len(np.where(np.array(list(fid.variables.keys())) == 'sceneMirrorAngle')[0]) > 0:
             xscenemirrorangle = fid.variables['sceneMirrorAngle'][:]
         else:
-            xscenemirrorangle = np.full_like(0,to)  # Assume all zenith views if field not found
+            xscenemirrorangle = np.zeros(len(to))      # Assume all zenith views if the field isn't found
 
         #Read in the field "missingDataFlag". If it does not exist, then abort
         if get_aeri_missingDataFlag == 1:
@@ -211,7 +211,7 @@ def read_aeri_ch(path,date,aeri_type,fv,fa,aeri_spec_cal_factor,
             calibhbbt = np.copy(xcalibhbbt)
             ambPres = np.copy(xambPres)
             missingDataFlag = np.copy(xmissingDataFlag)
-            scenemirrorangle = np.copy(xscenemirrorangle)
+            sceneMirrorAngle = np.copy(xscenemirrorangle)
         else:
             secs = np.append(secs,bt+to)
             mrad = np.append(mrad,xmrad, axis = 0)
@@ -222,15 +222,15 @@ def read_aeri_ch(path,date,aeri_type,fv,fa,aeri_spec_cal_factor,
             calibhbbt = np.append(calibhbbt,xcalibhbbt)
             ambPres = np.append(ambPres,xambPres)
             missingDataFlag = np.append(missingDataFlag,xmissingDataFlag)
-            scenemirrorangle = np.append(scenemirrorangle,xscenemirrorangle)
+            sceneMirrorAngle = np.append(sceneMirrorAngle,xscenemirrorangle)
 
     chsecs = np.copy(secs)
     mrad = mrad.T
 
     # Keep only the zenith pointing data (primarily affects only the ASSIST, which includes BB views in its data)
-    foo = np.where(sceneMirrorAngle < 3 | sceneMirrorAngle > 357)[0]
+    foo = np.where((sceneMirrorAngle < 3) | (sceneMirrorAngle > 357))[0]
     if len(foo) == 0:
-        print('Error in read_aeri_ch: Unable to find any zenith pointing AERI/ASSIST data'
+        print('Error in read_aeri_ch: Unable to find any zenith pointing AERI/ASSIST data')
         return err
     chsecs           = np.copy(chsecs[foo])
     mrad             = np.copy(mrad[:,foo])
