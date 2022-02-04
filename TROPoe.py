@@ -32,7 +32,7 @@ if '--vip' in sys.argv:
 
     sys.exit()
 
-#Create parser for command line arguments
+# Create parser for command line arguments
 parser = ArgumentParser()
 
 parser.add_argument("date", type=int, help="Date to run the code [YYYYMMDD]")
@@ -1516,7 +1516,7 @@ for i in range(len(aeri['secs'])):                        # { loop_i
         # in-situ surface co2 measurements of the observation vector
         foo = np.where(flagY == 9)[0]
         if len(foo) > 0:
-            flag, KK, FF = Jacobian_Functions.compute_jacobian_external_sfc_co2(Xn, p, z, KK, FF,
+            flag, KK, FF = Jacobian_Functions.compute_jacobian_external_sfc_co2(Xn, p, z,
                         ext_tseries['co2_sfc_relative_height'], vip['retrieve_co2'],
                         vip['fix_co2_shape'], ext_tseries['nptsCO2'])
 

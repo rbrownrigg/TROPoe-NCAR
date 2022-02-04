@@ -1089,8 +1089,17 @@ def rundecker(model, aprofile, z, p, t, w, co2_profile= None, o3_profile=None,
 #  Greg Blumburg's pyLBLRTM,
 ################################################################################
 
-def lbl_read(lbl_file, do_load_data = False, valid_avg_P = [1e-4,1e4], valid_avg_T = [100,400]):
-    
+def lbl_read(lbl_file, do_load_data = False, valid_avg_P = None, valid_avg_T = None):
+
+    # We don't want the default values to be mutable so
+    # assign default values here
+
+    if valid_avg_P is None:
+        valid_avg_P = [1e-4, 1e4]
+
+    if valid_avg_T is None:
+        valid_avg_T = [100, 400]
+
     # First we need to check the type of the lbl file. It is either 32 or 64 bit
     # and also need to know the size of the junk fields. Has to be done using
     # brute force. Ugh binary files.

@@ -6,7 +6,6 @@ from datetime import datetime
 from netCDF4 import Dataset
 
 import Calcs_Conversions
-import Output_Functions
 
 ################################################################################
 # This file contains the following functions:

@@ -1,19 +1,15 @@
 import os, re
 import numpy as np
-import glob
 from netCDF4 import Dataset
 import calendar
 from datetime import datetime, timedelta
 
 import Other_functions
-import VIP_Databases_functions
 import Calcs_Conversions
-import Jacobian_Functions
-import Output_Functions
 
 
 ################################################################################
-# This file containts the following functions:
+# This file contains the following functions:
 # findfile()
 # read_all_data()
 # read_mwr()
@@ -1491,14 +1487,14 @@ def read_vceil(path, date, vceil_type, ret_secs, verbose):
             print('Reading in ASOS/AWOS')
 
         for i in range(len(udate)):
-            files = files + (findfile(path,'*(ceil,cbh)*' + udate[i] + '*.(cdf|nc)'))
+            files = files + (findfile(path, '*(ceil,cbh)*' + udate[i] + '*.(cdf|nc)'))
         if len(files) == 0:
             print('No CBH files found for this data')
             return err
 
         for i in range(len(files)):
             if verbose == 3:
-                print(' Reading in file ' + files(i))
+                print(' Reading in file ' + files[i])
 
             fid = Dataset(files[i],'r')
             bt = fid.variables['base_time'][:]
@@ -1747,7 +1743,7 @@ def grid_aeri(ch1, aerisum, avg_instant, hatchOpenSwitch, missingDataFlagSwitch,
                 if len(bar) == len(foo):
                     hatflag[i] = 1                             # Hatch was always open
                 else:
-                    np.where(ch1['hatchopen'][foo] == 0)[0]
+                    bar = np.where(ch1['hatchopen'][foo] == 0)[0]
                     if len(bar) == len(foo):
                       hatflag[i] = 0                           # Hatch was always closed
                     else:
@@ -1759,10 +1755,10 @@ def grid_aeri(ch1, aerisum, avg_instant, hatchOpenSwitch, missingDataFlagSwitch,
 
         # Get the summary data on this grid
         if avg_instant == 0:
-            foo = np.where((secs[i]-tavg*60./2. <= ch1['secs']) & (ch1['secs'] < secs[i]+tavg*60./2.))[0]
+            foo = np.where((secs[i]-tavg*60./2. <= aerisum['secs']) & (aerisum['secs'] < secs[i]+tavg*60./2.))[0]
         else:
             dell = np.abs(secs[i]-aerisum['secs'])
-            foo = np.where((secs[i]-tavg*60./2. <= ch1['secs']) & (ch1['secs'] < secs[i]+tavg*60./2.) &
+            foo = np.where((secs[i]-tavg*60./2. <= aerisum['secs']) & (aerisum['secs'] < secs[i]+tavg*60./2.) &
                                (dell == np.nanmin(dell)))[0]
 
         if len(foo) > 1:
@@ -2164,17 +2160,21 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
                     swv = np.copy(swvx)
                 else:
                     qsecs = np.append(qsecs, bt+to)
-                    wv = np.append(wv,wvx, axis = 1)
-                    swv = np.append(swv,swvx, axis = 1)
+                    wv = np.append(wv,wvx, axis = 0)
+                    swv = np.append(swv,swvx, axis = 0)
                 nprof = len(qsecs)
 
             external['nQprof'] = len(qsecs)
+
 
         if external['nQprof'] > 0:
             zzq = np.copy(htx)
             wvmultiplier = 1.      # To scale the WV profiles to be reasonable order of magnitude
             wv = wv/wvmultiplier
             swv = wv/wvmultiplier
+
+        wv = wv.T
+        swv = swv.T
 
 
     # Read in the NCAR WV DIAL data (for 2014-2017 time period)
@@ -2208,8 +2208,8 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
                     swv = np.copy(swvx)
                 else:
                     qsecs = np.append(qsecs,secsx)
-                    wv = np.append(wv, wvx, axis = 1)
-                    swv = np.append(swv, swvx, axis = 1)
+                    wv = np.append(wv, wvx, axis = 0)
+                    swv = np.append(swv, swvx, axis = 0)
                 external['nQprof'] = len(qsecs)
             zzq = zzq / 1000.           # Convert m AGL to km AGL
 
@@ -2314,10 +2314,13 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
                     maxht = np.copy(mhtx)
                 else:
                     qsecs = np.append(qsecs,bt+to)
-                    wv = np.append(wv,wwx, axis = 1)
-                    swv = np.append(swv,ssx, axis = 1)
+                    wv = np.append(wv,wwx, axis = 0)
+                    swv = np.append(swv,ssx, axis = 0)
 
             external['nQprof'] = len(qsecs)
+
+            wv = wv.T
+            swv = swv.T
 
             # Set all of the points above the maximum height to -999.
 
@@ -2334,64 +2337,56 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
 
     elif wv_prof_type == 6:
         if verbose >= 1:
-            print('Reading in NCAR WV DIAL data (after QC) to constrain the WV profile')
+            print('Reading in NCAR MPD data to constrain the WV profile')
 
         files = []
         for i in range(len(dates)):
-            files = files + (findfile(wv_prof_path,'*dial*' + str(int(dates[i])) + '*.(cdf|nc)'))
+            files = files + (findfile(wv_prof_path,'*mpd*' + str(int(dates[i])) + '*.(cdf|nc)'))
 
         if len(files) == 0:
             if verbose >= 1:
-                print('No NCAR WV DIAL found in this directory for this date')
+                print('No NCAR MPD data found in this directory for this date')
             external['nQprof'] = 0.0
         else:
             if verbose >= 2:
-                print('Reading ' + str(len(files)) + ' NCAR WV DIAL data files')
+                print('Reading ' + str(len(files)) + ' NCAR MPD data files')
             for i in range(len(files)):
                 fid = Dataset(files[i],'r')
-                bt = fid.variables['base_time'][0]
-                to = fid.variables['time_offset'][:]
-                zzq = fid.variables['height'][:]
-                wwx = fid.variables['qc_waterVapor'][:]
-                ssx = fid.variables['sigma_waterVapor'][:]
-                mhtx = fid.variables['maxht'][:]
+                bt = (datetime.strptime(files[i][-18:-10],'%Y%m%d') - datetime(1970,1,1)).total_seconds()
+                to = fid.variables['time'][:]
+                zzq = fid.variables['range'][:]
+                wwx = fid.variables['Absolute_Humidity'][:]
+                ssx = np.sqrt(fid.variables['Absolute_Humidity_variance'][:])
+                maskx = fid.variables['Absolute_Humidity_mask'][:]
                 fid.close()
 
                 if i == 0:
                     qsecs = bt+to
                     wv = np.copy(wwx)
                     swv = np.copy(ssx)
-                    maxht = np.copy(mhtx)
+                    mask = np.copy(maskx)
                 else:
                     qsecs = np.append(qsecs,bt+to)
-                    wv = np.append(wv,wwx, axis = 1)
-                    swv = np.append(swv,ssx, axis = 1)
-                    maxht = np.append(maxht,mhtx)
+                    wv = np.append(wv,wwx, axis = 0)
+                    swv = np.append(swv,ssx, axis = 0)
+                    maxht = np.append(mask,maskx,axis=0)
 
                 external['nQprof'] = len(qsecs)
 
             zzq = zzq / 1000.           # Convert m AGL to km AGL
 
-# TODO: Tyler -- please make sure the columns/rows are correct (logic below is assuming [height,time])
         wv = wv.T
         swv = swv.T
+        mask = mask.T
 
-            # Set all of the points above the maximum height to -999.
-        for i in range(len(qsecs)):
-          foo = np.where(zzq > maxht[i])[0]
-          if(len(foo) > 0):
-              wv[foo,i]  = -999.
-              swv[foo,i] = -999.
+        # Apply the mask to the data.
+        foo = np.where(mask == 1)
+        wv[foo] = np.nan
+        swv[foo] = np.nan
 
         if external['nQprof'] > 0:
             qunit = 'g/m3'
-            qtype = 'NCAR WV DIAL data'
-
-            # Set all WV values less than 0 to -999 also
-        foo = np.where(zzq < 0)
-        if(len(foo) > 0):
-            wv[foo]  = -999
-            swv[foo] = -999
+            qtype = 'NCAR MPD data'
 
     elif wv_prof_type == 99:
         if verbose >= 1:
@@ -3318,8 +3313,8 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
                 w2 = Calcs_Conversions.rh2w(t-sigma_t, u/100., p)
                 u_plus = (u+sigma_u)/100.
                 u_minus = (u+sigma_u)/100.
-                u_plus[u_plus > 1] == 1
-                u_minus[u_minus < 0] == 0
+                u_plus[u_plus > 1] = 1
+                u_minus[u_minus < 0] = 0
                 w3 = Calcs_Conversions.rh2w(t, u_plus, p)
                 w4 = Calcs_Conversions.rh2w(t, u_minus, p)
 
@@ -3393,8 +3388,8 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
                 w2 = Calcs_Conversions.rh2w(t-sigma_t, u/100., p)
                 u_plus = (u+sigma_u)/100.
                 u_minus = (u+sigma_u)/100.
-                u_plus[u_plus > 1] == 1
-                u_minus[u_minus < 0] == 0
+                u_plus[u_plus > 1] = 1
+                u_minus[u_minus < 0] = 0
                 w3 = Calcs_Conversions.rh2w(t, u_plus, p)
                 w4 = Calcs_Conversions.rh2w(t, u_minus, p)
 
@@ -3483,8 +3478,8 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
                 w2 = Calcs_Conversions.rh2w(t-sigma_t, u/100., p)
                 u_plus = (u+sigma_u)/100.
                 u_minus = (u+sigma_u)/100.
-                u_plus[u_plus > 1] == 1
-                u_minus[u_minus < 0] == 0
+                u_plus[u_plus > 1] = 1
+                u_minus[u_minus < 0] = 0
                 w3 = Calcs_Conversions.rh2w(t, u_plus, p)
                 w4 = Calcs_Conversions.rh2w(t, u_minus, p)
 
