@@ -383,8 +383,7 @@ def read_all_data(date, retz, tres, dostop, verbose, avg_instant, ch1_path,
               aeri_max_675_tb, aeri_spec_cal_factor,
               mwr_path, mwr_rootname, mwr_type, mwr_elev_field,
               mwr_n_tb_fields, mwr_tb_replicate, mwr_tb_field_names, mwr_tb_freqs,
-              mwr_tb_noise, mwr_tb_bias, mwr_tb_field1_tbmax, mwr_pwv_field,
-              mwr_pwv_scalar, mwr_lwp_field, mwr_lwp_scalar, vceil_path, vceil_type,
+              mwr_tb_noise, mwr_tb_bias, mwr_tb_field1_tbmax, vceil_path, vceil_type,
               vceil_window_in, vceil_window_out, vceil_default_cbh,
               hatchOpenSwitch, missingDataFlagSwitch, vip):
 
@@ -422,7 +421,6 @@ def read_all_data(date, retz, tres, dostop, verbose, avg_instant, ch1_path,
 
         mwr_data = read_mwr(mwr_path, mwr_rootname, date, mwr_type, abs(aeri_type), mwr_elev_field, mwr_n_tb_fields,
                            mwr_tb_field_names, mwr_tb_freqs, mwr_tb_noise, mwr_tb_bias, mwr_tb_field1_tbmax,
-                           mwr_pwv_field, mwr_pwv_scalar, mwr_lwp_field, mwr_lwp_scalar,
                            verbose, single_date=True)
 
         if mwr_data['success'] != 1:
@@ -551,7 +549,6 @@ def read_all_data(date, retz, tres, dostop, verbose, avg_instant, ch1_path,
     #Read in the MWR zenith data
     mwr_data = read_mwr(mwr_path, mwr_rootname, date, mwr_type, 1, mwr_elev_field, mwr_n_tb_fields,
                         mwr_tb_field_names, mwr_tb_freqs, mwr_tb_noise, mwr_tb_bias, mwr_tb_field1_tbmax,
-                        mwr_pwv_field, mwr_pwv_scalar, mwr_lwp_field, mwr_lwp_scalar,
                         verbose)
 
     if mwr_data['success'] != 1:
@@ -629,8 +626,7 @@ def read_all_data(date, retz, tres, dostop, verbose, avg_instant, ch1_path,
 
 def read_mwr(path, rootname, date, mwr_type, step, mwr_elev_field, mwr_n_tb_fields,
             mwr_tb_field_names, mwr_tb_freqs, mwr_tb_noise, mwr_tb_bias,
-            mwr_tb_field1_tbmax, mwr_pwv_field, mwr_pwv_scalar, mwr_lwp_field,
-            mwr_lwp_scalar, verbose, single_date=False):
+            mwr_tb_field1_tbmax, verbose, single_date=False):
 
     if verbose >= 2:
         print('Reading MWR data in ' + path)
@@ -705,7 +701,7 @@ def read_mwr(path, rootname, date, mwr_type, step, mwr_elev_field, mwr_n_tb_fiel
             mwr_type = 0
 
     # Only read MWR data if mwr_type > 0
-    # Note that it is possible to read in MWR data but no Tbsky data (only PWV/LWP)
+    # Note that it is possible to read in MWR data but no Tbsky data
     nmwr_points = 0
     if mwr_type > 0:
         for i in range(len(files)):
@@ -749,25 +745,6 @@ def read_mwr(path, rootname, date, mwr_type, step, mwr_elev_field, mwr_n_tb_fiel
             else:
                 print('Warning: Unable to find the field ' + mwr_elev_field + ' in the MWR input file')
                 elevx = np.ones(to.shape)*90.0
-
-            # Read in the PWV and LWP fields in the input MWR file. If the field
-            # is not found, then assume the field is full of missing values.
-            foo = np.where(np.array(list(fid.variables.keys())) == mwr_pwv_field)[0]
-            if len(foo) == 0:
-                print('Warning: Unable to find the PWV field ' + mwr_pwv_field + ' in the MWR input file')
-                print(files[i])
-                pwvx = np.ones(to.shape)*-999.0
-            else:
-                pwvx = fid.variables[mwr_pwv_field][:]
-                pwvx = pwvx * mwr_pwv_scalar
-
-            foo = np.where(np.array(list(fid.variables.keys())) == mwr_lwp_field)[0]
-            if len(foo) == 0:
-                print('Warning: Unable to find the LWP field ' + mwr_lwp_field + ' in the MWR input file')
-                lwpx = np.ones(to.shape)*-999.0
-            else:
-                lwpx = fid.variables[mwr_lwp_field][:]
-                lwpx = lwpx * mwr_pwv_scalar
 
             # Now read in the Tb data, if desired
             if mwr_n_tb_fields > 0:
@@ -835,16 +812,12 @@ def read_mwr(path, rootname, date, mwr_type, step, mwr_elev_field, mwr_n_tb_fiel
                 elev = np.copy(elevx)
                 if mwr_n_tb_fields > 0:
                     tbsky = np.copy(tbskyx)
-                pwv = np.copy(pwvx)
-                lwp = np.copy(lwpx)
                 psfc = np.copy(psfcx)
             else:
                 secs = np.append(secs, bt+to)
                 elev = np.append(elev, elevx)
                 if mwr_n_tb_fields > 0:
                     tbsky = np.append(tbsky,tbskyx,axis =1)
-                pwv = np.append(pwv,pwvx)
-                lwp = np.append(lwp,lwpx)
                 psfc = np.append(psfc, psfcx)
             nmwr_points = len(secs)
 
@@ -879,8 +852,6 @@ def read_mwr(path, rootname, date, mwr_type, step, mwr_elev_field, mwr_n_tb_fiel
                 if mwr_n_tb_fields > 0:
                     tbsky = np.copy(tbsky[:,foo])
                     tbsky0 = np.copy(tbsky0[:,foo])
-                pwv = pwv[foo]
-                lwp = lwp[foo]
                 psfc = psfc[foo]
 
     if mwr_type == 0:
@@ -894,11 +865,11 @@ def read_mwr(path, rootname, date, mwr_type, step, mwr_elev_field, mwr_n_tb_fiel
         idx = np.arange(0, len(secs)/step, dtype=int)*step
 
         if mwr_n_tb_fields == 0:
-           return ({'success':1, 'secs':secs[idx], 'ymd':ymd[idx], 'hour':hour[idx], 'pwv':pwv[idx], 'lwp':lwp[idx],
+           return ({'success':1, 'secs':secs[idx], 'ymd':ymd[idx], 'hour':hour[idx], 
                  'lat':lat, 'lon':lon, 'alt':alt, 'psfc':psfc[idx], 'n_fields':mwr_n_tb_fields,
                  'type':mwr_type, 'rootname':rootname})
         else:
-           return ({'success':1, 'secs':secs[idx], 'ymd':ymd[idx], 'hour':hour[idx], 'pwv':pwv[idx], 'lwp':lwp[idx],
+           return ({'success':1, 'secs':secs[idx], 'ymd':ymd[idx], 'hour':hour[idx], 
                  'lat':lat, 'lon':lon, 'alt':alt, 'psfc':psfc[idx], 'n_fields':mwr_n_tb_fields,
                  'type':mwr_type, 'rootname':rootname, 'tbsky_orig':tbsky0[:,idx], 'tbsky_corr':tbsky[:,idx],
                   'freq':freq, 'noise':noise, 'bias':bias})
@@ -1834,7 +1805,7 @@ def grid_mwr(mwr, avg_instant, secs, tavg, time_delta, verbose):
     if mwr['type'] <= 0:
         missing = np.ones(len(secs))*-999.
         return {'success':1, 'secs':secs, 'ymd':ymd, 'hour':hour, 'n_fields':0,
-                'pwv':missing, 'lwp':missing, 'type':mwr['type'], 'rootname':'none found'}
+                'type':mwr['type'], 'rootname':'none found'}
 
     # If the Tavg is too low (or zero), then inflate it somewhat. Units are minutes
 
@@ -1846,10 +1817,6 @@ def grid_mwr(mwr, avg_instant, secs, tavg, time_delta, verbose):
     # Now directly specifying the averaging time for the window
     twin = time_delta*60*2
 
-    # Allocate the needed space
-    pwv = np.ones(len(secs))*-999.
-    lwp = np.ones(len(secs))*-999.
-
     if mwr['n_fields'] > 0:
         tbsky = np.ones((mwr['n_fields'],len(secs)))*-999.0
 
@@ -1858,11 +1825,7 @@ def grid_mwr(mwr, avg_instant, secs, tavg, time_delta, verbose):
         # We are averaging the MWR data over the averaging interval
 
         for i in range(len(secs)):
-            foo = np.where((mwr['secs'] >= secs[i]-twin*60./2.) & (mwr['secs'] < secs[i]+twin*60./2.) & (mwr['pwv'] > 0))[0]
-            if len(foo) > 0:
-                pwv[i] = np.nanmean(mwr['pwv'][foo])
-                lwp[i] = np.nanmean(mwr['lwp'][foo])
-
+            foo = np.where((mwr['secs'] >= secs[i]-twin*60./2.) & (mwr['secs'] < secs[i]+twin*60./2.))[0]
             if mwr['n_fields'] > 0:
                 foo = np.where((mwr['secs'] >= secs[i]-twin*60./2.) & (mwr['secs'] < secs[i]+twin*60./2.))[0]
 
@@ -1875,12 +1838,10 @@ def grid_mwr(mwr, avg_instant, secs, tavg, time_delta, verbose):
         # but the point taken must be within the averaging interval
 
         for i in range(len(secs)):
-            foo = np.where((mwr['secs'] >= secs[i]-twin*60./2.) & (mwr['secs'] < secs[i]+twin*60./2.) & (mwr['pwv'] > 0))[0]
+            foo = np.where((mwr['secs'] >= secs[i]-twin*60./2.) & (mwr['secs'] < secs[i]+twin*60./2.))[0]
             if len(foo) > 0:
                 dell = np.abs(secs[i] - mwr['secs'][foo])
                 bar = np.where(dell == np.nanmin(dell))[0][0]
-                pwv[i] = mwr['pwv'][foo[bar]]
-                lwp[i] = mwr['lwp'][foo[bar]]
 
             if mwr['n_fields'] > 0:
                 foo = np.where((mwr['secs'] >= secs[i]-twin*60./2.) & (mwr['secs'] < secs[i]+twin*60./2.))[0]
@@ -1897,11 +1858,11 @@ def grid_mwr(mwr, avg_instant, secs, tavg, time_delta, verbose):
     # The structure being returned depends on the number of Tb fields desired
 
     if mwr['n_fields'] == 0:
-        return ({'success':1, 'secs':secs, 'ymd':ymd, 'hour':hour, 'pwv':pwv,
-                'lwp':lwp, 'n_fields':0, 'type': mwr['type'], 'rootname':mwr['rootname']})
+        return ({'success':1, 'secs':secs, 'ymd':ymd, 'hour':hour, 
+                'n_fields':0, 'type': mwr['type'], 'rootname':mwr['rootname']})
     else:
-        return ({'success':1, 'secs':secs, 'ymd':ymd, 'hour':hour, 'pwv':pwv,
-                'lwp':lwp, 'n_fields':mwr['n_fields'], 'tbsky':tbsky, 'freq':mwr['freq'],
+        return ({'success':1, 'secs':secs, 'ymd':ymd, 'hour':hour, 
+                'n_fields':mwr['n_fields'], 'tbsky':tbsky, 'freq':mwr['freq'],
                 'noise':mwr['noise'], 'bias':mwr['bias'], 'type': mwr['type'], 'rootname':mwr['rootname']})
 
 ################################################################################
