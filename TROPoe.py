@@ -1,4 +1,4 @@
-__version__ = '0.2.79'
+__version__ = '0.2.81'
 
 import os
 import sys
@@ -482,8 +482,7 @@ fail, aeri, mwr, mwrscan = Data_reads.read_all_data(date, z, vip['tres'], dostop
     vip['aeri_min_675_bt'], vip['aeri_max_675_bt'], vip['aeri_spec_cal_factor'],
     vip['mwr_path'], vip['mwr_rootname'], vip['mwr_type'], vip['mwr_elev_field'], vip['mwr_n_tb_fields'],
     vip['mwr_tb_replicate'], vip['mwr_tb_field_names'], vip['mwr_tb_freqs'], vip['mwr_tb_noise'],
-    vip['mwr_tb_bias'], vip['mwr_tb_field1_tbmax'], vip['mwr_pwv_field'], vip['mwr_pwv_scalar'],
-    vip['mwr_lwp_field'], vip['mwr_lwp_scalar'], vip['cbh_path'], vip['cbh_type'], vip['cbh_window_in'],
+    vip['mwr_tb_bias'], vip['mwr_tb_field1_tbmax'], vip['cbh_path'], vip['cbh_type'], vip['cbh_window_in'],
     vip['cbh_window_out'], vip['cbh_default_ht'], vip['aeri_hatch_switch'],
     vip['aeri_use_missingDataFlag'], vip)
 
