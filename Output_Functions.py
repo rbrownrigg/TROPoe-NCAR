@@ -948,7 +948,7 @@ def create_xret(xret, fsample, vip, aeri, Xa, Sa, z, bands, obsdim, obsflag):
              'sigY':np.zeros(len(obsflag)),
              'flagY':np.zeros(len(obsflag)), 'nitr':0,
              'z':z, 'p':np.zeros(len(z)), 'hatchopen':0,
-             'mwr_pwv':0., 'mwr_lwp':0., 'cbh':0., 'cbhflag':0,
+             'cbh':0., 'cbhflag':0,
              'x0':Xa*0, 'Xn':Xa*0, 'Fxn':Y*0, 'Sop':Sop, 'K':Kij, 'Gain':Gain, 'Akern':Akern,
              'vres':vres, 'cdfs':cdfs, 'gamma':0., 'qcflag':0, 'sic':sic, 'dfs':dfs, 'di2m':0.,
              'rmsa':0., 'rmsr':0., 'rmsp':0., 'chi2':0., 'converged':0}
