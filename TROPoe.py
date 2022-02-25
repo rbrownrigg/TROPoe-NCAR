@@ -1,4 +1,4 @@
-__version__ = '0.2.82'
+__version__ = '0.2.83'
 
 import os
 import sys
@@ -1326,7 +1326,7 @@ for i in range(len(aeri['secs'])):                        # { loop_i
             # If the Jacobian did not compute properly (i.e., an error ocurred),
             # then we need to abort
             if flag == 0:
-                print('-- Skipping this sample due to issure with MonoRTM Jacobian (likely bad input profile)')
+                print('-- Skipping this sample due to issue with MonoRTM Jacobian (likely bad input profile)')
                 continue_next_sample = 1
                 break
 
@@ -1674,7 +1674,8 @@ for i in range(len(aeri['secs'])):                        # { loop_i
         Akern  = (Binv.dot(Kij.T).dot(SmInv).dot(Kij)).T
 
         if(vip['max_iterations'] == 0):
-            print(f'        DDT - compute_jacobian_xx took {totaltime:.1f} seconds')
+            if(vip['aeri_type'] > 0):
+                print(f'        DDT - compute_jacobian_xx took {totaltime:.1f} seconds')
             print('Special debug mode -- writing variables from retrieval calcs in the directory '+vip['lbl_temp_dir'])
             #Output_Functions.write_variable(    B,vip['lbl_temp_dir']+'/tropoe_python_output.B.cdf')
             #Output_Functions.write_variable(SaInv,vip['lbl_temp_dir']+'/tropoe_python_output.SaInv.cdf')
@@ -1999,7 +2000,7 @@ for i in range(len(aeri['secs'])):                        # { loop_i
         xtmp = {'idx':i, 'secs':aeri['secs'][i], 'ymd':aeri['ymd'][i], 'hour':aeri['hour'][i],
                 'nX':nX, 'nY':nY, 'dimY':np.copy(dimY), 'Y':np.copy(Y), 'sigY':np.copy(sigY), 'flagY':np.copy(flagY),
                 'niter':itern, 'z':np.copy(z), 'p':np.copy(p), 'hatchopen':aeri['hatchopen'][i],
-                'mwr_pwv':mwr['pwv'][i], 'mwr_lwp':mwr['lwp'][i], 'cbh':cbh, 'cbhflag':cbhflag,
+                'cbh':cbh, 'cbhflag':cbhflag,
                 'X0':np.copy(X0), 'Xn':np.copy(Xn), 'FXn':np.copy(FXn), 'Sop':np.copy(Sop),
                 'K':np.copy(Kij), 'Gain':np.copy(Gain), 'Akern':np.copy(Akern), 'vres':np.copy(vres),
                 'gamma':gfac, 'qcflag':0, 'sic':sic, 'dfs':np.copy(dfs), 'cdfs':np.copy(cdfs), 'di2m':di2m, 'rmsa':rmsa,
@@ -2058,7 +2059,7 @@ for i in range(len(aeri['secs'])):                        # { loop_i
         xtmp = {'idx':i, 'secs':aeri['secs'][i], 'ymd':aeri['ymd'][i], 'hour':aeri['hour'][i],
                 'nX':nX, 'nY':nY, 'dimY':np.copy(dimY), 'Y':np.copy(Y), 'sigY':np.copy(sigY), 'flagY':np.copy(flagY),
                 'niter':itern, 'z':np.copy(z), 'p':np.copy(p), 'hatchopen':aeri['hatchopen'][i],
-                'mwr_pwv':mwr['pwv'][i], 'mwr_lwp':mwr['lwp'][i], 'cbh':cbh, 'cbhflag':cbhflag,
+                'cbh':cbh, 'cbhflag':cbhflag,
                 'X0':np.copy(X0), 'Xn':np.copy(Xn), 'FXn':np.copy(FXn), 'Sop':np.copy(Sop),
                 'K':np.copy(Kij), 'Gain':np.copy(Gain), 'Akern':np.copy(Akern), 'vres':np.copy(vres),
                 'gamma':gfac, 'qcflag':0, 'sic':sic, 'dfs':np.copy(dfs), 'cdfs':np.copy(cdfs), 'di2m':di2m, 'rmsa':rmsa,

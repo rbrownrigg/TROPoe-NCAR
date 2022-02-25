@@ -1421,7 +1421,7 @@ def radxfer_microwave(freq, t, od, sfc_t=None, sfc_e=None, upwelling=None):
             sfce = 0.0
         else:   
             sfce = np.zeros(len(freq))
-        sfct = 0. # Temperature of deep space...
+        sfct = 2.75 # K, Temperature of deep space...
         
         # Set the indices for the loop
         k_start = len(opd[:,0])-1
