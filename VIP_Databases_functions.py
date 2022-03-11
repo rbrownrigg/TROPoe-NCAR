@@ -133,7 +133,7 @@ full_vip = ({
     'mwrscan_n_tb_fields': {'value': 0, 'comment': 'Number of fields to read in', 'default': True},
     'mwrscan_n_elevations': {'value': 2, 'comment': 'The number of elevations to use in retrieval (put zenith obs in \'mwr_type\')', 'default': True},
     'mwrscan_elevations': {'value': '20,160', 'comment': 'The elevation angles to use in deg, where 90 is zenith.  The code will look for these obs within the averaging interval', 'default': True},
-    'mwrscan_tb_field1_tbmax': {'value': '330.', 'comment': 'Maximum value [K] in the first Tb field, used for QC', 'default': True},
+    'mwrscan_tb_field1_tbmax': {'value': 330., 'comment': 'Maximum value [K] in the first Tb field, used for QC', 'default': True},
     'mwrscan_tb_field_names': {'value': 'tbsky23,tbsky31', 'comment': 'Comma separated list of field names for the Tb fields', 'default': True},
     'mwrscan_tb_freqs': {'value': '23.8,31.4', 'comment': 'Comma separated list of frequency [GHz] of MWR', 'default': True},
     'mwrscan_tb_noise': {'value': '0.3,0.3', 'comment': 'Comma separated list of noise levels [K] in the MWR Tb fields', 'default': True},
