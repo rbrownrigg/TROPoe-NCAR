@@ -7,6 +7,7 @@ from subprocess import Popen, PIPE
 import Other_functions
 import Calcs_Conversions
 import LBLRTM_Functions
+import sys
 
 ################################################################################
 # This file contains the following functions:
@@ -2545,10 +2546,10 @@ def compute_jacobian_microwavescan_3method(Xn, p, z, mwrscan, cbh, vip, workdir,
     foo = np.where(elev > 90)[0]
     if len(foo) > 0:
         elev[foo] = 180-elev[foo]
-    uelev = elev[0]
+    uelev = np.array([elev[0]])
     for ii in range(len(elev)):
         unq = 1
-        for jj in range(uelev):
+        for jj in range(len(uelev)):
             if np.abs(elev[ii]-uelev[jj]) < 0.1: unq = 0
         if unq == 1: uelev = np.append(uelev, elev[ii])
 
@@ -2557,8 +2558,8 @@ def compute_jacobian_microwavescan_3method(Xn, p, z, mwrscan, cbh, vip, workdir,
 
     for ii in range(len(uelev)):
             # Initialize these after every elevation height
-        KKij = np.zeros(mwrscan['n_fields'],len(Xn))
-        FFXn = np.zeros(mwrscan['n_fields'])*0 + missing
+        KKij = np.zeros((mwrscan['n_fields'],len(Xn)))
+        FFXn = np.zeros((mwrscan['n_fields']))*0 + missing
 
         # Extract out the information needed from the state vector
         k = len(z)
@@ -2575,7 +2576,7 @@ def compute_jacobian_microwavescan_3method(Xn, p, z, mwrscan, cbh, vip, workdir,
         cnt = 0
         command = monortm_exec + ' ' + monortm_tfile + ' {:3.1f} {:8.2f} {:6.3f} {:6.3f} {:6.3f}'.format(1.0, lwp, cbh, cth, 90-uelev[ii]+cnt*elevOff)
         a = LBLRTM_Functions.run_monortm(command, mwrscan['freq'], z, stdatmos)
-        while(a['status'] != 0 or cnt >= 2):
+        while((a['status'] != 1) & (cnt < 2)):
             cnt += 1
             command = monortm_exec + ' ' + monortm_tfile + ' {:3.1f} {:8.2f} {:6.3f} {:6.3f} {:6.3f}'.format(1.0, lwp, cbh, cth, 90-uelev[ii]+cnt*elevOff)
             a = LBLRTM_Functions.run_monortm(command, mwrscan['freq'], z, stdatmos)
@@ -2593,7 +2594,7 @@ def compute_jacobian_microwavescan_3method(Xn, p, z, mwrscan, cbh, vip, workdir,
             cnt = 0
             command = monortm_exec + ' ' + monortm_tfile + ' {:3.1f} {:8.2f} {:6.3f} {:6.3f} {:6.3f}'.format(1.0, lwp, cbh, cth, 90-uelev[ii]+cnt*elevOff)
             b = LBLRTM_Functions.run_monortm(command, mwrscan['freq'], z, stdatmos)
-            while(b['status'] != 0 or cnt >= 2):
+            while((b['status'] != 1) & (cnt < 2)):
                 cnt += 1
                 command = monortm_exec + ' ' + monortm_tfile + ' {:3.1f} {:8.2f} {:6.3f} {:6.3f} {:6.3f}'.format(1.0, lwp, cbh, cth, 90-uelev[ii]+cnt*elevOff)
                 b = LBLRTM_Functions.run_monortm(command, mwrscan['freq'], z, stdatmos)
@@ -2611,7 +2612,7 @@ def compute_jacobian_microwavescan_3method(Xn, p, z, mwrscan, cbh, vip, workdir,
             cnt = 0
             command = monortm_exec + ' ' + monortm_tfile + ' {:3.1f} {:8.2f} {:6.3f} {:6.3f} {:6.3f}'.format(1.0, lwp, cbh, cth, 90-uelev[ii]+cnt*elevOff)
             c = LBLRTM_Functions.run_monortm(command, mwrscan['freq'], z, stdatmos)
-            while(c['status'] != 0 or cnt >= 2):
+            while((c['status'] != 1) & (cnt < 2)):
                 cnt += 1
                 command = monortm_exec + ' ' + monortm_tfile + ' {:3.1f} {:8.2f} {:6.3f} {:6.3f} {:6.3f}'.format(1.0, lwp, cbh, cth, 90-uelev[ii]+cnt*elevOff)
                 c = LBLRTM_Functions.run_monortm(command, mwrscan['freq'], z, stdatmos)
@@ -2628,7 +2629,7 @@ def compute_jacobian_microwavescan_3method(Xn, p, z, mwrscan, cbh, vip, workdir,
             cnt = 0
             command = monortm_exec + ' ' + monortm_tfile + ' {:3.1f} {:8.2f} {:6.3f} {:6.3f} {:6.3f}'.format(1.0, lwp, cbh, cth, 90-uelev[ii]+cnt*elevOff)
             d = LBLRTM_Functions.run_monortm(command, mwrscan['freq'], z, stdatmos)
-            while(d['status'] != 0 or cnt >= 2):
+            while((d['status'] != 1) & (cnt < 2)):
                 cnt += 1
                 command = monortm_exec + ' ' + monortm_tfile + ' {:3.1f} {:8.2f} {:6.3f} {:6.3f} {:6.3f}'.format(1.0, lwp, cbh, cth, 90-uelev[ii]+cnt*elevOff)
                 d = LBLRTM_Functions.run_monortm(command, mwrscan['freq'], z, stdatmos)
@@ -2662,6 +2663,7 @@ def compute_jacobian_microwavescan_3method(Xn, p, z, mwrscan, cbh, vip, workdir,
             # from the retrieval.
 
             tt = np.interp(a['z'], stdatmos['z'], stdatmos['t'])
+
             foo = np.where(a['z'] <= np.max(z))[0]
             if len(foo) != len(t):
                 print('Problem here -- this should not be happen MWR-scan')
