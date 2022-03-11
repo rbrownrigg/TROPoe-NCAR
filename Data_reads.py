@@ -1935,7 +1935,7 @@ def grid_mwrscan(mwrscan, secs, n_elevations, elevations, timewindow, verbose):
     idx = np.arange(mwrscan['n_fields'])
     for i in range(n_elevations):
         ntbsky[i*mwrscan['n_fields']+idx,:] = tbsky[i,:,:]
-        dim[i*mwrscan['n_fields']+idx] = int(mwrscan['freq']*1000.) + delev[i]/1000.
+        dim[i*mwrscan['n_fields']+idx] = mwrscan['freq']*1000. + delev[i]/1000.
         noise[i*mwrscan['n_fields']+idx] = mwrscan['noise']
 
     return ({'success': 1, 'secs': secs, 'ymd': ymd, 'hour': hour, 'n_elevations': n_elevations,
