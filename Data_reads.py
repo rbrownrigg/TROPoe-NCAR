@@ -70,6 +70,7 @@ def findfile(path,pattern):
         # Now prepend the path to each files
     for i in range(len(files)):
         files[i] = path+'/'+files[i]
+    files.sort()
     return files
 
 ################################################################################
@@ -176,7 +177,7 @@ def read_aeri_ch(path,date,aeri_type,fv,fa,aeri_spec_cal_factor,
             xambPres = fid.variables['atmosphericPressure'][:]
         else:
             xambPres = np.full_like(-999,to)
-        if len(np.where(np.array(list(fid.variables.keys())) == 'sceneMirrorAngle')[0]) > 0:
+        if ((len(np.where(np.array(list(fid.variables.keys())) == 'sceneMirrorAngle')[0])> 0) & (aeri_type == 5)):
             xscenemirrorangle = fid.variables['sceneMirrorAngle'][:]
         else:
             xscenemirrorangle = np.zeros(len(to))      # Assume all zenith views if the field isn't found
@@ -1426,7 +1427,7 @@ def read_vceil(path, date, vceil_type, ret_secs, verbose):
         if verbose == 3:
             print('Reading in VCEIL data')
         for i in range(len(udate)):
-            files = files + (findfile(path,'*(ceil,ct25)*' + udate[i] + '*.(cdf|nc)'))
+            files = files + (findfile(path,'*(ceil|ct25)*' + udate[i] + '*.(cdf|nc)'))
         if len(files) == 0:
             print('No CBH files found for this date')
             return err
@@ -1458,7 +1459,7 @@ def read_vceil(path, date, vceil_type, ret_secs, verbose):
             print('Reading in ASOS/AWOS')
 
         for i in range(len(udate)):
-            files = files + (findfile(path, '*(ceil,cbh)*' + udate[i] + '*.(cdf|nc)'))
+            files = files + (findfile(path, '*(ceil|cbh)*' + udate[i] + '*.(cdf|nc)'))
         if len(files) == 0:
             print('No CBH files found for this data')
             return err
@@ -1971,7 +1972,6 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
             str(date) ,  (datetime.strptime(str(date), '%Y%m%d') + timedelta(days=1)).strftime('%Y%m%d') ]
 
     if wv_prof_type == 0:
-        a = 0           # Do nothing -- read nothing -- make no noise at all
         qtype = 'None'
         external['nQprof'] = 0.0
 
@@ -1986,7 +1986,7 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
         for i in range(len(dates)):
             files = files + sorted(findfile(wv_prof_path,'*sonde*' + dates[i] + '*.(cdf|nc)'))
 
-        external['nQprof'] = 0.0
+        external['nQprof'] = 0
         if len(files) == 0:
             if verbose >= 1:
                 print('No ARM radiosondes found in this directory for this date')
@@ -1996,7 +1996,6 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
                 maxht += 1
             zzq = np.arange(maxht*100+1)*0.01  #Define a default 10-m grid for these sondes [km AGL]
 
-            external['nQprof'] = 0
             for i in range(len(files)):
                  fid = Dataset(files[i],'r')
                  bt = fid.variables['base_time'][0].astype('float')
@@ -2008,7 +2007,7 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
 
                  fid.close()
                  z = (z-z[0])/1000.
-                 foo = np.where((p > 0) & (p < 1050) & (t > -150) & (t < 60) & (u >= 0) & (u < 103))[0]
+                 foo = np.where((p > 0) & (p < 1050) & (t > -150) & (t < 60) & (u >= 0) & (u < 103) & (z >= 0))[0]
 
                  if len(foo) < 2:
                      continue
@@ -2085,8 +2084,8 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
                     if len(foo) == 0:
                         print('This should not happen when processing the RLID WV data')
                     htx = htx[foo]
-                    wvx = wvx[foo,:]
-                    swvx = wvx[foo,:]
+                    wvx = wvx[:,foo]
+                    swvx = wvx[:,foo]
 
                     # And only keep samples where the qc_flag is 0 (i.e. good quality)
                     foo = np.where(qcflag == 0)[0]
@@ -2095,8 +2094,8 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
                         continue
                     else:
                         to = to[foo]
-                        wvx = wvx[:,foo]
-                        swvx = swvx[:,foo]
+                        wvx = wvx[foo,:]
+                        swvx = swvx[foo,:]
 
                 else:
                     # This handles the rlprofmr1news dataset
@@ -2111,8 +2110,8 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
                     if len(foo) == 0:
                         print('This should not happen when processing the RLID WV data')
                     htx = htx[foo]
-                    wvx = wvx[foo,:]
-                    swvx = swvx[foo,:]
+                    wvx = wvx[:,foo]
+                    swvx = swvx[:,foo]
 
                 # Now append the data to the growing structure
                 if nprof == 0:
@@ -2127,16 +2126,13 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
 
             external['nQprof'] = len(qsecs)
 
-
         if external['nQprof'] > 0:
             zzq = np.copy(htx)
             wvmultiplier = 1.      # To scale the WV profiles to be reasonable order of magnitude
             wv = wv/wvmultiplier
             swv = wv/wvmultiplier
-
-        wv = wv.T
-        swv = swv.T
-
+            wv = wv.T
+            swv = swv.T
 
     # Read in the NCAR WV DIAL data (for 2014-2017 time period)
 
@@ -2171,9 +2167,10 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
                     qsecs = np.append(qsecs,secsx)
                     wv = np.append(wv, wvx, axis = 0)
                     swv = np.append(swv, swvx, axis = 0)
+
                 external['nQprof'] = len(qsecs)
             zzq = zzq / 1000.           # Convert m AGL to km AGL
-
+            
         if external['nQprof'] > 0:
             wvmultiplier = 1e16           # To scale the WV profiles to be reasonable order of magnitude
             wv = wv/wvmultiplier
@@ -2181,8 +2178,8 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
             qunit = 'molecules/cm3 (sccaled by 1e16)'
             qtype = 'NCAR water vapor DIAL'
 
-        wv = wv.T
-        swv = swv.T
+            wv = wv.T
+            swv = swv.T
 
     # Read in the numerical weather model soundings (Greg Blumberg's format)
 
@@ -2294,7 +2291,7 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
         qunit = 'g/kg'
         qtype = 'Vaisala WV DIAL data'
 
-    # Read in the NCAR water vapor DIAL profiles (from 2019, after Turner QC applied)
+    # Read in the NCAR water vapor DIAL profiles (from 2019 and beyond)
 
     elif wv_prof_type == 6:
         if verbose >= 1:
@@ -2336,14 +2333,14 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
 
             zzq = zzq / 1000.           # Convert m AGL to km AGL
 
-        wv = wv.T
-        swv = swv.T
-        mask = mask.T
+            wv = wv.T
+            swv = swv.T
+            mask = mask.T
 
-        # Apply the mask to the data.
-        foo = np.where(mask == 1)
-        wv[foo] = np.nan
-        swv[foo] = np.nan
+            # Apply the mask to the data.
+            foo = np.where(mask == 1)
+            wv[foo] = np.nan
+            swv[foo] = np.nan
 
         if external['nQprof'] > 0:
             qunit = 'g/m3'
@@ -2423,7 +2420,6 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
     # No external temperature profile source specified.....
     tunit = ' '
     if temp_prof_type == 0:
-        a = 0          # Do nothing -- read nothing -- make no noise at all
         ttype = 'none'
         external['nTprof'] = 0
 
@@ -2463,7 +2459,7 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
 
                 z = (z-z[0])/1000.
 
-                foo = np.where((p > 0) & (p < 1050) & (t > -150) & (t < 60) & (u >= 0) & (u < 103))[0]
+                foo = np.where((p > 0) & (p < 1050) & (t > -150) & (t < 60) & (u >= 0) & (u < 103) & (z >= 0))[0]
 
                 if len(foo) < 2:
                     continue
@@ -2536,8 +2532,8 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
                         print('This should not happen when processing the RLID WV data')
 
                     htx = htx[foo]
-                    tempx = tempx[foo,:]
-                    stempx = stempx[foo,:]
+                    tempx = tempx[:,foo]
+                    stempx = stempx[:,foo]
 
                 else:
 
@@ -2557,8 +2553,8 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
                         print('This should not happen when processing the RLID WV data')
 
                     htx = htx[foo]
-                    tempx = tempx[foo,:]
-                    stempx = stempx[foo,:]
+                    tempx = tempx[:,foo]
+                    stempx = stempx[:,foo]
 
 
                 # Now append the data to the growing structure
@@ -2569,13 +2565,15 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
                     stemp = np.copy(stempx)
                 else:
                     tsecs = np.append(tsecs, bt+to)
-                    temp  = np.append(temp,tempx, axis = 1)
-                    stemp = np.append(stemp,stempx, axis = 1)
+                    temp  = np.append(temp,tempx, axis = 0)
+                    stemp = np.append(stemp,stempx, axis = 0)
                 nprof = len(tsecs)
 
             temp = temp - 273.16
             external['nTprof'] = len(tsecs)
             zzt = np.copy(htx)
+            temp = temp.T
+            stemp = stemp.T
 
     # Read in the numerical weather model soundings (Greg Blumberg's format)
     elif temp_prof_type == 4:
@@ -2799,6 +2797,7 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
         new_swater = np.zeros((len(ht), len(secs)))
 
         for i in range(external['nQprof']):
+            print(qsecs[i])
             tmp_water[:,i] = np.interp(ht,zzq,wv[:,i])
             tmp_swater[:,i] = np.interp(ht,zzq,swv[:,i])
             foo = np.where((wv[:,i] < 0) & (zzq >= wv_prof_minht))[0]
@@ -2849,10 +2848,19 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
         # that is within tres of the AERIoe time. If so, then flag this
 
         for i in range(len(secs)):
+            print(secs[i])
             foo = np.where((secs[i]-timeres <= qsecs) & (secs[i]+2*timeres >= qsecs))[0]
             if len(foo) > 0:
                 timeflag[i] = 2                   # Use 2 for water vapor flag ("1" for temp)
 
+        # This checks to make sure there is no bad data that gets through. Mostly
+        # for the old NCAR DIAL data. Water vapor must be 0 or positive and the
+        # uncertainty must be greater than zero (We are never certain of anything).
+        
+        foo = np.where((new_water < 0) | (new_swater <= 0))
+        new_water[foo] = np.nan
+        new_swater[foo] = np.nan
+        
         # Replace any NaN data with missing values
         new_water[np.isnan(new_water)] = -999
         new_swater[np.isnan(new_swater)] = -999
@@ -2870,6 +2878,7 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
         new_stemp = np.zeros((len(ht), len(secs)))
 
         for i in range(external['nTprof']):
+            
             tmp_temp[:,i] = np.interp(ht,zzt,temp[:,i])
             tmp_stemp[:,i] = np.interp(ht,zzt,stemp[:,i])
             foo = np.where((temp[:,i] < -900) & (zzt >= temp_prof_minht))[0]
@@ -3031,7 +3040,6 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
             str(date) ,  (datetime.strptime(str(date), '%Y%m%d') + timedelta(days=1)).strftime('%Y%m%d') ]
 
     if sfc_temp_type == 0:
-        a = 0                 # Do nothing -- read nothing -- make no noise at all
         ttype = 'none'
         external['nTsfc'] = 0
 
@@ -3072,12 +3080,10 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
                     tsecs = bt+to
                     temp = np.copy(t)
                     stemp = np.ones(len(t))*sigma_t
-                    press = np.copy(p)
                 else:
                     tsecs = np.append(tsecs,bt+to)
                     temp = np.append(temp,t)
                     stemp = np.append(stemp,np.ones(len(t))*sigma_t)
-                    press = np.append(press, p)
                 external['nTsfc'] = len(tsecs)
 
         # Read in the NCAR ISFS data
@@ -3133,12 +3139,10 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
                     tsecs = bt+to
                     temp = np.copy(t)
                     stemp = np.ones(len(t))*sigma_t
-                    press = np.copy(p)
                 else:
                     tsecs = np.append(tsecs,bt+to)
                     temp = np.append(temp,t)
                     stemp = np.append(stemp,np.ones(len(t))*sigma_t)
-                    press = np.append(press, p)
                 external['nTsfc'] = len(tsecs)
 
         # Read in the microwave radiometer met data
@@ -3211,12 +3215,10 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
                     tsecs = bt+to
                     temp = np.copy(t)
                     stemp = np.ones(len(t))*sigma_t
-                    press = np.copy(p)
                 else:
                     tsecs = np.append(tsecs,bt+to)
                     temp = np.append(temp,t)
                     stemp = np.append(stemp,np.ones(len(t))*sigma_t)
-                    press = np.append(press, p)
                 external['nTsfc'] = len(tsecs)
 
         # An undefined external surface met temperature source was specified...
@@ -3230,7 +3232,6 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
 
     qunit = ' '
     if sfc_wv_type == 0:
-        a = 0                # Do nothing -- read nothing -- make no noise at all
         qtype = 'none'
         external['nQsfc'] = 0
 
@@ -3285,12 +3286,10 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
                     qsecs = bt+to
                     wv = np.copy(w0)
                     swv = np.copy(sigma_w)
-                    press = np.copy(p)
                 else:
                     qsecs = np.append(qsecs,bt+to)
                     wv = np.append(wv,w0)
                     swv = np.append(swv,sigma_w)
-                    press = np.append(press, p)
                 external['nQsfc'] = len(qsecs)
 
         # Read in the NCAR ISFS data
@@ -3360,12 +3359,10 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
                     qsecs = bt+to
                     wv = np.copy(w0)
                     swv = np.copy(sigma_w)
-                    press = np.copy(p)
                 else:
                     qsecs = np.append(qsecs,bt+to)
                     wv = np.append(wv,w0)
                     swv = np.append(swv,sigma_w)
-                    press = np.append(press, p)
                 external['nQsfc'] = len(qsecs)
 
         # Read in the MWR met data
@@ -3373,7 +3370,7 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
         if verbose >= 1:
             print('Reading in MWR met water vapor data')
 
-        names = ['mwr','met']
+        files = []
         for i in range(len(dates)):
             files = files + (findfile(sfc_path,'*(mwr|met)*' + dates[i] + '*.(cdf|nc)'))
 
@@ -3450,12 +3447,10 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
                     qsecs = bt+to
                     wv = np.copy(w0)
                     swv = np.copy(sigma_w)
-                    press = np.copy(p)
                 else:
                     qsecs = np.append(qsecs,bt+to)
                     wv = np.append(wv,w0)
                     swv = np.append(swv,sigma_w)
-                    press = np.append(press, p)
                 external['nQsfc'] = len(qsecs)
 
         # An undefined external surface met water vapor source was specified
@@ -3466,8 +3461,7 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
     # Read the external surface pressure data next
     # No external  source specified...
 
-    if 'sfc_p_type' == 0:
-        a = 0                # Do nothing -- read nothing -- make no noise at all
+    if sfc_p_type == 0:
         ptype = 'none'
         external['nPsfc'] = 0
 
@@ -3562,9 +3556,9 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
         # Read in the MWR met data
     elif sfc_p_type == 3:
         if verbose >= 1:
-            print('Reading in MWR met water vapor data')
+            print('Reading in MWR met pressure data')
 
-        names = ['mwr','met']
+        files = []
         for i in range(len(dates)):
             files = files + (findfile(sfc_path,'*(mwr|met)*' + dates[i] + '*.(cdf|nc)'))
 
@@ -3621,48 +3615,40 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
             #Bin the data
             tt0 = np.zeros(len(secs))
             st0 = np.zeros(len(secs))
-            p0 = np.zeros(len(secs))
             for i in range(len(secs)):
                 foo = np.where((secs[i]-tres*60/2. <= tsecs) & (tsecs <= secs[i] + tres*60/2.))[0]
                 if len(foo) > 0:
                     tt0[i] = np.nanmean(temp[foo])
                     st0[i] = np.nanmean(stemp[foo])
-                    p0[i] = np.nanmean(press[foo])
                 else:
                     tt0[i] = -999.
                     st0[i] = -999.
-                    p0[i] = -999.
+
         else:
             tt0 = np.interp(secs,tsecs,temp)
             st0 = np.interp(secs,tsecs,stemp)
-            p0 = np.interp(secs,tsecs,press)
             foo = np.where(secs < tsecs[0]-sfc_time_delta*3600)[0]
             if len(foo) > 0:
                 tt0[foo] = -999.
                 st0[foo] = -999.
-                p0[foo] = -999.
 
             # Make sure we did not interpolate out of bounds here.
             foo = np.where((tsecs[0]-sfc_time_delta*3600 <= secs) & (secs < tsecs[0]))[0]
             if len(foo) > 0:
                 tt0[foo] = temp[0]
                 st0[foo] = stemp[0]
-                p0[foo] = press[0]
             n = len(tsecs) - 1
             foo = np.where(tsecs[n]+sfc_time_delta*3600 < secs)[0]
             if len(foo) > 0:
                 tt0[foo] = -999.
                 st0[foo] = -999.
-                p0[foo] = -999.
             foo = np.where((tsecs[n] < secs) & (secs <= tsecs[n]+sfc_time_delta*3600))[0]
             if len(foo) > 0:
                 tt0[foo] = temp[0]
                 st0[foo] = stemp[0]
-                p0[foo] = press[0]
     else:
         tt0 = -999.
         st0 = -999
-        p0 = -999.
 
     if external['nQsfc'] > 0:
         # Compute the median time interval between Tsfc measurements [minutes]
@@ -3675,48 +3661,39 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
             #Bin the data
             qq0 = np.zeros(len(secs))
             sq0 = np.zeros(len(secs))
-            p0 = np.zeros(len(secs))
             for i in range(len(secs)):
                 foo = np.where((secs[i]-tres*60/2. <= qsecs) & (qsecs <= secs[i] + tres*60/2.))[0]
                 if len(foo) > 0:
                     qq0[i] = np.nanmean(wv[foo])
                     sq0[i] = np.nanmean(swv[foo])
-                    p0[i] = np.nanmean(press[foo])
                 else:
                     qq0[i] = -999.
                     sq0[i] = -999.
-                    p0[i] = -999.
         else:
             qq0 = np.interp(secs,qsecs,wv)
             sq0 = np.interp(secs,qsecs,swv)
-            p0 = np.interp(secs,qsecs,press)
             foo = np.where(secs < qsecs[0]-sfc_time_delta*3600)[0]
             if len(foo) > 0:
                 qq0[foo] = -999.
                 sq0[foo] = -999.
-                p0[foo] = -999.
 
             # Make sure we did not interpolate out of bounds here.
             foo = np.where((qsecs[0]-sfc_time_delta*3600 <= secs) & (secs < qsecs[0]))[0]
             if len(foo) > 0:
                 qq0[foo] = wv[0]
                 sq0[foo] = swv[0]
-                p0[foo] = press[0]
             n = len(qsecs) - 1
             foo = np.where(qsecs[n]+sfc_time_delta*3600 < secs)[0]
             if len(foo) > 0:
                 qq0[foo] = -999.
                 sq0[foo] = -999.
-                p0[foo] = -999.
             foo = np.where((qsecs[n] < secs) & (secs <= qsecs[n]+sfc_time_delta*3600))[0]
             if len(foo) > 0:
                 qq0[foo] = wv[0]
                 sq0[foo] = swv[0]
-                p0[foo] = -999.
     else:
         qq0 = -999.
         sq0 = -999.
-        p0 = -999.
 
     if external['nPsfc'] > 0:
         # Compute the median time interval between Psfc measurements [minutes]
@@ -3759,7 +3736,6 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
     # No external surface CO2 source specified....
     co2unit = ' '
     if co2_sfc_type == 0:
-        a = 0                  # Do nothing -- read nothing -- make no noise at all
         co2type = 'none'
         external['nCo2sfc'] = 0
 

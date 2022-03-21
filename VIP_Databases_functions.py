@@ -208,7 +208,7 @@ full_vip = ({
     'prior_lwp_sd': {'value': 50.0, 'comment': '1-sigma uncertainty in LWP [g/m2]', 'default': True},
     'prior_lReff_mn': {'value': 8.0, 'comment': 'Mean liquid Reff [microns]', 'default': True},
     'prior_lReff_sd': {'value': 4.0, 'comment': '1-sigma uncertainty in liquid Reff [microns]', 'default': True},
-    'prior_itau_mn': {'value': 1.0, 'comment': 'Mean ice cloud optical depth (geometric limit)', 'default': True},
+    'prior_itau_mn': {'value': 0.0, 'comment': 'Mean ice cloud optical depth (geometric limit)', 'default': True},
     'prior_itau_sd': {'value': 5.0, 'comment': '1-sigma uncertainty in ice cloud optical depth', 'default': True},
     'prior_iReff_mn': {'value': 25.0, 'comment': 'Mean ice cloud Reff [microns]', 'default': True},
     'prior_iReff_sd': {'value': 8.0, 'comment': '1-sigma uncertainty in ice cloud} Reff [Reff]', 'default': True},

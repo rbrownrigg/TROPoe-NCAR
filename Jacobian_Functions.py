@@ -2322,7 +2322,7 @@ def compute_jacobian_external_wv_profiler(Xn, p, z, minht, maxht, wv_type, wv_mu
             Kij[j,k+foo[j]] = 1
 
     # NCAR DIAL (from 2019 time frame sugh as SGP MPL demonstration IOP)
-
+    elif wv_type == 6:
         # Compute the Jacobian over the appropriate height
         foo = np.where((minht <= z) & (z <= maxht))[0]
         if len(foo) == 0:
@@ -2354,7 +2354,7 @@ def compute_jacobian_external_wv_profiler(Xn, p, z, minht, maxht, wv_type, wv_mu
 
 
     # AER's GVRP water vapor retrievals from RHUBC-2
-    elif wv_type == 6:
+    elif wv_type == 99:
         # The radiosonde data were read in and converted to wv mixing ratio
         foo = np.where((minht <= z) & (z <= maxht))[0]
         if len(foo) == 0:

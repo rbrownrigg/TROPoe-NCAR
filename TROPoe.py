@@ -1070,10 +1070,8 @@ for i in range(len(aeri['secs'])):                        # { loop_i
 
     # Select nice round numbers to use as the wavenumber limits for
     # the LBLRTM calc, but remember that I need to pad by 50 cm-1 for FSCAN
-#     lblwnum1 = np.int(np.min(wnum)-60)/100 * 100
-#     lblwnum2 = (np.int(np.max(wnum)+60)/100+1)*100
-    lblwnum1 = np.int((np.min(wnum)-60)/100) * 100
-    lblwnum2 = (np.int((np.max(wnum)+60)/100)+1)*100
+    lblwnum1 = int((np.min(wnum)-60)/100) * 100
+    lblwnum2 = (int((np.max(wnum)+60)/100)+1)*100
     continue_next_sample = 0          # A flag used to watch for bad jacobian calcs
 
     while ((itern <= vip['max_iterations']) & (converged == 0)):        # { While loop over iter
@@ -1859,11 +1857,11 @@ for i in range(len(aeri['secs'])):                        # { loop_i
         # am mixing units from all of the different types of observation
         # But I will also compute the chi-square value of the obs vs. F(Xn)
 
-        chi2 = np.sqrt(np.sum(((Y - FXn)/ Y)**2) / np.float(nY))
-        rmsa = np.sqrt(np.sum(((Y - FXn)/sigY)**2) / np.float(nY))
+        chi2 = np.sqrt(np.sum(((Y - FXn)/ Y)**2) / float(nY))
+        rmsa = np.sqrt(np.sum(((Y - FXn)/sigY)**2) / float(nY))
         feh = np.where((flagY == 1) | (flagY == 2) & (Y > -900))[0]
         if len(feh) > 0:
-            rmsr = np.sqrt(np.sum(((Y[feh] - FXn[feh])/sigY[feh])**2) / np.float(len(feh)))
+            rmsr = np.sqrt(np.sum(((Y[feh] - FXn[feh])/sigY[feh])**2) / float(len(feh)))
         else:
             rmsr = -999.
 
