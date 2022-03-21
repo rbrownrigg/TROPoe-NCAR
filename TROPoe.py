@@ -1,4 +1,4 @@
-__version__ = '0.2.89'
+__version__ = '0.2.90'
 
 import os
 import sys
@@ -140,6 +140,16 @@ globatt = {'algorithm_code': 'TROPoe Retrieval Code',
            'algorithm_reference2': 'DD Turner and WG Blumberg, Improvements to the AERIoe ' +
                     'thermodynamic profile retrieval algorithm. IEEE Selected Topics ' +
                     'Appl. Earth Obs. Remote Sens., 12, 1339-1354, doi:10.1109/JSTARS.2018.2874968',
+           'algorithm_reference3': 'DD Turner and U Loehnert, Ground-based temperature and humidity profiling: ' +
+                    'Combining active and passive remote sensors, Atmos. Meas. Tech., vol 14, pp 3033-3048, ' +
+                    'doi:10.5194/amt-14-3033-2021', 
+           'forward_model_reference1': 'The forward radiative transfer models are from Atmospheric and Environmental ' +
+                    'Research Inc (AER); an overview is provided by Clough et al., Atmospheric radiative transfer ' +
+                    'modeling: A summary of the AER codes, JQSRT, vol 91, pp 233-244, 2005, doi:10.1016/j.jqsrt.2004.05.058', 
+           'forward_model_reference2': 'The infrared model is LBLRTM; papers describing this model include ' + 
+                    'doi:10.1029/2018JD029508, doi:10.1175/amsmonographs-d-15-0041.1, and doi:10.1098/rsta.2011.0295', 
+           'forward_model_reference3': 'The microwave model is MonoRTM; papers describing this model include ' + 
+                    'doi:10.1109/TGRS.2010.2091416 and doi:10.1109/TGRS.2008.2002435', 
            'datafile_created_on_date': strftime("%Y-%m-%d %H:%M:%S", gmtime()),
            'datafile_created_on_machine': os.uname()[-1]}
 
