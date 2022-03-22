@@ -2797,7 +2797,6 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
         new_swater = np.zeros((len(ht), len(secs)))
 
         for i in range(external['nQprof']):
-            print(qsecs[i])
             tmp_water[:,i] = np.interp(ht,zzq,wv[:,i])
             tmp_swater[:,i] = np.interp(ht,zzq,swv[:,i])
             foo = np.where((wv[:,i] < 0) & (zzq >= wv_prof_minht))[0]
@@ -2848,7 +2847,6 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
         # that is within tres of the AERIoe time. If so, then flag this
 
         for i in range(len(secs)):
-            print(secs[i])
             foo = np.where((secs[i]-timeres <= qsecs) & (secs[i]+2*timeres >= qsecs))[0]
             if len(foo) > 0:
                 timeflag[i] = 2                   # Use 2 for water vapor flag ("1" for temp)
