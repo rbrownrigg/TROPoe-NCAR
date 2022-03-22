@@ -32,7 +32,7 @@ maxbands = 200  # The maximum number of bands to enable for the retrieval
 full_vip = ({
     'success': {'value': 0, 'comment': "Interal success flag. Not for outside use", 'default': False},
     'tres': {'value': 0, 'comment': 'Temporal resolution [min], 0 implies native AERI temporal resolution', 'default': True},
-    'avg_instant': {'value': 0, 'comment': 'A flag to specify if this is an average (0) over the tres period, or instantaneous (1) sample (i.e. do not average the data)', 'default': True},
+    'avg_instant': {'value': 1, 'comment': 'A flag to specify if this is an average (0) over the tres period, or instantaneous (1) sample (i.e. do not average the data)', 'default': True},
     'tag': {'value': 'tropoe', 'comment': 'String for temporary files / directories\n', 'default': True},
 
     'aeri_type': {'value': 0, 'comment': '0- output, options, and stop, 1 - ARM AERI data, 2 - dmv2cdf AERI data (C1_rnc.cdf and _sum.cdf), 3 - dmv2ncdf (C1.RNC.cdf and .SUM.cdf) , -1 - MWR data is to be used as MASTER dataset (no AERI data being read in)', 'default': True},
@@ -163,14 +163,14 @@ full_vip = ({
     'lbl_version': {'value': 'v12.1', 'comment': 'String with the version information on LBLRTM', 'default': False},
     'lbl_temp_dir': {'value': '/tmp', 'comment': 'Temporary working directory for the retrieval', 'default': False},
     'lbl_std_atmos': {'value': 6, 'comment': 'Standard atmosphere to use in LBLRTM and MonoRTM calcs', 'default': False},
-    'path_std_atmos': {'value': '/home/tropoe/vip/src/input/std_atmosphere.idl', 'comment': 'The path to the IDL save file with the standard atmosphere info in it', 'default': False},
+    'path_std_atmos': {'value': '/home/tropoe/vip/src/input/idl_code/std_atmosphere.idl', 'comment': 'The path to the IDL save file with the standard atmosphere info in it', 'default': False},
     'lbl_tape3': {'value': 'tape3.data', 'comment': 'The TAPE3 file to use in the lblrtm calculation.  Needs to be in the directory lbl_home/hitran/', 'default': False},
     'monortm_version': {'value': 'v5.0', 'comment': 'String with the version information on MonoRTM', 'default': False},
     'monortm_wrapper': {'value': '/home/tropoe/vip/src/monortm_v5.0/wrapper/monortm_v5', 'comment': 'Turner wrapper to run MonoRTM', 'default': False},
     'monortm_exec': {'value': '/home/tropoe/vip/src/monortm_v5.0/monortm/monortm_v5.0_linux_gnu_sgl', 'comment': 'AERs MonoRTM executable', 'default': False},
     'monortm_spec': {'value': '/home/tropoe/vip/src/monortm_v5.0/monolnfl_v1.0/TAPE3.spectral_lines.dat.0_55.v5.0_veryfast', 'comment': 'MonoRTM spectral database\n', 'default': False},
 
-    'lblrtm_jac_option': {'value': 3, 'comment': '1 - LBLRTM Finite Diffs, 2 - 3calc method, 3 - deltaOD method', 'default': True},
+    'lblrtm_jac_option': {'value': 4, 'comment': '1 - LBLRTM Finite Diffs, 2 - 3calc method, 3 - deltaOD method, 4 - interpol method', 'default': True},
     'lblrtm_forward_threshold': {'value': 0., 'comment': 'The upper LWP threshold [g/m2] to use LBLRTM vs. radxfer in forward calculation', 'default': True},
     'lblrtm_jac_interpol_npts_wnum': {'value': 10, 'comment': 'The number of points per wnum to use in the compute_jacobian_interpol() function', 'default': True},
     'monortm_jac_option': {'value': 2, 'comment': '1 - MonoRTM Finite Diffs, 2 - 3calc method', 'default': True},
@@ -189,8 +189,8 @@ full_vip = ({
     'fix_n2o_shape': {'value': 0, 'comment': '(This option only works with retrieve_n2o=1): 0 - retrieve all three coefs, 1 - shape coef is f(PBLH) and fixed', 'default': False},
     'retrieve_lcloud': {'value': 1, 'comment': '0 - do not retrieve liquid clouds, 1 - retrieve liquid cloud properties', 'default': True},
     'retrieve_icloud': {'value': 0, 'comment': '0 - do not retrieve   ice  clouds, 1 - retrieve   ice  cloud properties', 'default': True},
-    'lcloud_ssp': {'value': '/home/tropoe/vip/src/input/ssp_db.mie_wat.gamma_sigma_0p100', 'comment': 'SSP file for liquid cloud properties', 'default': False},
-    'icloud_ssp': {'value': '/home/tropoe/vip/src/input/ssp_db.mie_ice.gamma_sigma_0p100', 'comment': 'SSP file for   ice  cloud properties', 'default': False},
+    'lcloud_ssp': {'value': '/home/tropoe/vip/src/input/ssp_db_files/ssp_db.mie_wat.gamma_sigma_0p100', 'comment': 'SSP file for liquid cloud properties', 'default': False},
+    'icloud_ssp': {'value': '/home/tropoe/vip/src/input/ssp_db_files/ssp_db.mie_ice.gamma_sigma_0p100', 'comment': 'SSP file for   ice  cloud properties', 'default': False},
     'qc_rms_value': {'value': 10.0, 'comment': 'The RMS value between ((obs minus calc)/obs_uncert) spectra, with values less than this being \'good\'.  In short, if the solution is within n-sigma of the observation (where \'n\' is given by this value, then the retrieval is good', 'default': True},
     'prior_t_ival': {'value': 1.0, 'comment': 'The prior inflation factor (>= 1) to apply at the surface for temperature', 'default': True},
     'prior_t_iht': {'value': 1.0, 'comment': 'The height [km AGL] where the inflation factor goes to 1 (linear) for temperature', 'default': True},
@@ -204,7 +204,7 @@ full_vip = ({
     'prior_ch4_sd': {'value': [0.0538, 0.0015, 3], 'comment': '1-sigma uncertainty in ch4 [ppm]', 'default': False},
     'prior_n2o_mn': {'value': [0.310, 0, -5], 'comment': 'Mean n2o concentration [ppm] (see \'retrieve_n2o\' above)', 'default': False},
     'prior_n2o_sd': {'value': [0.0093, 0, 3], 'comment': '1-sigma uncertainty in n2o [ppm]', 'default': False},
-    'prior_lwp_mn': {'value': 10.0, 'comment': 'Mean LWP [g/m2]', 'default': True},
+    'prior_lwp_mn': {'value':  0.0, 'comment': 'Mean LWP [g/m2]', 'default': True},
     'prior_lwp_sd': {'value': 50.0, 'comment': '1-sigma uncertainty in LWP [g/m2]', 'default': True},
     'prior_lReff_mn': {'value': 8.0, 'comment': 'Mean liquid Reff [microns]', 'default': True},
     'prior_lReff_sd': {'value': 4.0, 'comment': '1-sigma uncertainty in liquid Reff [microns]', 'default': True},
@@ -363,6 +363,13 @@ def read_vip_file(filename,globatt,verbose,debug,dostop):
     for i in range(len(matching)):
         foo = np.where(matching[i] == inputt[:,0])[0]
         globatt[matching[i][8:]] = inputt[foo,1][0]
+
+    # Need to trap condition where spectral_bands was not set (and thus is the default string "None")
+    # and then reset it to a standard set of bands used for IR sounding
+    if(type(vip['spectral_bands']) == str):
+        blo = [612., 624, 674, 713, 538, 860.1, 872.2, 898.2]
+        bhi = [618., 660, 713, 722, 588, 864.0, 877.5, 905.4]
+        vip['spectral_bands'] = np.array([blo,bhi])
 
     vip['success'] = 1
 
