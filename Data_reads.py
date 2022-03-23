@@ -2048,18 +2048,10 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
                      qsecs = bt + to[0]
                      wv = np.interp(zzq,z,w,left=-999,right=-999)
                      swv = np.interp(zzq,z,we,left=-999,right=-999)
-                     print(wv[0], wv[1], wv[2], wv[3])
-                     print(w[0],w[1],w[2],w[3])
-                     print(z[0],z[1],z[2],z[3])
-                     print(' ')
                  else:
                      qsecs = np.append(qsecs,bt+to[0])
                      wv = np.vstack((wv, np.interp(zzq,z,w,left=-999,right=-999)))
                      swv = np.vstack((swv, np.interp(zzq,z,we,left=-999,right=-999)))
-                     print(wv[i,0], wv[i,1], wv[i,2], wv[i,3])
-                     print(w[0],w[1],w[2],w[3])
-                     print(z[0],z[1],z[2],z[3])
-                     print(' ')
                  external['nQprof'] += 1
                  
             if external['nQprof'] > 0:
