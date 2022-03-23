@@ -1746,3 +1746,33 @@ def change_aeri_ffovc(wnum,orad,orig_halfAngle,new_halfAngle):
     print('Stubbing this change_aeri_ffovc function out -- it does nothing')
     return orad
 
+###############################################################################
+# This function checks to make sure sounding data altitude is monotonic and if
+# no it will return the indices to make the altitudes monotonic by removing the
+# bad points. It is a bit hackish but it works.
+###############################################################################
+def make_monotonic(heights):
+    
+    z = np.copy(heights)
+    indices = np.arange(len(z))
+        
+    # It is possible we will have to do this mulitple times (hopefully not)
+    # This fixes those cases.
+        
+    bad = True          # A flag we will use to quit the loop
+    while bad:
+        foo = np.where(np.diff(z) <= 0)[0]
+        if len(foo) > 0:
+            z[foo+1] = -999
+            fah = np.where(z != -999)[0]
+            z = z[fah]
+            indices = indices[fah]
+        else:
+            bad = False
+        
+    return indices
+    
+    
+        
+    
+

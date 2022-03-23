@@ -1995,7 +1995,7 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
             if maxht < wv_prof_maxht:
                 maxht += 1
             zzq = np.arange(maxht*100+1)*0.01  #Define a default 10-m grid for these sondes [km AGL]
-
+            
             for i in range(len(files)):
                  fid = Dataset(files[i],'r')
                  bt = fid.variables['base_time'][0].astype('float')
@@ -2008,13 +2008,26 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
                  fid.close()
                  z = (z-z[0])/1000.
                  foo = np.where((p > 0) & (p < 1050) & (t > -150) & (t < 60) & (u >= 0) & (u < 103) & (z >= 0))[0]
-
+                 
                  if len(foo) < 2:
                      continue
                  z = z[foo]
                  p = p[foo]
                  t = t[foo]
                  u = u[foo]
+                
+                 # Make sure sonde is monotonically increasing, not a simple sort
+                 # we will remove heights that decrease since they are most likely
+                 # bad data
+                 foo = Other_functions.make_monotonic(z)
+                 if len(foo) < 2:
+                     continue
+                 
+                 z = z[foo]
+                 p = p[foo]
+                 t = t[foo]
+                 u = u[foo]
+                     
                  if np.nanmax(z) < maxht:
                      continue            # The sonde must be above this altitude to be used here
 
@@ -2025,6 +2038,7 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
                  w1 = Calcs_Conversions.rh2w(t, u/100.-0.03, p)
                  w2 = Calcs_Conversions.rh2w(t+0.5, u/100., p)
                  we = np.sqrt((w - w1)**2. + (w-w2)**2)            # Sum of squared errors
+
                  qunit = 'g/kg'
                  qtype = 'ARM radiosonde'
 
@@ -2032,14 +2046,22 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
 
                  if external['nQprof'] <= 0:
                      qsecs = bt + to[0]
-                     wv = np.interp(zzq,z,w)
-                     swv = np.interp(zzq,z,we)
+                     wv = np.interp(zzq,z,w,left=-999,right=-999)
+                     swv = np.interp(zzq,z,we,left=-999,right=-999)
+                     print(wv[0], wv[1], wv[2], wv[3])
+                     print(w[0],w[1],w[2],w[3])
+                     print(z[0],z[1],z[2],z[3])
+                     print(' ')
                  else:
                      qsecs = np.append(qsecs,bt+to[0])
-                     wv = np.vstack((wv, np.interp(zzq,z,w)))
-                     swv = np.vstack((swv, np.interp(zzq,z,we)))
+                     wv = np.vstack((wv, np.interp(zzq,z,w,left=-999,right=-999)))
+                     swv = np.vstack((swv, np.interp(zzq,z,we,left=-999,right=-999)))
+                     print(wv[i,0], wv[i,1], wv[i,2], wv[i,3])
+                     print(w[0],w[1],w[2],w[3])
+                     print(z[0],z[1],z[2],z[3])
+                     print(' ')
                  external['nQprof'] += 1
-
+                 
             if external['nQprof'] > 0:
                 wv = wv.T
                 swv = swv.T
@@ -2085,7 +2107,7 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
                         print('This should not happen when processing the RLID WV data')
                     htx = htx[foo]
                     wvx = wvx[:,foo]
-                    swvx = wvx[:,foo]
+                    swvx = swvx[:,foo]
 
                     # And only keep samples where the qc_flag is 0 (i.e. good quality)
                     foo = np.where(qcflag == 0)[0]
@@ -2130,7 +2152,7 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
             zzq = np.copy(htx)
             wvmultiplier = 1.      # To scale the WV profiles to be reasonable order of magnitude
             wv = wv/wvmultiplier
-            swv = wv/wvmultiplier
+            swv = swv/wvmultiplier
             wv = wv.T
             swv = swv.T
 
@@ -2377,7 +2399,7 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
 
                 z = (z-z[0])/1000.
 
-                foo = np.where((p > 0) & (p < 1050) & (t > -150) & (t < 60) & (u >= 0) & (u < 103))[0]
+                foo = np.where((p > 0) & (p < 1050) & (t > -150) & (t < 60) & (u >= 0) & (u < 103) & (z >= 0))[0]
 
                 if len(foo) < 2:
                     continue
@@ -2385,6 +2407,19 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
                 p = p[foo]
                 t = t[foo]
                 u = u[foo]
+                
+                # Make sure sonde is monotonically increasing, not a simple sort
+                # we will remove heights that decrease since they are most likely
+                # bad data
+                foo = Other_functions.make_monotonic(z)
+                if len(foo) < 2:
+                    continue
+               
+                z = z[foo]
+                p = p[foo]
+                t = t[foo]
+                u = u[foo]
+                            
                 if np.nanmax(z) < maxht:
                     continue # The sonde must be above this altitude to be used here
 
@@ -2398,12 +2433,12 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
 
                 if external['nQprof'] <= 0:
                     qsecs = bt+to[0]
-                    wv = np.interp(zzq,z,w)
-                    swv = np.interp(zzq,z,we)
+                    wv = np.interp(zzq,z,w,left=-999,right=-999)
+                    swv = np.interp(zzq,z,we,left=-999,right=-999)
                 else:
                     qsecs = np.append(qsecs,bt+to[0])
-                    wv = np.vstack((wv, np.interp(zzq,z,w)))
-                    swv = np.vstack((swv, np.interp(zzq,z,we)))
+                    wv = np.vstack((wv, np.interp(zzq,z,w,left=-999,right=-999)))
+                    swv = np.vstack((swv, np.interp(zzq,z,we,left=-999,right=-999)))
 
                 external['nQprof'] = len(qsecs)
 
@@ -2467,6 +2502,19 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
                 p = p[foo]
                 t = t[foo]
                 u = u[foo]
+                
+                # Make sure sonde is monotonically increasing, not a simple sort
+                # we will remove heights that decrease since they are most likely
+                # bad data
+                foo = Other_functions.make_monotonic(z)
+                if len(foo) < 2:
+                    continue
+                
+                z = z[foo]
+                p = p[foo]
+                t = t[foo]
+                u = u[foo]
+                            
                 if np.nanmax(z) < maxht:
                     continue # The sonde must be above this altitude to be used here
 
@@ -2478,11 +2526,11 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
                 # Append the data to the growing structure
                 if external['nTprof'] <= 0:
                     tsecs = bt+to[0]
-                    temp = np.interp(zzt,z,t)
+                    temp = np.interp(zzt,z,t,left=-999,right=-999)
                     stemp = np.ones(len(zzt))*sigma_t
                 else:
                     tsecs = np.append(tsecs,bt+to[0])
-                    temp = np.vstack((temp, np.interp(zzt,z,t)))
+                    temp = np.vstack((temp, np.interp(zzt,z,t,left=-999,right=-999)))
                     stemp = np.vstack((stemp, np.ones(len(zzt))*sigma_t))
                 external['nTprof'] += 1
 
@@ -2718,7 +2766,7 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
 
                 z = (z-z[0])/1000.
 
-                foo = np.where((p > 0) & (p < 1050) & (t > -150) & (t < 60) & (u >= 0) & (u < 103))[0]
+                foo = np.where((p > 0) & (p < 1050) & (t > -150) & (t < 60) & (u >= 0) & (u < 103) & (z >= 0))[0]
 
                 if len(foo) < 2:
                     continue
@@ -2726,6 +2774,19 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
                 p = p[foo]
                 t = t[foo]
                 u = u[foo]
+                
+                # Make sure sonde is monotonically increasing, not a simple sort
+                # we will remove heights that decrease since they are most likely
+                # bad data
+                foo = Other_functions.make_monotonic(z)
+                if len(foo) < 2:
+                    continue
+                
+                z = z[foo]
+                p = p[foo]
+                t = t[foo]
+                u = u[foo]
+                            
                 if np.nanmax(z) < maxht:
                     continue # The sonde must be above this altitude to be used here
 
@@ -2740,12 +2801,12 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
 
                 if external['nTprof'] <= 0:
                     tsecs = bt+to[0]
-                    temp = np.interp(zzt,z,t)
-                    stemp = np.interp(zzt,z,sigma_t)
+                    temp = np.interp(zzt,z,t,left=-999,right=-999)
+                    stemp = np.interp(zzt,z,sigma_t,left=-999,right=-999)
                 else:
                     tsecs = np.append(tsecs,bt+to[0])
-                    temp = np.vstack((temp, np.interp(zzt,z,t)))
-                    stemp = np.vstack((stemp, np.interp(zzt,z,sigma_t)))
+                    temp = np.vstack((temp, np.interp(zzt,z,t,left=-999,right=-999)))
+                    stemp = np.vstack((stemp, np.interp(zzt,z,sigma_t,left=-999,right=-999)))
                 external['nTprof'] += len(tsecs)
 
             if external['nTprof'] > 0:
@@ -2786,9 +2847,7 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
     # Humidity first
     if external['nQprof'] > 0:
         # First interpolate to the correct AERIoe vertical grid. But also
-        # look for bad data in the raw profile. If it exists, find the level
-        # just below this in the new interpolated data and replace all points
-        # above it with missing
+        # look for bad data in the raw profile.
 
 
         tmp_water = np.zeros((len(ht),len(qsecs)))
@@ -2796,17 +2855,12 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
         new_water = np.zeros((len(ht), len(secs)))
         new_swater = np.zeros((len(ht), len(secs)))
 
+        foo = np.where(wv < 0)
+        wv[foo] = np.nan
+        swv[foo] = np.nan
         for i in range(external['nQprof']):
-            print(qsecs[i])
             tmp_water[:,i] = np.interp(ht,zzq,wv[:,i])
             tmp_swater[:,i] = np.interp(ht,zzq,swv[:,i])
-            foo = np.where((wv[:,i] < 0) & (zzq >= wv_prof_minht))[0]
-            if len(foo) > 0:
-                bar = np.where(ht > zzq[foo[0]])[0]
-                if len(bar) == 0:
-                    tmp_water[:,i] = np.nan
-                else:
-                    tmp_water[bar[0]-1:len(ht),i] = np.nan
 
         # Set the data below or above the instrument's min/max heights to missing value
         foo = np.where((ht < min(zzq)) | (max(zzq) < ht))[0]
@@ -2848,7 +2902,6 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
         # that is within tres of the AERIoe time. If so, then flag this
 
         for i in range(len(secs)):
-            print(secs[i])
             foo = np.where((secs[i]-timeres <= qsecs) & (secs[i]+2*timeres >= qsecs))[0]
             if len(foo) > 0:
                 timeflag[i] = 2                   # Use 2 for water vapor flag ("1" for temp)
@@ -2868,26 +2921,19 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
         # Now temperature....
     if external['nTprof'] > 0:
         # First interpolate to the correct AERIoe vertical grid. But also
-        # look for bad data in the raw profile. If it exists, find the level
-        # just below this in the new interpolated data and replace all points
-        # above it with missing
+        # look for bad data in the raw profile. 
 
         tmp_temp = np.zeros((len(ht),len(tsecs)))
         tmp_stemp = np.zeros((len(ht), len(tsecs)))
         new_temp = np.zeros((len(ht), len(secs)))
         new_stemp = np.zeros((len(ht), len(secs)))
 
+        foo = np.where(temp < -900)
+        temp[foo] = np.nan
+        stemp[foo] = np.nan
         for i in range(external['nTprof']):
-            
             tmp_temp[:,i] = np.interp(ht,zzt,temp[:,i])
             tmp_stemp[:,i] = np.interp(ht,zzt,stemp[:,i])
-            foo = np.where((temp[:,i] < -900) & (zzt >= temp_prof_minht))[0]
-            if len(foo) > 0:
-                bar = np.where(ht > zzt[foo[0]])[0]
-                if len(bar) == 0:
-                    tmp_temp[:,i] = np.nan
-                else:
-                    tmp_temp[bar[0]-1:len(ht),i] = np.nan
 
         # Set the data below or above the instrument's min/max heights to missing value
         foo = np.where((ht < min(zzt)) | (max(zzt) < ht))[0]

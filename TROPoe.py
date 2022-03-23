@@ -312,7 +312,7 @@ if vip['retrieve_icloud'] >= 1:
     fixicloud = 0          # Jacobian flag (for some reason 0 is on)
 else:
     doicloud = 0
-    fixicloud = 1          # Jacobian flag (for some reason 1 is on)
+    fixicloud = 1          # Jacobian flag (for some reason 1 is off)
 if vip['retrieve_temp'] >= 1:
     dotemp = 1
     fixtemp = 0
@@ -582,7 +582,7 @@ location = {'lat':aeri['lat'], 'lon':aeri['lon'], 'alt':aeri['alt']}
 if vip['station_alt'] >= 0:
     if verbose >= 2:
         print('Overriding lat/lon/alt with info from VIP file')
-    location = {'lat':vip['station_lat'], 'lon':vip['station_lon'], 'alt':vip['station_alt']}
+    location = {'lat':vip['station_lat'], 'lon':vip['station_lon'], 'alt':int(vip['station_alt'])}
 
 # Very simple check to make sure station altitude makes sense [m MSL]
 if(location['alt'] <= 0):
@@ -899,7 +899,7 @@ for i in range(len(aeri['secs'])):                        # { loop_i
             VIP_Databases_functions.abort(lbltmpdir,date)
             sys.exit()
         Y = np.append(Y,mod_prof['wv'][foo,i])
-        nSy = np.diag(mod_prof['sig_wv'][foo,i])
+        nSy = np.diag(mod_prof['sig_wv'][foo,i]**2)
         zero = np.zeros((len(foo),len(sigY)))
         Sy = np.append(np.append(Sy,zero,axis=0),np.append(zero.T,nSy,axis=0),axis=1)
         sigY = np.append(sigY, mod_prof['sig_wv'][foo,i])
@@ -908,7 +908,7 @@ for i in range(len(aeri['secs'])):                        # { loop_i
 
     if ext_tseries['nCO2sfc'] > 0:
         Y = np.append(Y,ext_tseries['co2'][:,i])
-        nSy = np.diag(ext_tseries['sco2'][:,i])
+        nSy = np.diag(ext_tseries['sco2'][:,i]**2)
         zero = np.zeros((ext_tseries['nptsCO2'],len(sigY)))
         Sy = np.append(np.append(Sy,zero,axis=0),np.append(zero.T,nSy,axis=0),axis=1)
         sigY = np.append(sigY, ext_tseries['sco2'][:,i])
@@ -936,7 +936,7 @@ for i in range(len(aeri['secs'])):                        # { loop_i
             VIP_Databases_functions.abort(lbltmpdir,date)
             sys.exit()
         Y = np.append(Y,rass_prof['temp'][foo,i])
-        nSy = np.diag(rass_prof['sig_temp'][foo,i])
+        nSy = np.diag(rass_prof['sig_temp'][foo,i]**2)
         zero = np.zeros((len(foo),len(sigY)))
         Sy = np.append(np.append(Sy,zero,axis=0),np.append(zero.T,nSy,axis=0),axis=1)
         sigY = np.append(sigY, rass_prof['sig_temp'][foo,i])

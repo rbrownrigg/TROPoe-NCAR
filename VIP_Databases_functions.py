@@ -416,7 +416,13 @@ def check_vip(vip):
     if ((vip['aeri_hatch_switch'] < 0) | (vip['aeri_hatch_switch'] > 1)):
         print('Error: The aeri_hatch_switch must be either 0 or 1')
         flag = 1
+    
+    if ((vip['retrieve_lcloud'] == 0) & (vip['prior_lwp_mn'] > 0)):
+        print('WARNING: retrieve_lcloud set to 0, but prior_lwp_mn is non-zero!')
 
+    if ((vip['retrieve_icloud'] == 0) & (vip['prior_itau_mn'] > 0)):
+        print('WARNING: retrieve_icloud set to 0, but prior_itau_mn is non-zero!')
+        
     return flag
 
 ################################################################################
