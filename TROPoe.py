@@ -1,4 +1,4 @@
-__version__ = '0.4.4'
+__version__ = '0.4.5'
 
 import os
 import sys
@@ -1288,10 +1288,6 @@ for i in range(len(aeri['secs'])):                        # { loop_i
                     lun.write('1.0\n')
                 lun.write('{:7.3f}\n'.format(np.max(z)-0.01))
                 lun.write('{:0d}\n'.format(len(z)+len(rt_extra_layers)))
-                        # Eventually, I need to add location.alt/1000. to the z(gg) and
-                        # the rt_extra_layers(gg) in the next two lines.  But I need to resolve
-                        # the issue with the surface offset in monortm_v5 first. See comment
-                        # in the routine compute_jacobian_microwavescan_3method.
                 for gg in range(len(z)):
                     lun.write('{:7.3f}\n'.format(z[gg]))
                 for gg in range(len(rt_extra_layers)):
@@ -1567,8 +1563,6 @@ for i in range(len(aeri['secs'])):                        # { loop_i
                     lun.write('1,0\n')
                 lun.write('{:7.3f}\n'.format(np.max(z)-0.01))
                 lun.write('{:0d}\n'.format(len(z)+len(rt_extra_layers)))
-                        # See the comment above about "compute_jacobian_microwavescan_3method"
-                        # associated with the development of the monortm_config file. 
                 for gg in range(len(z)):
                     lun.write('{:7.3f}\n'.format(z[gg]))
                 for gg in range(len(rt_extra_layers)):

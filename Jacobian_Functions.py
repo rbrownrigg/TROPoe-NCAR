@@ -1802,7 +1802,6 @@ def compute_jacobian_microwave_finitediff(Xn, p, z, freq, cbh, vip, workdir,
     lwp = Xn[2*k]                 # g/m2
     cth = cbh + 0.300             # km; define the cloud top at x m above the could base
 
-        # See the note on sfcz in compute_jacobian_microwavescan_3method
     if(sfc_alt == None):
         sfcz=0
     else:
@@ -1818,7 +1817,7 @@ def compute_jacobian_microwave_finitediff(Xn, p, z, freq, cbh, vip, workdir,
 
     # Perform the baseline calculation
     u = Calcs_Conversions.w2rh(w, p, t, 0) * 100
-    Other_functions.write_arm_sonde_file(z*1000, p, t, u, workdir+'/'+monortm_tfile, silent = True)
+    Other_functions.write_arm_sonde_file((z+sfcz)*1000, p, t, u, workdir+'/'+monortm_tfile, silent = True)
     command = monortm_exec + ' ' + monortm_tfile + ' {:3.1f} {:8.2f} {:6.3f} {:6.3f}'.format(1.0, lwp, cbh, cth)
     a = LBLRTM_Functions.run_monortm(command, freq, z, stdatmos)
     if a['status'] == 0:
@@ -1838,7 +1837,7 @@ def compute_jacobian_microwave_finitediff(Xn, p, z, freq, cbh, vip, workdir,
                 t0 = np.copy(t)
                 t0[kk] += delta
                 u = Calcs_Conversions.w2rh(w, p, t0, 0)
-                Other_functions.write_arm_sonde_file(z*1000, p, t0, u, workdir+'/'+monortm_tfile, silent=True)
+                Other_functions.write_arm_sonde_file((z+sfcz)*1000, p, t0, u, workdir+'/'+monortm_tfile, silent=True)
                 command = monortm_exec + ' ' + monortm_tfile + ' {:3.1f} {:8.2f} {:6.3f} {:6.3f}'.format(1.0, lwp, cbh, cth)
                 b = LBLRTM_Functions.run_monortm(command, freq, z, stdatmos)
                 if b['status'] == 0:
@@ -1863,7 +1862,7 @@ def compute_jacobian_microwave_finitediff(Xn, p, z, freq, cbh, vip, workdir,
                 w0 = np.copy(w)
                 w0[kk] += delta
                 u = Calcs_Conversions.w2rh[w0, p, t, 0] * 100
-                Other_functions.write_arm_sonde_file(z*1000, p, t, u, workdir+'/'+monortm_tfile, silent = True)
+                Other_functions.write_arm_sonde_file((z+sfcz)*1000, p, t, u, workdir+'/'+monortm_tfile, silent = True)
                 command = monortm_exec + ' ' + monortm_tfile + ' {:3.1f} {:8.2f} {:6.3f} {:6.3f}'.format(1.0, lwp, cbh, cth)
                 b = LBLRTM_Functions.run_monortm(command, freq, z, stdatmos)
                 if b['status'] == 0:
@@ -1879,7 +1878,7 @@ def compute_jacobian_microwave_finitediff(Xn, p, z, freq, cbh, vip, workdir,
 
     # Compute the Jacobian forthe perturbation of LWP
     u = Calcs_Conversions.w2rh(w, p, t, 0) * 100
-    Other_functions.write_arm_sonde_file(z*1000, p, t, u, workdir+'/'+monortm_tfile, silent = True)
+    Other_functions.write_arm_sonde_file((z+sfcz)*1000, p, t, u, workdir+'/'+monortm_tfile, silent = True)
     lwpp = lwp + 25.
     command = monortm_exec + ' ' + monortm_tfile + ' {:3.1f} {:8.2f} {:6.3f} {:6.3f}'.format(1.0, lwpp, cbh, cth)
     b = LBLRTM_Functions.run_monortm(command, freq, z, stdatmos)
@@ -1914,7 +1913,6 @@ def compute_jacobian_microwave_3method(Xn, p, z, freq, cbh, vip, workdir,
     lwp = Xn[2*k]                 # g/m2
     cth = cbh + 0.300             # km; define the cloud top at x m above the could base
 
-        # See the note on sfcz in compute_jacobian_microwavescan_3method
     if(sfc_alt == None):
         sfcz=0
     else:
@@ -1930,7 +1928,7 @@ def compute_jacobian_microwave_3method(Xn, p, z, freq, cbh, vip, workdir,
     stime = datetime.now()
     # Perform the baseline calculation
     u = Calcs_Conversions.w2rh(w, p, t, 0) * 100
-    Other_functions.write_arm_sonde_file(z*1000, p, t, u, workdir+'/'+monortm_tfile, silent = True)
+    Other_functions.write_arm_sonde_file((z+sfcz)*1000, p, t, u, workdir+'/'+monortm_tfile, silent = True)
     command = monortm_exec + ' ' + monortm_tfile + ' {:3.1f} {:8.2f} {:6.3f} {:6.3f}'.format(1.0, lwp, cbh, cth)
     a = LBLRTM_Functions.run_monortm(command, freq, z, stdatmos)
     if a['status'] == 0:
@@ -1942,7 +1940,7 @@ def compute_jacobian_microwave_3method(Xn, p, z, freq, cbh, vip, workdir,
         tpert = 1.0
         t0 = t + tpert
         u = Calcs_Conversions.w2rh(w, p, t0, 0) * 100
-        Other_functions.write_arm_sonde_file(z*1000, p, t0, u, workdir+'/'+monortm_tfile, silent = True)
+        Other_functions.write_arm_sonde_file((z+sfcz)*1000, p, t0, u, workdir+'/'+monortm_tfile, silent = True)
         command = monortm_exec + ' ' + monortm_tfile + ' {:3.1f} {:8.2f} {:6.3f} {:6.3f}'.format(1.0, lwp, cbh, cth)
         b = LBLRTM_Functions.run_monortm(command, freq, z, stdatmos)
         if b['status'] == 0:
@@ -1955,7 +1953,7 @@ def compute_jacobian_microwave_3method(Xn, p, z, freq, cbh, vip, workdir,
         h2opert = 0.99
         w0 = w*h2opert
         u = Calcs_Conversions.w2rh(w0, p, t, 0) * 100
-        Other_functions.write_arm_sonde_file(z*1000, p, t, u, workdir+'/'+monortm_tfile, silent = True)
+        Other_functions.write_arm_sonde_file((z+sfcz)*1000, p, t, u, workdir+'/'+monortm_tfile, silent = True)
         command = monortm_exec + ' ' + monortm_tfile + ' {:3.1f} {:8.2f} {:6.3f} {:6.3f}'.format(1.0, lwp, cbh, cth)
         c = LBLRTM_Functions.run_monortm(command, freq, z, stdatmos)
         if c['status'] == 0:
@@ -1967,7 +1965,7 @@ def compute_jacobian_microwave_3method(Xn, p, z, freq, cbh, vip, workdir,
     if fixlcld != 1:
         lwpp = lwp + 25.
         u = Calcs_Conversions.w2rh(w, p, t, 0) * 100
-        Other_functions.write_arm_sonde_file(z*1000, p, t, u, workdir+'/'+monortm_tfile, silent = True)
+        Other_functions.write_arm_sonde_file((z+sfcz)*1000, p, t, u, workdir+'/'+monortm_tfile, silent = True)
         command = monortm_exec + ' ' + monortm_tfile + ' {:3.1f} {:8.2f} {:6.3f} {:6.3f}'.format(1.0, lwpp, cbh, cth)
         d = LBLRTM_Functions.run_monortm(command, freq, z, stdatmos)
         if d['status'] == 0:
@@ -1994,7 +1992,7 @@ def compute_jacobian_microwave_3method(Xn, p, z, freq, cbh, vip, workdir,
     # RT grid, and the lower part of the profile from what comes from the retrieval.
 
     tt = np.interp(a['z'], stdatmos['z'], stdatmos['t'])
-    foo = np.where(a['z'] <= np.max(z))[0]
+    foo = np.where(a['z'] <= np.max(z+sfcz+0.1))[0]    #tolerance is needed due to floating point numbers
     if len(foo) != len(t):
         print('Problem here -- this should not happen')
         return flag, -999., -999., -999.
@@ -2523,14 +2521,6 @@ def compute_jacobian_microwavescan_3method(Xn, p, z, mwrscan, cbh, vip, workdir,
     FXn = np.zeros(len(mwrscan['dim']))
     missing = -999.
 
-        # At some point, I need to incorporate the sfcz surface height into the
-        # MonoRTM calculations.  But there is something I don't quite understand
-        # with the monortm_v5 wrapper that seems to be causing me some issues.
-        # If I use this sfcz offset in the input profile here (and also in the
-        # monortm_config.txt file), then it seems that I am skipping the lower
-        # part of the profile -- I suspect I have a hard coded lower limit in the
-        # MONORTM.IN file that I am creating in monortm_v5, but I don't see it...
-        # So I am not doing anything about this right now...
     if(sfc_alt == None):
         sfcz=0
     else:
@@ -2570,7 +2560,7 @@ def compute_jacobian_microwavescan_3method(Xn, p, z, mwrscan, cbh, vip, workdir,
 
         # Perform the baseline calculation
         u = Calcs_Conversions.w2rh(w, p, t, 0) * 100
-        Other_functions.write_arm_sonde_file(z*1000, p, t, u, workdir +'/' + monortm_tfile, silent = True)
+        Other_functions.write_arm_sonde_file((z+sfcz)*1000, p, t, u, workdir +'/' + monortm_tfile, silent = True)
         elevOff = 0.1   # this is in degrees elevation
         didfail = 0     # If I am unable to get an accurate computation along the slant angle, then didfail = 1
         cnt = 0
@@ -2590,7 +2580,7 @@ def compute_jacobian_microwavescan_3method(Xn, p, z, mwrscan, cbh, vip, workdir,
             tpert = 1.0           # Additive perturbation of 1 K
             t0 = t + tpert
             u = Calcs_Conversions.w2rh(w, p, t0, 0) * 100
-            Other_functions.write_arm_sonde_file(z*1000, p, t0, u, workdir +'/' + monortm_tfile, silent = True)
+            Other_functions.write_arm_sonde_file((z+sfcz)*1000, p, t0, u, workdir +'/' + monortm_tfile, silent = True)
             cnt = 0
             command = monortm_exec + ' ' + monortm_tfile + ' {:3.1f} {:8.2f} {:6.3f} {:6.3f} {:6.3f}'.format(1.0, lwp, cbh, cth, 90-uelev[ii]+cnt*elevOff)
             b = LBLRTM_Functions.run_monortm(command, mwrscan['freq'], z, stdatmos)
@@ -2608,7 +2598,7 @@ def compute_jacobian_microwavescan_3method(Xn, p, z, mwrscan, cbh, vip, workdir,
             h2opert = 0.99
             w0 = w*h2opert
             u = Calcs_Conversions.w2rh(w0, p, t, 0) * 100
-            Other_functions.write_arm_sonde_file(z*1000, p, t, u, workdir +'/' + monortm_tfile, silent = True)
+            Other_functions.write_arm_sonde_file((z+sfcz)*1000, p, t, u, workdir +'/' + monortm_tfile, silent = True)
             cnt = 0
             command = monortm_exec + ' ' + monortm_tfile + ' {:3.1f} {:8.2f} {:6.3f} {:6.3f} {:6.3f}'.format(1.0, lwp, cbh, cth, 90-uelev[ii]+cnt*elevOff)
             c = LBLRTM_Functions.run_monortm(command, mwrscan['freq'], z, stdatmos)
@@ -2625,7 +2615,7 @@ def compute_jacobian_microwavescan_3method(Xn, p, z, mwrscan, cbh, vip, workdir,
         if fixlcld != 1:
             lwpp = lwp + 25.
             u = Calcs_Conversions.w2rh(w, p, t, 0) * 100
-            Other_functions.write_arm_sonde_file(z*1000, p, t, u, workdir +'/' + monortm_tfile, silent = True)
+            Other_functions.write_arm_sonde_file((z+sfcz)*1000, p, t, u, workdir +'/' + monortm_tfile, silent = True)
             cnt = 0
             command = monortm_exec + ' ' + monortm_tfile + ' {:3.1f} {:8.2f} {:6.3f} {:6.3f} {:6.3f}'.format(1.0, lwp, cbh, cth, 90-uelev[ii]+cnt*elevOff)
             d = LBLRTM_Functions.run_monortm(command, mwrscan['freq'], z, stdatmos)
@@ -2664,7 +2654,7 @@ def compute_jacobian_microwavescan_3method(Xn, p, z, mwrscan, cbh, vip, workdir,
 
             tt = np.interp(a['z'], stdatmos['z'], stdatmos['t'])
 
-            foo = np.where(a['z'] <= np.max(z))[0]
+            foo = np.where(a['z'] <= np.max(z+sfcz+0.1))[0]
             if len(foo) != len(t):
                 print('Problem here -- this should not be happen MWR-scan')
             tt[foo] = np.copy(t)
