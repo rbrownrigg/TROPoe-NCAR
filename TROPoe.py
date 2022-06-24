@@ -1,4 +1,4 @@
-__version__ = '0.4.5'
+__version__ = '0.5.2'
 
 import os
 import sys
@@ -1991,14 +1991,7 @@ for i in range(len(aeri['secs'])):                        # { loop_i
 
         prev_di2m = di2m
 
-        if converged == 0:
-            Xn = np.copy(Xnp1[:,0])
-            Fxnm1 = np.copy(FXn)
-            itern += 1
-            if verbose >= 1:
-                print(f"    iter is {itern:2d}, di2m is {di2m:.3e}, and RMS is {rmsa:.3e}")
-
-        # Place the data into a structure
+        # Place the data into a structure (before we do the update)
         xtmp = {'idx':i, 'secs':aeri['secs'][i], 'ymd':aeri['ymd'][i], 'hour':aeri['hour'][i],
                 'nX':nX, 'nY':nY, 'dimY':np.copy(dimY), 'Y':np.copy(Y), 'sigY':np.copy(sigY), 'flagY':np.copy(flagY),
                 'niter':itern, 'z':np.copy(z), 'p':np.copy(p), 'hatchopen':aeri['hatchopen'][i],
@@ -2007,6 +2000,14 @@ for i in range(len(aeri['secs'])):                        # { loop_i
                 'K':np.copy(Kij), 'Gain':np.copy(Gain), 'Akern':np.copy(Akern), 'vres':np.copy(vres),
                 'gamma':gfac, 'qcflag':0, 'sic':sic, 'dfs':np.copy(dfs), 'cdfs':np.copy(cdfs), 'di2m':di2m, 'rmsa':rmsa,
                 'rmsr':rmsr, 'rmsp':rmsp, 'chi2':chi2, 'converged':converged}
+
+        # Update the state vector, if we need to do another iteration
+        if converged == 0:
+            if verbose >= 1:
+                print(f"    iter is {itern:2d}, di2m is {di2m:.3e}, and RMS is {rmsa:.3e}")
+            Xn = np.copy(Xnp1[:,0])
+            Fxnm1 = np.copy(FXn)
+            itern += 1
 
         # And store each iteration in case I would like to investigate how
         # the retrieval functioned in a sample-by-sample way
