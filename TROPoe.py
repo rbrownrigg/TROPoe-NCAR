@@ -1,4 +1,4 @@
-__version__ = '0.5.2'
+__version__ = '0.5.3'
 
 import os
 import sys
@@ -700,6 +700,7 @@ xret = []                  #Initialize. Will overwrite this if a succesful ret
 read_deltaod = 0           # Initialize.
 already_saved = 0          # Flag to say if saved already or not...
 fsample = 0                # Counter for number of spectra processed
+precompute_prior_jacobian = {status:0}    # This will allow us to store the forward calculations from the prior, makes code faster
 cbh_string = ['Clear Sky', 'Inner Window', 'Outer Window', 'Default CBH']
 
 # Quick check to make sure that the spectral bands being selected are actually
@@ -1226,8 +1227,17 @@ for i in range(len(aeri['secs'])):                        # { loop_i
                 flag = 1
                 version_compute_jacobian = 'No AERI data in retrieval, so LBLRTM not used'
             else:
-                # Otherwise, run the forward model and compute the Jacobian
-                flag, Kij, FXn, wnumc, version_compute_jacobian, totaltime  = \
+                if((precompute_prior_jacobian['status'] == 1) & (itern == 0)):
+                        # Load the forward calculation stuff from the precompute prior data
+                    if(verbose >= 1):
+                        print('    Preloading forward calculation and jacobian from prior structure')
+                    FXn   = precompute_prior_jacobian['FX0']
+                    Kij   = precompute_prior_jacobian['Kij0']
+                    flag  = precompute_prior_jacobian['flag0']
+                    wnumc = precompute_prior_jacobian['wnumc0']
+                else:
+                        # Otherwise, run the forward model and compute the Jacobian
+                    flag, Kij, FXn, wnumc, version_compute_jacobian, totaltime  = \
                            Jacobian_Functions.compute_jacobian_interpol(Xn, p, z,
                            vip['lbl_home'], lbldir, lbltmp, vip['lbl_std_atmos'], lbltp5, lbltp3,
                            cbh, sspl, sspi, lblwnum1, lblwnum2,
@@ -1236,6 +1246,9 @@ for i in range(len(aeri['secs'])):                        # { loop_i
                            vip['jac_max_ht'], aeri['wnum'], vip['lblrtm_forward_threshold'],
                            location['alt'], rt_extra_layers, stdatmos, vip['lblrtm_jac_interpol_npts_wnum'], 
                            verbose, debug, doapodize=True)
+            if(precompute_prior_jacobian['status'] == 0):
+                precompute_prior_jacobian = {'status':1, 'X0':np.copy(Xn), 'FX0':np.copy(FXn), 'Kij0':np.copy(Kij), 
+                    'flag':np.copy(flag), 'wnumc':np.copy(wnumc)}
         else:
             print('Error: Undefined jacobian option selected')
             VIP_Databases_functions.abort(lbltmpdir,date)
