@@ -1687,6 +1687,7 @@ def compute_jacobian_interpol(X, p, zz, lblhome, lbldir, lblroot, lbl_std_atmos,
     radc0 = radc0[foo]
     wnumc = Kwnum[foo]
 
+    ### "cut from this and down" -- see the message below
 
     # The forward calculation above is not as accurate as it could be, which
     # will hammer the retrieval. Improve on its accuracy here.
@@ -1776,6 +1777,13 @@ def compute_jacobian_interpol(X, p, zz, lblhome, lbldir, lblroot, lbl_std_atmos,
             return success, -999., -999., -999., -999., -999.
 
         FXn = np.copy(brad[foo])
+
+        # Adding a dumb test to help us determine if we need this block above at all
+        diff = radc0 - FXn
+        if(np.sum(np.abs(diff)) > 0.001):
+            print('Hey Josh and Dave -- radc0 and FXn should be the same')
+        ### if this "hey josh and dave" is never seen, then we can delete from here to the above "cut from this and down"
+        ### if we never see this, then we need to add the statement "FXn = radc0" outside of this block so that FXn can be returned
 
     # Capture the total time and return
     etime = datetime.now()
