@@ -1690,63 +1690,24 @@ def compute_jacobian_interpol(X, p, zz, lblhome, lbldir, lblroot, lbl_std_atmos,
     ### "cut from this and down" -- see the message below
 
     # The forward calculation above is not as accurate as it could be, which
-    # will hammer the retrieval. Improve on its accuracy here.
+    # will hammer the retrieval. Improve on its accuracy here by using the original
+    # monochromatic optical depths (whereas the above calculations used the 
+    # reduced spectral resolution optical depths)
 
-    # TODO: DDT -- I believe that this block that recomputes the forward calculation can be removed forever.
-    if lwp < forward_threshold:
-        # If the LWP is less than the desired threshold then assume that
-        # we don't need to worry about clouds and use the LBLRTM as the forward model
-        if verbose >= 3:
-            print('Forward model F(Xn) using LBLRTM and assuming no clouds')
+    if verbose >= 3:
+        print('Forward model F(Xn) using radxfer and assuming clouds')
 
-        LBLRTM_Functions.rundecker(3, lbl_std_atmos, zz+sfcz, p, t, w,
-             co2_profile=co2prof, ch4_profile=ch4prof, n2o_profile=n2oprof,
-             mlayers=mlayerz, wnum1=lblwnum1-100, wnum2=lblwnum2+100, tape5=tp5+'.99',
-             v10=True, silent=True)
-
-        command99 = ('setenv LBL_HOME ' +lblhome + ' ; '+
-                    'rm -rf ' + lblroot + '.99 ; '+
-                    'mkdir ' + lblroot + '.99 ; ' +
-                    'setenv LBL_RUN_ROOT ' + lblroot + '.99 ; '+
-                    'rm -rf ' + lbldir + '.99 ; '+
-                    '(' + lblrun + ' ' + tp5 + '.99 ' + lbldir + '.99 ' + tp3 + ') >& /dev/null')
-
-        process = Popen(command99, stdout = PIPE, stderr = PIPE, shell=True, executable = '/bin/csh')
-        stdout, stderr = process.communicate()
-
-        tp27 = []
-        tp27 = tp27 + (glob.glob(lbldir+'.99/TAPE27'))
-        if len(tp27) != 1:
-            print('This should not happen. Error reading TAPE27 file')
-
-        w99, r99 = LBLRTM_Functions.read_tape27(filen=tp27[0])
-        r99 *= 1e7              # Convert W/(cm2 sr cm-1) to mW/(m2 sr cm-1)
-
-        # Now cut the radiance down; this is the forward calculation
-        foo = np.where((np.min(wnumc)-0.1 <= w99) & (w99 <= np.max(wnumc)+0.1))[0]
-        if ((len(foo) != len(wnumc)) | (np.abs(np.min(wnumc)-np.min(w99[foo])) > 0.1)):
-            print('PROBLEM inside compute_jacobian_interpol -- wavenumbers do not match')
-            return success, -999., -999., -999., -999., -999.
-
-        FXn = np.copy(r99[foo])
-
-    else:
-        # otherwise the LWP is greater than the desired threshold so we need to include
-        # clouds in the forward model. Use the radxfer logic below
-        if verbose >= 3:
-            print('Forward model F(Xn) using radxfer and assuming clouds')
-
-        gasod = np.copy(od00)
-        lcldodir = np.interp(v,wnum,lcldodir)
-        icldodir = np.interp(v,wnum,icldodir)
-        gasod[cldidx,:] += lcldodir + icldodir
+    gasod = np.copy(od00)
+    lcldodir = np.interp(v,wnum,lcldodir)
+    icldodir = np.interp(v,wnum,icldodir)
+    gasod[cldidx,:] += lcldodir + icldodir
 
         # Compute the surface to layer transmission
 
-        trans1 = np.copy(gasod)
-        trans1[0,:] = 1
-        for i in range(1,len(t)-1):
-            trans1[i,:] = trans1[i-1,:]*np.exp(-gasod[i-1,:])
+    trans1 = np.copy(gasod)
+    trans1[0,:] = 1
+    for i in range(1,len(t)-1):
+        trans1[i,:] = trans1[i-1,:]*np.exp(-gasod[i-1,:])
 
         # Compute the reflected radiance from the cloud.
         # I am using my simple approximation for cloud reflectivity
@@ -1757,33 +1718,26 @@ def compute_jacobian_interpol(X, p, zz, lblhome, lbldir, lblroot, lbl_std_atmos,
         # that I am also assuming that the amount of radiation emitted
         # by the atmosphere and reflected by the cloud is negligible.
 
-        reflection = Other_functions.cloud_reflectivity(v, cldodvis+taui)
-        sfcrad = Calcs_Conversions.planck(v,t[0])
-        cldrefrad = sfcrad * reflection * trans1[cldidx,:] * trans1[cldidx,:]
+    reflection = Other_functions.cloud_reflectivity(v, cldodvis+taui)
+    sfcrad = Calcs_Conversions.planck(v,t[0])
+    cldrefrad = sfcrad * reflection * trans1[cldidx,:] * trans1[cldidx,:]
 
         # Compute the baseline radiance
-        radv = Other_functions.radxfer(v, mlayert, gasod)
-        radv += cldrefrad
-        bar =  Other_functions.convolve_to_aeri(v, radv)
-        bwnum = np.copy(bar['wnum'])
-        brad = np.copy(bar['spec'])
-        if doapo:
-            brad = np.real(Other_functions.apodizer(brad,0))
+    radv = Other_functions.radxfer(v, mlayert, gasod)
+    radv += cldrefrad
+    bar =  Other_functions.convolve_to_aeri(v, radv)
+    bwnum = np.copy(bar['wnum'])
+    brad = np.copy(bar['spec'])
+    if doapo:
+        brad = np.real(Other_functions.apodizer(brad,0))
 
         # Now cut the radiance down; this is the forward calculation
-        foo = np.where((np.min(wnumc)-0.1 <= bwnum) & (bwnum <= np.max(wnumc)+0.1))[0]
-        if ((len(foo) != len(wnumc)) | (np.abs(np.min(wnumc)-np.min(bwnum[foo])) > 0.1)):
-            print('PROBLEM inside compute_jacobian_interpol -- wavenumber do not match')
-            return success, -999., -999., -999., -999., -999.
+    foo = np.where((np.min(wnumc)-0.1 <= bwnum) & (bwnum <= np.max(wnumc)+0.1))[0]
+    if ((len(foo) != len(wnumc)) | (np.abs(np.min(wnumc)-np.min(bwnum[foo])) > 0.1)):
+        print('PROBLEM inside compute_jacobian_interpol -- wavenumber do not match')
+        return success, -999., -999., -999., -999., -999.
 
-        FXn = np.copy(brad[foo])
-
-        # Adding a dumb test to help us determine if we need this block above at all
-        diff = radc0 - FXn
-        if(np.sum(np.abs(diff)) > 0.001):
-            print('Hey Josh and Dave -- radc0 and FXn should be the same')
-        ### if this "hey josh and dave" is never seen, then we can delete from here to the above "cut from this and down"
-        ### if we never see this, then we need to add the statement "FXn = radc0" outside of this block so that FXn can be returned
+    FXn = np.copy(brad[foo])
 
     # Capture the total time and return
     etime = datetime.now()
