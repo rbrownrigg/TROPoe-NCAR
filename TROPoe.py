@@ -1,4 +1,4 @@
-__version__ = '0.5.5'
+__version__ = '0.5.6'
 
 import os
 import sys
@@ -700,7 +700,7 @@ xret = []                  #Initialize. Will overwrite this if a succesful ret
 read_deltaod = 0           # Initialize.
 already_saved = 0          # Flag to say if saved already or not...
 fsample = 0                # Counter for number of spectra processed
-precompute_prior_jacobian = {status:0}    # This will allow us to store the forward calculations from the prior, makes code faster
+precompute_prior_jacobian = {'status':0}    # This will allow us to store the forward calculations from the prior, makes code faster
 cbh_string = ['Clear Sky', 'Inner Window', 'Outer Window', 'Default CBH']
 
 # Quick check to make sure that the spectral bands being selected are actually
