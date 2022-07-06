@@ -756,7 +756,6 @@ for i in range(len(aeri['secs'])):                        # { loop_i
 
     # Make sure the AERI's surface pressure is a valid value, as
     # this is needed to construct a pressure profile from the current X
-    print(aeri['atmos_pres'][i])
     if ((vip['station_psfc_min'] > aeri['atmos_pres'][i]) | (aeri['atmos_pres'][i] > vip['station_psfc_max'])):
         print('Error: Surface pressure is not within range set in VIP -- skipping sample')
         continue
