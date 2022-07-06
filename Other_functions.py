@@ -230,11 +230,11 @@ def inflate_prior_covariance(Sa, z, prior_t_ival, prior_t_iht, prior_q_ival,
         return -999, status
         
     if ((prior_t_ival > 1) & (verbose > 1)):
-        print('Inflating the prior temperature profile near the surface by a factor of ' + prior_t_ival)
+        print('Inflating the prior temperature profile near the surface by a factor of ' + str(prior_t_ival))
     if ((prior_q_ival > 1) & (verbose > 1)):
-        print('Inflating the prior WVMR profile near surface by a factor of ' + prior_q_ival)
+        print('Inflating the prior WVMR profile near surface by a factor of ' + str(prior_q_ival))
     if ((prior_tq_cov_val < 1) & (verbose > 1)):
-        print('Decreasing the covariance between T and q in the prior by a factor of ' + prior_tq_cov_val)
+        print('Decreasing the covariance between T and q in the prior by a factor of ' + str(prior_tq_cov_val))
     
     # Extract ou the variance values
     var =np.copy(np.diag(Sa))
