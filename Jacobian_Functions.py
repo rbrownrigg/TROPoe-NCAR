@@ -929,7 +929,8 @@ def compute_jacobian_interpol(X, p, zz, lblhome, lbldir, lblroot, lbl_std_atmos,
     if npts_per_wnum is None:
         npts_per_wnum = 10
 
-    doapo = False         # I never want to apodize in this routine, because of the delta-OD...
+    doapoJac = False         # The flag to apodize (or not) when computing the jacobian
+    doapoFor = doapodize     # The flag to apodize (or not) when computing the final forward calculation
 
     stime = datetime.now()
 
@@ -1257,7 +1258,7 @@ def compute_jacobian_interpol(X, p, zz, lblhome, lbldir, lblroot, lbl_std_atmos,
     tmp   = Other_functions.convolve_to_aeri(wnum, radc0)
     Kwnum = np.copy(tmp['wnum'])
     radc0 = np.copy(tmp['spec'])
-    if doapo:
+    if doapoJac:
         radc0 = np.real(Other_functions.apodizer(radc0,0))
 
     if verbose >= 2:
@@ -1295,7 +1296,7 @@ def compute_jacobian_interpol(X, p, zz, lblhome, lbldir, lblroot, lbl_std_atmos,
                 tmp = Other_functions.convolve_to_aeri(wnum, radc1)
                 radc1 = np.copy(tmp['spec'])
 
-                if doapo:
+                if doapoJac:
                     radc1 = np.real(Other_functions.apodizer(radc1,0))
 
                 if kk == 0:
@@ -1333,7 +1334,7 @@ def compute_jacobian_interpol(X, p, zz, lblhome, lbldir, lblroot, lbl_std_atmos,
                 tmp = Other_functions.convolve_to_aeri(wnum, radc1)
                 radc1 = np.copy(tmp['spec'])
 
-                if doapo:
+                if doapoJac:
                     radc1 = np.real(Other_functions.apodizer(radc1,0))
                 if kk == 0:
                     mult = 0.5
@@ -1359,7 +1360,7 @@ def compute_jacobian_interpol(X, p, zz, lblhome, lbldir, lblroot, lbl_std_atmos,
         radc1 += cldrefrad
         tmp   = Other_functions.convolve_to_aeri(wnum, radc1)
         radc1 = np.copy(tmp['spec'])
-        if doapo:
+        if doapoJac:
             radc1 = np.real(Other_functions.apodizer(radc1,0))
         Kij[:,2*k+4] = (radc1-radc0) / co2pert
 
@@ -1381,7 +1382,7 @@ def compute_jacobian_interpol(X, p, zz, lblhome, lbldir, lblroot, lbl_std_atmos,
         tmp   = Other_functions.convolve_to_aeri(wnum, radc1)
         radc1 = np.copy(tmp['spec'])
 
-        if doapo:
+        if doapoJac:
             radc1 = np.real(Other_functions.apodizer(radc1,0))
         Kij[:,2*k+5] = (radc1-radc0) / co2pert
 
@@ -1418,7 +1419,7 @@ def compute_jacobian_interpol(X, p, zz, lblhome, lbldir, lblroot, lbl_std_atmos,
             tmp   = Other_functions.convolve_to_aeri(wnum, radc1)
             radc1 = np.copy(tmp['spec'])
 
-            if doapo:
+            if doapoJac:
                 radc1 = np.real(Other_functions.apodizer(radc1,0))
             Kij[:,2*k+6] = (radc1-radc0) / (c0[2] - co2[2])
         else:
@@ -1443,7 +1444,7 @@ def compute_jacobian_interpol(X, p, zz, lblhome, lbldir, lblroot, lbl_std_atmos,
         tmp   = Other_functions.convolve_to_aeri(wnum, radc1)
         radc1 = np.copy(tmp['spec'])
 
-        if doapo:
+        if doapoJac:
             radc1 = np.real(Other_functions.apodizer(radc1,0))
         Kij[:,2*k+7] = (radc1-radc0) / ch4pert
 
@@ -1465,7 +1466,7 @@ def compute_jacobian_interpol(X, p, zz, lblhome, lbldir, lblroot, lbl_std_atmos,
         tmp   = Other_functions.convolve_to_aeri(wnum, radc1)
         radc1 = np.copy(tmp['spec'])
 
-        if doapo:
+        if doapoJac:
             radc1 = np.real(Other_functions.apodizer(radc1,0))
         Kij[:,2*k+8] = (radc1-radc0) / ch4pert
 
@@ -1499,7 +1500,7 @@ def compute_jacobian_interpol(X, p, zz, lblhome, lbldir, lblroot, lbl_std_atmos,
             tmp   = Other_functions.convolve_to_aeri(wnum, radc1)
             radc1 = np.copy(tmp['spec'])
 
-            if doapo:
+            if doapoJac:
                 radc1 = np.real(Other_functions.apodizer(radc1,0))
             Kij[:,2*k+9] = (radc1-radc0) / (c0[2] - ch4[2])
         else:
@@ -1524,7 +1525,7 @@ def compute_jacobian_interpol(X, p, zz, lblhome, lbldir, lblroot, lbl_std_atmos,
         tmp   = Other_functions.convolve_to_aeri(wnum, radc1)
         radc1 = np.copy(tmp['spec'])
 
-        if doapo:
+        if doapoJac:
             radc1 = np.real(Other_functions.apodizer(radc1,0))
         Kij[:,2*k+10] = (radc1-radc0) / n2opert
 
@@ -1546,7 +1547,7 @@ def compute_jacobian_interpol(X, p, zz, lblhome, lbldir, lblroot, lbl_std_atmos,
         tmp   = Other_functions.convolve_to_aeri(wnum, radc1)
         radc1 = np.copy(tmp['spec'])
 
-        if doapo:
+        if doapoJac:
             radc1 = np.real(Other_functions.apodizer(radc1,0))
         Kij[:,2*k+11] = (radc1-radc0) / n2opert
 
@@ -1580,7 +1581,7 @@ def compute_jacobian_interpol(X, p, zz, lblhome, lbldir, lblroot, lbl_std_atmos,
             tmp   = Other_functions.convolve_to_aeri(wnum, radc1)
             radc1 = np.copy(tmp['spec'])
 
-            if doapo:
+            if doapoJac:
                 radc1 = np.real(Other_functions.apodizer(radc1,0))
             Kij[:,2*k+12] = (radc1-radc0) / (c0[2] - n2o[2])
         else:
@@ -1610,7 +1611,7 @@ def compute_jacobian_interpol(X, p, zz, lblhome, lbldir, lblroot, lbl_std_atmos,
         tmp   = Other_functions.convolve_to_aeri(wnum, radc1)
         radc1 = np.copy(tmp['spec'])
 
-        if doapo:
+        if doapoJac:
             radc1 = np.real(Other_functions.apodizer(radc1,0))
 
         # Compute the perturbed radiance for ReffL
@@ -1624,7 +1625,7 @@ def compute_jacobian_interpol(X, p, zz, lblhome, lbldir, lblroot, lbl_std_atmos,
         tmp   = Other_functions.convolve_to_aeri(wnum, radc2)
         radc2 = np.copy(tmp['spec'])
 
-        if doapo:
+        if doapoJac:
             radc2 = np.real(Other_functions.apodizer(radc2,0))
 
         Kij[:,2*k] = (radc1-radc0) / lwppert
@@ -1655,7 +1656,7 @@ def compute_jacobian_interpol(X, p, zz, lblhome, lbldir, lblroot, lbl_std_atmos,
         tmp   = Other_functions.convolve_to_aeri(wnum, radc1)
         radc1 = np.copy(tmp['spec'])
 
-        if doapo:
+        if doapoJac:
             radc1 = np.real(Other_functions.apodizer(radc1,0))
 
         # Compute the perturbed radiance for ReffI
@@ -1669,7 +1670,7 @@ def compute_jacobian_interpol(X, p, zz, lblhome, lbldir, lblroot, lbl_std_atmos,
         tmp   = Other_functions.convolve_to_aeri(wnum, radc2)
         radc2 = np.copy(tmp['spec'])
 
-        if doapo:
+        if doapoJac:
             radc2 = np.real(Other_functions.apodizer(radc2,0))
 
         Kij[:,2*k+2] = (radc1-radc0) / taupert
@@ -1686,8 +1687,6 @@ def compute_jacobian_interpol(X, p, zz, lblhome, lbldir, lblroot, lbl_std_atmos,
     Kij = Kij[foo,:]
     radc0 = radc0[foo]
     wnumc = Kwnum[foo]
-
-    ### "cut from this and down" -- see the message below
 
     # The forward calculation above is not as accurate as it could be, which
     # will hammer the retrieval. Improve on its accuracy here by using the original
@@ -1728,7 +1727,7 @@ def compute_jacobian_interpol(X, p, zz, lblhome, lbldir, lblroot, lbl_std_atmos,
     bar =  Other_functions.convolve_to_aeri(v, radv)
     bwnum = np.copy(bar['wnum'])
     brad = np.copy(bar['spec'])
-    if doapo:
+    if doapoFor:
         brad = np.real(Other_functions.apodizer(brad,0))
 
         # Now cut the radiance down; this is the forward calculation

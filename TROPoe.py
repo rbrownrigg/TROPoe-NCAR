@@ -1244,7 +1244,7 @@ for i in range(len(aeri['secs'])):                        # { loop_i
                            vip['fix_co2_shape'], vip['fix_ch4_shape'], vip['fix_n2o_shape'],
                            vip['jac_max_ht'], aeri['wnum'], vip['lblrtm_forward_threshold'],
                            location['alt'], rt_extra_layers, stdatmos, vip['lblrtm_jac_interpol_npts_wnum'], 
-                           verbose, debug, doapodize=True)
+                           verbose, debug, doapodize=False)
             if(precompute_prior_jacobian['status'] == 0):
                 precompute_prior_jacobian = {'status':1, 'X0':np.copy(Xn), 'FX0':np.copy(FXn), 'Kij0':np.copy(Kij), 
                     'flag0':np.copy(flag), 'wnumc0':np.copy(wnumc)}
