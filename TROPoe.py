@@ -1,4 +1,4 @@
-__version__ = '0.5.10'
+__version__ = '0.5.11'
 
 import os
 import sys
@@ -1245,7 +1245,9 @@ for i in range(len(aeri['secs'])):                        # { loop_i
                            vip['jac_max_ht'], aeri['wnum'], vip['lblrtm_forward_threshold'],
                            location['alt'], rt_extra_layers, stdatmos, vip['lblrtm_jac_interpol_npts_wnum'], 
                            verbose, debug, doapodize=False)
-            if(precompute_prior_jacobian['status'] == 0):
+                    # If we are using the prior for the first guess (FG=1), and we have not already loaded
+                    # this structure, then capture the forward calc and jacobian for the first guess
+            if((precompute_prior_jacobian['status'] == 0) & (vip['first_guess'] == 1)):
                 precompute_prior_jacobian = {'status':1, 'X0':np.copy(Xn), 'FX0':np.copy(FXn), 'Kij0':np.copy(Kij), 
                     'flag0':np.copy(flag), 'wnumc0':np.copy(wnumc)}
         else:
