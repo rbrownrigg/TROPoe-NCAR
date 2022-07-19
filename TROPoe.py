@@ -447,8 +447,11 @@ if verbose >= 1:
 if verbose >= 2:
     print(('There were ' + str(nsonde_prior) + ' radiosondes used in the calculation of the prior'))
 
-# Inflate the lowest levels of the prior covariance matrix, if desired
 
+# Recenter the prior here
+
+
+# Inflate the lowest levels of the prior covariance matrix, if desired
 Sa, status = Other_functions.inflate_prior_covariance(Sa, z, vip['prior_t_ival'], vip['prior_t_iht'],
              vip['prior_q_ival'], vip['prior_q_iht'], vip['prior_tq_cov_val'],
              vip['prior_chimney_ht'], verbose)

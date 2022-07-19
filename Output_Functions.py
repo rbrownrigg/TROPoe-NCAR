@@ -58,8 +58,27 @@ def write_example_vip_file(experimental=False, console=False):
 # This function takes all of the entries in the VIP structure, and makes
 # them global attributes in the netCDF file that is currently open
 ################################################################################
-def add_vip_to_global_atts():
-        # TODO: Tyler -- fill this in
+def add_vip_to_global_atts(nc, full_vip):
+    """
+    Function to write out the vip vile into the global attributes
+    :param nc: NetCDF4 Dataset object to write the VIP to
+    :param vip: Dict containing the vip information
+    :return:
+    """
+
+    vip = full_vip.copy()  # Copy the VIP so we don't overwrite anything in the next iterations
+
+    for key in sorted(vip.keys()):
+        # Grab the data
+        data = vip[key]
+
+        # Convert the spectral bands back to a string since we can't save arrays to the attributes
+        if key == 'spectral_bands':
+            data = ','.join([f"{data[0, i]}-{data[1, i]}" for i in range(len(data[0])) if data[0, i] > 0])
+
+        # Set the netcdf attribute
+        nc.setncattr(f"VIP_{key}", data)
+
     return
 
 ################################################################################
@@ -520,7 +539,7 @@ def write_output(vip, ext_prof, mod_prof, rass_prof, ext_tseries, globatt, xret,
         fid.Retrieval_option_flags = '{:0d}, {:0d}, {:0d}, {:0d}, {:0d}, {:0d}, {:0d}, {:0d}, {:0d}'.format(modeflag[0], modeflag[1], modeflag[2], modeflag[3], modeflag[4], modeflag[5], modeflag[6], modeflag[7], modeflag[8])
         fid.vip_tres = (str(vip['tres']) + ' minutes. Note that the sample time corresponds to the '
                       + 'center of the averaging intervale. A value of 0 implies that no averaging was performed')
-        #add_vip_to_global_atts(vip)
+        add_vip_to_global_atts(fid, vip)
 
         # Add some of the static (non-time-dependent) data
         base_time[:] = xret[0]['secs']
