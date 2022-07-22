@@ -215,7 +215,7 @@ def w2e(w,p):
 # barametric pressure, and temperature.
 ################################################################################
 
-def w2rh(w, p, t, ice):
+def w2rh(w, p, t, ice=0):
     
     e = w2e(w, p)
     es = esat(t, ice) / 100.0          # To convert it to the correct units (mb)

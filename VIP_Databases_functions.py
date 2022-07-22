@@ -192,6 +192,8 @@ full_vip = ({
     'lcloud_ssp': {'value': '/home/tropoe/vip/src/input/ssp_db_files/ssp_db.mie_wat.gamma_sigma_0p100', 'comment': 'SSP file for liquid cloud properties', 'default': False},
     'icloud_ssp': {'value': '/home/tropoe/vip/src/input/ssp_db_files/ssp_db.mie_ice.gamma_sigma_0p100', 'comment': 'SSP file for   ice  cloud properties', 'default': False},
     'qc_rms_value': {'value': 10.0, 'comment': 'The RMS value between ((obs minus calc)/obs_uncert) spectra, with values less than this being \'good\'.  In short, if the solution is within n-sigma of the observation (where \'n\' is given by this value, then the retrieval is good', 'default': True},
+    'recenter_prior': {'value': 0, 'comment': '1 - Recenter based on sfc wv field, 2 - Recenter based on PWV', 'default': False},
+    'recenter_prior_input': {'value': 0, 'comment': 'Sfc WVMR or PWV value to use in the recentering process. Set to zero for the value to be determined from other input data (i.e. sfc met)', 'default': False},
     'prior_t_ival': {'value': 1.0, 'comment': 'The prior inflation factor (>= 1) to apply at the surface for temperature', 'default': True},
     'prior_t_iht': {'value': 1.0, 'comment': 'The height [km AGL] where the inflation factor goes to 1 (linear) for temperature', 'default': True},
     'prior_q_ival': {'value': 1.0, 'comment': 'The prior inflation factor (>= 1) to apply at the surface for water vapor mixing ratio', 'default': True},

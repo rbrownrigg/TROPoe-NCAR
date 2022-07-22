@@ -1,4 +1,4 @@
-__version__ = '0.5.11'
+__version__ = '0.5.13'
 
 import os
 import sys
@@ -447,10 +447,6 @@ if verbose >= 1:
 if verbose >= 2:
     print(('There were ' + str(nsonde_prior) + ' radiosondes used in the calculation of the prior'))
 
-
-# Recenter the prior here
-
-
 # Inflate the lowest levels of the prior covariance matrix, if desired
 Sa, status = Other_functions.inflate_prior_covariance(Sa, z, vip['prior_t_ival'], vip['prior_t_iht'],
              vip['prior_q_ival'], vip['prior_q_iht'], vip['prior_tq_cov_val'],
@@ -634,6 +630,38 @@ if ((nfooco2 > 0) | (nfooch4 > 0) | (nfoon2o > 0)):
     print('Error: The CO2, CH4, and/or N2O parameters are incorrect giving negative values - aborting')
     VIP_Databases_functions.abort(lbltmpdir,date)
     sys.exit()
+
+# Recenter the prior if desired
+if vip['recenter_prior'] == 1:
+    # Rescale based on surface water vapor
+
+    if vip['recenter_prior_input'] > 0:   # Rescale based on the value inputted into the vip
+        Xa, comments = Data_reads.recenter_prior(prior_filename, vip['recenter_prior_input'], vip['recenter_prior'])
+
+        # Update the global attributes to note that prior recentering was performed
+        globatt.update(comments)
+
+    elif ((vip['ext_sfc_wv_type'] > 0) & (ext_tseries['nQsfc'] > 0)):  # Rescale based on the ext_sfc data
+        foo = np.where(ext_tseries['wv'] > 0)  # Need to take out an -999s
+        input_value = np.mean(ext_tseries['wv'][foo])
+        Xa, comments = Data_reads.recenter_prior(prior_filename, input_value, vip['recenter_prior'])
+
+        # Update the global attributes to note that prior recentering was performed
+        globatt.update(comments)
+
+    elif vip['ext_sfc_wv_type'] <= 0:
+        print("Error: In order to recenter the prior, an ext_sfc_wv_type is required")
+        VIP_Databases_functions.abort(lbltmpdir, date)
+        sys.exit()
+
+    elif ext_tseries['nQsfc'] == 0:
+        print("WARNING: No surface WV points found in the file, so the prior will not be recentered!")
+
+elif vip['recenter_prior'] == 2:
+    print("Error: Recentering prior based on PWV (recenter_prior=2) is not yet implemented. Exiting...")
+    VIP_Databases_functions.abort(lbltmpdir, date)
+    sys.exit()
+
 
 # Splice these trace gases and clouds into the Xa and Sa matrices.
 # I am assuming no correlations between the TGs and clouds and the T/Q profiles

@@ -73,6 +73,84 @@ def findfile(path,pattern):
     files.sort()
     return files
 
+
+################################################################################
+# This function recenters a prior file
+################################################################################
+
+def recenter_prior(orig_prior_name, input_value, sfc_or_pwv=0):
+    """
+    This code recenters the mean of the prior dataset, preserving the RH profile
+    :param orig_prior_name: The path/name of the input prior file to read
+    :param new_prior_name: The path/name of the new output file to create
+    :param input_value: The input value used to scale the mean WV profile in the prior
+    :param sfc_or_pwv: This keyword indicates the what the input_value represents:
+                            1-> implies that the input_value is the surface WVMR [g/kg]
+                            2-> implies that the input_value is the column PWV [cm]
+                            Note the default value is 0, which forces the user to actually think!
+    :return: Returns 1 if the prior was successfully scaled, 0 if the function failed.
+    """
+
+    if ((sfc_or_pwv < 1) | (sfc_or_pwv > 2)):
+        print('Error: the sfc_or_pwv keyword has an undefined value (must be 1 or 2) -- see usage')
+        return 0
+
+    # Grab the data from the previous prior
+    fid = Dataset(orig_prior_name)
+    z0 = fid['height'][:]
+    p0 = fid['mean_pressure'][:]
+    t0 = fid['mean_temperature'][:]
+    q0 = fid['mean_mixingratio'][:]
+    fid.close()
+
+    # Calculate the RH and PWV from this prior
+    u0 = Calcs_Conversions.w2rh(q0, p0, t0, 0)
+    pwv0 = Calcs_Conversions.w2pwv(q0, p0)
+
+    if sfc_or_pwv == 1:
+        print('    Recenter_prior is using the scale-by-surface method')
+        input_comment = f"surface WVMR value of {input_value:5.2f} g/kg"
+        sf = input_value / q0[0]
+        sfact_comment = f'The WVMR profile was scaled by a factor of {sf:5.2f}'
+        q1 = q0 * sf
+
+    elif sfc_or_pwv == 2:
+        print('    Recenter_prior is using the scale-by-PWV method')
+        input_comment = f"column PWV value of {input_value:5.2f} cm"
+        sf = input_value / pwv0
+        sfact_comment = f'The WVMR profile was scaled by a factor of {sf:5.2f}'
+        q1 = q0 * sf
+
+    else:
+        print("This should not happen within recenter_prior")
+        return 0
+
+    print(f'    {sfact_comment}')
+
+    # Now iterate to find the best temperature, preserving the RH profile in the original prior
+    t1 = np.full_like(t0, -999.)  # Allocate an empty array
+    off = np.arange(2001)/50. - 20.  # An array of temperature offsets
+
+    for i in range(len(z0)):
+        tmp = Calcs_Conversions.w2rh(q1[i], p0[i], t0[i] + off)
+        foo = np.argmin(np.abs(tmp - u0[i]))
+        t1[i] = t0[i] + off[foo]
+
+    Xa = np.append(t1, q1)
+
+    comments = {'Comment_on_recentering1': 'The WVMR profile prior recentered using a '+input_comment,
+                'Comment_on_recentering2': sfact_comment,
+                'Comment_on_recentering3': 'The temperature prior was derived by conserving the RH profile'
+    }
+
+    return Xa, comments
+
+
+
+
+
+
+
 ################################################################################
 # This function reads the AERI channel data file
 ################################################################################
