@@ -1015,7 +1015,7 @@ for i in range(len(aeri['secs'])):                        # { loop_i
 
     Sm = Sy + Sf
     # print(Sy)
-    SmInv = scipy.linalg.pinv2(Sm)
+    SmInv = scipy.linalg.pinv(Sm)
 
     # Get the other input variables that the forward model will need
     nX = len(z)*2                 # For both T and Q
@@ -1159,7 +1159,7 @@ for i in range(len(aeri['secs'])):                        # { loop_i
         # Sa = Other_functions.covariance_matrix_decorrelate_level(prior['Sa'], z, pblh, prior_pblh_decorrelate_factor)
 
         # Compute its inverse of the prior
-        SaInv = scipy.linalg.pinv2(Sa)
+        SaInv = scipy.linalg.pinv(Sa)
 
         # This function makes the forward calculation and computes the Jacobian
         # for the AERI component of the forward model
@@ -1713,11 +1713,11 @@ for i in range(len(aeri['secs'])):                        # { loop_i
 
         # Retrieval Calculations
         B      = (gfac * SaInv) + Kij.T.dot(SmInv).dot(Kij)
-        Binv   = scipy.linalg.pinv2(B)
+        Binv   = scipy.linalg.pinv(B)
         Gain   = Binv.dot(Kij.T).dot(SmInv)
         Xnp1   = Xa[:,None] + Gain.dot(Y[:,None] - FXn[:,None] + Kij.dot((Xn-Xa)[:,None]))
         Sop    = Binv.dot(gfac*gfac*SaInv + Kij.T.dot(SmInv).dot(Kij)).dot(Binv)
-        SopInv = scipy.linalg.pinv2(Sop)
+        SopInv = scipy.linalg.pinv(Sop)
         Akern  = (Binv.dot(Kij.T).dot(SmInv).dot(Kij)).T
 
         if(vip['max_iterations'] == 0):
@@ -1783,7 +1783,7 @@ for i in range(len(aeri['secs'])):                        # { loop_i
         di2n = ((Xn[:,None]-Xnp1).T.dot(SopInv).dot(Xn[:,None]-Xnp1))[0,0]
         if len(Fxnm1) == nY:
             di2m = ((FXn[:,None] - Fxnm1[:,None]).T.dot(
-                scipy.linalg.pinv2(Kij.dot(Sop).dot(Kij.T)+Sm)).dot(
+                scipy.linalg.pinv(Kij.dot(Sop).dot(Kij.T)+Sm)).dot(
                 FXn[:,None] - Fxnm1[:,None]))[0,0]
         else:
             di2m = 9.0e9
