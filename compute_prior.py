@@ -2,9 +2,9 @@
 #
 #  Copyright (C) 2015 David D Turner - All Rights Reserved
 #
-#  This file is part of the "AERIoe" retrieval system.
+#  This file is part of the "TROPoe" retrieval system.
 #
-#  AERIoe is free software developed while the author was at NOAA, and is
+#  TROPoe is free software developed while the author was at NOAA, and is
 #  intended to be free software.  It is made available WITHOUT ANY WARRANTY.
 #  For more information, contact the author.
 #
@@ -15,13 +15,13 @@
 #
 #  Abstract:
 #      This script is used to create the prior T/q datasets that are needed by the
-#    AERIoe and MWRoe retrievals.  It reads in radiosonde data all of the radiosonde
+#    TROPoe retrievals.  It reads in radiosonde data all of the radiosonde
 #    data found for the set of months indicated, performs some simple QC on each
 #    profile, and:
 #    computes the mean state (Xa) and its covariance (Sa).  Th
 #    vertical resolution is provided as an input.  If desired, this script will
-#    also create the deltaOD model for the AERI for the mean profile.  The output
-#    is stored as a netCDF file.
+#    also create the deltaOD model for the IRS (infrared spectrometer) for the 
+#    mean profile.  The output is stored as a netCDF file.
 #       The sonde files are assumed to be named like ARM radiosondes, and to have the
 #    same netCDF file structure.
 #
@@ -331,7 +331,7 @@ def compute_prior(z, sonde_path, sonde_rootname, month_idx, outfile=None, deltao
             return
 
         # I want to get the appropriate spectral resolution that is
-        # consistent with that used in the AERIoe retrieval.  The default is
+        # consistent with that used in the TROPoe retrieval.  The default is
         # to use the spectral resolution above 8 km
 
         bar = np.where(z > 8)
@@ -360,19 +360,19 @@ def compute_prior(z, sonde_path, sonde_rootname, month_idx, outfile=None, deltao
         # Compute the true monochromatic radiance spectrum
         rad_mono = radxfer(wnum, t, od)
 
-        # Convolve the monochromatic spectrum with the AERI's instrument function
+        # Convolve the monochromatic spectrum with the AERI's/ASSIST's instrument function
         b = convolve_to_aeri(wnum, rad_mono)
         awnum = b['wnum']
         arad = b['spec']
         arad = apodizer(arad, 0)
 
-        # Convolve the monochromatic transmission with the AERI's instrument function
+        # Convolve the monochromatic transmission with the AERI's/ASSIST's instrument function
         trans = np.array([np.exp(-1*sum(od[:, i])) for i in range(len(wnum))])
         b = convolve_to_aeri(wnum, trans)
         atrans = apodizer(b['spec'], 0)
 
         # Now perform some loops over different delta's to find the delta that works
-        # best for each AERI channel. I'll do this in an exponential manner. Generate
+        # best for each IRS channel. I'll do this in an exponential manner. Generate
         # the array of deltas to use
         delta = [0.1, 0.12]
         dmult = 1.05
@@ -390,7 +390,7 @@ def compute_prior(z, sonde_path, sonde_rootname, month_idx, outfile=None, deltao
 
             brad[i, :] = radxfer(awnum, t, odb)
 
-        # Find the delta that works best for each AERI spectral element
+        # Find the delta that works best for each IRS spectral element
         crad = np.zeros(len(awnum))
         idx = np.zeros(len(awnum), dtype=int)
         for i in range(len(awnum)):
@@ -451,9 +451,9 @@ def compute_prior(z, sonde_path, sonde_rootname, month_idx, outfile=None, deltao
         var = nc.createVariable('delta_od', 'f4', ('wnum',))
         var.setncattr('long_name', 'spectral averaging widths')
         var.setncattr('units', 'cm-1')
-        var.setncattr('comment', 'The spectral window on each side of the AERI ' +
+        var.setncattr('comment', 'The spectral window on each side of the IRS ' +
                       'spectral element that is used for averaging the monochromatic gaseous ' +
-                      'optical depths to give the best estimate of the AERI radiance in a fast manner')
+                      'optical depths to give the best estimate of the IRS radiance in a fast manner')
         var[:] = np.array(delta)[idx]
 
         var = nc.createVariable('radiance_true', 'f4', ('wnum',))

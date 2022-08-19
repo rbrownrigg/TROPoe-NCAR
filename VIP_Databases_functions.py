@@ -21,7 +21,7 @@ import scipy.io
 # will cast the value provided in the VIP file as that.
 # There are three exceptions to this
 #   1) "Success" has the status of this routine -- it is not set by VIP file
-#   2) "aeri_calib_pres" is a 2-elements floating point array
+#   2) "irs_calib_pres" is a 2-elements floating point array
 #   3) "vip_filename" captures the name of the input VIP file itself
 # The code will ouput how many of the keys in this structure were found.
 # Note that not all of them have to be in the VIP file; if a key in this
@@ -31,31 +31,31 @@ maxbands = 200  # The maximum number of bands to enable for the retrieval
 
 full_vip = ({
     'success': {'value': 0, 'comment': "Interal success flag. Not for outside use", 'default': False},
-    'tres': {'value': 0, 'comment': 'Temporal resolution [min], 0 implies native AERI temporal resolution', 'default': True},
+    'tres': {'value': 0, 'comment': 'Temporal resolution [min], 0 implies native IRS temporal resolution', 'default': True},
     'avg_instant': {'value': 1, 'comment': 'A flag to specify if this is an average (0) over the tres period, or instantaneous (1) sample (i.e. do not average the data)', 'default': True},
     'tag': {'value': 'tropoe', 'comment': 'String for temporary files / directories\n', 'default': True},
 
-    'aeri_type': {'value': 0, 'comment': '0- output, options, and stop, 1 - ARM AERI data, 2 - dmv2cdf AERI data (C1_rnc.cdf and _sum.cdf), 3 - dmv2ncdf (C1.RNC.cdf and .SUM.cdf) , -1 - MWR data is to be used as MASTER dataset (no AERI data being read in)', 'default': True},
-    'aeri_pca_nf': {'value': 1, 'comment': '0 - AERI data was NOT PCA noise filtered, 1 - AERI data was PCA noise filtered', 'default': True},
-    'aerich1_path': {'value': "None", 'comment': 'Path to the AERI ch1 radiance files', 'default': True},
-    'aerisum_path': {'value': "None", 'comment': 'Path to the AERI summary files', 'default': True},
-    'aerieng_path': {'value': "None", 'comment': 'Path to the AERI engineering files', 'default': True},
-    'aeri_smooth_noise': {'value': 0, 'comment': 'The temporal window [minutes] used to smooth the AERI noise with time', 'default': True},
-    'aeri_calib_pres': {'value': [0.0, 1.0], 'comment': 'Intercept [mb] and slope [mb/mb to calib (newP = int = slope*obsP) (need comma between them)', 'default': True},
-    'aeri_use_missingDataFlag': {'value': 1, 'comment': 'Set this to 1 to use the field \'missingDataFlag\' (from the ch1 file) to remove bad AERI data from analysis. If not zero, then all AERI data will be processed,', 'default': True},
-    'aeri_hatch_switch': {'value': 1, 'comment': '1 - only include hatchOpen=1 when averaging, 2 - include all AERI samples when averaging', 'default': True},
-    'aeri_fv': {'value': 0.0, 'comment': 'Apply a foreoptics obscuration correction', 'default': False},
-    'aeri_fa': {'value': 0.0, 'comment': 'Apply an aftoptics obscuration correction', 'default': False},
-    'aeri_old_ffov_halfangle': {'value': 23.0, 'comment': 'Original Half angle [millirad] of the finite field of view of the instrument', 'default': False},
-    'aeri_new_ffov_halfangle': {'value': 0.0, 'comment': 'New half angle [millirad] of the finite field of view of the instrument (values} <= 0 will result in no correction being applied)', 'default': False},
-    'aeri_spectral_cal_factor': {'value': 0.0, 'comment': 'The spectral calibration stretch factor to apply to the AERI data', 'default': False},
-    'aeri_min_675_bt': {'value': 263., 'comment': 'Minimum brightness temp [K] in the 675-680 cm-1 window -- this is QC screen', 'default': True},
-    'aeri_max_675_bt': {'value': 313., 'comment': 'Maximum brightness temp [K] in the 675-680 cm-1 window -- this is QC screen\n', 'default': True},
-    'aeri_spec_cal_factor': {'value': 1.0, 'comment': ' ', 'default': False},
+    'irs_type': {'value': 0, 'comment': '0- output, options, and stop, 1 - ARM AERI data, 2 - dmv2cdf AERI data (C1_rnc.cdf and _sum.cdf), 3 - dmv2ncdf (C1.RNC.cdf and .SUM.cdf), 5- ASSIST, -1 - MWR data is to be used as MASTER dataset (no IRS data being read in)', 'default': True},
+    'irs_pca_nf': {'value': 1, 'comment': '0 - IRS data was NOT PCA noise filtered, 1 - IRS data was PCA noise filtered', 'default': True},
+    'irsch1_path': {'value': "None", 'comment': 'Path to the IRS ch1 radiance files', 'default': True},
+    'irssum_path': {'value': "None", 'comment': 'Path to the IRS summary files', 'default': True},
+    'irseng_path': {'value': "None", 'comment': 'Path to the IRS engineering files', 'default': True},
+    'irs_smooth_noise': {'value': 0, 'comment': 'The temporal window [minutes] used to smooth the IRS noise with time', 'default': True},
+    'irs_calib_pres': {'value': [0.0, 1.0], 'comment': 'Intercept [mb] and slope [mb/mb to calib (newP = int = slope*obsP) (need comma between them)', 'default': True},
+    'irs_use_missingDataFlag': {'value': 1, 'comment': 'Set this to 1 to use the field \'missingDataFlag\' (from the ch1 file) to remove bad IRS data from analysis. If not zero, then all IRS data will be processed,', 'default': True},
+    'irs_hatch_switch': {'value': 1, 'comment': '1 - only include hatchOpen=1 when averaging, 2 - include all IRS samples when averaging', 'default': True},
+    'irs_fv': {'value': 0.0, 'comment': 'Apply a foreoptics obscuration correction', 'default': False},
+    'irs_fa': {'value': 0.0, 'comment': 'Apply an aftoptics obscuration correction', 'default': False},
+    'irs_old_ffov_halfangle': {'value': 23.0, 'comment': 'Original Half angle [millirad] of the finite field of view of the instrument', 'default': False},
+    'irs_new_ffov_halfangle': {'value': 0.0, 'comment': 'New half angle [millirad] of the finite field of view of the instrument (values} <= 0 will result in no correction being applied)', 'default': False},
+    'irs_spectral_cal_factor': {'value': 0.0, 'comment': 'The spectral calibration stretch factor to apply to the IRS data', 'default': False},
+    'irs_min_675_bt': {'value': 263., 'comment': 'Minimum brightness temp [K] in the 675-680 cm-1 window -- this is QC screen', 'default': True},
+    'irs_max_675_bt': {'value': 313., 'comment': 'Maximum brightness temp [K] in the 675-680 cm-1 window -- this is QC screen\n', 'default': True},
+    'irs_spec_cal_factor': {'value': 1.0, 'comment': ' ', 'default': False},
 
-    'station_lat': {'value': -999., 'comment': 'Station latitude [degN]; if negative get value from AERI data file', 'default': True},
-    'station_lon': {'value': -999., 'comment': 'Station longitude [degE]; if negative get value from AERI data file', 'default': True},
-    'station_alt': {'value': -999., 'comment': 'Station altitude [m MSL]; if negative get value from AERI data file', 'default': True},
+    'station_lat': {'value': -999., 'comment': 'Station latitude [degN]; if negative get value from IRS/MWR data file', 'default': True},
+    'station_lon': {'value': -999., 'comment': 'Station longitude [degE]; if negative get value from IRS/MWR data file', 'default': True},
+    'station_alt': {'value': -999., 'comment': 'Station altitude [m MSL]; if negative get value from IRS/MWR data file', 'default': True},
     'station_psfc_min': {'value': 800., 'comment': 'Default minimum surface pressure [mb]', 'default': True},
     'station_psfc_max': {'value': 1030., 'comment': 'Default maximum surface pressure [mb]\n', 'default': True},
 
@@ -103,14 +103,14 @@ full_vip = ({
     'ext_sfc_wv_rep_error': {'value': 0.0, 'comment': 'Representativeness error for the surface water vapor measurement [g/kg], which is added to the typical assumed uncertainty of 0.5 degC and 3%RH', 'default': True},
     'ext_sfc_path': {'value': 'None', 'comment': 'Path to the external surface met data', 'default': True},
     'ext_sfc_time_delta': {'value': 0.2, 'comment': 'Maximum amount of time from endpoints of external surface met dataset to extrapolate [hours]', 'default': True},
-    'ext_sfc_relative_height': {'value': 0, 'comment': 'Relative height of the met station to the AERI zenith port [m]; note if met station is below AERI port then the value should be negative', 'default': True},
-    'ext_sfc_p_type': {'value': 0, 'comment': '0 - Use the internal AERI pressure sensor for psfc; 1-ARM met data, 2-NCAR ISFS data, 3-CLAMPS MWR met data\n', 'default': True},
+    'ext_sfc_relative_height': {'value': 0, 'comment': 'Relative height of the met station to the IRS zenith port [m]; note if met station is below IRS port then the value should be negative', 'default': True},
+    'ext_sfc_p_type': {'value': 0, 'comment': '0 - Use the internal IRS pressure sensor for psfc; 1-ARM met data, 2-NCAR ISFS data, 3-CLAMPS MWR met data\n', 'default': True},
 
     'co2_sfc_type': {'value': 0, 'comment': 'External CO2 surface data type: 0-none, 1-DDT QC PGS data', 'default': False},
     'co2_sfc_npts': {'value': 1, 'comment': 'Number of surface CO2 in-situ points to use in the retrieval.  Minimum=1, maximum=1000.  Larger number increases the weight of the observation', 'default': False},
     'co2_sfc_rep_error': {'value': 0.0, 'comment': 'Representativeness error for the CO2 surface measurement [ppm], which is added to the uncertainty of the obs in the input file', 'default': False},
     'co2_sfc_path': {'value': 'None', 'comment': 'Path to the external surface CO2 data', 'default': False},
-    'co2_sfc_relative_height': {'value': 0, 'comment': 'Relative height of the CO2 surface measurement to the AERI zenith port [m]; note if in-situ obs is below AERI port then the value should be negative', 'default': False},
+    'co2_sfc_relative_height': {'value': 0, 'comment': 'Relative height of the CO2 surface measurement to the IRS zenith port [m]; note if in-situ obs is below IRS port then the value should be negative', 'default': False},
     'co2_sfc_time_delta': {'value': 1.5, 'comment': 'Maximum amount of time from endpoints of external CO2 in-situ dataset to extrapolate [hours] \n', 'default': False},
 
     'mwr_type': {'value': 0, 'comment': '0 - none, 1 - Tb fields are individual time series, 2 - Tb field is 2-d array', 'default': True},
@@ -150,8 +150,8 @@ full_vip = ({
 
     'cbh_type': {'value': 0, 'comment': '0 - output options and stop, 1 - VCEIL, 2 - Gregs ASOS CBH file, 3 - CLAMPS DLfp data, 4 - ARM dlprofwstats data', 'default': True},
     'cbh_path': {'value': 'None', 'comment': 'Path to the CBH data', 'default': True},
-    'cbh_window_in': {'value': 20, 'comment': 'Inner temporal window (full-size) centered upon AERI time to look for cloud', 'default': True},
-    'cbh_window_out': {'value': 180, 'comment': 'Outer temporal window (full-size) centered upon AERI time to look for cloud}', 'default': True},
+    'cbh_window_in': {'value': 20, 'comment': 'Inner temporal window (full-size) centered upon IRS time to look for cloud', 'default': True},
+    'cbh_window_out': {'value': 180, 'comment': 'Outer temporal window (full-size) centered upon IRS time to look for cloud}', 'default': True},
     'cbh_default_ht': {'value': 2.0, 'comment': 'Default CBH height [km AGL], if no CBH data found \n', 'default': True},
 
     'output_rootname': {'value': 'None', 'comment': 'String with the rootname of the output file', 'default': True},
@@ -250,7 +250,7 @@ def read_vip_file(filename,globatt,verbose,debug,dostop):
         return vip
 
     # Look for obsolete tags, and abort if they are found (forcing user to update their VIP file)
-    obsolete_tags = ['AERI_LAT','AERI_LON','AERI_ALT','PSFC_MIN','PSFC_MAX']
+    obsolete_tags = ['AERI_LAT','AERI_LON','AERI_ALT','PSFC_MIN','PSFC_MAX','AERI_TYPE']
     obsolete_idx  = np.zeros_like(obsolete_tags, dtype=int)
     vip_keys = [k.upper() for k in vip.keys()]
     for i in range(len(obsolete_tags)):
@@ -300,17 +300,17 @@ def read_vip_file(filename,globatt,verbose,debug,dostop):
                             bands[1,j] = float(feh[1])
                         vip['spectral_bands'] = bands
 
-                    elif key == 'aeri_calib_pres':
+                    elif key == 'irs_calib_pres':
                         feh = inputt[foo,1][0].split(',')
                         if len(feh) != 2:
-                            print('Error: The key aeri_calib_pres in VIP file must be intercept, slope')
+                            print('Error: The key irs_calib_pres in VIP file must be intercept, slope')
                             if dostop:
                                 wait = input('Stopping inside to debug this bad boy. Press enter to continue')
                             return vip
-                        vip['aeri_calib_pres'][0] = float(feh[0])
-                        vip['aeri_calib_pres'][1] = float(feh[1])
-                        if vip['aeri_calib_pres'][1] <= 0.0001:
-                            print('Error: The key aeri_calib_pres in VIP file must have positive slope')
+                        vip['irs_calib_pres'][0] = float(feh[0])
+                        vip['irs_calib_pres'][1] = float(feh[1])
+                        if vip['irs_calib_pres'][1] <= 0.0001:
+                            print('Error: The key irs_calib_pres in VIP file must have positive slope')
                             if dostop:
                                 wait = input('Stopping inside to debug this bad boy. Press enter to continue')
                             return vip
@@ -391,12 +391,12 @@ def check_vip(vip):
         print('Error: The output_clobber flag can only be set to 0, 1, or 2')
         flag = 1
 
-    if ((vip['aeri_fv'] < 0.0) | (vip['aeri_fv'] > 0.03)):
-        print('Error: The AERI fv is too small or too large')
+    if ((vip['irs_fv'] < 0.0) | (vip['irs_fv'] > 0.03)):
+        print('Error: The IRS fv is too small or too large')
         flag = 1
 
-    if ((vip['aeri_fa'] < 0.0) | (vip['aeri_fa'] > 0.03)):
-        print('Error: The AERI fa is too small or too large')
+    if ((vip['irs_fa'] < 0.0) | (vip['irs_fa'] > 0.03)):
+        print('Error: The IRS fa is too small or too large')
         flag = 1
 
     if vip['jac_max_ht'] <= 1.0:
@@ -411,12 +411,12 @@ def check_vip(vip):
         print('Error: The LBLRTM standard atmosphere must be an integer between 1 and 6')
         flag = 1
 
-    if ((vip['aeri_use_missingDataFlag'] < 0) | (vip['aeri_use_missingDataFlag'] > 1)):
-        print('Error: The aeri_use_missingDataFlag must be either 0 or 1')
+    if ((vip['irs_use_missingDataFlag'] < 0) | (vip['irs_use_missingDataFlag'] > 1)):
+        print('Error: The irs_use_missingDataFlag must be either 0 or 1')
         flag = 1
 
-    if ((vip['aeri_hatch_switch'] < 0) | (vip['aeri_hatch_switch'] > 1)):
-        print('Error: The aeri_hatch_switch must be either 0 or 1')
+    if ((vip['irs_hatch_switch'] < 0) | (vip['irs_hatch_switch'] > 1)):
+        print('Error: The irs_hatch_switch must be either 0 or 1')
         flag = 1
     
     if ((vip['retrieve_lcloud'] == 0) & (vip['prior_lwp_mn'] > 0)):
@@ -428,7 +428,7 @@ def check_vip(vip):
     return flag
 
 ################################################################################
-# This routine is called when AERIoe aborts
+# This routine is called when TROPoe aborts
 ################################################################################
 
 def abort(lbltmpdir, date):
@@ -436,7 +436,7 @@ def abort(lbltmpdir, date):
     if os.path.exists(lbltmpdir):
         shutil.rmtree(lbltmpdir)
 
-    print('>>> AERI retrieval on ' + str(date) + ' FAILED and ABORTED <<<')
+    print('>>> IRS retrieval on ' + str(date) + ' FAILED and ABORTED <<<')
     print('--------------------------------------------------------------------')
     print(' ')
 

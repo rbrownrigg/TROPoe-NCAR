@@ -270,10 +270,10 @@ def write_output(vip, ext_prof, mod_prof, rass_prof, ext_tseries, globatt, xret,
         n_iter.units = 'unitless'
 
         rmsr = fid.createVariable('rmsr', 'f4', ('time',))
-        rmsr.long_name = 'root mean square error between AERI and MWR obs in the observation vector and the forward calculation'
+        rmsr.long_name = 'root mean square error between IRS and MWR obs in the observation vector and the forward calculation'
         rmsr.units = 'unitless'
         rmsr.comment1 = 'Computed as sqrt( sum_over_i[ ((Y_i - F(Xn_i)) / Y_i)^2 ] / sizeY)'
-        rmsr.comment2 = 'Only AERI radiance observations in the observation vector are used'
+        rmsr.comment2 = 'Only IRS radiance observations in the observation vector are used'
 
         rmsa = fid.createVariable('rmsa', 'f4', ('time',))
         rmsa.long_name = 'root mean square error between observation vector and the forward calculation'
@@ -319,7 +319,7 @@ def write_output(vip, ext_prof, mod_prof, rass_prof, ext_tseries, globatt, xret,
         cdfs_wv.units = 'unitless'
 
         hatchOpen = fid.createVariable('hatchOpen', 'i2', ('time',))
-        hatchOpen.long_name = 'Flag indicating if the AERIs hatch was open'
+        hatchOpen.long_name = 'Flag indicating if the IRSs hatch was open'
         hatchOpen.units = 'unitless'
         hatchOpen.comment = '1 - hatch open, 0 - hatch closed, other values indicate hatch is either not working or indeterminant'
 
@@ -338,7 +338,7 @@ def write_output(vip, ext_prof, mod_prof, rass_prof, ext_tseries, globatt, xret,
         pressure = fid.createVariable('pressure', 'f4', ('time','height',))
         pressure.long_name = 'derived pressure'
         pressure.units = 'mb'
-        pressure.comment = 'derived from AERI surface pressure observations and the hyposmetric calculation using the thermodynamic profiles'
+        pressure.comment = 'derived from IRS surface pressure observations and the hyposmetric calculation using the thermodynamic profiles'
 
         theta = fid.createVariable('theta', 'f4', ('time','height',))
         theta.long_name = 'potential temperature'
@@ -724,7 +724,7 @@ def write_output(vip, ext_prof, mod_prof, rass_prof, ext_tseries, globatt, xret,
                     sigma_indices[ii,i] = np.nanstd(indices[ii,i] - tmp)
 
             else:
-                print('WARNING: There is some derive index that is not properly being computed in aerioe.py')
+                print('WARNING: There is some derived index that is not properly being computed in TROPoe')
 
 
     # Now append all of the samples from fsample onward into the file
@@ -878,12 +878,12 @@ def write_output(vip, ext_prof, mod_prof, rass_prof, ext_tseries, globatt, xret,
 # "secs" field needs to have the proper values though...
 ################################################################################
 
-def create_xret(xret, fsample, vip, aeri, Xa, Sa, z, bands, obsdim, obsflag):
+def create_xret(xret, fsample, vip, irs, Xa, Sa, z, bands, obsdim, obsflag):
 
     # Find all of the output files with this date
-    yy = np.array([datetime.utcfromtimestamp(x).year for x in aeri['secs']])
-    mm = np.array([datetime.utcfromtimestamp(x).month for x in aeri['secs']])
-    dd = np.array([datetime.utcfromtimestamp(x).day for x in aeri['secs']])
+    yy = np.array([datetime.utcfromtimestamp(x).year for x in irs['secs']])
+    mm = np.array([datetime.utcfromtimestamp(x).month for x in irs['secs']])
+    dd = np.array([datetime.utcfromtimestamp(x).day for x in irs['secs']])
     ymd = yy*10000 + mm*100 + dd
 
     files = []
@@ -912,8 +912,8 @@ def create_xret(xret, fsample, vip, aeri, Xa, Sa, z, bands, obsdim, obsflag):
     secs = bt+to
 
     # Set up some default values
-    w0idx, nY = Other_functions.find_wnum_idx(aeri['wnum'],bands)
-    wnum = aeri['wnum'][w0idx]
+    w0idx, nY = Other_functions.find_wnum_idx(irs['wnum'],bands)
+    wnum = irs['wnum'][w0idx]
     nY = len(xobsflag)
     Y = np.zeros(nY)
     Sop = np.diag(np.ones(len(Xa)))

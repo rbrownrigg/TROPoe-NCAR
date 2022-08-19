@@ -906,7 +906,7 @@ def compute_jacobian_deltaod(X, p, zz, lblhome, lbldir, lblroot, lbl_std_atmos, 
 # (which includes temperature and humidity profiles, trace gas amounts, and
 # cloud properties).  It interpolates the monochromatic optical depths to a
 # fixed spectral grid, which is coarser than monochromatic but finer than
-# the AERI's resolution, which allows the routine to be pretty fast.
+# the IRS's resolution, which allows the routine to be pretty fast.
 ################################################################################
 
 def compute_jacobian_interpol(X, p, zz, lblhome, lbldir, lblroot, lbl_std_atmos, tp5, tp3,

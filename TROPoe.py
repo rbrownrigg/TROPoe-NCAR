@@ -1,4 +1,4 @@
-__version__ = '0.5.13'
+__version__ = '0.5.15'
 
 import os
 import sys
@@ -39,7 +39,7 @@ parser.add_argument("date", type=int, help="Date to run the code [YYYYMMDD]")
 parser.add_argument("vip_filename", help="Name if the VIP file (string)")
 parser.add_argument("prior_filename", help="Name of the prior input dataset (string)")
 parser.add_argument("--shour", type=float, help="Start hour (decimal, 0-24)")
-parser.add_argument("--ehour", type=float, help="End hour (decimal, 0-24) [If ehour<0 process up to last AERI sample]")
+parser.add_argument("--ehour", type=float, help="End hour (decimal, 0-24) [If ehour<0 process up to last IRS sample]")
 parser.add_argument("--verbose",type=int, choices=[0,1,2,3], help="The verbosity of the output (0-very quiet, 3-noisy)")
 parser.add_argument("--doplot", action="store_true", help="If set, then create real-time display of retrievals")
 parser.add_argument("--debug", action="store_true", help="Set this to turn on the debug mode")
@@ -122,8 +122,8 @@ if verbose == 3:
     print(('The shell for all commands is', SHELL))
 
 #Capture the version of this file
-globatt = {'algorithm_code': 'TROPoe Retrieval Code',
-           'algorithm_author': 'Dave Turner, Earth System Research Laboratory / NOAA dave.turner@noaa.gov',
+globatt = {'algorithm_code': 'TROPoe Retrieval Code (formerly AERIoe)',
+           'algorithm_author': 'Dave Turner, Global Systems Laboratory / NOAA dave.turner@noaa.gov',
            'algorithm_comment1': 'TROPoe is a physical-iterative algorithm that retrieves thermodynamic profiles from ' +
                                  'a wide range of ground-based remote sensors.  It was primarily designed to use either ' +
                                  'infrared spectrometers or microwave radiometers as the primary instrument, and include ' +
@@ -132,20 +132,20 @@ globatt = {'algorithm_code': 'TROPoe Retrieval Code',
            'algorithm_comment3': 'Code was ported to python by Joshua Gebauer with contributions ' +
                                  'from Tyler Bell (both at the University of Oklahoma)',
            'algorithm_version': __version__,
-           'algorithm_reference1': 'DD Turner and U Loehnert, Information Content and ' +
+           'algorithm_reference1': 'DD Turner and U Loehnert, 2014: Information Content and ' +
                     'Uncertanties in Thermodynamic Profiles and Liquid Cloud Properties ' +
                     'Retrieved from the Ground-Based Atmospheric Emitted Radiance ' +
-                    'Interferometer (AERI), J Appl Met Clim, vol 53, pp 752-771, 2014 ' +
+                    'Interferometer (AERI), J Appl Met Clim, vol 53, pp 752-771, ' +
                     'doi:10.1175/JAMC-D-13-0126.1',
-           'algorithm_reference2': 'DD Turner and WG Blumberg, Improvements to the AERIoe ' +
+           'algorithm_reference2': 'DD Turner and WG Blumberg, 2019: Improvements to the AERIoe ' +
                     'thermodynamic profile retrieval algorithm. IEEE Selected Topics ' +
                     'Appl. Earth Obs. Remote Sens., 12, 1339-1354, doi:10.1109/JSTARS.2018.2874968',
-           'algorithm_reference3': 'DD Turner and U Loehnert, Ground-based temperature and humidity profiling: ' +
+           'algorithm_reference3': 'DD Turner and U Loehnert, 2021: Ground-based temperature and humidity profiling: ' +
                     'Combining active and passive remote sensors, Atmos. Meas. Tech., vol 14, pp 3033-3048, ' +
                     'doi:10.5194/amt-14-3033-2021', 
            'forward_model_reference1': 'The forward radiative transfer models are from Atmospheric and Environmental ' +
-                    'Research Inc (AER); an overview is provided by Clough et al., Atmospheric radiative transfer ' +
-                    'modeling: A summary of the AER codes, JQSRT, vol 91, pp 233-244, 2005, doi:10.1016/j.jqsrt.2004.05.058', 
+                    'Research Inc (AER); an overview is provided by Clough et al., 2005: Atmospheric radiative transfer ' +
+                    'modeling: A summary of the AER codes, JQSRT, vol 91, pp 233-244, doi:10.1016/j.jqsrt.2004.05.058', 
            'forward_model_reference2': 'The infrared model is LBLRTM; papers describing this model include ' + 
                     'doi:10.1029/2018JD029508, doi:10.1175/amsmonographs-d-15-0041.1, and doi:10.1098/rsta.2011.0295', 
            'forward_model_reference3': 'The microwave model is MonoRTM; papers describing this model include ' + 
@@ -457,24 +457,24 @@ if status == 0:
     sys.exit()
 
 # Get the bias spectrum
-# Set this to an IDL (py) file that contains the bias to remove from the AERI data.
+# Set this to an IDL (py) file that contains the bias to remove from the IRS data.
 # Must contain at least two fields: "wnum" and "bias", where the latter is
-# computed as AERI - LBLRTM. If this is not set, then no bias will be removed from
-# the AERI data.  !!!!!NOTE!!!! THIS IS NOT CURRENTLY IMPLEMENTED.
+# computed as IRS - LBLRTM. If this is not set, then no bias will be removed from
+# the IRS data.  !!!!!NOTE!!!! THIS IS NOT CURRENTLY IMPLEMENTED.
 remove_bias = 0
-#if len(aeri_bias) > 0:
-#    if not os.path.exists(aeri_bias):
-#        print 'Error: The aeri_bias keyword is not set to a valid filename'
+#if len(irs_bias) > 0:
+#    if not os.path.exists(irs_bias):
+#        print 'Error: The irs_bias keyword is not set to a valid filename'
 #        abort(lbltmpdir,date)
 #        sys.exit()
 #    else:
-#        temp = scipy.io.readsav(aeri_bias, python_dict = True)
+#        temp = scipy.io.readsav(irs_bias, python_dict = True)
 #    if ((len(temp['wnum']) == 0) | (len(temp['bias']) == 0)):
-#        print 'Error: The fields "wnum" and/or "bias" do not exist in aeri_bias file'
+#        print 'Error: The fields "wnum" and/or "bias" do not exist in irs_bias file'
 #        abort(lbltmpdir,date)
 #        sys.exit()
 #    if len(temp['wnum']) != len(temp['bias']):
-#        print 'Error: The fields "wnum" and "bias" do not have proper dimensions in rhe aeri_bias file'
+#        print 'Error: The fields "wnum" and "bias" do not have proper dimensions in rhe irs_bias file'
 #        abort(lbltmpdir,date)
 #        sys.exit()
 #    bwnum = temp['wnum']
@@ -484,16 +484,16 @@ remove_bias = 0
 #remove_bias = 0
 
 # Read in the data
-fail, aeri, mwr, mwrscan = Data_reads.read_all_data(date, z, vip['tres'], dostop, verbose, vip['avg_instant'],
-    vip['aerich1_path'], vip['aeri_pca_nf'], vip['aeri_fv'], vip['aeri_fa'],
-    vip['aerisum_path'], vip['aerieng_path'], vip['aeri_type'], vip['aeri_calib_pres'],
-    vip['aeri_smooth_noise'], vip['aeri_use_missingDataFlag'],
-    vip['aeri_min_675_bt'], vip['aeri_max_675_bt'], vip['aeri_spec_cal_factor'],
+fail, irs, mwr, mwrscan = Data_reads.read_all_data(date, z, vip['tres'], dostop, verbose, vip['avg_instant'],
+    vip['irsch1_path'], vip['irs_pca_nf'], vip['irs_fv'], vip['irs_fa'],
+    vip['irssum_path'], vip['irseng_path'], vip['irs_type'], vip['irs_calib_pres'],
+    vip['irs_smooth_noise'], vip['irs_use_missingDataFlag'],
+    vip['irs_min_675_bt'], vip['irs_max_675_bt'], vip['irs_spec_cal_factor'],
     vip['mwr_path'], vip['mwr_rootname'], vip['mwr_type'], vip['mwr_elev_field'], vip['mwr_n_tb_fields'],
     vip['mwr_tb_replicate'], vip['mwr_tb_field_names'], vip['mwr_tb_freqs'], vip['mwr_tb_noise'],
     vip['mwr_tb_bias'], vip['mwr_tb_field1_tbmax'], vip['cbh_path'], vip['cbh_type'], vip['cbh_window_in'],
-    vip['cbh_window_out'], vip['cbh_default_ht'], vip['aeri_hatch_switch'],
-    vip['aeri_use_missingDataFlag'], vip)
+    vip['cbh_window_out'], vip['cbh_default_ht'], vip['irs_hatch_switch'],
+    vip['irs_use_missingDataFlag'], vip)
 
 if fail == 1:
     print('Error reading in data: aborting')
@@ -502,7 +502,7 @@ if fail == 1:
 
 # Read in any external sources of WV and temperature profiles
 
-ext_prof = Data_reads.read_external_profile_data(date, z, aeri['secs'], vip['tres'], vip['avg_instant'],
+ext_prof = Data_reads.read_external_profile_data(date, z, irs['secs'], vip['tres'], vip['avg_instant'],
               vip['ext_wv_prof_type'], vip['ext_wv_prof_path'], vip['ext_wv_noise_mult_hts'],
               vip['ext_wv_noise_mult_val'], vip['ext_wv_prof_minht'], vip['ext_wv_prof_maxht'],
               vip['ext_wv_time_delta'], vip['ext_temp_prof_type'], vip['ext_temp_prof_path'],
@@ -517,7 +517,7 @@ if ext_prof['success'] != 1:
 
 # Read in any model sources of WV and temperature profiles
 
-mod_prof = Data_reads.read_external_profile_data(date, z, aeri['secs'], vip['tres'], vip['avg_instant'],
+mod_prof = Data_reads.read_external_profile_data(date, z, irs['secs'], vip['tres'], vip['avg_instant'],
               vip['mod_wv_prof_type'], vip['mod_wv_prof_path'], vip['mod_wv_noise_mult_hts'],
               vip['mod_wv_noise_mult_val'], vip['mod_wv_prof_minht'], vip['mod_wv_prof_maxht'],
               vip['mod_wv_time_delta'], vip['mod_temp_prof_type'], vip['mod_temp_prof_path'],
@@ -533,7 +533,7 @@ if mod_prof['success'] != 1:
 # Read in any external sources of virtual temperature profiles (RASS)
     # I will need to tweak this call a bit by turning off the WV part of the call
 if((vip['rass_prof_type'] == 0) | (vip['rass_prof_type'] == 5)):
-    rass_prof = Data_reads.read_external_profile_data(date, z, aeri['secs'], vip['tres'], vip['avg_instant'],
+    rass_prof = Data_reads.read_external_profile_data(date, z, irs['secs'], vip['tres'], vip['avg_instant'],
               0, '.', vip['ext_wv_noise_mult_hts'],
               vip['ext_wv_noise_mult_val'], vip['ext_wv_prof_minht'], vip['ext_wv_prof_maxht'],
               vip['ext_wv_time_delta'], vip['rass_prof_type'], vip['rass_prof_path'],
@@ -548,7 +548,7 @@ if(rass_prof['success'] != 1):
     print('  Warning: there is some problem in the RASS temperature specification')
 
 # Read in any external time series data that would be used
-ext_tseries = Data_reads.read_external_timeseries(date, aeri['secs'], vip['tres'], vip['avg_instant'],
+ext_tseries = Data_reads.read_external_timeseries(date, irs['secs'], vip['tres'], vip['avg_instant'],
               vip['ext_sfc_temp_type'], vip['ext_sfc_wv_type'], vip['ext_sfc_path'],
               vip['ext_sfc_temp_npts'], vip['ext_sfc_wv_npts'], vip['ext_sfc_temp_rep_error'],
               vip['ext_sfc_wv_mult_error'], vip['ext_sfc_wv_rep_error'], vip['ext_sfc_time_delta'],
@@ -563,21 +563,21 @@ if ext_tseries['success'] != 1:
 
 # If this is the ASSIST data, then replace the surface pressure field (which is currently
 # all missing values) with valid values for the retrieval.
-if(vip['aeri_type'] == 5):
+if(vip['irs_type'] == 5):
     if(vip['assist_pressure'] < 0):
         print('    Error: When using the ASSIST data as input, the keyword "assist_pressure" must be set in the VIP file')
         sys.exit()
-    aeri['atmos_pres'][:] = vip['assist_pressure']
+    irs['atmos_pres'][:] = vip['assist_pressure']
 
-# If ehour < 0, then set it to the time of the last AERI sample. (This was needed
-# for those cases when the AERI did not automatically reboot at 0 Z.)
+# If ehour < 0, then set it to the time of the last IRS sample. (This was needed
+# for those cases when the IRS did not automatically reboot at 0 Z.)
 if ehour < 0:
-    ehour = np.nanmax(aeri['hour'])
+    ehour = np.nanmax(irs['hour'])
     if verbose >= 2:
         print(('Resetting the processing end hour to ' + str(ehour) + ' UTC'))
 
 # Capture the lat/lon/alt data in a structure
-location = {'lat':aeri['lat'], 'lon':aeri['lon'], 'alt':aeri['alt']}
+location = {'lat':irs['lat'], 'lon':irs['lon'], 'alt':irs['alt']}
 if vip['station_alt'] >= 0:
     if verbose >= 2:
         print('Overriding lat/lon/alt with info from VIP file')
@@ -588,23 +588,23 @@ if(location['alt'] <= 0):
     print('    Error: the station altitude must be > 0 [m MSL]')
     sys.exit()
 
-# Apply the AERI bias spectrum
+# Apply the IRS bias spectrum
 if remove_bias == 1:
     #if verbose >= 2:
-    #    print 'Removing a spectral bias from the AERI observations'
-    #if ((np.nanmin(bwum)+1 < np.nanmin(aeri['wnum'])) | (np.nanmax(bwnum)-1 > np.nanmax(aeri['wnum']))):
+    #    print 'Removing a spectral bias from the IRS observations'
+    #if ((np.nanmin(bwum)+1 < np.nanmin(irs['wnum'])) | (np.nanmax(bwnum)-1 > np.nanmax(irs['wnum']))):
     #    print 'Error: the spectral bias does not seem to cover the proper wnum range'
     #   VIP_Databases_functions.abort(lbltmpdir,date)
     #    sys.exit()
-    #bias = np.interp(aeri['wnum'],bwnum,bspec)
-    #for i in range(len(aeri['secs'])):
-    #    aeri['radmn'][:,i] -= bias
+    #bias = np.interp(irs['wnum'],bwnum,bspec)
+    #for i in range(len(irs['secs'])):
+    #    irs['radmn'][:,i] -= bias
     print('Error: Remove bias is not functional at all. Have to end.')
     VIP_Databases_functions.abort(lbltmpdir,date)
     sys.exit()
 else:
     if verbose >= 2:
-        print('Did not remove a spectral bias from the AERI observations')
+        print('Did not remove a spectral bias from the IRS observations')
 
 if notqcov == 1:
     k = len(z)
@@ -617,7 +617,7 @@ if notqcov == 1:
 # the concentration? Unit is ppm
 
 if vip['prior_co2_mn'][0] < 0:
-   vip['prior_co2_mn'][0] = Other_functions.predict_co2_concentration(aeri['yy'][0], aeri['mm'][0], aeri['dd'][0])
+   vip['prior_co2_mn'][0] = Other_functions.predict_co2_concentration(irs['yy'][0], irs['mm'][0], irs['dd'][0])
 
 # Quick test to make sure that the trace gas models make sense. If not, abort
 tmpco2 = Other_functions.trace_gas_prof(vip['retrieve_co2'], z, vip['prior_co2_mn'])
@@ -703,18 +703,18 @@ os.mkdir(lbltmp)
 
 # I want the code to try at least one retrieval, so I may need to
 # modify the end time accordingly
-foo = np.where((shour <= aeri['hour']) & (aeri['hour'] <= ehour))[0]
+foo = np.where((shour <= irs['hour']) & (irs['hour'] <= ehour))[0]
 if len(foo) <= 0:
-    foo = np.where(shour <= aeri['hour'])[0]
+    foo = np.where(shour <= irs['hour'])[0]
     if len(foo) <= 0:
         print('No samples were found after this start time. Quitting')
         VIP_Databases_functions.abort(lbltmpdir,date)
         sys.exit()
     print('Resetting the end hour to process at least 1 sample')
     if len(foo) < 2:
-        ehour = aeri['hour'][foo] + 1/3600.     # Added 1 second to this AERI sample to make sure to get it
+        ehour = irs['hour'][foo] + 1/3600.     # Added 1 second to this IRS sample to make sure to get it
     else:
-        ehour = aeri['hour'][foo[0]] + 1/3600.
+        ehour = irs['hour'][foo[0]] + 1/3600.
 
 # If neither liquid or ice clouds are enabled, then indicate that
 # all retrievals are done as clear sky
@@ -723,7 +723,7 @@ if ((vip['retrieve_lcloud'] == 0) & (vip['retrieve_icloud'] == 0)):
         print('All cloud retrievals disabled -- assuming clear sky')
     Xa[2*len(z)] = 0  # Zero LWP
     Xa[2*len(z)+2] = 0 # Zero ice optical depth
-    aeri['cbhflag'][:] = 0        # Reset all flags to clear sky
+    irs['cbhflag'][:] = 0        # Reset all flags to clear sky
     # Note that I am leaving the CBH values untouched...
 
 # Now loop over the observations and perform the retrievals
@@ -736,9 +736,9 @@ cbh_string = ['Clear Sky', 'Inner Window', 'Outer Window', 'Default CBH']
 
 # Quick check to make sure that the spectral bands being selected are actually
 # valid for this interferometer (this ensures spectral range matches calculation below)
-if(vip['aeri_type'] >= 1):
-    minv = np.min(aeri['wnum'])
-    maxv = np.max(aeri['wnum'])
+if(vip['irs_type'] >= 1):
+    minv = np.min(irs['wnum'])
+    maxv = np.max(irs['wnum'])
     foo = np.where(bands < minv)
     if(len(foo) > 0):
         bands[foo] = minv+0.1
@@ -764,30 +764,30 @@ noutfilename = ''
 ################################################################################
 # This is the main loop for the retrieval!
 ################################################################################
-for i in range(len(aeri['secs'])):                        # { loop_i
-    if ((shour >= aeri['hour'][i]) | (aeri['hour'][i] > ehour)):
+for i in range(len(irs['secs'])):                        # { loop_i
+    if ((shour >= irs['hour'][i]) | (irs['hour'][i] > ehour)):
         continue
 
-    # Make sure that the AERI data aren't missing or considered bad
-    if ((aeri['missingDataFlag'][i] > 0) | (aeri['missingDataFlag'][i] <= -1)):
-        if(vip['aeri_type'] <= -1):
+    # Make sure that the IRS data aren't missing or considered bad
+    if ((irs['missingDataFlag'][i] > 0) | (irs['missingDataFlag'][i] <= -1)):
+        if(vip['irs_type'] <= -1):
             itype = 'MWR'
         else:
-            itype = 'AERI'
-        print(f"  Sample {i:2d} at {aeri['hour'][i]:.4f} UTC -- no valid {itype:s} data found")
+            itype = 'IRS'
+        print(f"  Sample {i:2d} at {irs['hour'][i]:.4f} UTC -- no valid {itype:s} data found")
         continue
     else:
-        print(f"  Sample {i:2d} at {aeri['hour'][i]:.4f} UTC is being processed (cbh is {aeri['cbh'][i]:.3f})")
+        print(f"  Sample {i:2d} at {irs['hour'][i]:.4f} UTC is being processed (cbh is {irs['cbh'][i]:.3f})")
 
-    # See if we want to use the external sfc pressure instead of aeri pressure
+    # See if we want to use the external sfc pressure instead of irs pressure
     # and check to make sure external data read went okay
     if ((vip['ext_sfc_p_type'] > 0) & (ext_tseries['nPsfc'] >= 0)):
-        print("Replacing AERI pressure with " +  ext_tseries['ptype'] + " pressure")
-        aeri['atmos_pres'][i] = ext_tseries['psfc'][i]
+        print("Replacing IRS pressure with " +  ext_tseries['ptype'] + " pressure")
+        irs['atmos_pres'][i] = ext_tseries['psfc'][i]
 
-    # Make sure the AERI's surface pressure is a valid value, as
+    # Make sure the IRS's surface pressure is a valid value, as
     # this is needed to construct a pressure profile from the current X
-    if ((vip['station_psfc_min'] > aeri['atmos_pres'][i]) | (aeri['atmos_pres'][i] > vip['station_psfc_max'])):
+    if ((vip['station_psfc_min'] > irs['atmos_pres'][i]) | (irs['atmos_pres'][i] > vip['station_psfc_max'])):
         print('Error: Surface pressure is not within range set in VIP -- skipping sample')
         continue
 
@@ -795,17 +795,17 @@ for i in range(len(aeri['secs'])):                        # { loop_i
     # Define the observation vector and its covariance matrix
     # I'm going to try unapodized spectra, so the cov matrix is diagonal
 
-    w0idx, nY = Other_functions.find_wnum_idx(aeri['wnum'],bands)
+    w0idx, nY = Other_functions.find_wnum_idx(irs['wnum'],bands)
     if nY < 0:
         VIP_Databases_functions.abort(lbltmpdir,date)
         sys.exit()
-    wnum = np.copy(aeri['wnum'][w0idx])
-    Y = np.copy(aeri['radmn'][w0idx,i])              # This is the actual observation vector
-    sigY = np.copy(aeri['noise'][w0idx,i])           # This is the assumed 1-sigma uncertainty of the obs
+    wnum = np.copy(irs['wnum'][w0idx])
+    Y = np.copy(irs['radmn'][w0idx,i])              # This is the actual observation vector
+    sigY = np.copy(irs['noise'][w0idx,i])           # This is the assumed 1-sigma uncertainty of the obs
 
     # I need a flag for the observations, so I can select the proper forward model.
     # The values are:
-    #                1 -- AERI
+    #                1 -- IRS (AERI/ASSIST)
     #                2 -- MWR zenith data
     #                3 -- external temperature profiler (sonde, lidar, NWP, etc) (*)
     #                4 -- external water vapor profiler (sonde, lidar, NWP, etc) (*)
@@ -824,7 +824,7 @@ for i in range(len(aeri['secs'])):                        # { loop_i
     dimY = np.copy(wnum)                      # This will capture the dimension properly
 
     # Start building the observational covariance matrix. I am assuming that
-    # the uncertainties in the AERI radiance are uncorrelated (channel-to-channel)
+    # the uncertainties in the IRS radiance are uncorrelated (channel-to-channel)
     # If I want to add off-diagonal elements (due to application of the noise
     # filter) this is the right place to do that....
     Sy = np.diag(sigY**2)
@@ -1029,15 +1029,15 @@ for i in range(len(aeri['secs'])):                        # { loop_i
         if verbose >= 3:
             print('Using prior as first guess')
     elif vip['first_guess'] == 2:
-        # Build a first guess from the AERI-estimated surface temperture,
+        # Build a first guess from the IRS-estimated surface temperture,
         # an assumed lapse rate, and a 60% RH as first guess
         if verbose >= 3:
             print('Using Tsfc with lapse rate and 60& RH as first guess')
         first_guess = 'Tsfc with lapse rate and 60% RH'
         lapserate = -7.0        # C / km
         constRH = 60.           # percent RH
-        t = aeri['tsfc'][i] + z*lapserate
-        p = Calcs_Conversions.inv_hypsometric(z, t+273.16, aeri['atmos_pres'][i])  # [mb]
+        t = irs['tsfc'][i] + z*lapserate
+        p = Calcs_Conversions.inv_hypsometric(z, t+273.16, irs['atmos_pres'][i])  # [mb]
         q = Calcs_Conversions.rh2w(t, np.ones(len(z))*constRH/100., p)
         X0 = np.concatenate([t, q, Xa[nX:nX+12]])    # T, Q, LWP, ReL, TauI, ReI, co2(3), ch4(3), n2o(3)
     elif vip['first_guess'] == 3:
@@ -1047,7 +1047,7 @@ for i in range(len(aeri['secs'])):                        # { loop_i
             print('Using previous good retrieval as first guess')
         if type(xret) == list:
             for j in range(len(xret)-1, -1, -1):            # We want to use the last good retrieval, so loop from back to front
-                if (xret[j]['converged'] == 1) & (aeri['hour'][i] - xret[j]['hour'] < 1.01):
+                if (xret[j]['converged'] == 1) & (irs['hour'][i] - xret[j]['hour'] < 1.01):
                     first_guess = 'lastSample'
                     X0 = np.copy(xret[j]['Xn'])
                     break
@@ -1068,7 +1068,7 @@ for i in range(len(aeri['secs'])):                        # { loop_i
     # If we are to append to the file, then I need to find the last valid
     # sample in the file, so I only process after that point...
     if ((vip['output_clobber'] == 2) & (check_clobber == 1)):
-        xret, fsample, noutfilename = Output_Functions.create_xret(xret, fsample, vip, aeri, Xa, Sa, z, bands, dimY, flagY)
+        xret, fsample, noutfilename = Output_Functions.create_xret(xret, fsample, vip, irs, Xa, Sa, z, bands, dimY, flagY)
         check_clobber = 0
         if fsample < 0:
             VIP_Databases_functions.abort(lbltmpdir,date)
@@ -1079,9 +1079,9 @@ for i in range(len(aeri['secs'])):                        # { loop_i
         if ((verbose >= 1) & (fsample > 0)):
             print(('Will append output to the file ' + noutfilename))
 
-    # If we are in 'append' mode, then skip any AERi samples that are
+    # If we are in 'append' mode, then skip any IRS samples that are
     # before the last time in the xret structure. Generally, the current
-    # AERI sample will always be before the last one in the xret structure,
+    # IRS sample will always be before the last one in the xret structure,
     # except in the cases where we just started the code in append mode. If
     # that happens, then the xret structure will be (partially) populated
     # by the create_xret routine above, which gets the time from the
@@ -1089,17 +1089,17 @@ for i in range(len(aeri['secs'])):                        # { loop_i
     # that needed to be retrieved...
 
     if vip['output_clobber'] == 2:
-        if aeri['secs'][i] <= xret[fsample-1]['secs']:
+        if irs['secs'][i] <= xret[fsample-1]['secs']:
             print('  ....but was already processed (append mode)')
             continue
 
-    cbh = aeri['cbh'][i]
-    cbhflag = aeri['cbhflag'][i]
+    cbh = irs['cbh'][i]
+    cbhflag = irs['cbhflag'][i]
 
     # Define the gamma factors needed to keep the retrieval sane
     # MWR-only retrievals are more linear and thus the gfactor can be more agressive
 
-    if vip['aeri_type'] <= -1:
+    if vip['irs_type'] <= -1:
         gfactor = np.array([100.,10.,3.,1.])
     else:
         if(first_guess == 'lastSample'):
@@ -1130,7 +1130,7 @@ for i in range(len(aeri['secs'])):                        # { loop_i
             shutil.rmtree(lbllog)
 
         # Update the pressure profile using the current estimate of temperature
-        p = Calcs_Conversions.inv_hypsometric(z, Xn[0:int(nX/2)]+273.16, aeri['atmos_pres'][i])
+        p = Calcs_Conversions.inv_hypsometric(z, Xn[0:int(nX/2)]+273.16, irs['atmos_pres'][i])
 
         # If the trace gas profile shape is mandated to be a function of the PBL height,
         # then set that here. First, compute the current estimate of the PBL height,
@@ -1162,13 +1162,13 @@ for i in range(len(aeri['secs'])):                        # { loop_i
         SaInv = scipy.linalg.pinv(Sa)
 
         # This function makes the forward calculation and computes the Jacobian
-        # for the AERI component of the forward model
+        # for the IRS component of the forward model
         if vip['lblrtm_jac_option'] == 1:
-            if vip['aeri_type'] <= -1:
-                    # If this type, then AERI data aren't being used in the retrieval
+            if vip['irs_type'] <= -1:
+                    # If this type, then IRS data aren't being used in the retrieval
                     # so the forward calc should be missing and the Jacobian is 0
                 flag = 1
-                version_compute_jacobian = 'No AERI data in retrieval, so LBLRTM not used'
+                version_compute_jacobian = 'No IRS data in retrieval, so LBLRTM not used'
             else:
                 print('Need to port the compute_jacobian_finitediff function. Have to abort... Sorry!!')
                 VIP_Databases_functions.abort(lbltmpdir,date)
@@ -1187,11 +1187,11 @@ for i in range(len(aeri['secs'])):                        # { loop_i
             print('Need to port the compute_jacobian_3method function. Have to abort... Sorry!!')
             VIP_Databases_functions.abort(lbltmpdir,date)
             sys.exit()
-            if vip['aeri_type'] <= -1:
-                    # If this type, then AERI data aren't being used in the retrieval
+            if vip['irs_type'] <= -1:
+                    # If this type, then IRS data aren't being used in the retrieval
                     # so the forward calc should be missing and the Jacobian is 0
                 flag = 1
-                version_compute_jacobian = 'No AERI data in retrieval, so LBLRTM not used'
+                version_compute_jacobian = 'No IRS data in retrieval, so LBLRTM not used'
             else:
                 flag, Kij, FXn, wnumc, version_compute_jacobian, totaltime  = \
                            Jacobian_Functions.compute_jacobian_3method(Xn, p, z,
@@ -1226,14 +1226,14 @@ for i in range(len(aeri['secs'])):                        # { loop_i
                 adeltaod = adeltaod[foo]
                 read_deltaod = 1
 
-            if vip['aeri_type'] <= -1:
-                # If this type, then AERI data aren't being used in the retrieval
+            if vip['irs_type'] <= -1:
+                # If this type, then IRS data aren't being used in the retrieval
                 # so the forward calc should be missing and the Jacobian is 0
-                wnumc = np.copy(aeri['wnum'])
+                wnumc = np.copy(irs['wnum'])
                 FXn = np.ones(len(wnumc))*-999.
                 Kij = np.zeros((len(wnumc),len(Xn)))
                 flag = 1
-                version_compute_jacobian = 'No AERI data in retrieval, so LBLRTM not used'
+                version_compute_jacobian = 'No IRS data in retrieval, so LBLRTM not used'
             else:
                 # Otherwise, run the forward model and compute the Jacobian
                 flag, Kij, FXn, wnumc, version_compute_jacobian, totaltime  = \
@@ -1248,14 +1248,14 @@ for i in range(len(aeri['secs'])):                        # { loop_i
 
         elif vip['lblrtm_jac_option'] == 4:
                 # Will use the jacobian_interpol method
-            if vip['aeri_type'] <= -1:
-                # If this type, then AERI data aren't being used in the retrieval
+            if vip['irs_type'] <= -1:
+                # If this type, then IRS data aren't being used in the retrieval
                 # so the forward calc should be missing and the Jacobian is 0
-                wnumc = np.copy(aeri['wnum'])
+                wnumc = np.copy(irs['wnum'])
                 FXn = np.ones(len(wnumc))*-999.
                 Kij = np.zeros((len(wnumc),len(Xn)))
                 flag = 1
-                version_compute_jacobian = 'No AERI data in retrieval, so LBLRTM not used'
+                version_compute_jacobian = 'No IRS data in retrieval, so LBLRTM not used'
             else:
                 if((precompute_prior_jacobian['status'] == 1) & (itern == 0)):
                         # Load the forward calculation stuff from the precompute prior data
@@ -1273,7 +1273,7 @@ for i in range(len(aeri['secs'])):                        # { loop_i
                            cbh, sspl, sspi, lblwnum1, lblwnum2,
                            fixtemp, fixwvmr, doco2, doch4, don2o, fixlcloud, fixicloud,
                            vip['fix_co2_shape'], vip['fix_ch4_shape'], vip['fix_n2o_shape'],
-                           vip['jac_max_ht'], aeri['wnum'], vip['lblrtm_forward_threshold'],
+                           vip['jac_max_ht'], irs['wnum'], vip['lblrtm_forward_threshold'],
                            location['alt'], rt_extra_layers, stdatmos, vip['lblrtm_jac_interpol_npts_wnum'], 
                            verbose, debug, doapodize=False)
                     # If we are using the prior for the first guess (FG=1), and we have not already loaded
@@ -1303,10 +1303,10 @@ for i in range(len(aeri['secs'])):                        # { loop_i
         FXn = FXn[w1idx]
         Kij = Kij[w1idx,:]
 
-        # Are there missing values from the AERI? If so,then we want to make the
+        # Are there missing values from the IRS? If so,then we want to make the
         # forward model calculation have the same value and put no sensitivity
         # in the Jacobian there so that the retrieval is unaffected (this is really for
-        # aeri_type = -1)
+        # irs_type = -1)
 
         foo = np.where(flagY == 1)[0]
         bar = np.where(Y[foo] < -900)[0]
@@ -1721,7 +1721,7 @@ for i in range(len(aeri['secs'])):                        # { loop_i
         Akern  = (Binv.dot(Kij.T).dot(SmInv).dot(Kij)).T
 
         if(vip['max_iterations'] == 0):
-            if(vip['aeri_type'] > 0):
+            if(vip['irs_type'] > 0):
                 print(f'        DDT - compute_jacobian_xx took {totaltime:.1f} seconds')
             print('Special debug mode -- writing variables from retrieval calcs in the directory '+vip['lbl_temp_dir'])
             #Output_Functions.write_variable(    B,vip['lbl_temp_dir']+'/tropoe_python_output.B.cdf')
@@ -1777,7 +1777,7 @@ for i in range(len(aeri['secs'])):                        # { loop_i
         # Set the initial RMS and di2 values to large numbers
 
             old_rmsa = 1e20          # RMS for all observations
-            old_rmsr = 1e20          # RMS for only the AERI and MWR radiance obs
+            old_rmsr = 1e20          # RMS for only the IRS and MWR radiance obs
             old_di2m = 1e20          # di-squared number
 
         di2n = ((Xn[:,None]-Xnp1).T.dot(SopInv).dot(Xn[:,None]-Xnp1))[0,0]
@@ -2037,9 +2037,9 @@ for i in range(len(aeri['secs'])):                        # { loop_i
         prev_di2m = di2m
 
         # Place the data into a structure (before we do the update)
-        xtmp = {'idx':i, 'secs':aeri['secs'][i], 'ymd':aeri['ymd'][i], 'hour':aeri['hour'][i],
+        xtmp = {'idx':i, 'secs':irs['secs'][i], 'ymd':irs['ymd'][i], 'hour':irs['hour'][i],
                 'nX':nX, 'nY':nY, 'dimY':np.copy(dimY), 'Y':np.copy(Y), 'sigY':np.copy(sigY), 'flagY':np.copy(flagY),
-                'niter':itern, 'z':np.copy(z), 'p':np.copy(p), 'hatchopen':aeri['hatchopen'][i],
+                'niter':itern, 'z':np.copy(z), 'p':np.copy(p), 'hatchopen':irs['hatchopen'][i],
                 'cbh':cbh, 'cbhflag':cbhflag,
                 'X0':np.copy(X0), 'Xn':np.copy(Xn), 'FXn':np.copy(FXn), 'Sop':np.copy(Sop),
                 'K':np.copy(Kij), 'Gain':np.copy(Gain), 'Akern':np.copy(Akern), 'vres':np.copy(vres),
@@ -2104,9 +2104,9 @@ for i in range(len(aeri['secs'])):                        # { loop_i
         rmsr = xsamp[itern]['rmsr']
         rmsp = xsamp[itern]['rmsp']
         chi2 = xsamp[itern]['chi2']
-        xtmp = {'idx':i, 'secs':aeri['secs'][i], 'ymd':aeri['ymd'][i], 'hour':aeri['hour'][i],
+        xtmp = {'idx':i, 'secs':irs['secs'][i], 'ymd':irs['ymd'][i], 'hour':irs['hour'][i],
                 'nX':nX, 'nY':nY, 'dimY':np.copy(dimY), 'Y':np.copy(Y), 'sigY':np.copy(sigY), 'flagY':np.copy(flagY),
-                'niter':itern, 'z':np.copy(z), 'p':np.copy(p), 'hatchopen':aeri['hatchopen'][i],
+                'niter':itern, 'z':np.copy(z), 'p':np.copy(p), 'hatchopen':irs['hatchopen'][i],
                 'cbh':cbh, 'cbhflag':cbhflag,
                 'X0':np.copy(X0), 'Xn':np.copy(Xn), 'FXn':np.copy(FXn), 'Sop':np.copy(Sop),
                 'K':np.copy(Kij), 'Gain':np.copy(Gain), 'Akern':np.copy(Akern), 'vres':np.copy(vres),
@@ -2141,13 +2141,13 @@ for i in range(len(aeri['secs'])):                        # { loop_i
         import pickle
         # Create the .IDL file only if DEBUG is set
         # (Main reason is to get the xsamp data that show each iteration)
-        dt = datetime.utcfromtimestamp(aeri['secs'][i])
+        dt = datetime.utcfromtimestamp(irs['secs'][i])
         hr = int(shour)*100+int(((shour-int(shour))*60+.5))
         savename = dt.strftime(f"{vip['output_path']}/{vip['output_rootname']}.%Y%m%d.{hr}.%H%M.pkl")
         out = {'xret': xret, 'xsamp': xsamp, 'bands': bands, 'vip':vip,
                'doco2':doco2, 'doch4': doch4, 'don2o':don2o,
                'dolcloud':dolcloud,'Sa':Sa, 'Xa':Xa, 'nsonde_prior':nsonde_prior,
-               'comment_prior':comment_prior, 'aeri':aeri, 'shour':shour,'ehour':ehour,
+               'comment_prior':comment_prior, 'irs':irs, 'shour':shour,'ehour':ehour,
                'starttime':starttime, 'endtime':endtime, 'version':__version__}
         with open(savename, 'wb') as fh:
             pickle.dump(out, fh)

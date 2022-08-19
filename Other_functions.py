@@ -450,21 +450,21 @@ def covariance_matrix_decorrelate_level(Sa,z,pblh,prior_pblh_decorrelate_factor)
 # be located (a bit less accurate). If both fail, then use the default CBH
 ################################################################################
 
-def find_cloud(aerich1, vceil, window_in, window_out, default_cbh):
+def find_cloud(irsch1, vceil, window_in, window_out, default_cbh):
     
-    twin = window_in    # Full-width of time window for AERI observations [min]
-    twout = window_out  # Full-width of time window for AERI observations [max]
+    twin = window_in    # Full-width of time window for IRS observations [min]
+    twout = window_out  # Full-width of time window for IRS observations [max]
        
         # The cloud flag. 1-> Inner window, 2-> Outer window, 3-> defaultCBH
-    vcbh = np.zeros(len(aerich1['secs']))
-    vflag = np.zeros(len(aerich1['secs']))
+    vcbh = np.zeros(len(irsch1['secs']))
+    vflag = np.zeros(len(irsch1['secs']))
     
-    for i in range(len(aerich1['secs'])):
+    for i in range(len(irsch1['secs'])):
         
         # Get any ceil cloud base height data that exist in the inner window
         
-        foo = np.where((aerich1['secs'][i]-(twin/2.)*60. <= vceil['secs']) &
-                       (vceil['secs'] <= aerich1['secs'][i]+(twin/2.)*60.) &
+        foo = np.where((irsch1['secs'][i]-(twin/2.)*60. <= vceil['secs']) &
+                       (vceil['secs'] <= irsch1['secs'][i]+(twin/2.)*60.) &
                        (vceil['cbh'] >= 0))[0]
         
         if len(foo) != 0:
@@ -473,8 +473,8 @@ def find_cloud(aerich1, vceil, window_in, window_out, default_cbh):
         else:
             # Get any ceil cloud base height data that exist in the outer window
             
-            foo = np.where((aerich1['secs'][i]-(twout/2.)*60. <= vceil['secs']) &
-                       (vceil['secs'] <= aerich1['secs'][i]+(twout/2.)*60.) &
+            foo = np.where((irsch1['secs'][i]-(twout/2.)*60. <= vceil['secs']) &
+                       (vceil['secs'] <= irsch1['secs'][i]+(twout/2.)*60.) &
                        (vceil['cbh'] >= 0))[0]
             
             if len(foo) != 0:
@@ -484,10 +484,10 @@ def find_cloud(aerich1, vceil, window_in, window_out, default_cbh):
                 vcbh[i] = default_cbh
                 vflag[i] = 3
     
-    return ({'success':1, 'secs':aerich1['secs'], 'ymd':aerich1['ymd'], 'hour':aerich1['hour'],
-            'wnum':aerich1['wnum'], 'rad':aerich1['rad'], 'cbh':vcbh, 'cbhflag':vflag,
-            'atmos_pres':aerich1['atmos_pres'], 'fv':aerich1['fv'], 'fa':aerich1['fa'],
-            'missingDataFlag':aerich1['missingDataFlag'], 'hatchopen':aerich1['hatchopen']})
+    return ({'success':1, 'secs':irsch1['secs'], 'ymd':irsch1['ymd'], 'hour':irsch1['hour'],
+            'wnum':irsch1['wnum'], 'rad':irsch1['rad'], 'cbh':vcbh, 'cbhflag':vflag,
+            'atmos_pres':irsch1['atmos_pres'], 'fv':irsch1['fv'], 'fa':irsch1['fa'],
+            'missingDataFlag':irsch1['missingDataFlag'], 'hatchopen':irsch1['hatchopen']})
 
 ################################################################################
 # This routine returns the emissivity spectrum for the AERI blackbodies,
@@ -1499,7 +1499,7 @@ def lcurve(ggamma, flagY, Y0, FXn0, Kij0, Xn0, Xa0, Sa0, Sm0, z0):
     Xa = np.copy(Xa0[0:2*k])
     Sa = np.copy(Sa0[0:2*k,0:2*k])
     
-    # Keep only the obs data associated with AERI radiances
+    # Keep only the obs data associated with IRS radiances
     foo = np.where(flagY == 1)
     Y = np.copy(Y0[foo])
     FXn = np.copy(FXn0[foo])

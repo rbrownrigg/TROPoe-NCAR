@@ -14,11 +14,11 @@ import Calcs_Conversions
 # read_all_data()
 # read_mwr()
 # read_mwrscan()
-# read_aeri_eng()
-# read_aeri_ch()
-# read_aeri_sum()
+# read_irs_eng()
+# read_irs_ch()
+# read_irs_sum()
 # read_vceil()
-# grid_aeri()
+# grid_irs()
 # grid_mwr()
 # grid_mwrscan()
 # read_external_profile_data()'
@@ -152,38 +152,38 @@ def recenter_prior(orig_prior_name, input_value, sfc_or_pwv=0):
 
 
 ################################################################################
-# This function reads the AERI channel data file
+# This function reads the IRS channel data file
 ################################################################################
 
-def read_aeri_ch(path,date,aeri_type,fv,fa,aeri_spec_cal_factor,
-                engsecs,engtemp,bbcavfactor,get_aeri_missingDataFlag,
+def read_irs_ch(path,date,irs_type,fv,fa,irs_spec_cal_factor,
+                engsecs,engtemp,bbcavfactor,get_irs_missingDataFlag,
                 old_ffov_halfangle, new_ffov_halfangle, verbose):
 
     if verbose >= 2:
-        print('Reading aeri_ch data in ' + path)
+        print('Reading irs_ch data in ' + path)
     err = {'success':0}
-    if aeri_type <= 0:
+    if irs_type <= 0:
         print(('This piece of code should not be exercised, as this option should be screened ' +
-               'in read_aeri_eng() earlier'))
+               'in read_irs_eng() earlier'))
         return err
-    elif ((aeri_type == 1) | (aeri_type == 4)):
+    elif ((irs_type == 1) | (irs_type == 4)):
         filename = '*aeri*ch*' + str(date) + '*(cdf|nc)'
-    elif aeri_type == 2:
+    elif irs_type == 2:
         filename = '*' + str(date % 2000000) + 'C1_rnc.(cdf|nc)'
-    elif aeri_type == 3:
+    elif irs_type == 3:
         filename = '*' + str(date % 2000000) + 'C1.RNC.(cdf|nc)'
-    elif aeri_type == 5:
+    elif irs_type == 5:
         filename = '*assist*(Ch|ch)*' + str(date) + '*(cdf|nc)'
     else:
-        print('Error in read_aeri_ch: unable to decode aeri_type')
+        print('Error in read_irs_ch: unable to decode irs_type')
         return err
 
     if verbose >= 3:
-        print('Looking for AERI channel data as ' + filename)
+        print('Looking for IRS channel data as ' + filename)
 
     files = findfile(path,filename)
     if len(files) == 0:
-        print('Error: Unable to find any AERI channel data -- aborting')
+        print('Error: Unable to find any IRS channel data -- aborting')
         return err
 
     for jj in range(len(files)):
@@ -198,7 +198,7 @@ def read_aeri_ch(path,date,aeri_type,fv,fa,aeri_spec_cal_factor,
             if len(vid) > 0:
                 wnum = fid.variables['wnum1'][:]
             else:
-                print('Error in read_aeri_ch: unable to find either "wnum" or "wnum1 -- aborting')
+                print('Error in read_irs_ch: unable to find either "wnum" or "wnum1 -- aborting')
                 return err
 
         xmrad = fid.variables['mean_rad'][:]
@@ -227,7 +227,7 @@ def read_aeri_ch(path,date,aeri_type,fv,fa,aeri_spec_cal_factor,
             if(len(foo) > 0):
                 xhatchOpen[foo] = 0
         else:
-            print(('Warning: Unable to find AERI hatchOpen or hatchIndicator field in ' +
+            print(('Warning: Unable to find IRS hatchOpen or hatchIndicator field in ' +
                   'data file -- assuming hatch is always open'))
             xhatchOpen = np.ones(len(to))
 
@@ -255,13 +255,13 @@ def read_aeri_ch(path,date,aeri_type,fv,fa,aeri_spec_cal_factor,
             xambPres = fid.variables['atmosphericPressure'][:]
         else:
             xambPres = np.full_like(-999,to)
-        if ((len(np.where(np.array(list(fid.variables.keys())) == 'sceneMirrorAngle')[0])> 0) & (aeri_type == 5)):
+        if ((len(np.where(np.array(list(fid.variables.keys())) == 'sceneMirrorAngle')[0])> 0) & (irs_type == 5)):
             xscenemirrorangle = fid.variables['sceneMirrorAngle'][:]
         else:
             xscenemirrorangle = np.zeros(len(to))      # Assume all zenith views if the field isn't found
 
         #Read in the field "missingDataFlag". If it does not exist, then abort
-        if get_aeri_missingDataFlag == 1:
+        if get_irs_missingDataFlag == 1:
             if len(np.where(np.array(list(fid.variables.keys())) == 'missingDataFlag')[0]) > 0:
                 xmissingDataFlag = fid.variables['missingDataFlag'][:]
                 xmissingDataFlag = xmissingDataFlag.astype('int')
@@ -269,7 +269,7 @@ def read_aeri_ch(path,date,aeri_type,fv,fa,aeri_spec_cal_factor,
                 xmissingDataFlag = np.zeros_like(to)
                 xmissingDataFlag = xmissingDataFlag.astype('int')
             else:
-                print('Error in read_aeri_ch: unable to find the field missingDataFlag')
+                print('Error in read_irs_ch: unable to find the field missingDataFlag')
                 return err
         else:
             xmissingDataFlag = np.zeros(len(to))
@@ -305,7 +305,7 @@ def read_aeri_ch(path,date,aeri_type,fv,fa,aeri_spec_cal_factor,
     # Keep only the zenith pointing data (primarily affects only the ASSIST, which includes BB views in its data)
     foo = np.where((sceneMirrorAngle < 3) | (sceneMirrorAngle > 357))[0]
     if len(foo) == 0:
-        print('Error in read_aeri_ch: Unable to find any zenith pointing AERI/ASSIST data')
+        print('Error in read_irs_ch: Unable to find any zenith pointing AERI/ASSIST data')
         return err
     chsecs           = np.copy(chsecs[foo])
     mrad             = np.copy(mrad[:,foo])
@@ -319,36 +319,36 @@ def read_aeri_ch(path,date,aeri_type,fv,fa,aeri_spec_cal_factor,
     sceneMirrorAngle = np.copy(sceneMirrorAngle[foo])
 
     # Apply the spectral recalibration, if desired
-    if(np.abs(aeri_spec_cal_factor - 1.0) > 0.0000001):
-        if(verbose >= 3): print('      Adjusting the AERIs spectral calibration')
+    if(np.abs(irs_spec_cal_factor - 1.0) > 0.0000001):
+        if(verbose >= 3): print('      Adjusting the IRSs spectral calibration')
         tmp = mrad
         for jj in range(0,len(mrad[0,:])):
-            tmp[:,jj] = Other_functions.fix_aeri_vlaser_mod(wnum,mrad[:,jj],aeri_spec_cal_factor)
+            tmp[:,jj] = Other_functions.fix_aeri_vlaser_mod(wnum,mrad[:,jj],irs_spec_cal_factor)
         mrad = tmp
 
     # Apply the new finite field-of-view correction, if desired
     if((10 <= new_ffov_halfangle) & (new_ffov_halfangle < 50)):
         if(verbose >= 1):
-            print(f'    Adjusting the AERIs FFOV correction half angle from {old_ffov_halfangle} to {new_ffov_halfangle} mrad')
+            print(f'    Adjusting the IRSs FFOV correction half angle from {old_ffov_halfangle} to {new_ffov_halfangle} mrad')
         tmp = mrad
         for jj in range(0,len(chsecs)):
-            tmp[:,jj] = Other_functions.change_aeri_ffovc(wnum,mrad[:,jj],old_ffov_halfangle,new_ffov_halfangle)
+            tmp[:,jj] = Other_functions.change_irs_ffovc(wnum,mrad[:,jj],old_ffov_halfangle,new_ffov_halfangle)
         mrad = tmp
     else:
         if((verbose >= 1) & (new_ffov_halfangle > 0.0)):
             print('      The desired new FFOV correction half angle is outside realistic bounds -- not applied')
 
-    #I need to match the times of the AERI channel data with that from
+    #I need to match the times of the IRS channel data with that from
     #the engineering file (which is the summary file).
 
     flag, prob = Other_functions.matchtimes(engsecs, chsecs, 0.5)
     if prob == 0:
-        print('Error in read_aeri_ch: matchtimes() failed very badly')
+        print('Error in read_irs_ch: matchtimes() failed very badly')
         return err
 
     foo = np.where(flag == 1)[0]
     if len(foo) == 0:
-        print('Error in read_aeri_ch: None of the ch data match the eng data times')
+        print('Error in read_irs_ch: None of the ch data match the eng data times')
         return err
 
     chsecs = np.copy(chsecs[foo])
@@ -365,12 +365,12 @@ def read_aeri_ch(path,date,aeri_type,fv,fa,aeri_spec_cal_factor,
     #And now the reverse
     flag, prob = Other_functions.matchtimes(chsecs,engsecs,0.5)
     if prob == 0:
-        print('Error in read_aeri_ch: matchtimes() failed very badly')
+        print('Error in read_irs_ch: matchtimes() failed very badly')
         return err
 
     foo = np.where(flag == 1)[0]
     if len(foo) == 0:
-        print('Error in read_aeri_ch: None of the eng data match the ch data times')
+        print('Error in read_irs_ch: None of the eng data match the ch data times')
         return err
     engsecs = np.copy(engsecs[foo])
     engtemp = np.copy(engtemp[foo])
@@ -390,7 +390,7 @@ def read_aeri_ch(path,date,aeri_type,fv,fa,aeri_spec_cal_factor,
         print('Error: both the obscuration (Fv) and aft-optics (Fa) corrections are turned on')
         return err
 
-    #Recalibrate the AERI data to ensure that the BB emissivity is correct.
+    #Recalibrate the IRS data to ensure that the BB emissivity is correct.
     #Note that the typical (and now obsolete) value being used was 12.79
     #but we should be using something in excess of 35 (more like 39)
 
@@ -412,7 +412,7 @@ def read_aeri_ch(path,date,aeri_type,fv,fa,aeri_spec_cal_factor,
 
     foo = np.where(engtemp > 0)
     if ((len(foo) == 0) & (fa > 0)):
-        print('Error: The algorithm wants to apply an aft-optics correction to the AERI')
+        print('Error: The algorithm wants to apply an aft-optics correction to the IRS')
         print('          data (i.e., fa > 0), but the field "interferometerSecondPortTemp"')
         print('          was not found in the input data. Thus we must abort this')
         print('          processing. Please either rerun with fa == 0 or modify the')
@@ -421,7 +421,7 @@ def read_aeri_ch(path,date,aeri_type,fv,fa,aeri_spec_cal_factor,
 
     if fa > 0:
         if verbose >= 2:
-            print('Correcting AERI data with Fa = ' + str(fa))
+            print('Correcting IRS data with Fa = ' + str(fa))
         nrad = np.copy(mrad)
         for i in range(len(hour)):
             Bref = Calcs_Conversions.planck(wnum,calibambt[i])
@@ -439,7 +439,7 @@ def read_aeri_ch(path,date,aeri_type,fv,fa,aeri_spec_cal_factor,
 
     if fv > 0:
         if verbose >= 2:
-            print('Correcting AERI data with Fv = ' + str(fv))
+            print('Correcting IRS data with Fv = ' + str(fv))
         nrad = np.copy(mrad)
         for i in range(len(hour)):
             brad = Calcs_Conversions.planck(wnum, bbsupport[i])
@@ -452,14 +452,14 @@ def read_aeri_ch(path,date,aeri_type,fv,fa,aeri_spec_cal_factor,
 
 
 ################################################################################
-# This function controls the reading of the AERI, MWR, and ceilometer data. The function
+# This function controls the reading of the IRS, MWR, and ceilometer data. The function
 # calls out many other functions to do this.
 ################################################################################
 
 def read_all_data(date, retz, tres, dostop, verbose, avg_instant, ch1_path,
-              pca_nf, fv, fa, sum_path, eng_path, aeri_type, cal_aeri_pres,
-              aeri_smooth_noise, get_aeri_missingDataFlag, aeri_min_675_tb,
-              aeri_max_675_tb, aeri_spec_cal_factor,
+              pca_nf, fv, fa, sum_path, eng_path, irs_type, cal_irs_pres,
+              irs_smooth_noise, get_irs_missingDataFlag, irs_min_675_tb,
+              irs_max_675_tb, irs_spec_cal_factor,
               mwr_path, mwr_rootname, mwr_type, mwr_elev_field,
               mwr_n_tb_fields, mwr_tb_replicate, mwr_tb_field_names, mwr_tb_freqs,
               mwr_tb_noise, mwr_tb_bias, mwr_tb_field1_tbmax, vceil_path, vceil_type,
@@ -474,31 +474,31 @@ def read_all_data(date, retz, tres, dostop, verbose, avg_instant, ch1_path,
         fail = 1
         return fail, -999, -999, -999
 
-    # Check the aeri_type flag. If it is -1, then we will not read any AERI data
+    # Check the irs_type flag. If it is -1, then we will not read any IRS data
     # in, and instead use MWR data as the master dataset. I will also simulate a
-    # few channels on the AERI because it makes the rest of the code easier
+    # few channels on the IRS because it makes the rest of the code easier
     # (fewer changes) to make
 
-    if ((aeri_type <= -1) & (mwr_type > 0)):
+    if ((irs_type <= -1) & (mwr_type > 0)):
 
         #In this example, the "replicate" keyword should be unity. Since we aren't
-        # using AERI data in this case, it should not have any other value
+        # using IRS data in this case, it should not have any other value
 
         if mwr_tb_replicate != 1:
-            print('Error: The mwr_tb_replicate should be unity in this MWR-only retrieval (no AERI data)')
+            print('Error: The mwr_tb_replicate should be unity in this MWR-only retrieval (no IRS data)')
             fail = 1
             return fail, -999, -999, -999
 
         # I will read in the MWR data here and again later. I need to read it here
-        # so that I can simulate AERI data (all as MISSING) so that the rest of the code
-        # code can work.  Note that AERI_type (which is a negative number) also
+        # so that I can simulate IRS data (all as MISSING) so that the rest of the code
+        # code can work.  Note that irs_type (which is a negative number) also
         # defines the "step" used to read in the MWR data, which is pretty useful if
         # we are reading in HATPRO data which can have >3000 samples per day (i.e., the
-        # aeri_type is used to subsample the MWR data)
+        # irs_type is used to subsample the MWR data)
 
-        print(' Attempting to use MWR as the master instrument; no AERI data will be read in')
+        print(' Attempting to use MWR as the master instrument; no IRS data will be read in')
 
-        mwr_data = read_mwr(mwr_path, mwr_rootname, date, mwr_type, abs(aeri_type), mwr_elev_field, mwr_n_tb_fields,
+        mwr_data = read_mwr(mwr_path, mwr_rootname, date, mwr_type, abs(irs_type), mwr_elev_field, mwr_n_tb_fields,
                            mwr_tb_field_names, mwr_tb_freqs, mwr_tb_noise, mwr_tb_bias, mwr_tb_field1_tbmax,
                            verbose, single_date=True)
 
@@ -528,73 +528,73 @@ def read_all_data(date, retz, tres, dostop, verbose, avg_instant, ch1_path,
             hour = np.array([((datetime.utcfromtimestamp(x)-datetime(yy[0],mm[0],dd[0])).total_seconds())/3600. for x in mwr_data['secs']])
             ymd = yy*10000 + mm*100 + dd
 
-            aerieng = ({'success':1, 'secs':mwr_data['secs'], 'ymd':ymd, 'hour':hour,
+            irseng = ({'success':1, 'secs':mwr_data['secs'], 'ymd':ymd, 'hour':hour,
                        'bbcavityfactor': np.zeros(len(mwr_data['secs'])),
                        'interferometerSecondPortTemp': np.ones(len(mwr_data['secs']))*300.0})
 
-            aerich1 = ({'success':1, 'secs':mwr_data['secs'], 'ymd':ymd, 'yy':yy, 'mm':mm, 'dd':dd, 'hour':hour,
+            irsch1 = ({'success':1, 'secs':mwr_data['secs'], 'ymd':ymd, 'yy':yy, 'mm':mm, 'dd':dd, 'hour':hour,
                         'wnum':wnum, 'rad':mrad, 'hatchopen': np.ones(len(mwr_data['secs'])),
                         'atmos_pres':mwr_data['psfc'], 'missingDataFlag': np.zeros(len(mwr_data['secs'])),
                         'fv':0.0, 'fa': 0.0})
 
-            aerisum = ({'success':1, 'secs':mwr_data['secs'], 'ymd':ymd, 'hour':hour, 'wnum':wnum, 'noise':noise,
+            irssum = ({'success':1, 'secs':mwr_data['secs'], 'ymd':ymd, 'hour':hour, 'wnum':wnum, 'noise':noise,
                         'lat':mwr_data['lat'], 'lon':mwr_data['lon'], 'alt':mwr_data['alt']})
 
     else:
 
-        # Read in the AERI data
+        # Read in the IRS data
 
-        aerieng = read_aeri_eng(eng_path,date,aeri_type,verbose)
-        if aerieng['success'] == 0:
-            print('Problem reading AERI eng data')
+        irseng = read_irs_eng(eng_path,date,irs_type,verbose)
+        if irseng['success'] == 0:
+            print('Problem reading IRS eng data')
             if dostop:
                 wait = input('Stopping inside routine for debugging. Press enter to continue')
             fail = 1
             return fail, -999, -999, -999
 
-        aerich1 = read_aeri_ch(ch1_path,date,aeri_type,fv,fa,aeri_spec_cal_factor,
-                              aerieng['secs'],
-                              aerieng['interferometerSecondPortTemp'],
-                              aerieng['bbcavityfactor'], get_aeri_missingDataFlag,
-                              vip['aeri_old_ffov_halfangle'], vip['aeri_new_ffov_halfangle'], verbose)
+        irsch1 = read_irs_ch(ch1_path,date,irs_type,fv,fa,irs_spec_cal_factor,
+                              irseng['secs'],
+                              irseng['interferometerSecondPortTemp'],
+                              irseng['bbcavityfactor'], get_irs_missingDataFlag,
+                              vip['irs_old_ffov_halfangle'], vip['irs_new_ffov_halfangle'], verbose)
 
-        aerisum = read_aeri_sum(sum_path,date,aeri_type,aeri_smooth_noise,verbose)
+        irssum = read_irs_sum(sum_path,date,irs_type,irs_smooth_noise,verbose)
 
-        if aerich1['success'] != 1:
-            print('Problem reading AERI ch1 data')
+        if irsch1['success'] != 1:
+            print('Problem reading IRS ch1 data')
             fail = 1
             return fail, -999, -999, -999
-        if aerisum['success'] != 1:
-            print('Problem reading AERI sum data')
+        if irssum['success'] != 1:
+            print('Problem reading IRS sum data')
             fail = 1
             return fail, -999, -999, -999
 
-        #Apply the additional AERI QC tests.
-        foo = np.where((aerich1['wnum'] >= 675) & (aerich1['wnum'] < 680))[0]
+        #Apply the additional IRS QC tests.
+        foo = np.where((irsch1['wnum'] >= 675) & (irsch1['wnum'] < 680))[0]
         if len(foo) == 0:
-            for i in range(len(aerich1['secs'])):
-                tmp = np.nanmean(aerich1['rad'][foo,i])
+            for i in range(len(irsch1['secs'])):
+                tmp = np.nanmean(irsch1['rad'][foo,i])
                 tb = Calcs_Conversions.invplanck(677.5,tmp)
-                if ((tb < aeri_min_675_tb) | (tb > aeri_max_675_tb)):
-                    aerich1['missingDataFlag'][i] = 10
+                if ((tb < irs_min_675_tb) | (tb > irs_max_675_tb)):
+                    irsch1['missingDataFlag'][i] = 10
 
-        # If the AERI data is noise filtered then I need to scale the AERI noise spectrum.
+        # If the IRS data is noise filtered then I need to scale the IRS noise spectrum.
         # The scaling is wavenumber dependent, and I need to find a function that does this well...
 
         if pca_nf > 0:
-            print('The AERI data have been PCA noise filtered. Someone needs to scale the AERI noise spectrum (not yet implemented)')
+            print('The IRS data have been PCA noise filtered. Someone needs to scale the IRS noise spectrum (not yet implemented)')
 
         if ((fail == 1) & (dostop != 0)):
             wait = input('Stopping inside routine for debugging. Press enter to continue')
         elif fail == 1:
             return fail, -999, -999, -999
 
-        #Calibrate the AERI pressure sensor using a linear function
-        if len(cal_aeri_pres) != 2:
-            print('The calibration information for the AERI pressure sensor is ill-formed')
+        #Calibrate the IRS pressure sensor using a linear function
+        if len(cal_irs_pres) != 2:
+            print('The calibration information for the IRS pressure sensor is ill-formed')
             fail = 1
         else:
-            aerich1['atmos_pres'] = cal_aeri_pres[0] + aerich1['atmos_pres'] *cal_aeri_pres[1]
+            irsch1['atmos_pres'] = cal_irs_pres[0] + irsch1['atmos_pres'] *cal_irs_pres[1]
 
         if ((fail == 1) & (dostop != 0)):
             wait = input('Stopping inside routine for debugging. Press enter to continue')
@@ -603,13 +603,13 @@ def read_all_data(date, retz, tres, dostop, verbose, avg_instant, ch1_path,
 
     #Specify the times of the retrieved output
     if tres <= 0:
-        ret_secs = aerich1['secs']-0.001     # Essentially the same as AERI sample time
+        ret_secs = irsch1['secs']-0.001     # Essentially the same as IRS sample time
         ret_tavg = 1./60                    # 1-s resolution
     else:
-        yy = np.copy(aerich1['yy'])
-        mm = np.copy(aerich1['mm'])
-        dd = np.copy(aerich1['dd'])
-        hour = np.copy(aerich1['hour'])
+        yy = np.copy(irsch1['yy'])
+        mm = np.copy(irsch1['mm'])
+        dd = np.copy(irsch1['dd'])
+        hour = np.copy(irsch1['hour'])
         if np.nanmax(hour) <= 24:
             nmins = 1440.0
         elif np.nanmax(hour) <= 2*24:
@@ -617,7 +617,7 @@ def read_all_data(date, retz, tres, dostop, verbose, avg_instant, ch1_path,
         elif np.nanmax(hour) <= 3*24:
             nmins = 3*1440.0
         else:
-            print('Error -- the AERI data files span more than 3 days -- code needs an update')
+            print('Error -- the IRS data files span more than 3 days -- code needs an update')
             fail = 1
             return fail, -999, -999, -999
         d = datetime(yy[0],mm[0],dd[0],0,0,0)
@@ -656,7 +656,7 @@ def read_all_data(date, retz, tres, dostop, verbose, avg_instant, ch1_path,
     elif vceil['success'] == 0:
         if verbose >= 2:
             print('Problem reading vceil dat -- assuming ceilometer reported clear entire time')
-        vceil = {'success':2, 'secs':aerich1['secs'], 'ymd':aerich1['ymd'], 'hour':aerich1['hour'], 'cbh':np.ones(len(aerich1['secs']))*-1}
+        vceil = {'success':2, 'secs':irsch1['secs'], 'ymd':irsch1['ymd'], 'hour':irsch1['hour'], 'cbh':np.ones(len(irsch1['secs']))*-1}
 
     if ((fail == 1) & (dostop)):
         wait = input('Stopping for debugging. Press enter to continue')
@@ -664,20 +664,20 @@ def read_all_data(date, retz, tres, dostop, verbose, avg_instant, ch1_path,
         return fail, -999, -999, -999
 
     # Now apply a temporal screen to see if there are cloudy samples in the
-    # AERI data by looking at the standard deviation of the 11 um data. If there
+    # IRS data by looking at the standard deviation of the 11 um data. If there
     # are cloudy samples, use the lidar to get an estimate of the cloud
     # base height for the subsequent retrieval
 
-    caerich1 = Other_functions.find_cloud(aerich1, vceil, vceil_window_in, vceil_window_out, vceil_default_cbh)
+    cirsch1 = Other_functions.find_cloud(irsch1, vceil, vceil_window_in, vceil_window_out, vceil_default_cbh)
 
-    # Now put the AERI and MWR data on the same temporal grid.  Realize
+    # Now put the IRS and MWR data on the same temporal grid.  Realize
     # that the RL sample time is for the start of the period, whereas the
-    # AERI sample time is the middle of its period and the MWR's is the end.
+    # IRS sample time is the middle of its period and the MWR's is the end.
 
-    aeri = grid_aeri(caerich1, aerisum, avg_instant, hatchOpenSwitch, missingDataFlagSwitch,
+    irs = grid_irs(cirsch1, irssum, avg_instant, hatchOpenSwitch, missingDataFlagSwitch,
                     ret_secs, ret_tavg, verbose)
 
-    if aeri['success'] == 0:
+    if irs['success'] == 0:
         fail = 1
         return fail, -999, -999, -999
 
@@ -697,7 +697,7 @@ def read_all_data(date, retz, tres, dostop, verbose, avg_instant, ch1_path,
     if dostop:
         wait = input('Stopping inside to debug this bad boy. Press enter to continue')
 
-    return fail, aeri, mwr, mwrscan
+    return fail, irs, mwr, mwrscan
 
 ################################################################################
 # This function is the one that actually reads in the MWR data.
@@ -1180,30 +1180,30 @@ def read_mwrscan(path, rootname, date, mwrscan_type, mwrscan_elev_field, mwrscan
 
 
 ################################################################################
-# This function reads in the aeri_eng file.
+# This function reads in the irs_eng file.
 ################################################################################
 
-def read_aeri_eng(path, date, aeri_type, verbose):
+def read_irs_eng(path, date, irs_type, verbose):
 
     if verbose >= 2:
-        print('Reading aeri_eng data in ' + path)
+        print('Reading irs_eng data in ' + path)
     err = {'success':0}
-    if aeri_type <= 0:
+    if irs_type <= 0:
         print(' ')
         print('-----------------------------------------------------------------')
-        print('****** options for the VIP parameter "aeri_type" ******')
-        print('   aeri_type=1 --->')
+        print('****** options for the VIP parameter "irs_type" ******')
+        print('   irs_type=1 --->')
         print('             ARM-style ch1/ch2/sum/eng AERI input')
-        print('   aeri_type=2 --->')
+        print('   irs_type=2 --->')
         print('             SSEC dmv-ncdf converted netcdf files, with')
         print('                     _sum.cdf and C1_rnc.cdf endings')
-        print('   aeri_type=3 --->')
+        print('   irs_type=3 --->')
         print('             SSEC dmv-ncdf converted netcdf files, with ')
         print('                     .SUM.cdf and C1.RNC,cdf endings')
-        print('   aeri_type=4 --->')
+        print('   irs_type=4 --->')
         print('             ARM-style ch1/ch2/sum AERI datastream names, but all of the')
         print('                     engineering data is found in the summary file (dmv2ncdf)')
-        print('   aeri_type=5 --->')
+        print('   irs_type=5 --->')
         print('             ARM-style ch1/ch2/sum ASSIST datastream names, but all of the')
         print('                     engineering data is found in the summary file')
         print('-----------------------------------------------------------------')
@@ -1211,27 +1211,27 @@ def read_aeri_eng(path, date, aeri_type, verbose):
         err = {'success':0}
         return err
 
-    elif aeri_type == 1:
+    elif irs_type == 1:
         filename = '*aeri*eng*' + str(date) + '*(cdf|nc)'
-    elif aeri_type == 2:
+    elif irs_type == 2:
         filename = '*' + str(date % 2000000) + '_sum.(cdf|nc)'
-    elif aeri_type == 3:
+    elif irs_type == 3:
         filename = '*' + str(date % 2000000) + '.SUM.(cdf|nc)'
-    elif aeri_type == 4:
+    elif irs_type == 4:
         filename = '*aeri*sum*' + str(date) + '*(cdf|nc)'
-    elif aeri_type == 5:
+    elif irs_type == 5:
         filename = '*assist*sum*' + str(date) + '*(cdf|nc)'
     else:
-        print('Error in read_aeri_eng: unable to decode aeri_type')
+        print('Error in read_irs_eng: unable to decode irs_type')
         return err
 
     if verbose == 3:
-        print('Looking for AERI engineering data as ' + filename)
+        print('Looking for IRS engineering data as ' + filename)
 
     files = findfile(path,filename)
     if len(files) == 0:
-        print('Error: Unable to find any AERI engineering data - aborting')
-        print('Set aeri_type=0 and rerun to compare format of AERI data to aeri_type options')
+        print('Error: Unable to find any IRS engineering data - aborting')
+        print('Set irs_type=0 and rerun to compare format of IRS data to irs_type options')
         return err
 
     for jj in range(len(files)):
@@ -1239,9 +1239,9 @@ def read_aeri_eng(path, date, aeri_type, verbose):
         bt = fid['base_time'][:].astype('float')
         to = fid['time_offset'][:].astype('float')
 
-        #I want to get the temperature of the plug in the 2nd input port of the
-        #interfermoeter. The name of this field was different for the v2 and v4
-        #AERI systems, so I have to look for either field
+        # I want to get the temperature of the plug in the 2nd input port of the
+        # interfermoeter. The name of this field was different for the v2 and v4
+        # IRS systems, so I have to look for either field
 
         if len(np.where(np.array(list(fid.variables.keys())) == 'interferometerSecondPortTemp')[0]) > 0:
             xinterferometerSecondPortTemp = fid.variables['interferometerSecondPortTemp'][:]
@@ -1300,35 +1300,35 @@ def read_aeri_eng(path, date, aeri_type, verbose):
 
 
 ################################################################################
-# This function reads the aeri_sum file
+# This function reads the irs_sum file
 ################################################################################
 
-def read_aeri_sum(path,date,aeri_type,smooth_noise,verbose):
+def read_irs_sum(path,date,irs_type,smooth_noise,verbose):
     if verbose >= 2:
-        print('Reading aeri_sum data in ' + path)
+        print('Reading irs_sum data in ' + path)
     err = {'success':0}
-    if aeri_type <= 0:
+    if irs_type <= 0:
         print(('This piece of code should not be exercised, as this option should ' +
-               'be screened in read_aeri_eng() earlier'))
+               'be screened in read_irs_eng() earlier'))
         return err
-    elif ((aeri_type == 1) | (aeri_type == 4)):
+    elif ((irs_type == 1) | (irs_type == 4)):
         filename = '*aeri*sum*' + str(date) + '*(cdf|nc)'
-    elif aeri_type == 2:
+    elif irs_type == 2:
         filename = '*' + str(date % 2000000) + '_sum.(cdf|nc)'
-    elif aeri_type == 3:
+    elif irs_type == 3:
         filename = '*' + str(date % 2000000) + '.SUM.(cdf|nc)'
-    elif aeri_type == 5:
+    elif irs_type == 5:
         filename = '*assist*sum*' + str(date) + '*(cdf|nc)'
     else:
-        print('Error in read_aeri_sum: unable to decode aeri_type')
+        print('Error in read_irs_sum: unable to decode irs_type')
         return err
 
     if verbose >= 3:
-        print('Looking for AERI summary data as ' + filename)
+        print('Looking for IRS summary data as ' + filename)
 
     files = findfile(path,filename)
     if len(files) == 0:
-        print('Error: Unable to find any AERI summary data - aborting')
+        print('Error: Unable to find any IRS summary data - aborting')
 
     for jj in range(len(files)):
         fid = Dataset(files[jj],'r')
@@ -1344,7 +1344,7 @@ def read_aeri_sum(path,date,aeri_type,smooth_noise,verbose):
             wnum1 = fid.variables['wnum1'][:]
             wnum2 = fid.variables['wnum2'][:]
         else:
-            print('Error in read_aeri_sum: unable to find the wnumsum fields')
+            print('Error in read_irs_sum: unable to find the wnumsum fields')
             return err
 
         if len(np.where(np.array(list(fid.variables.keys())) == 'SkyNENCh1')[0]) > 0:
@@ -1354,7 +1354,7 @@ def read_aeri_sum(path,date,aeri_type,smooth_noise,verbose):
         elif len(np.where(np.array(list(fid.variables.keys())) == 'ch1_sky_nen')[0]) > 0:
             xnoise1 = fid.variables['SkyNENch1'][:]
         else:
-            print('Error in read_aeri_sum: unable to find the SkyNENCh1 field')
+            print('Error in read_irs_sum: unable to find the SkyNENCh1 field')
             return err
 
         if len(np.where(np.array(list(fid.variables.keys())) == 'SkyNENCh2')[0]) > 0:
@@ -1364,7 +1364,7 @@ def read_aeri_sum(path,date,aeri_type,smooth_noise,verbose):
         elif len(np.where(np.array(list(fid.variables.keys())) == 'ch2_sky_nen')[0]) > 0:
             xnoise2 = fid.variables['SkyNENch2'][:]
         else:
-            print('Error in read_aeri_sum: unable to find the SkyNENCh2 field')
+            print('Error in read_irs_sum: unable to find the SkyNENCh2 field')
             return err
 
         if len(np.where(np.array(list(fid.variables.keys())) == 'lat')[0]) > 0:
@@ -1404,15 +1404,15 @@ def read_aeri_sum(path,date,aeri_type,smooth_noise,verbose):
     wnum = np.append(wnum1,wnum2[foo])
     noise = np.append(noise1,noise2[foo,:], axis = 0)
 
-    # If desired, smooth the random error in the AERI observations
-    # over at temporal window. This is needed because the AERI derives
+    # If desired, smooth the random error in the IRS observations
+    # over at temporal window. This is needed because the IRS derives
     # an independent noise estimate for each sample, but sometimes the
     # temporal variation in the noise can impact the retrieval in
     # negative ways
 
     if smooth_noise > 0:
         if verbose >= 2:
-            print('Smoothing the AERI noise temporally')
+            print('Smoothing the IRS noise temporally')
 
             #Derive the number of points to use in the smoother. The
             #variable "smooth_noise" is the temporal window in minutes,
@@ -1657,19 +1657,19 @@ def read_vceil(path, date, vceil_type, ret_secs, verbose):
     return ({'success':1, 'secs':secs, 'ymd':ymd, 'hour':hour, 'cbh':cbh})
 
 ################################################################################
-# This function puts the AERI data on the same temporal grid as the MWR data.
+# This function puts the IRS data on the same temporal grid as the MWR data.
 ################################################################################
 
-def grid_aeri(ch1, aerisum, avg_instant, hatchOpenSwitch, missingDataFlagSwitch,
+def grid_irs(ch1, irssum, avg_instant, hatchOpenSwitch, missingDataFlagSwitch,
               secs, tavg, verbose):
 
     if verbose == 3:
-        print('Temporally gridding the AERI data')
+        print('Temporally gridding the IRS data')
 
     err = {'success':0}
 
     rrad = np.zeros((len(ch1['wnum']),len(secs)))
-    nrad = np.zeros((len(aerisum['wnum']),len(secs)))
+    nrad = np.zeros((len(irssum['wnum']),len(secs)))
     cbh = np.zeros(len(secs))
     cbhflag = np.zeros(len(secs))
     hatflag = np.zeros(len(secs))
@@ -1681,7 +1681,7 @@ def grid_aeri(ch1, aerisum, avg_instant, hatchOpenSwitch, missingDataFlagSwitch,
 
         if ((hatchOpenSwitch == 1) & (missingDataFlagSwitch == 0)):
             if ((i == 0) & (verbose >= 2)):
-                print('Only averaging AERI data where hatchOpen is 1 (missingDataFlag is anything)')
+                print('Only averaging IRS data where hatchOpen is 1 (missingDataFlag is anything)')
             if avg_instant == 0:
                 foo = np.where((secs[i]-tavg*60./2. <= ch1['secs']) & (ch1['secs'] < secs[i]+tavg*60./2.) &
                                ((ch1['hatchopen'] >= 0.8) & (ch1['hatchopen'] < 1.2)))[0]
@@ -1695,7 +1695,7 @@ def grid_aeri(ch1, aerisum, avg_instant, hatchOpenSwitch, missingDataFlagSwitch,
                     nfoo = 1
         elif ((hatchOpenSwitch == 0) & (missingDataFlagSwitch == 0)):
             if ((i == 0) & (verbose >= 2)):
-                print('Averaging all AERI data regardless of hatchOpen or missingDataFlag')
+                print('Averaging all IRS data regardless of hatchOpen or missingDataFlag')
             if avg_instant == 0:
                 foo = np.where((secs[i]-tavg*60./2. <= ch1['secs']) & (ch1['secs'] < secs[i]+tavg*60./2.))[0]
             else:
@@ -1708,7 +1708,7 @@ def grid_aeri(ch1, aerisum, avg_instant, hatchOpenSwitch, missingDataFlagSwitch,
                     nfoo = 1
         elif ((hatchOpenSwitch == 1) & (missingDataFlagSwitch == 1)):
             if ((i == 0) & (verbose >= 2)):
-                print('Only averaging AERI data where hatchOpen is 1 and missingDataFlag is 0')
+                print('Only averaging IRS data where hatchOpen is 1 and missingDataFlag is 0')
             if avg_instant == 0:
                foo = np.where((secs[i]-tavg*60./2. <= ch1['secs']) & (ch1['secs'] < secs[i]+tavg*60./2.) &
                                (ch1['missingDataFlag'] == 0) & ((ch1['hatchopen'] >= 0.8) & (ch1['hatchopen'] < 1.2)))[0]
@@ -1723,7 +1723,7 @@ def grid_aeri(ch1, aerisum, avg_instant, hatchOpenSwitch, missingDataFlagSwitch,
 
         elif ((hatchOpenSwitch == 0) & (missingDataFlagSwitch == 1)):
             if ((i == 0) & (verbose >= 2)):
-                print('Averaging all AERI data where missingDataFlag is 0 (hatchOpen can be anything)')
+                print('Averaging all IRS data where missingDataFlag is 0 (hatchOpen can be anything)')
 
             if avg_instant == 0:
                foo = np.where((secs[i]-tavg*60./2. <= ch1['secs']) & (ch1['secs'] < secs[i]+tavg*60./2.) &
@@ -1738,7 +1738,7 @@ def grid_aeri(ch1, aerisum, avg_instant, hatchOpenSwitch, missingDataFlagSwitch,
                     nfoo = 1
 
         else:
-            print('This piece of code should never be executed -- logic trap in grid_aeri()')
+            print('This piece of code should never be executed -- logic trap in grid_irs()')
             return err
 
         if len(foo) == 0:
@@ -1784,7 +1784,7 @@ def grid_aeri(ch1, aerisum, avg_instant, hatchOpenSwitch, missingDataFlagSwitch,
                         cbhflag[i] = 3
 
                 # Determine the appropriate value for the hatch, given there
-                # are several AERI samples in this window.  If the hatch is open
+                # are several IRS samples in this window.  If the hatch is open
                 # for all of these samples, then call it open.  If the hatch is
                 # closed for all of the samples, then call it closed.  Otherwise
                 # call it "indeterminant"
@@ -1805,10 +1805,10 @@ def grid_aeri(ch1, aerisum, avg_instant, hatchOpenSwitch, missingDataFlagSwitch,
 
         # Get the summary data on this grid
         if avg_instant == 0:
-            foo = np.where((secs[i]-tavg*60./2. <= aerisum['secs']) & (aerisum['secs'] < secs[i]+tavg*60./2.))[0]
+            foo = np.where((secs[i]-tavg*60./2. <= irssum['secs']) & (irssum['secs'] < secs[i]+tavg*60./2.))[0]
         else:
-            dell = np.abs(secs[i]-aerisum['secs'])
-            foo = np.where((secs[i]-tavg*60./2. <= aerisum['secs']) & (aerisum['secs'] < secs[i]+tavg*60./2.) &
+            dell = np.abs(secs[i]-irssum['secs'])
+            foo = np.where((secs[i]-tavg*60./2. <= irssum['secs']) & (irssum['secs'] < secs[i]+tavg*60./2.) &
                                (dell == np.nanmin(dell)))[0]
 
         if len(foo) > 1:
@@ -1818,7 +1818,7 @@ def grid_aeri(ch1, aerisum, avg_instant, hatchOpenSwitch, missingDataFlagSwitch,
         if len(foo) == 0:
             nrad[:,i] = -9999.
         elif len(foo) == 1:
-            nrad[:,i] = np.squeeze(aerisum['noise'][:,foo])
+            nrad[:,i] = np.squeeze(irssum['noise'][:,foo])
         else:
 
             # Divide by sqrt N when averaging many samples together
@@ -1828,17 +1828,17 @@ def grid_aeri(ch1, aerisum, avg_instant, hatchOpenSwitch, missingDataFlagSwitch,
             # noise compression when averaging data, so I am going to
             # use this 'hack'.
 
-            #nrad[:,i] = (np.nansum(aerisum['noise'][:,foo],axis = 1)/np.float(len(foo))) / np.sqrt(len(foo))
-            nrad[:,i] = (np.nansum(aerisum['noise'][:,foo],axis = 1)/np.float(len(foo))) / np.sqrt(len(foo))
+            #nrad[:,i] = (np.nansum(irssum['noise'][:,foo],axis = 1)/np.float(len(foo))) / np.sqrt(len(foo))
+            nrad[:,i] = (np.nansum(irssum['noise'][:,foo],axis = 1)/np.float(len(foo))) / np.sqrt(len(foo))
 
-    # Put all AERI data on same spectral grid
+    # Put all IRS data on same spectral grid
     wnum = np.copy(ch1['wnum'])
     noise = rrad*0.
     for i in range(len(secs)):
-        noise[:,i] = np.interp(wnum,aerisum['wnum'],nrad[:,i])
+        noise[:,i] = np.interp(wnum,irssum['wnum'],nrad[:,i])
 
-        # Get the surface temperature from the AERI radiance observations
-        # Use the actual AERI radiances, not the subset that was extracted
+        # Get the surface temperature from the IRS radiance observations
+        # Use the actual IRS radiances, not the subset that was extracted
 
     bar = np.where((wnum >= 670) & (wnum <= 675))[0]
 
@@ -1863,7 +1863,7 @@ def grid_aeri(ch1, aerisum, avg_instant, hatchOpenSwitch, missingDataFlagSwitch,
             'cbh':cbh, 'cbhflag':cbhflag, 'hatchopen':hatflag, 'avg_instant':avg_instant,
             'wnum':wnum, 'radmn':rrad, 'noise':noise, 'atmos_pres':atmos_pres,
             'tsfc':Tsfc, 'fv':ch1['fv'], 'fa':ch1['fa'], 'missingDataFlag':mssflag,
-            'lat':aerisum['lat'],'lon':aerisum['lon'],'alt':aerisum['alt']})
+            'lat':irssum['lat'],'lon':irssum['lon'],'alt':irssum['alt']})
 
 ################################################################################
 # This function puts the MWR data onto a common temporal grid.
@@ -2899,24 +2899,24 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
         return external
 
     # Interpolate the data to the time/height grid
-    # Put the external data on the same vertical grid as the AERIoe retrievals.
-    # There are many ways this could be done, but since sometimes the AERI has
+    # Put the external data on the same vertical grid as the TROPoe retrievals.
+    # There are many ways this could be done, but since sometimes the IRS has
     # better vertical resolution than the external source (near the surface) or
     # vice versa (aloft), we are just going to do something simple and linearly
-    # interpolate and then put the data on the same temporal grid as the AERI retrievels.
+    # interpolate and then put the data on the same temporal grid as the IRS retrievels.
     # Again, there are multiple ways to do this. I will interpolate linearly with time, but then
-    # flag the samples that are within the temporal resolution window of the AERIoe
+    # flag the samples that are within the temporal resolution window of the TROPoe
     # sample time, so tht this information can be passed to the output file.
 
     timeflag = np.zeros(len(secs))  # this captures the time flags
     if tres == 0:
-        timeres = 30         # since the AERI's rapid-sample data is order of 30 seconds
+        timeres = 30         # since the IRS's rapid-sample data is order of 30 seconds
     else:
         timeres = tres * 60       # because the units here should be seconds
 
     # Humidity first
     if external['nQprof'] > 0:
-        # First interpolate to the correct AERIoe vertical grid. But also
+        # First interpolate to the correct TROPoe vertical grid. But also
         # look for bad data in the raw profile.
 
 
@@ -2945,7 +2945,7 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
             tmp_swater[foo,:] = np.nan
 
 
-        # Now interpolate to the AERIoe temporal grid
+        # Now interpolate to the TROPoe temporal grid
         if external['nQprof'] == 1:
             # If there is only a single sample, then set all of the profiles to this
             # same profile
@@ -2969,7 +2969,7 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
             new_swater[:,foo] = np.nan
 
         # Now loop over the samples, and see if there is an external sample
-        # that is within tres of the AERIoe time. If so, then flag this
+        # that is within tres of the TROPoe time. If so, then flag this
 
         for i in range(len(secs)):
             foo = np.where((secs[i]-timeres <= qsecs) & (secs[i]+2*timeres >= qsecs))[0]
@@ -2990,7 +2990,7 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
 
         # Now temperature....
     if external['nTprof'] > 0:
-        # First interpolate to the correct AERIoe vertical grid. But also
+        # First interpolate to the correct TROPoe vertical grid. But also
         # look for bad data in the raw profile. 
 
         tmp_temp = np.zeros((len(ht),len(tsecs)))
@@ -3017,7 +3017,7 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
             tmp_temp[foo,:]  = np.nan
             tmp_stemp[foo,:] = np.nan
 
-        # Now interpolate to the AERIoe temporal grid
+        # Now interpolate to the TROPoe temporal grid
         if external['nTprof'] == 1:
             # If there is only a single sample, then set all of the profiles to this
             # same profile
@@ -3041,7 +3041,7 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
             new_stemp[:,foo] = np.nan
 
         # Now loop over the samples, and see if there is an external sample
-        # that is within tres of the AERIoe time. If so, then flag this
+        # that is within tres of the TROPoe time. If so, then flag this
 
         for i in range(len(secs)):
             foo = np.where((secs[i]-timeres <= tsecs) & (secs[i]+2*timeres >= tsecs))[0]
@@ -3593,7 +3593,7 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
 
         if len(files) == 0:
             if verbose >= 1:
-                print('No ARM met found in this directory for this date, using AERI psfc')
+                print('No ARM met found in this directory for this date, using IRS psfc')
         else:
             for i in range(len(files)):
                 fid = Dataset(files[i], 'r')
@@ -3638,7 +3638,7 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
 
         if len(files) == 0:
             if verbose >= 1:
-                print('No NCAR ISFS met found in this directory for this date, using AERI psfc')
+                print('No NCAR ISFS met found in this directory for this date, using IRS psfc')
 
         else:
             for i in range(len(files)):
@@ -3680,7 +3680,7 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
 
         if len(files) == 0:
             if verbose >= 1:
-                print('No MWR met found in this directory for this date, using AERI psfc')
+                print('No MWR met found in this directory for this date, using IRS psfc')
         else:
             for i in range(len(files)):
                 fid = Dataset(files[i],'r')
