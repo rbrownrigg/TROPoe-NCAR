@@ -1,4 +1,4 @@
-__version__ = '0.5.16'
+__version__ = '0.5.17'
 
 import os
 import sys
@@ -577,7 +577,7 @@ if ehour < 0:
         print(('Resetting the processing end hour to ' + str(ehour) + ' UTC'))
 
 # Capture the lat/lon/alt data in a structure
-location = {'lat':aeri['lat'], 'lon':aeri['lon'], 'alt': int(aeri['alt'])}
+location = {'lat':irs['lat'], 'lon':irs['lon'], 'alt': int(irs['alt'])}
 if vip['station_alt'] >= 0:
     if verbose >= 2:
         print('Overriding lat/lon/alt with info from VIP file')
