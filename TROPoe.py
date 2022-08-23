@@ -1,4 +1,4 @@
-__version__ = '0.5.15'
+__version__ = '0.5.16'
 
 import os
 import sys
@@ -142,14 +142,14 @@ globatt = {'algorithm_code': 'TROPoe Retrieval Code (formerly AERIoe)',
                     'Appl. Earth Obs. Remote Sens., 12, 1339-1354, doi:10.1109/JSTARS.2018.2874968',
            'algorithm_reference3': 'DD Turner and U Loehnert, 2021: Ground-based temperature and humidity profiling: ' +
                     'Combining active and passive remote sensors, Atmos. Meas. Tech., vol 14, pp 3033-3048, ' +
-                    'doi:10.5194/amt-14-3033-2021', 
+                    'doi:10.5194/amt-14-3033-2021',
            'forward_model_reference1': 'The forward radiative transfer models are from Atmospheric and Environmental ' +
                     'Research Inc (AER); an overview is provided by Clough et al., 2005: Atmospheric radiative transfer ' +
-                    'modeling: A summary of the AER codes, JQSRT, vol 91, pp 233-244, doi:10.1016/j.jqsrt.2004.05.058', 
-           'forward_model_reference2': 'The infrared model is LBLRTM; papers describing this model include ' + 
-                    'doi:10.1029/2018JD029508, doi:10.1175/amsmonographs-d-15-0041.1, and doi:10.1098/rsta.2011.0295', 
-           'forward_model_reference3': 'The microwave model is MonoRTM; papers describing this model include ' + 
-                    'doi:10.1109/TGRS.2010.2091416 and doi:10.1109/TGRS.2008.2002435', 
+                    'modeling: A summary of the AER codes, JQSRT, vol 91, pp 233-244, doi:10.1016/j.jqsrt.2004.05.058',
+           'forward_model_reference2': 'The infrared model is LBLRTM; papers describing this model include ' +
+                    'doi:10.1029/2018JD029508, doi:10.1175/amsmonographs-d-15-0041.1, and doi:10.1098/rsta.2011.0295',
+           'forward_model_reference3': 'The microwave model is MonoRTM; papers describing this model include ' +
+                    'doi:10.1109/TGRS.2010.2091416 and doi:10.1109/TGRS.2008.2002435',
            'datafile_created_on_date': strftime("%Y-%m-%d %H:%M:%S", gmtime()),
            'datafile_created_on_machine': os.uname()[-1]}
 
@@ -577,7 +577,7 @@ if ehour < 0:
         print(('Resetting the processing end hour to ' + str(ehour) + ' UTC'))
 
 # Capture the lat/lon/alt data in a structure
-location = {'lat':irs['lat'], 'lon':irs['lon'], 'alt':irs['alt']}
+location = {'lat':aeri['lat'], 'lon':aeri['lon'], 'alt': int(aeri['alt'])}
 if vip['station_alt'] >= 0:
     if verbose >= 2:
         print('Overriding lat/lon/alt with info from VIP file')
@@ -973,7 +973,7 @@ for i in range(len(irs['secs'])):                        # { loop_i
         sigY = np.append(sigY, rass_prof['sig_temp'][foo,i])
         flagY = np.append(flagY, np.ones(len(foo))*11)
         dimY = np.append(dimY, z[foo])
-      
+
     nY = len(Y)
 
     # Quick check: All of the 1-sigma uncertainties from the observations
@@ -1179,8 +1179,8 @@ for i in range(len(irs['secs'])):                        # { loop_i
                            cbh, sspl, sspi, lblwnum1, lblwnum2,
                            fixtemp, fixwvmr, doco2, doch4, don2o, fixlcloud, fixicloud,
                            vip['fix_co2_shape'], vip['fix_ch4_shape'], vip['fix_n2o_shape'],
-                           vip['jac_max_ht'], vip['lblrtm_forward_threshold'], 
-                           location['alt'], rt_extra_layers, stdatmos, 
+                           vip['jac_max_ht'], vip['lblrtm_forward_threshold'],
+                           location['alt'], rt_extra_layers, stdatmos,
                            verbose, debug, doapidize=True)
 
         elif vip['lblrtm_jac_option'] == 2:
@@ -1199,8 +1199,8 @@ for i in range(len(irs['secs'])):                        # { loop_i
                            cbh, sspl, sspi, lblwnum1, lblwnum2,
                            fixtemp, fixwvmr, doco2, doch4, don2o, fixlcloud, fixicloud,
                            vip['fix_co2_shape'], vip['fix_ch4_shape'], vip['fix_n2o_shape'],
-                           vip['jac_max_ht'], vip['lblrtm_forward_threshold'], 
-                           location['alt'], rt_extra_layers, stdatmos, 
+                           vip['jac_max_ht'], vip['lblrtm_forward_threshold'],
+                           location['alt'], rt_extra_layers, stdatmos,
                            verbose, debug, doapidize=True)
 
         elif vip['lblrtm_jac_option'] == 3:
@@ -1243,7 +1243,7 @@ for i in range(len(irs['secs'])):                        # { loop_i
                            fixtemp, fixwvmr, doco2, doch4, don2o, fixlcloud, fixicloud,
                            vip['fix_co2_shape'], vip['fix_ch4_shape'], vip['fix_n2o_shape'],
                            vip['jac_max_ht'], awnum, adeltaod, vip['lblrtm_forward_threshold'],
-                           location['alt'], rt_extra_layers, stdatmos, 
+                           location['alt'], rt_extra_layers, stdatmos,
                            verbose, debug, doapodize=True)
 
         elif vip['lblrtm_jac_option'] == 4:
@@ -1274,12 +1274,12 @@ for i in range(len(irs['secs'])):                        # { loop_i
                            fixtemp, fixwvmr, doco2, doch4, don2o, fixlcloud, fixicloud,
                            vip['fix_co2_shape'], vip['fix_ch4_shape'], vip['fix_n2o_shape'],
                            vip['jac_max_ht'], irs['wnum'], vip['lblrtm_forward_threshold'],
-                           location['alt'], rt_extra_layers, stdatmos, vip['lblrtm_jac_interpol_npts_wnum'], 
+                           location['alt'], rt_extra_layers, stdatmos, vip['lblrtm_jac_interpol_npts_wnum'],
                            verbose, debug, doapodize=False)
                     # If we are using the prior for the first guess (FG=1), and we have not already loaded
                     # this structure, then capture the forward calc and jacobian for the first guess
             if((precompute_prior_jacobian['status'] == 0) & (vip['first_guess'] == 1)):
-                precompute_prior_jacobian = {'status':1, 'X0':np.copy(Xn), 'FX0':np.copy(FXn), 'Kij0':np.copy(Kij), 
+                precompute_prior_jacobian = {'status':1, 'X0':np.copy(Xn), 'FX0':np.copy(FXn), 'Kij0':np.copy(Kij),
                     'flag0':np.copy(flag), 'wnumc0':np.copy(wnumc)}
         else:
             print('Error: Undefined jacobian option selected')
@@ -1635,7 +1635,7 @@ for i in range(len(irs['secs'])):                        # { loop_i
             elif vip['monortm_jac_option'] == 2:
                 flag, KK, FF, m_comp_time = Jacobian_Functions.compute_jacobian_microwavescan_3method(Xn, p, z,
                                         mwrscan, cbh, vip, lbltmpdir, monortm_tfile, monortm_sexec,
-                                        fixtemp, fixwvmr, fixlcloud, vip['jac_max_ht'], stdatmos, location['alt'], 
+                                        fixtemp, fixwvmr, fixlcloud, vip['jac_max_ht'], stdatmos, location['alt'],
                                         verbose)
             else:
                 print('Error: Undefined option for monortm_jac_option')
