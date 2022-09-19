@@ -157,11 +157,15 @@ def write_output(vip, ext_prof, mod_prof, rass_prof, ext_tseries, globatt, xret,
 
         base_time = fid.createVariable('base_time','i4')
         base_time.long_name = 'Epoch time'
-        base_time.units = 's since 1970/01/01 00:00:00 UTC'
+        base_time.units = 'Seconds since 1970/01/01 00:00:00 UTC'
 
         time_offset = fid.createVariable('time_offset', 'f8', ('time',))
         time_offset.long_name = 'Time offset from base_time'
-        time_offset.units = 's'
+        time_offset.units = 'Seconds'
+
+        time = fid.createVariable('time', 'f8', ('time',))
+        time.long_name = 'Time'
+        time.units = 'Seconds from 00:00 UTC'
 
         hour = fid.createVariable('hour', 'f8', ('time',))
         hour.long_name = 'Time'
@@ -177,43 +181,43 @@ def write_output(vip, ext_prof, mod_prof, rass_prof, ext_tseries, globatt, xret,
         qc_flag.RMS_threshold_used_for_QC = str(vip['qc_rms_value']) + ' [unitless]'
 
         height = fid.createVariable('height', 'f4', ('height',))
-        height.long_name = 'height'
+        height.long_name = 'Height'
         height.units = 'km AGL'
 
         temperature = fid.createVariable('temperature', 'f4', ('time','height',))
-        temperature.long_name = 'temperature'
+        temperature.long_name = 'Temperature'
         temperature.units = 'C'
 
         waterVapor = fid.createVariable('waterVapor', 'f4', ('time', 'height',))
-        waterVapor.long_name = 'water vapor mixing ratio'
+        waterVapor.long_name = 'Water vapor mixing ratio'
         waterVapor.units = 'g/kg'
 
         lwp = fid.createVariable('lwp', 'f4', ('time',))
-        lwp.long_name = 'liquid water path'
+        lwp.long_name = 'Liquid water path'
         lwp.units = 'g/m2'
 
         lReff = fid.createVariable('lReff', 'f4', ('time',))
-        lReff.long_name = 'liquid water effective radius'
+        lReff.long_name = 'Liquid water effective radius'
         lReff.units = 'microns'
 
         iTau = fid.createVariable('iTau', 'f4', ('time',))
-        iTau.long_name = 'ice cloud optical depth (geometric limit)'
+        iTau.long_name = 'Ice cloud optical depth (geometric limit)'
         iTau.units = 'unitless'
 
         iReff = fid.createVariable('iReff', 'f4', ('time',))
-        iReff.long_name = 'ice effective radius'
+        iReff.long_name = 'Ice effective radius'
         iReff.units = 'microns'
 
         co2 = fid.createVariable('co2', 'f4', ('time','gas_dim',))
-        co2.long_name = 'carbon dioxide concentration'
+        co2.long_name = 'Carbon dioxide concentration'
         co2.units = 'ppm'
 
         ch4 = fid.createVariable('ch4', 'f4', ('time', 'gas_dim',))
-        ch4.long_name = 'methane concentration'
+        ch4.long_name = 'Methane concentration'
         ch4.units = 'ppm'
 
         n2o = fid.createVariable('n2o', 'f4', ('time', 'gas_dim',))
-        n2o.long_name = 'nitrous oxide concentration'
+        n2o.long_name = 'Nitrous oxide concentration'
         n2o.units = 'ppm'
 
         sigmaT = fid.createVariable('sigma_temperature', 'f4', ('time','height',))
@@ -253,7 +257,7 @@ def write_output(vip, ext_prof, mod_prof, rass_prof, ext_tseries, globatt, xret,
         sigma_n2o.units = 'ppm'
 
         converged_flag = fid.createVariable('converged_flag', 'i2', ('time',))
-        converged_flag.long_name = 'convergence flag'
+        converged_flag.long_name = 'Convergence flag'
         converged_flag.units = 'unitless'
         converged_flag.value_0 = '0 indicates no convergence'
         converged_flag.value_1 = '1 indicates convergence in Rodgers sense (i.e., di2m << dimY)'
@@ -262,27 +266,27 @@ def write_output(vip, ext_prof, mod_prof, rass_prof, ext_tseries, globatt, xret,
         converged_flag.value_9 = '9 indicates found NaN in Xnp1'
 
         gamma = fid.createVariable('gamma', 'f4', ('time',))
-        gamma.long_name = 'gamma parameter'
+        gamma.long_name = 'Gamma parameter'
         gamma.units = 'unitless'
 
         n_iter = fid.createVariable('n_iter', 'i2', ('time',))
-        n_iter.long_name = 'number of iterations performed'
+        n_iter.long_name = 'Number of iterations performed'
         n_iter.units = 'unitless'
 
         rmsr = fid.createVariable('rmsr', 'f4', ('time',))
-        rmsr.long_name = 'root mean square error between IRS and MWR obs in the observation vector and the forward calculation'
+        rmsr.long_name = 'Root mean square error between IRS and MWR obs in the observation vector and the forward calculation'
         rmsr.units = 'unitless'
         rmsr.comment1 = 'Computed as sqrt( sum_over_i[ ((Y_i - F(Xn_i)) / Y_i)^2 ] / sizeY)'
         rmsr.comment2 = 'Only IRS radiance observations in the observation vector are used'
 
         rmsa = fid.createVariable('rmsa', 'f4', ('time',))
-        rmsa.long_name = 'root mean square error between observation vector and the forward calculation'
+        rmsa.long_name = 'Root mean square error between observation vector and the forward calculation'
         rmsa.units = 'unitless'
         rmsa.comment1 = 'Computed as sqrt( sum_over_i[ ((Y_i - F(Xn_i)) / Y_i)^2 ] / sizeY)'
         rmsa.comment2 = 'Entire observation vector used in this calculation'
 
         rmsp = fid.createVariable('rmsp', 'f4', ('time',))
-        rmsp.long_name = 'root mean square error between prior T/q profile and the retrieved T/q profile'
+        rmsp.long_name = 'Root mean square error between prior T/q profile and the retrieved T/q profile'
         rmsp.units = 'unitless'
         rmsp.comment1 = 'Computed as sqrt( mean[ ((Xa - Xn) / sigma_Xa)^2 ] )'
 
@@ -292,11 +296,11 @@ def write_output(vip, ext_prof, mod_prof, rass_prof, ext_tseries, globatt, xret,
         chi2.comment = 'Computed as sqrt( sum_over_i[ ((Y_i - F(Xn_i)) / Y_i)^2 ] / sizeY)'
 
         convergence_criteria = fid.createVariable('convergence_criteria', 'f4', ('time',))
-        convergence_criteria.long_name = 'convergence criteria di^2'
+        convergence_criteria.long_name = 'Convergence criteria di^2'
         convergence_criteria.units = 'unitless'
 
         dfs = fid.createVariable('dfs', 'f4', ('time','dfs',))
-        dfs.long_name = 'degrees of freedom of signal'
+        dfs.long_name = 'Degrees of freedom of signal'
         dfs.units = 'unitless'
         dfs.comment = 'total DFS, then DFS for each of temperature, waterVapor, LWP, L_Reff, I_tau, I_Reff, carbonDioxide, methane, nitrousOxide'
 
@@ -336,32 +340,32 @@ def write_output(vip, ext_prof, mod_prof, rass_prof, ext_tseries, globatt, xret,
         cbh_flag.comment4 = 'Value 3 implies Default CBH radiance'
 
         pressure = fid.createVariable('pressure', 'f4', ('time','height',))
-        pressure.long_name = 'derived pressure'
+        pressure.long_name = 'Derived pressure'
         pressure.units = 'mb'
         pressure.comment = 'derived from IRS surface pressure observations and the hyposmetric calculation using the thermodynamic profiles'
 
         theta = fid.createVariable('theta', 'f4', ('time','height',))
-        theta.long_name = 'potential temperature'
+        theta.long_name = 'Potential temperature'
         theta.units = 'K'
         theta.comment = 'This field is derived from the retrieved fields'
 
         thetae = fid.createVariable('thetae', 'f4', ('time','height',))
-        thetae.long_name = 'equivalent potential temperature'
+        thetae.long_name = 'Equivalent potential temperature'
         thetae.units = 'K'
         thetae.comment = 'This field is derived from the retrieved fields'
 
         rh = fid.createVariable('rh', 'f4', ('time','height',))
-        rh.long_name = 'relative humidity'
+        rh.long_name = 'Relative humidity'
         rh.units = '%'
         rh.comment = 'This field is derived from the retrieved field'
 
         dewpt = fid.createVariable('dewpt', 'f4', ('time','height',))
-        dewpt.long_name = 'dew point temperature'
+        dewpt.long_name = 'Dew point temperature'
         dewpt.units = 'C'
         dewpt.comment = 'This field is derived from the retrieved fields'
 
         dindices = fid.createVariable('dindices', 'f4', ('time','index_dim',))
-        dindices.long_name = 'derived indices'
+        dindices.long_name = 'Derived indices'
         dindices.units = 'units depends on the index; see comments below'
         dindices.comment0 = 'This field is derived from the retrieved fields'
         dindices.comment1 = 'A value of -999 indicates that this inded could not be computed (typically because the value was aphysical)'
@@ -485,7 +489,7 @@ def write_output(vip, ext_prof, mod_prof, rass_prof, ext_tseries, globatt, xret,
         # these fields in the output file
         if vip['output_file_keep_small'] == 0:
             arb = fid.createVariable('arb', 'i2', ('arb',))
-            arb.long_name = 'arbitrary dimension'
+            arb.long_name = 'Arbitrary dimension'
             arb.units = 'mixed units'
             arb.comment = ('contains temeprature profile (1), water vapor profile (2)'
                        + ' liquid cloud path (3), liquid water Reff (4), '
@@ -493,42 +497,41 @@ def write_output(vip, ext_prof, mod_prof, rass_prof, ext_tseries, globatt, xret,
                        + ' methane (8), nitrous oxide (9)')
 
             Xop = fid.createVariable('Xop', 'f4', ('time','arb',))
-            Xop.long_name = 'optimal solution'
+            Xop.long_name = 'Optimal solution'
             Xop.units = 'mixed units -- see field arb above'
 
             Sop = fid.createVariable('Sop', 'f4', ('time','arb','arb',))
-            Sop.long_name = 'covariance matrix of the solution'
+            Sop.long_name = 'Covariance matrix of the solution'
             Sop.units = 'mixed units -- see field arb above'
 
             Akernal = fid.createVariable('Akernal', 'f4', ('time','arb','arb',))
-            Akernal.long_name = 'averaging kernal'
+            Akernal.long_name = 'Averaging kernal'
             Akernal.units = 'mixed units -- see field arb above'
 
             Xa = fid.createVariable('Xa', 'f4', ('arb',))
-            Xa.long_name = 'prior mean state'
+            Xa.long_name = 'Prior mean state'
             Xa.units = 'mixed units -- see field arb above'
 
             Sa = fid.createVariable('Sa', 'f4', ('arb','arb',))
-            Sa.long_name = 'prior covariance'
+            Sa.long_name = 'Prior covariance'
             Sa.units = 'mixed units -- see field arb above'
 
         # These should be the last three variables in the file
         lat = fid.createVariable('lat', 'f4')
-        lat.long_name = 'latitude'
+        lat.long_name = 'Latitude'
         lat.units = 'degrees north'
 
         lon = fid.createVariable('lon', 'f4')
-        lon.long_name = 'longitude'
+        lon.long_name = 'Longitude'
         lon.units = 'degrees east'
 
         alt = fid.createVariable('alt', 'f4')
-        alt.long_name = 'altitude'
+        alt.long_name = 'Altitude'
         alt.units = 'm above MSL'
 
         # Add some global attributes
         for i in range(len(list(globatt.keys()))):
             fid.setncattr(list(globatt.keys())[i], globatt[list(globatt.keys())[i]])
-        fid.Algorithm_version = version
         fid.Prior_dataset_comment = prior['comment']
         fid.Prior_dataset_filename = prior['filename']
         fid.Prior_dataset_number_profiles = prior['nsonde']
@@ -734,6 +737,7 @@ def write_output(vip, ext_prof, mod_prof, rass_prof, ext_tseries, globatt, xret,
     fid.Total_clock_execution_time_in_s = str(exectime)
 
     time_offset = fid.variables['time_offset']
+    time = fid.variables['time']
     hour = fid.variables['hour']
     qc_flag = fid.variables['qc_flag']
 
@@ -797,6 +801,7 @@ def write_output(vip, ext_prof, mod_prof, rass_prof, ext_tseries, globatt, xret,
     basetime = fid.variables['base_time'][:]
     for i in range(npts):
         time_offset[fsample+i] = xret[fsample+i]['secs'] - basetime
+        time[fsample+i] = xret[fsample+i]['hour']*60*60     # compute the seconds since midnight
         hour[fsample+i] = xret[fsample+i]['hour']
         qc_flag[fsample+i] = xret[fsample+i]['qcflag']
 

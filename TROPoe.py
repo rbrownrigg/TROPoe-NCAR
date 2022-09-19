@@ -1,4 +1,4 @@
-__version__ = '0.5.17'
+__version__ = '0.5.18'
 
 import os
 import sys
@@ -123,7 +123,7 @@ if verbose == 3:
 
 #Capture the version of this file
 globatt = {'algorithm_code': 'TROPoe Retrieval Code (formerly AERIoe)',
-           'algorithm_author': 'Dave Turner, Global Systems Laboratory / NOAA dave.turner@noaa.gov',
+           'algorithm_author': 'Dave Turner, Global Systems Laboratory / NOAA (dave.turner@noaa.gov)',
            'algorithm_comment1': 'TROPoe is a physical-iterative algorithm that retrieves thermodynamic profiles from ' +
                                  'a wide range of ground-based remote sensors.  It was primarily designed to use either ' +
                                  'infrared spectrometers or microwave radiometers as the primary instrument, and include ' +
