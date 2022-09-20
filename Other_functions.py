@@ -1698,11 +1698,12 @@ def aeri_zerofill(iwnum,irad,channel,epad=0):
     v2 = v_nyquist * np.arange(n_total/2) / (n_total/2)
     loc = np.where((iwnum[0]-eepad <= v2) & (v2 <= iwnum[n_apts-1]+eepad))
    
-    return [v2[loc],spc[loc]]
+    return np.array([v2[loc],np.real(spc[loc])])
 
 ################################################################################
 # This function spectrally calibrates the AERi.  It requires input from a routine
-# like "check_aeri_vlaser".  It only works with one channel at a time
+# like "check_aeri_vlaser".  It only works with one channel at a time, and one
+# spectrum at a time
 ################################################################################
 def fix_aeri_vlaser_mod(wnum,irad,multiplier):
     # determine which channels this is
@@ -1712,13 +1713,10 @@ def fix_aeri_vlaser_mod(wnum,irad,multiplier):
     else:
         channel = 2
 
-    nrad = irad * 0.
-    for ii in range(0,len(irad[0,:])):
-        result = aeri_zerofill(wnum, irad[:,ii], channel)
-        newrad = np.interp(wnum, result[0,:]*multiplier, result[1,:])
-        nrad[:,ii] = newrad
+    result = aeri_zerofill(wnum, irad, channel)
+    newrad = np.interp(wnum, result[0,:]*multiplier, result[1,:])
 
-    return nrad
+    return newrad
 
 ################################################################################
 # This routine creates a vertical grid that can be added to the top of our profile
