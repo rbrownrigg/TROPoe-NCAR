@@ -240,7 +240,8 @@ def read_vip_file(filename,globatt,verbose,debug,dostop):
             # inputt = np.genfromtxt(filename, dtype=str,comments='#', usecols = (0,1,2))
             inputt = np.genfromtxt(filename, dtype=str, comments='#', delimiter='=', autostrip=True)
         except Exception as e:
-            print('There was an problem reading the VIP file')
+            print('There was an problem reading the VIP file. Check formatting.')
+            return vip
     else:
         print('The VIP file ' + filename + ' does not exist')
         return vip
