@@ -188,8 +188,16 @@ def read_irs_ch(path,date,irs_type,fv,fa,irs_spec_cal_factor,
 
     for jj in range(len(files)):
         fid = Dataset(files[jj])
-        bt = fid.variables['base_time'][:].astype('float')
-        to = fid.variables['time_offset'][:].astype('float')
+        bt = fid['base_time'][:].astype('float')
+            # If this is an ASSIST, then convert the base_time from milliseconds to seconds
+        if(irs_type == 5):
+            bt = bt / 1000.
+            # Check for "time_offset"; if not there, assume it is "time"
+        if len(np.where(np.array(list(fid.variables.keys())) == 'time_offset')[0]) > 0:
+            to = fid['time_offset'][:].astype('float')
+        else:
+            to = fid['time'][:].astype('float')
+
         vid = np.where(np.array(list(fid.variables.keys())) == 'wnum')[0]
         if len(vid) > 0:
             wnum = fid.variables['wnum'][:]
@@ -233,29 +241,58 @@ def read_irs_ch(path,date,irs_type,fv,fa,irs_spec_cal_factor,
 
         if len(np.where(np.array(list(fid.variables.keys())) == 'BBsupportStructureTemp')[0]) > 0:
             xbbsupport = fid.variables['BBsupportStructureTemp'][:]
-        else:
+            tmp = np.nanmean(xbbsupport)
+            if(tmp < 150):
+                xbbsupport += 273.15
+        elif len(np.where(np.array(list(fid.variables.keys())) == 'calibrationAmbientTemp')[0]) > 0:
+            xbbsupport = fid.variables['calibrationAmbientTemp'][:]
+            tmp = np.nanmean(xbbsupport)
+            if(tmp < 150):
+                xbbsupport += 273.15
+        elif len(np.where(np.array(list(fid.variables.keys())) == 'abb_thermistor_top')[0]) > 0:
             xbbsupport = fid.variables['abb_thermistor_top'][:]
-            xbbsupport += 273.15
+            tmp = np.nanmean(xbbsupport)
+            if(tmp < 150):
+                xbbsupport += 273.15
+        else:
+            xbbsupport = np.full_like(-999,to)
+
         if len(np.where(np.array(list(fid.variables.keys())) == 'calibrationAmbientTemp')[0]) > 0:
             xcalibambt = fid.variables['calibrationAmbientTemp'][:]
-        else:
+        elif len(np.where(np.array(list(fid.variables.keys())) == 'abb_thermistor_top')[0]) > 0:
             xcalibambt = fid.variables['abb_thermistor_top'][:]
-            xcalibambt += 273.15
+            tmp = np.nanmean(xcalibambt)
+            if(tmp < 150):
+                xcalibambt += 273.15
+        else:
+            xcalibambt = np.full_like(-999,to)
+
         if len(np.where(np.array(list(fid.variables.keys())) == 'calibrationCBBtemp')[0]) > 0:
             xcalibcbbt = fid.variables['calibrationCBBtemp'][:]
-        else:
+        elif len(np.where(np.array(list(fid.variables.keys())) == 'abb_mean_temp')[0]) > 0:
             xcalibcbbt = fid.variables['abb_mean_temp'][:]
-            xcalibcbbt += 273.15
+            tmp = np.nanmean(xcalibcbbt)
+            if(tmp < 150):
+                xcalibcbbt += 273.15
+        else:
+            xcalibcbbt = np.full_like(-999,to)
+
         if len(np.where(np.array(list(fid.variables.keys())) == 'calibrationHBBtemp')[0]) > 0:
             xcalibhbbt = fid.variables['calibrationHBBtemp'][:]
-        else:
+        elif len(np.where(np.array(list(fid.variables.keys())) == 'hbb_mean_temp')[0]) > 0:
             xcalibhbbt = fid.variables['hbb_mean_temp'][:]
-            xcalibhbbt += 273.15
+            tmp = np.nanmean(xcalibhbbt)
+            if(tmp < 150):
+                xcalibhbbt += 273.15
+        else:
+            xcalibhbbt = np.full_like(-999,to)
+
         if len(np.where(np.array(list(fid.variables.keys())) == 'atmosphericPressure')[0]) > 0:
             xambPres = fid.variables['atmosphericPressure'][:]
         else:
             xambPres = np.full_like(-999,to)
-        if ((len(np.where(np.array(list(fid.variables.keys())) == 'sceneMirrorAngle')[0])> 0) & (irs_type == 5)):
+
+        if (len(np.where(np.array(list(fid.variables.keys())) == 'sceneMirrorAngle')[0])> 0):
             xscenemirrorangle = fid.variables['sceneMirrorAngle'][:]
         else:
             xscenemirrorangle = np.zeros(len(to))      # Assume all zenith views if the field isn't found
@@ -1237,7 +1274,14 @@ def read_irs_eng(path, date, irs_type, verbose):
     for jj in range(len(files)):
         fid = Dataset(files[jj],'r')
         bt = fid['base_time'][:].astype('float')
-        to = fid['time_offset'][:].astype('float')
+            # If this is an ASSIST, then convert the base_time from milliseconds to seconds
+        if(irs_type == 5):
+            bt = bt / 1000.
+            # Check for "time_offset"; if not there, assume it is "time"
+        if len(np.where(np.array(list(fid.variables.keys())) == 'time_offset')[0]) > 0:
+            to = fid['time_offset'][:].astype('float')
+        else:
+            to = fid['time'][:].astype('float')
 
         # I want to get the temperature of the plug in the 2nd input port of the
         # interfermoeter. The name of this field was different for the v2 and v4
@@ -1332,8 +1376,16 @@ def read_irs_sum(path,date,irs_type,smooth_noise,verbose):
 
     for jj in range(len(files)):
         fid = Dataset(files[jj],'r')
-        bt = fid.variables['base_time'][:].astype('float')
-        to = fid.variables['time_offset'][:].astype('float')
+        bt = fid['base_time'][:].astype('float')
+            # If this is an ASSIST, then convert the base_time from milliseconds to seconds
+        if(irs_type == 5):
+            bt = bt / 1000.
+            # Check for "time_offset"; if not there, assume it is "time"
+        if len(np.where(np.array(list(fid.variables.keys())) == 'time_offset')[0]) > 0:
+            to = fid['time_offset'][:].astype('float')
+        else:
+            to = fid['time'][:].astype('float')
+
         if len(np.where(np.array(list(fid.variables.keys())) == 'wnumsum5')[0]) > 0:
             wnum1 = fid.variables['wnumsum5'][:]
             wnum2 = fid.variables['wnumsum6'][:]
