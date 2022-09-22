@@ -40,6 +40,7 @@ full_vip = ({
     'irsch1_path': {'value': "None", 'comment': 'Path to the IRS ch1 radiance files', 'default': True},
     'irssum_path': {'value': "None", 'comment': 'Path to the IRS summary files', 'default': True},
     'irseng_path': {'value': "None", 'comment': 'Path to the IRS engineering files', 'default': True},
+    'irs_zenith_scene_mirror_angle': {'value': 180, 'comment': 'SceneMirrorAngle [deg] to use for zenith views (default is 180)', 'default': True},
     'irs_smooth_noise': {'value': 0, 'comment': 'The temporal window [minutes] used to smooth the IRS noise with time', 'default': True},
     'irs_calib_pres': {'value': [0.0, 1.0], 'comment': 'Intercept [mb] and slope [mb/mb to calib (newP = int = slope*obsP) (need comma between them)', 'default': True},
     'irs_use_missingDataFlag': {'value': 1, 'comment': 'Set this to 1 to use the field \'missingDataFlag\' (from the ch1 file) to remove bad IRS data from analysis. If not zero, then all IRS data will be processed,', 'default': True},
@@ -56,6 +57,7 @@ full_vip = ({
     'station_lat': {'value': -999., 'comment': 'Station latitude [degN]; if negative get value from IRS/MWR data file', 'default': True},
     'station_lon': {'value': -999., 'comment': 'Station longitude [degE]; if negative get value from IRS/MWR data file', 'default': True},
     'station_alt': {'value': -999., 'comment': 'Station altitude [m MSL]; if negative get value from IRS/MWR data file', 'default': True},
+    'station_pres': {'value': 1000., 'comment': 'Station pressure [mb]; will be only be used if there is no other surface pressure input', 'default': True},
     'station_psfc_min': {'value': 800., 'comment': 'Default minimum surface pressure [mb]', 'default': True},
     'station_psfc_max': {'value': 1030., 'comment': 'Default maximum surface pressure [mb]\n', 'default': True},
 
@@ -104,7 +106,7 @@ full_vip = ({
     'ext_sfc_path': {'value': 'None', 'comment': 'Path to the external surface met data', 'default': True},
     'ext_sfc_time_delta': {'value': 0.2, 'comment': 'Maximum amount of time from endpoints of external surface met dataset to extrapolate [hours]', 'default': True},
     'ext_sfc_relative_height': {'value': 0, 'comment': 'Relative height of the met station to the IRS zenith port [m]; note if met station is below IRS port then the value should be negative', 'default': True},
-    'ext_sfc_p_type': {'value': 0, 'comment': '0 - Use the internal IRS pressure sensor for psfc; 1-ARM met data, 2-NCAR ISFS data, 3-CLAMPS MWR met data\n', 'default': True},
+    'ext_sfc_pres_type': {'value': 0, 'comment': '0 - Use the internal IRS pressure sensor for psfc; 1-ARM met data, 2-NCAR ISFS data, 3-CLAMPS MWR met data\n', 'default': True},
 
     'co2_sfc_type': {'value': 0, 'comment': 'External CO2 surface data type: 0-none, 1-DDT QC PGS data', 'default': False},
     'co2_sfc_npts': {'value': 1, 'comment': 'Number of surface CO2 in-situ points to use in the retrieval.  Minimum=1, maximum=1000.  Larger number increases the weight of the observation', 'default': False},
