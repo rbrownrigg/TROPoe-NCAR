@@ -1,4 +1,4 @@
-__version__ = '0.5.21'
+__version__ = '0.5.22'
 
 import os
 import sys
@@ -175,7 +175,7 @@ stdout, stderr = process.communicate()
 uniquekey = vip['tag'] + '.' + stdout[:-1].decode()
 
 if debug:
-    print('DDT: Saving the VIP and globatt structure into "vip.npy" -- for debugging')
+    print('Saving the VIP and globatt structure into "vip.npy" -- for debugging')
     np.save('vip.npy', vip)
 
 # Make sure that Paul van Delst's script "lblrun" is in the $LBL_HOME/bin
@@ -554,20 +554,21 @@ ext_tseries = Data_reads.read_external_timeseries(date, irs['secs'], vip['tres']
               vip['ext_sfc_wv_mult_error'], vip['ext_sfc_wv_rep_error'], vip['ext_sfc_time_delta'],
               vip['ext_sfc_relative_height'], vip['co2_sfc_type'], vip['co2_sfc_npts'],
               vip['co2_sfc_rep_error'], vip['co2_sfc_path'], vip['co2_sfc_relative_height'],
-              vip['co2_sfc_time_delta'], vip['ext_sfc_p_type'], dostop, verbose)
+              vip['co2_sfc_time_delta'], vip['ext_sfc_pres_type'], dostop, verbose)
 
 if ext_tseries['success'] != 1:
     print('Error: there is some problem in the external time series data specification')
     VIP_Databases_functions.abort(lbltmpdir,date)
     sys.exit()
 
-# If this is the ASSIST data, then replace the surface pressure field (which is currently
-# all missing values) with valid values for the retrieval.
-if(vip['irs_type'] == 5):
-    if(vip['assist_pressure'] < 0):
-        print('    Error: When using the ASSIST data as input, the keyword "assist_pressure" must be set in the VIP file')
+# If the surface pressure field is all negative, then use the default station_pres from the VIP file
+meanp = np.nanmean(irs['atmos_pres'][:])
+if((meanp < 200) | (meanp > 1200)):
+    print('    Warning: changing the surface pressure to the default "station_pres" in the VIP file')
+    if(vip['station_pres'] < 0):
+        print('    Error: the keyword "station_pres" must be set to a positive value (in mb) in the VIP file')
         sys.exit()
-    irs['atmos_pres'][:] = vip['assist_pressure']
+    irs['atmos_pres'][:] = vip['station_pres']
 
 # If ehour < 0, then set it to the time of the last IRS sample. (This was needed
 # for those cases when the IRS did not automatically reboot at 0 Z.)
@@ -781,7 +782,7 @@ for i in range(len(irs['secs'])):                        # { loop_i
 
     # See if we want to use the external sfc pressure instead of irs pressure
     # and check to make sure external data read went okay
-    if ((vip['ext_sfc_p_type'] > 0) & (ext_tseries['nPsfc'] >= 0)):
+    if ((vip['ext_sfc_pres_type'] > 0) & (ext_tseries['nPsfc'] >= 0)):
         print("Replacing IRS pressure with " +  ext_tseries['ptype'] + " pressure")
         irs['atmos_pres'][i] = ext_tseries['psfc'][i]
 
@@ -789,6 +790,7 @@ for i in range(len(irs['secs'])):                        # { loop_i
     # this is needed to construct a pressure profile from the current X
     if ((vip['station_psfc_min'] > irs['atmos_pres'][i]) | (irs['atmos_pres'][i] > vip['station_psfc_max'])):
         print('Error: Surface pressure is not within range set in VIP -- skipping sample')
+        print('     and the values are ',vip['station_psfc_min'], irs['atmos_pres'][i], vip['station_psfc_max'])
         continue
 
     # Select the spectral range to use for the retrieval
@@ -1803,7 +1805,7 @@ for i in range(len(irs['secs'])):                        # { loop_i
         # Perform the monotonically ascending potential temperature test (i.e
         # make sure that theta never decreases with height)
         if ((itern == 0) & (verbose >= 3)):
-            print('Testing for decreasing theata with height')
+            print('Testing for decreasing theta with height')
 
         # Multiply WVMR by zero to get theta, not theta-v
         theta = Calcs_Conversions.t2theta(np.squeeze(Xnp1[0:int(nX/2)]), 0*np.squeeze(Xnp1[int(nX/2):nX]), p)

@@ -1,4 +1,5 @@
 import os, re
+import sys
 import numpy as np
 from netCDF4 import Dataset
 import calendar
@@ -157,6 +158,7 @@ def recenter_prior(orig_prior_name, input_value, sfc_or_pwv=0):
 
 def read_irs_ch(path,date,irs_type,fv,fa,irs_spec_cal_factor,
                 engsecs,engtemp,bbcavfactor,get_irs_missingDataFlag,
+                zenith_scene_mirror_angle, 
                 old_ffov_halfangle, new_ffov_halfangle, verbose):
 
     if verbose >= 2:
@@ -243,46 +245,73 @@ def read_irs_ch(path,date,irs_type,fv,fa,irs_spec_cal_factor,
             xbbsupport = fid.variables['BBsupportStructureTemp'][:]
             tmp = np.nanmean(xbbsupport)
             if(tmp < 150):
+                if(verbose >= 2):
+                    print('      Converting BBsupportStructureTemp from degC to degK')
                 xbbsupport += 273.15
         elif len(np.where(np.array(list(fid.variables.keys())) == 'calibrationAmbientTemp')[0]) > 0:
             xbbsupport = fid.variables['calibrationAmbientTemp'][:]
             tmp = np.nanmean(xbbsupport)
             if(tmp < 150):
+                if(verbose >= 2):
+                    print('      Converting BBsupportStructureTemp from degC to degK')
                 xbbsupport += 273.15
         elif len(np.where(np.array(list(fid.variables.keys())) == 'abb_thermistor_top')[0]) > 0:
             xbbsupport = fid.variables['abb_thermistor_top'][:]
             tmp = np.nanmean(xbbsupport)
             if(tmp < 150):
+                if(verbose >= 2):
+                    print('      Converting BBsupportStructureTemp from degC to degK')
                 xbbsupport += 273.15
         else:
             xbbsupport = np.full_like(-999,to)
 
         if len(np.where(np.array(list(fid.variables.keys())) == 'calibrationAmbientTemp')[0]) > 0:
             xcalibambt = fid.variables['calibrationAmbientTemp'][:]
+            tmp = np.nanmean(xcalibambt)
+            if(tmp < 150):
+                if(verbose >= 2):
+                    print('      Converting calibrationAmbientTemp from degC to degK')
+                xcalibambt += 273.15
         elif len(np.where(np.array(list(fid.variables.keys())) == 'abb_thermistor_top')[0]) > 0:
             xcalibambt = fid.variables['abb_thermistor_top'][:]
             tmp = np.nanmean(xcalibambt)
             if(tmp < 150):
+                if(verbose >= 2):
+                    print('      Converting calibrationAmbientTemp from degC to degK')
                 xcalibambt += 273.15
         else:
             xcalibambt = np.full_like(-999,to)
 
         if len(np.where(np.array(list(fid.variables.keys())) == 'calibrationCBBtemp')[0]) > 0:
             xcalibcbbt = fid.variables['calibrationCBBtemp'][:]
+            tmp = np.nanmean(xcalibcbbt)
+            if(tmp < 150):
+                if(verbose >= 2):
+                    print('      Converting calibrationCBBtemp from degC to degK')
+                xcalibcbbt += 273.15
         elif len(np.where(np.array(list(fid.variables.keys())) == 'abb_mean_temp')[0]) > 0:
             xcalibcbbt = fid.variables['abb_mean_temp'][:]
             tmp = np.nanmean(xcalibcbbt)
             if(tmp < 150):
+                if(verbose >= 2):
+                    print('      Converting calibrationCBBtemp from degC to degK')
                 xcalibcbbt += 273.15
         else:
             xcalibcbbt = np.full_like(-999,to)
 
         if len(np.where(np.array(list(fid.variables.keys())) == 'calibrationHBBtemp')[0]) > 0:
             xcalibhbbt = fid.variables['calibrationHBBtemp'][:]
+            tmp = np.nanmean(xcalibhbbt)
+            if(tmp < 150):
+                if(verbose >= 2):
+                    print('      Converting calibrationHBBtemp from degC to degK')
+                xcalibhbbt += 273.15
         elif len(np.where(np.array(list(fid.variables.keys())) == 'hbb_mean_temp')[0]) > 0:
             xcalibhbbt = fid.variables['hbb_mean_temp'][:]
             tmp = np.nanmean(xcalibhbbt)
             if(tmp < 150):
+                if(verbose >= 2):
+                    print('      Converting calibrationHBBtemp from degC to degK')
                 xcalibhbbt += 273.15
         else:
             xcalibhbbt = np.full_like(-999,to)
@@ -295,7 +324,7 @@ def read_irs_ch(path,date,irs_type,fv,fa,irs_spec_cal_factor,
         if (len(np.where(np.array(list(fid.variables.keys())) == 'sceneMirrorAngle')[0])> 0):
             xscenemirrorangle = fid.variables['sceneMirrorAngle'][:]
         else:
-            xscenemirrorangle = np.zeros(len(to))      # Assume all zenith views if the field isn't found
+            xscenemirrorangle = np.full_like(zenith_scene_mirror_angle, to)
 
         #Read in the field "missingDataFlag". If it does not exist, then abort
         if get_irs_missingDataFlag == 1:
@@ -339,11 +368,16 @@ def read_irs_ch(path,date,irs_type,fv,fa,irs_spec_cal_factor,
     chsecs = np.copy(secs)
     mrad = mrad.T
 
-    # Keep only the zenith pointing data (primarily affects only the ASSIST, which includes BB views in its data)
-    foo = np.where((sceneMirrorAngle < 3) | (sceneMirrorAngle > 357))[0]
+    # Keep only the zenith pointing data, using the keyword specified in the VIP to control the behavior
+    if((zenith_scene_mirror_angle < 3) | (zenith_scene_mirror_angle > 357)):
+        foo = np.where((sceneMirrorAngle < 3) | (sceneMirrorAngle > 357))[0]
+    else:
+        foo = np.where((zenith_scene_mirror_angle-3 < sceneMirrorAngle) & 
+                       (sceneMirrorAngle < zenith_scene_mirror_angle+3))[0]
     if len(foo) == 0:
         print('Error in read_irs_ch: Unable to find any zenith pointing AERI/ASSIST data')
         return err
+
     chsecs           = np.copy(chsecs[foo])
     mrad             = np.copy(mrad[:,foo])
     hatchOpen        = np.copy(hatchOpen[foo])
@@ -357,6 +391,8 @@ def read_irs_ch(path,date,irs_type,fv,fa,irs_spec_cal_factor,
 
     # Apply the spectral recalibration, if desired
     if(np.abs(irs_spec_cal_factor - 1.0) > 0.0000001):
+        print('DDT -- the irs_spec_cal_fac function needs additional testing -- aborting')
+        sys.exit()
         if(verbose >= 3): print('      Adjusting the IRSs spectral calibration')
         tmp = mrad
         for jj in range(0,len(mrad[0,:])):
@@ -365,6 +401,8 @@ def read_irs_ch(path,date,irs_type,fv,fa,irs_spec_cal_factor,
 
     # Apply the new finite field-of-view correction, if desired
     if((10 <= new_ffov_halfangle) & (new_ffov_halfangle < 50)):
+        print('DDT -- the new_ffov_halfangle function needs additional testing -- aborting')
+        sys.exit()
         if(verbose >= 1):
             print(f'    Adjusting the IRSs FFOV correction half angle from {old_ffov_halfangle} to {new_ffov_halfangle} mrad')
         tmp = mrad
@@ -434,9 +472,9 @@ def read_irs_ch(path,date,irs_type,fv,fa,irs_spec_cal_factor,
     if verbose == 3:
         print('Correcting for the blackbody emissivity cavity factor')
     nrad = mrad * 0
-    emisn = Other_functions.get_aeri_bb_emis(wnum,39.0)
+    emisn = Other_functions.get_aeri_bb_emis(wnum, cavity_factor=39.0, verbose=verbose)
     for i in range(len(hour)):
-        emiso = Other_functions.get_aeri_bb_emis(wnum, bbcavfactor[i])
+        emiso = Other_functions.get_aeri_bb_emis(wnum, cavity_factor=bbcavfactor[i], verbose=verbose)
         nrad[:,i] = Other_functions.aeri_recal(wnum, mrad[:,i], calibhbbt[i], calibhbbt[i], calibcbbt[i],
                     calibcbbt[i], calibambt[i], calibambt[i], emiso, emisn, emiso, emisn)
 
@@ -593,6 +631,7 @@ def read_all_data(date, retz, tres, dostop, verbose, avg_instant, ch1_path,
                               irseng['secs'],
                               irseng['interferometerSecondPortTemp'],
                               irseng['bbcavityfactor'], get_irs_missingDataFlag,
+                              vip['irs_zenith_scene_mirror_angle'], 
                               vip['irs_old_ffov_halfangle'], vip['irs_new_ffov_halfangle'], verbose)
 
         irssum = read_irs_sum(sum_path,date,irs_type,irs_smooth_noise,verbose)
