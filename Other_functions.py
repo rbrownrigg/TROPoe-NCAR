@@ -500,12 +500,12 @@ def find_cloud(irsch1, vceil, window_in, window_out, default_cbh):
 # 12/17/02 in an email
 ################################################################################
 
-def get_aeri_bb_emis(wn,cavity_factor = 12.79, option=0):
+def get_aeri_bb_emis(wn,cavity_factor = 12.79, option=0, verbose=0):
     
-    if ((cavity_factor == 12.79) & (option == 0)):
+    if ((cavity_factor == 12.79) & (option == 0) & (verbose > 1)):
         print('WARNING: Cavity factor set to default value of 12.79')
-    
-    #The emissivity spectrum, from DaveT's file
+
+    #The emissivity spectrum, from Dave Tobin's file
     v = [400.00000, 500.00000, 550.00000, 600.00000, 650.00000, 700.00000,
          740.00000, 765.00000, 800.00000, 850.00000, 900.00000, 950.00000,
          1000.0000, 1060.0000, 1100.0000, 1150.0000, 1200.0000, 1300.0000,
