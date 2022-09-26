@@ -1990,7 +1990,7 @@ def grid_mwr(mwr, avg_instant, secs, tavg, time_delta, verbose):
         tbsky = np.ones((mwr['n_fields'],len(secs)))*-999.0
 
         # Grid the data
-    if avg_instant == 0:
+    if ((avg_instant == 0) | (avg_instant == -1)):
         # We are averaging the MWR data over the averaging interval
 
         for i in range(len(secs)):
@@ -2000,7 +2000,14 @@ def grid_mwr(mwr, avg_instant, secs, tavg, time_delta, verbose):
 
                 if len(foo) > 0:
                     for j in range(mwr['n_fields']):
-                        tbsky[j,i] = np.nanmean(mwr['tbsky_corr'][j,foo])
+                        if(avg_instant == -1):
+                            if(verbose >= 2):
+                                print('      Computing the average IRS instrument noise, with NO division by sqrt(N)')
+                            tbsky[j,i] = np.nanmean(mwr['tbsky_corr'][j,foo])
+                        else:
+                            if(verbose >= 2):
+                                print('      Computing the average IRS instrument noise, dividing by sqrt(N)')
+                            tbsky[j,i] = np.nanmean(mwr['tbsky_corr'][j,foo]) / np.sqrt(len(foo))
 
     elif avg_instant == 1:
         # We are taking the closest point to the center of the averaging interval,
