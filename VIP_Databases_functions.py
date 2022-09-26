@@ -41,7 +41,8 @@ full_vip = ({
     'irssum_path': {'value': "None", 'comment': 'Path to the IRS summary files', 'default': True},
     'irseng_path': {'value': "None", 'comment': 'Path to the IRS engineering files', 'default': True},
     'irs_zenith_scene_mirror_angle': {'value': 180, 'comment': 'SceneMirrorAngle [deg] to use for zenith views (default is 180)', 'default': True},
-    'irs_smooth_noise': {'value': 0, 'comment': 'The temporal window [minutes] used to smooth the IRS noise with time', 'default': True},
+    'irs_noise_inflation':{'value': 1.0, 'comment': 'Value to increase the assumed random error in the IRS data', 'default': False},
+    'irs_smooth_noise': {'value': 0, 'comment': 'The temporal window [minutes] used to smooth the IRS noise with time', 'default': False},
     'irs_calib_pres': {'value': [0.0, 1.0], 'comment': 'Intercept [mb] and slope [mb/mb to calib (newP = int = slope*obsP) (need comma between them)', 'default': True},
     'irs_use_missingDataFlag': {'value': 1, 'comment': 'Set this to 1 to use the field \'missingDataFlag\' (from the ch1 file) to remove bad IRS data from analysis. If not zero, then all IRS data will be processed,', 'default': True},
     'irs_hatch_switch': {'value': 1, 'comment': '1 - only include hatchOpen=1 when averaging, 2 - include all IRS samples when averaging', 'default': True},
@@ -420,6 +421,10 @@ def check_vip(vip):
 
     if ((vip['irs_hatch_switch'] < 0) | (vip['irs_hatch_switch'] > 1)):
         print('Error: The irs_hatch_switch must be either 0 or 1')
+        flag = 1
+    
+    if (vip['irs_noise_inflation'] < 1):
+        print('Error: The irs_noise_inflation must be >= 1')
         flag = 1
     
     if ((vip['retrieve_lcloud'] == 0) & (vip['prior_lwp_mn'] > 0)):
