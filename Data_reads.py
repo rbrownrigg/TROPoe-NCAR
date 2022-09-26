@@ -534,7 +534,7 @@ def read_irs_ch(path,date,irs_type,fv,fa,irs_spec_cal_factor,
 def read_all_data(date, retz, tres, dostop, verbose, avg_instant, ch1_path,
               pca_nf, fv, fa, sum_path, eng_path, irs_type, cal_irs_pres,
               irs_smooth_noise, get_irs_missingDataFlag, irs_min_675_tb,
-              irs_max_675_tb, irs_spec_cal_factor,
+              irs_max_675_tb, irs_spec_cal_factor, irs_noise_inflation,
               mwr_path, mwr_rootname, mwr_type, mwr_elev_field,
               mwr_n_tb_fields, mwr_tb_replicate, mwr_tb_field_names, mwr_tb_freqs,
               mwr_tb_noise, mwr_tb_bias, mwr_tb_field1_tbmax, vceil_path, vceil_type,
@@ -544,8 +544,8 @@ def read_all_data(date, retz, tres, dostop, verbose, avg_instant, ch1_path,
     fail = 0
 
     # Check the flag to make sure it has reasonable values
-    if ((avg_instant != 0) & (avg_instant != 1)):
-        print('Error: The "avg_instant" flag can only have a value of 0 (average) or 1 (instantaneous); do not average')
+    if ((avg_instant != -1) & (avg_instant != 0) & (avg_instant != 1)):
+        print('Error: The "avg_instant" flag can only have a value of -1:avg with no sqrt(N), 0:avg with sqrt(N), or 1:instantaneous')
         fail = 1
         return fail, -999, -999, -999
 
@@ -751,7 +751,7 @@ def read_all_data(date, retz, tres, dostop, verbose, avg_instant, ch1_path,
     # IRS sample time is the middle of its period and the MWR's is the end.
 
     irs = grid_irs(cirsch1, irssum, avg_instant, hatchOpenSwitch, missingDataFlagSwitch,
-                    ret_secs, ret_tavg, verbose)
+                    ret_secs, ret_tavg, irs_noise_inflation, verbose)
 
     if irs['success'] == 0:
         fail = 1
@@ -1752,7 +1752,7 @@ def read_vceil(path, date, vceil_type, ret_secs, verbose):
 ################################################################################
 
 def grid_irs(ch1, irssum, avg_instant, hatchOpenSwitch, missingDataFlagSwitch,
-              secs, tavg, verbose):
+              secs, tavg, irs_noise_inflation, verbose):
 
     if verbose == 3:
         print('Temporally gridding the IRS data')
@@ -1773,7 +1773,7 @@ def grid_irs(ch1, irssum, avg_instant, hatchOpenSwitch, missingDataFlagSwitch,
         if ((hatchOpenSwitch == 1) & (missingDataFlagSwitch == 0)):
             if ((i == 0) & (verbose >= 2)):
                 print('Only averaging IRS data where hatchOpen is 1 (missingDataFlag is anything)')
-            if avg_instant == 0:
+            if ((avg_instant == 0) | (avg_instant == -1)):
                 foo = np.where((secs[i]-tavg*60./2. <= ch1['secs']) & (ch1['secs'] < secs[i]+tavg*60./2.) &
                                ((ch1['hatchopen'] >= 0.8) & (ch1['hatchopen'] < 1.2)))[0]
             else:
@@ -1787,7 +1787,7 @@ def grid_irs(ch1, irssum, avg_instant, hatchOpenSwitch, missingDataFlagSwitch,
         elif ((hatchOpenSwitch == 0) & (missingDataFlagSwitch == 0)):
             if ((i == 0) & (verbose >= 2)):
                 print('Averaging all IRS data regardless of hatchOpen or missingDataFlag')
-            if avg_instant == 0:
+            if ((avg_instant == 0) | (avg_instant == -1)):
                 foo = np.where((secs[i]-tavg*60./2. <= ch1['secs']) & (ch1['secs'] < secs[i]+tavg*60./2.))[0]
             else:
                 dell = np.abs(secs[i] - ch1['secs'])
@@ -1800,7 +1800,7 @@ def grid_irs(ch1, irssum, avg_instant, hatchOpenSwitch, missingDataFlagSwitch,
         elif ((hatchOpenSwitch == 1) & (missingDataFlagSwitch == 1)):
             if ((i == 0) & (verbose >= 2)):
                 print('Only averaging IRS data where hatchOpen is 1 and missingDataFlag is 0')
-            if avg_instant == 0:
+            if ((avg_instant == 0) | (avg_instant == -1)):
                foo = np.where((secs[i]-tavg*60./2. <= ch1['secs']) & (ch1['secs'] < secs[i]+tavg*60./2.) &
                                (ch1['missingDataFlag'] == 0) & ((ch1['hatchopen'] >= 0.8) & (ch1['hatchopen'] < 1.2)))[0]
             else:
@@ -1816,7 +1816,7 @@ def grid_irs(ch1, irssum, avg_instant, hatchOpenSwitch, missingDataFlagSwitch,
             if ((i == 0) & (verbose >= 2)):
                 print('Averaging all IRS data where missingDataFlag is 0 (hatchOpen can be anything)')
 
-            if avg_instant == 0:
+            if ((avg_instant == 0) | (avg_instant == -1)):
                foo = np.where((secs[i]-tavg*60./2. <= ch1['secs']) & (ch1['secs'] < secs[i]+tavg*60./2.) &
                                (ch1['missingDataFlag'] == 0))[0]
             else:
@@ -1895,32 +1895,31 @@ def grid_irs(ch1, irssum, avg_instant, hatchOpenSwitch, missingDataFlagSwitch,
             atmos_pres[i] = np.nanmean(ch1['atmos_pres'][foo])
 
         # Get the summary data on this grid
-        if avg_instant == 0:
+        if ((avg_instant == 0) | (avg_instant == -1)):
             foo = np.where((secs[i]-tavg*60./2. <= irssum['secs']) & (irssum['secs'] < secs[i]+tavg*60./2.))[0]
         else:
             dell = np.abs(secs[i]-irssum['secs'])
             foo = np.where((secs[i]-tavg*60./2. <= irssum['secs']) & (irssum['secs'] < secs[i]+tavg*60./2.) &
                                (dell == np.nanmin(dell)))[0]
 
-        if len(foo) > 1:
-            foo = np.array([foo[0]])
-            nfoo = 1
-
         if len(foo) == 0:
             nrad[:,i] = -9999.
         elif len(foo) == 1:
             nrad[:,i] = np.squeeze(irssum['noise'][:,foo])
         else:
+            if(avg_instant ==0):
+                if(verbose >= 2):
+                    print('      Computing the average IRS instrument noise, dividing by sqrt(N)')
+                nrad[:,i] = (np.nansum(irssum['noise'][:,foo],axis = 1)/np.float(len(foo))) / np.sqrt(len(foo))
+            else:
+                if(verbose >= 2):
+                    print('      Computing the average IRS instrument noise, with NO division by sqrt(N)')
+                nrad[:,i] = (np.nansum(irssum['noise'][:,foo],axis = 1)/np.float(len(foo)))
 
-            # Divide by sqrt N when averaging many samples together
-            # In the end, I think that the noise spectrum is getting
-            # too compressed using the correct way of dividing by
-            # the sqrt(N).  However, I would like there to be some
-            # noise compression when averaging data, so I am going to
-            # use this 'hack'.
-
-            #nrad[:,i] = (np.nansum(irssum['noise'][:,foo],axis = 1)/np.float(len(foo))) / np.sqrt(len(foo))
-            nrad[:,i] = (np.nansum(irssum['noise'][:,foo],axis = 1)/np.float(len(foo))) / np.sqrt(len(foo))
+    # Inflate the IRS noise, as specified by the user
+    if(verbose >= 2):
+        print(f'    Inflating the IRS spectral noise by a factor of {irs_noise_inflation:.2f}')
+    nrad = nrad * irs_noise_inflation
 
     # Put all IRS data on same spectral grid
     wnum = np.copy(ch1['wnum'])
