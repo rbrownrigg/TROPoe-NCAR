@@ -654,12 +654,6 @@ def read_all_data(date, retz, tres, dostop, verbose, avg_instant, ch1_path,
                 if ((tb < irs_min_675_tb) | (tb > irs_max_675_tb)):
                     irsch1['missingDataFlag'][i] = 10
 
-        # If the IRS data is noise filtered then I need to scale the IRS noise spectrum.
-        # The scaling is wavenumber dependent, and I need to find a function that does this well...
-
-        if pca_nf > 0:
-            print('The IRS data have been PCA noise filtered. Someone needs to scale the IRS noise spectrum (not yet implemented)')
-
         if ((fail == 1) & (dostop != 0)):
             wait = input('Stopping inside routine for debugging. Press enter to continue')
         elif fail == 1:
