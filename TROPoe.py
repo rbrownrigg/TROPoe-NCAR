@@ -1,4 +1,4 @@
-__version__ = '0.5.24'
+__version__ = '0.5.25'
 
 import os
 import sys
@@ -488,7 +488,7 @@ fail, irs, mwr, mwrscan = Data_reads.read_all_data(date, z, vip['tres'], dostop,
     vip['irsch1_path'], vip['irs_pca_nf'], vip['irs_fv'], vip['irs_fa'],
     vip['irssum_path'], vip['irseng_path'], vip['irs_type'], vip['irs_calib_pres'],
     vip['irs_smooth_noise'], vip['irs_use_missingDataFlag'],
-    vip['irs_min_675_bt'], vip['irs_max_675_bt'], vip['irs_spec_cal_factor'],
+    vip['irs_min_675_bt'], vip['irs_max_675_bt'], vip['irs_spec_cal_factor'], vip['irs_noise_inflation'], 
     vip['mwr_path'], vip['mwr_rootname'], vip['mwr_type'], vip['mwr_elev_field'], vip['mwr_n_tb_fields'],
     vip['mwr_tb_replicate'], vip['mwr_tb_field_names'], vip['mwr_tb_freqs'], vip['mwr_tb_noise'],
     vip['mwr_tb_bias'], vip['mwr_tb_field1_tbmax'], vip['cbh_path'], vip['cbh_type'], vip['cbh_window_in'],
