@@ -1,4 +1,4 @@
-__version__ = '0.5.29'
+__version__ = '0.5.30'
 
 import os
 import sys
@@ -562,13 +562,13 @@ if ext_tseries['success'] != 1:
     sys.exit()
 
 # If the surface pressure field is all negative, then use the default station_pres from the VIP file
-meanp = np.nanmean(irs['atmos_pres'][:])
-if((meanp < 200) | (meanp > 1200)):
-    print('    Warning: changing the surface pressure to the default "station_pres" in the VIP file')
+foo = np.where((irs['atmos_pres'][:] < 200) | (irs['atmos_pres'][:] > 1200))[0]
+if(len(foo) > 0):
+    print('    Warning: changing the surface pressure of some IRS samples to the default "station_pres" in the VIP file')
     if(vip['station_pres'] < 0):
         print('    Error: the keyword "station_pres" must be set to a positive value (in mb) in the VIP file')
         sys.exit()
-    irs['atmos_pres'][:] = vip['station_pres']
+    irs['atmos_pres'][foo] = vip['station_pres']
 
 # If ehour < 0, then set it to the time of the last IRS sample. (This was needed
 # for those cases when the IRS did not automatically reboot at 0 Z.)
@@ -770,12 +770,15 @@ for i in range(len(irs['secs'])):                        # { loop_i
         continue
 
     # Make sure that the IRS data aren't missing or considered bad
+    adderr = ''
     if ((irs['missingDataFlag'][i] > 0) | (irs['missingDataFlag'][i] <= -1)):
         if(vip['irs_type'] <= -1):
             itype = 'MWR'
         else:
             itype = 'IRS'
-        print(f"  Sample {i:2d} at {irs['hour'][i]:.4f} UTC -- no valid {itype:s} data found")
+            if(irs['hatchopen'][i] != 1):
+                adderr = '(hatch not open)'
+        print(f"  Sample {i:2d} at {irs['hour'][i]:.4f} UTC -- no valid {itype:s} data found ",adderr)
         continue
     else:
         print(f"  Sample {i:2d} at {irs['hour'][i]:.4f} UTC is being processed (cbh is {irs['cbh'][i]:.3f})")
