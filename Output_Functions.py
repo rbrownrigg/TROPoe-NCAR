@@ -150,7 +150,7 @@ def write_output(vip, ext_prof, mod_prof, rass_prof, ext_tseries, globatt, xret,
         hdim = fid.createDimension('height', nht)
         vdim = fid.createDimension('obs_dim', len(xret[0]['dimY']))
         gdim = fid.createDimension('gas_dim', 3)
-        ddim = fid.createDimension('dfs', len(xret[0]['dfs']))
+        ddim = fid.createDimension('dfs_dim', len(xret[0]['dfs']))
         if vip['output_file_keep_small'] == 0:
             adim = fid.createDimension('arb', len(xret[0]['Xn']))
         idim = fid.createDimension('index_dim', len(dindex_name))
@@ -299,7 +299,7 @@ def write_output(vip, ext_prof, mod_prof, rass_prof, ext_tseries, globatt, xret,
         convergence_criteria.long_name = 'Convergence criteria di^2'
         convergence_criteria.units = 'unitless'
 
-        dfs = fid.createVariable('dfs', 'f4', ('time','dfs',))
+        dfs = fid.createVariable('dfs', 'f4', ('time','dfs_dim',))
         dfs.long_name = 'Degrees of freedom of signal'
         dfs.units = 'unitless'
         dfs.comment = 'total DFS, then DFS for each of temperature, waterVapor, LWP, L_Reff, I_tau, I_Reff, carbonDioxide, methane, nitrousOxide'
