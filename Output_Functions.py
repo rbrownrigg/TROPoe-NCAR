@@ -141,6 +141,7 @@ def write_output(vip, ext_prof, mod_prof, rass_prof, ext_tseries, globatt, xret,
 
         if ((os.path.exists(nfilename)) & (vip['output_clobber'] == 0)):
             print('Error: output file exists -- aborting (' + nfilename + ')')
+            return success, nfilename
         elif (os.path.exists(nfilename)):
             print('Warning: clobbering existing output file (' +nfilename + ')')
 
