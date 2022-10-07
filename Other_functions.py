@@ -1681,7 +1681,7 @@ def aeri_zerofill(iwnum,irad,channel,epad=0):
     if(len(rr) != 2*n_pts-2):
         print('Problem in aeri_zerofill: the length of the appended vector is not correct 1')
         sys.exit()
-    ifg = np.fft.fft(rr)
+    ifg = np.fft.fft(rr, norm='forward')
     
     # Zerofill the inteferogram
     n_total = 2**18
@@ -1693,7 +1693,7 @@ def aeri_zerofill(iwnum,irad,channel,epad=0):
         sys.exit()
 
     # Fourier transform the zerofilled interferogram
-    spc = np.fft.ifft(ifg) * len(ifg)
+    spc = np.fft.ifft(ifg, norm='forward')
     spc = spc[0:int(n_total/2)]
     v2 = v_nyquist * np.arange(n_total/2) / (n_total/2)
     loc = np.where((iwnum[0]-eepad <= v2) & (v2 <= iwnum[n_apts-1]+eepad))

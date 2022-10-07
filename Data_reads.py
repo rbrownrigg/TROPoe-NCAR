@@ -37,7 +37,7 @@ def findfile(path,pattern):
     #print('Input path is: '+path)
     #print('Input pattern is: '+pattern)
 
-        # We want to preserve periods (dots) in the pattern, 
+        # We want to preserve periods (dots) in the pattern,
         # as many of our file patterns have periods in the name
     pattern = pattern.replace('.','\.')
         # Regex requires that we replace any asterisks with .*
@@ -158,7 +158,7 @@ def recenter_prior(orig_prior_name, input_value, sfc_or_pwv=0):
 
 def read_irs_ch(path,date,irs_type,fv,fa,irs_spec_cal_factor,
                 engsecs,engtemp,bbcavfactor,get_irs_missingDataFlag,
-                zenith_scene_mirror_angle, 
+                zenith_scene_mirror_angle,
                 old_ffov_halfangle, new_ffov_halfangle, verbose):
 
     if verbose >= 2:
@@ -324,7 +324,7 @@ def read_irs_ch(path,date,irs_type,fv,fa,irs_spec_cal_factor,
         if (len(np.where(np.array(list(fid.variables.keys())) == 'sceneMirrorAngle')[0])> 0):
             xscenemirrorangle = fid.variables['sceneMirrorAngle'][:]
         else:
-            xscenemirrorangle = np.full_like(zenith_scene_mirror_angle, to)
+            xscenemirrorangle = np.full_like(to, zenith_scene_mirror_angle)
 
         #Read in the field "missingDataFlag". If it does not exist, then abort
         if get_irs_missingDataFlag == 1:
@@ -372,7 +372,7 @@ def read_irs_ch(path,date,irs_type,fv,fa,irs_spec_cal_factor,
     if((zenith_scene_mirror_angle < 3) | (zenith_scene_mirror_angle > 357)):
         foo = np.where((sceneMirrorAngle < 3) | (sceneMirrorAngle > 357))[0]
     else:
-        foo = np.where((zenith_scene_mirror_angle-3 < sceneMirrorAngle) & 
+        foo = np.where((zenith_scene_mirror_angle-3 < sceneMirrorAngle) &
                        (sceneMirrorAngle < zenith_scene_mirror_angle+3))[0]
     if len(foo) == 0:
         print('Error in read_irs_ch: Unable to find any zenith pointing AERI/ASSIST data')
@@ -391,7 +391,6 @@ def read_irs_ch(path,date,irs_type,fv,fa,irs_spec_cal_factor,
 
     # Apply the spectral recalibration, if desired
     if(np.abs(irs_spec_cal_factor - 1.0) > 0.0000001):
-        print('DDT -- the irs_spec_cal_fac function needs additional testing -- aborting')
         sys.exit()
         if(verbose >= 3): print('      Adjusting the IRSs spectral calibration')
         tmp = mrad
@@ -631,7 +630,7 @@ def read_all_data(date, retz, tres, dostop, verbose, avg_instant, ch1_path,
                               irseng['secs'],
                               irseng['interferometerSecondPortTemp'],
                               irseng['bbcavityfactor'], get_irs_missingDataFlag,
-                              vip['irs_zenith_scene_mirror_angle'], 
+                              vip['irs_zenith_scene_mirror_angle'],
                               vip['irs_old_ffov_halfangle'], vip['irs_new_ffov_halfangle'], verbose)
 
         irssum = read_irs_sum(sum_path,date,irs_type,irs_smooth_noise,verbose)
@@ -1020,11 +1019,11 @@ def read_mwr(path, rootname, date, mwr_type, step, mwr_elev_field, mwr_n_tb_fiel
         idx = np.arange(0, len(secs)/step, dtype=int)*step
 
         if mwr_n_tb_fields == 0:
-           return ({'success':1, 'secs':secs[idx], 'ymd':ymd[idx], 'hour':hour[idx], 
+           return ({'success':1, 'secs':secs[idx], 'ymd':ymd[idx], 'hour':hour[idx],
                  'lat':lat, 'lon':lon, 'alt':alt, 'psfc':psfc[idx], 'n_fields':mwr_n_tb_fields,
                  'type':mwr_type, 'rootname':rootname})
         else:
-           return ({'success':1, 'secs':secs[idx], 'ymd':ymd[idx], 'hour':hour[idx], 
+           return ({'success':1, 'secs':secs[idx], 'ymd':ymd[idx], 'hour':hour[idx],
                  'lat':lat, 'lon':lon, 'alt':alt, 'psfc':psfc[idx], 'n_fields':mwr_n_tb_fields,
                  'type':mwr_type, 'rootname':rootname, 'tbsky_orig':tbsky0[:,idx], 'tbsky_corr':tbsky[:,idx],
                   'freq':freq, 'noise':noise, 'bias':bias})
@@ -2028,10 +2027,10 @@ def grid_mwr(mwr, avg_instant, secs, tavg, time_delta, verbose):
     # The structure being returned depends on the number of Tb fields desired
 
     if mwr['n_fields'] == 0:
-        return ({'success':1, 'secs':secs, 'ymd':ymd, 'hour':hour, 
+        return ({'success':1, 'secs':secs, 'ymd':ymd, 'hour':hour,
                 'n_fields':0, 'type': mwr['type'], 'rootname':mwr['rootname']})
     else:
-        return ({'success':1, 'secs':secs, 'ymd':ymd, 'hour':hour, 
+        return ({'success':1, 'secs':secs, 'ymd':ymd, 'hour':hour,
                 'n_fields':mwr['n_fields'], 'tbsky':tbsky, 'freq':mwr['freq'],
                 'noise':mwr['noise'], 'bias':mwr['bias'], 'type': mwr['type'], 'rootname':mwr['rootname']})
 
@@ -2164,7 +2163,7 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
             if maxht < wv_prof_maxht:
                 maxht += 1
             zzq = np.arange(maxht*100+1)*0.01  #Define a default 10-m grid for these sondes [km AGL]
-            
+
             for i in range(len(files)):
                  fid = Dataset(files[i],'r')
                  bt = fid.variables['base_time'][0].astype('float')
@@ -2177,26 +2176,26 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
                  fid.close()
                  z = (z-z[0])/1000.
                  foo = np.where((p > 0) & (p < 1050) & (t > -150) & (t < 60) & (u >= 0) & (u < 103) & (z >= 0))[0]
-                 
+
                  if len(foo) < 2:
                      continue
                  z = z[foo]
                  p = p[foo]
                  t = t[foo]
                  u = u[foo]
-                
+
                  # Make sure sonde is monotonically increasing, not a simple sort
                  # we will remove heights that decrease since they are most likely
                  # bad data
                  foo = Other_functions.make_monotonic(z)
                  if len(foo) < 2:
                      continue
-                 
+
                  z = z[foo]
                  p = p[foo]
                  t = t[foo]
                  u = u[foo]
-                     
+
                  if np.nanmax(z) < maxht:
                      continue            # The sonde must be above this altitude to be used here
 
@@ -2222,7 +2221,7 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
                      wv = np.vstack((wv, np.interp(zzq,z,w,left=-999,right=-999)))
                      swv = np.vstack((swv, np.interp(zzq,z,we,left=-999,right=-999)))
                  external['nQprof'] += 1
-                 
+
             if external['nQprof'] > 0:
                 wv = wv.T
                 swv = swv.T
@@ -2353,7 +2352,7 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
 
                 external['nQprof'] = len(qsecs)
             zzq = zzq / 1000.           # Convert m AGL to km AGL
-            
+
         if external['nQprof'] > 0:
             wvmultiplier = 1e16           # To scale the WV profiles to be reasonable order of magnitude
             wv = wv/wvmultiplier
@@ -2568,19 +2567,19 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
                 p = p[foo]
                 t = t[foo]
                 u = u[foo]
-                
+
                 # Make sure sonde is monotonically increasing, not a simple sort
                 # we will remove heights that decrease since they are most likely
                 # bad data
                 foo = Other_functions.make_monotonic(z)
                 if len(foo) < 2:
                     continue
-               
+
                 z = z[foo]
                 p = p[foo]
                 t = t[foo]
                 u = u[foo]
-                            
+
                 if np.nanmax(z) < maxht:
                     continue # The sonde must be above this altitude to be used here
 
@@ -2663,19 +2662,19 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
                 p = p[foo]
                 t = t[foo]
                 u = u[foo]
-                
+
                 # Make sure sonde is monotonically increasing, not a simple sort
                 # we will remove heights that decrease since they are most likely
                 # bad data
                 foo = Other_functions.make_monotonic(z)
                 if len(foo) < 2:
                     continue
-                
+
                 z = z[foo]
                 p = p[foo]
                 t = t[foo]
                 u = u[foo]
-                            
+
                 if np.nanmax(z) < maxht:
                     continue # The sonde must be above this altitude to be used here
 
@@ -2935,19 +2934,19 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
                 p = p[foo]
                 t = t[foo]
                 u = u[foo]
-                
+
                 # Make sure sonde is monotonically increasing, not a simple sort
                 # we will remove heights that decrease since they are most likely
                 # bad data
                 foo = Other_functions.make_monotonic(z)
                 if len(foo) < 2:
                     continue
-                
+
                 z = z[foo]
                 p = p[foo]
                 t = t[foo]
                 u = u[foo]
-                            
+
                 if np.nanmax(z) < maxht:
                     continue # The sonde must be above this altitude to be used here
 
@@ -3070,11 +3069,11 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
         # This checks to make sure there is no bad data that gets through. Mostly
         # for the old NCAR DIAL data. Water vapor must be 0 or positive and the
         # uncertainty must be greater than zero (We are never certain of anything).
-        
+
         foo = np.where((new_water < 0) | (new_swater <= 0))
         new_water[foo] = np.nan
         new_swater[foo] = np.nan
-        
+
         # Replace any NaN data with missing values
         new_water[np.isnan(new_water)] = -999
         new_swater[np.isnan(new_swater)] = -999
@@ -3936,7 +3935,7 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
             if len(foo) > 0:
                 p0[foo] = press[0]
     else:
-        p0 = -999.        
+        p0 = -999.
 
     # This section is for the CO2 obs
     # Read in the surface in-situ CO2 data, if desired
