@@ -1,4 +1,4 @@
-__version__ = '0.5.35'
+__version__ = '0.5.38'
 
 import os
 import sys
@@ -747,6 +747,18 @@ if(vip['irs_type'] >= 1):
     if(len(foo) > 0):
         bands[foo] = maxv-0.1
 
+# Build the name of the output file
+noutfilename = ''
+foo = np.where(irs['hour'] >= shour)[0]
+if(len(foo) == 0):
+    print('Error: there are no samples after the desired shour value -- aborting')
+    sys.exit()
+dt = datetime.utcfromtimestamp(irs['secs'][foo[0]])
+noutfilename = vip['output_path'] + '/' + vip['output_rootname'] + '.' + dt.strftime('%Y%m%d.%H%M%S') + '.cdf'
+if(verbose >= 2):
+    print('The name of the output file is ',noutfilename)
+
+
 # If clobber == 2, then we will try to append. But this requires that
 # I perform a check to make sure that we are appending to a file that was
 # created by a version of the code that makes sense. I only need to make this
@@ -761,7 +773,6 @@ else:
 rt_extra_layers = Other_functions.compute_extra_layers(np.max(z))
 
 version = ''
-noutfilename = ''
 ################################################################################
 # This is the main loop for the retrieval!
 ################################################################################
