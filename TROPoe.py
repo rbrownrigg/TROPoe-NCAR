@@ -1792,7 +1792,12 @@ for i in range(len(irs['secs'])):                        # { loop_i
                     tmp[nX+1], tmp[nX+2], tmp[nX+3], tmp[nX+4], tmp[nX+5], tmp[nX+6],
                     tmp[nX+7], tmp[nX+8], tmp[nX+9], tmp[nX+10], tmp[nX+11], tmp[nX+12]])
 
-        sic = 0.5 * np.log(scipy.linalg.det(Sa.dot(SopInv)))
+        # Compute Shannon information content, but trap for non-positive numbers (which occassionally happens)
+        dotproduct = scipy.linalg.det(Sa.dot(SopInv))
+        if(dotproduct > 0):
+            sic = 0.5 * np.log(dotproduct)
+        else:
+            sic = 0
 
         vres,cdfs = Other_functions.compute_vres_from_akern(Akern, z, do_cdfs=True)
         # Compute the N-form and M-form convergence criteria (X and Y spaces, resp)
