@@ -117,7 +117,7 @@ def write_variable(variable, filename):
 
 def write_output(vip, ext_prof, mod_prof, rass_prof, ext_tseries, globatt, xret, prior,
                 fsample, version, exectime, modeflag, nfilename, location,
-                cbh_string, verbose):
+                cbh_string, shour, verbose):
 
     success = 0
     # I will replace all temp/WVMR data below the chimney height with this
@@ -138,7 +138,8 @@ def write_output(vip, ext_prof, mod_prof, rass_prof, ext_tseries, globatt, xret,
         hms = hh*10000 + nn*100 + ss
 
         nfilename = vip['output_path'] + '/' + vip['output_rootname'] + '.' + dt.strftime('%Y%m%d.%H%M%S') + '.cdf'
-
+        
+        
         if ((os.path.exists(nfilename)) & (vip['output_clobber'] == 0)):
             print('Error: output file exists -- aborting (' + nfilename + ')')
             return success, nfilename
@@ -543,6 +544,7 @@ def write_output(vip, ext_prof, mod_prof, rass_prof, ext_tseries, globatt, xret,
         fid.Retrieval_option_flags = '{:0d}, {:0d}, {:0d}, {:0d}, {:0d}, {:0d}, {:0d}, {:0d}, {:0d}'.format(modeflag[0], modeflag[1], modeflag[2], modeflag[3], modeflag[4], modeflag[5], modeflag[6], modeflag[7], modeflag[8])
         fid.vip_tres = (str(vip['tres']) + ' minutes. Note that the sample time corresponds to the '
                       + 'center of the averaging intervale. A value of 0 implies that no averaging was performed')
+        fid.Retrieval_start_hour = shour
         add_vip_to_global_atts(fid, vip)
 
         # Add some of the static (non-time-dependent) data
@@ -884,7 +886,7 @@ def write_output(vip, ext_prof, mod_prof, rass_prof, ext_tseries, globatt, xret,
 # "secs" field needs to have the proper values though...
 ################################################################################
 
-def create_xret(xret, fsample, vip, irs, Xa, Sa, z, bands, obsdim, obsflag):
+def create_xret(xret, fsample, vip, irs, Xa, Sa, z, bands, obsdim, obsflag,shour):
 
     # Find all of the output files with this date
     yy = np.array([datetime.utcfromtimestamp(x).year for x in irs['secs']])
@@ -898,13 +900,42 @@ def create_xret(xret, fsample, vip, irs, Xa, Sa, z, bands, obsdim, obsflag):
 
     # If none are found, then just run code as normal. Note that xret and fsample
     if len(files) == 0:
-        print('The flag output_clobber was set to 2 for append, but no prior file was found')
-        print('    so code will run as normal')
+        if vip['output_clobber'] == 2:
+            print('The flag output_clobber was set to 2 for append, but no prior file was found')
+            print('    so code will run as normal')
+            nfilename = ' '
+            return xret, fsample, nfilename
+        else:
+            nfilename = ' '
+            return xret, fsample, nfilename
+    
+    # Check to see if a file with the same shour exists
+    found = False
+    for i in range(len(files)):
+        fid = Dataset(files[i],'r')
+        previous_shour = fid.Retrieval_start_hour
+        fid.close()
+        if np.isclose(shour,previous_shour):
+            found = True
+            break
+    
+    found = True
+    if found and vip['output_clobber'] == 0:
+        print('A file with the same rootname and shour as the current run was found. Aborting retrieval')
+        print('     to prevent clobbering.')
+        print('     Existing file name: ' + files[i])
+        nfilename = files[i]
+        return xret, -1, nfilename
+    
+    if not found:
+        print('The flag output_clobber was set to 2 for append, but no prior file')
+        print('      with the same shour was found so code will run as normal')
+        print('      and create a new file.')
         nfilename = ' '
         return xret, fsample, nfilename
-
+        
     # Otherwise, let's initialize from the last file
-    nfilename = files[len(files)-1]
+    nfilename = files[-1]
     fid = Dataset(nfilename, 'r')
     bt = fid.variables['base_time'][:]
     to = fid.variables['time_offset'][:]

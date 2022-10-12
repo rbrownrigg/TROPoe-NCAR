@@ -1,4 +1,4 @@
-__version__ = '0.5.39'
+__version__ = '0.5.40'
 
 import os
 import sys
@@ -8,7 +8,7 @@ import scipy.io
 import copy
 import warnings
 from netCDF4 import Dataset
-from datetime import datetime
+from datetime import datetime, timezone
 from time import gmtime, strftime
 from subprocess import Popen, PIPE
 from argparse import ArgumentParser
@@ -563,6 +563,7 @@ if ext_tseries['success'] != 1:
 
 # If the surface pressure field is all negative, then use the default station_pres from the VIP file
 foo = np.where((irs['atmos_pres'][:] < 200) | (irs['atmos_pres'][:] > 1200))[0]
+print(irs['atmos_pres'][foo])
 if(len(foo) > 0):
     print('    Warning: changing the surface pressure of some IRS samples to the default "station_pres" in the VIP file')
     if(vip['station_pres'] < 0):
@@ -748,23 +749,17 @@ if(vip['irs_type'] >= 1):
         bands[foo] = maxv-0.1
 
 # Build the name of the output file
-noutfilename = ''
 foo = np.where(irs['hour'] >= shour)[0]
 if(len(foo) == 0):
     print('Error: there are no samples after the desired shour value -- aborting')
     sys.exit()
-dt = datetime.utcfromtimestamp(irs['secs'][foo[0]])
-noutfilename = vip['output_path'] + '/' + vip['output_rootname'] + '.' + dt.strftime('%Y%m%d.%H%M%S') + '.cdf'
-if(verbose >= 2):
-    print('The name of the output file is ',noutfilename)
-
 
 # If clobber == 2, then we will try to append. But this requires that
 # I perform a check to make sure that we are appending to a file that was
 # created by a version of the code that makes sense. I only need to make this
 # test once, hence this flag
-if vip['output_clobber'] == 2:
-    check_clobber = 1
+if vip['output_clobber'] == 2 or vip['output_clobber'] == 0:
+    check_clobber = 1      
 else:
     check_clobber = 0
 
@@ -772,6 +767,7 @@ else:
 # the infrared and microwave radiative transfer calculations
 rt_extra_layers = Other_functions.compute_extra_layers(np.max(z))
 
+noutfilename = ''
 version = ''
 ################################################################################
 # This is the main loop for the retrieval!
@@ -806,7 +802,7 @@ for i in range(len(irs['secs'])):                        # { loop_i
         print('Error: Surface pressure is not within range set in VIP -- skipping sample')
         print('     and the values are ',vip['station_psfc_min'], irs['atmos_pres'][i], vip['station_psfc_max'])
         continue
-
+        
     # Select the spectral range to use for the retrieval
     # Define the observation vector and its covariance matrix
     # I'm going to try unapodized spectra, so the cov matrix is diagonal
@@ -1080,11 +1076,11 @@ for i in range(len(irs['secs'])):                        # { loop_i
     converged = 0
     Xn = np.copy(X0)
     Fxnm1 = np.array([-999.])
-
+    
     # If we are to append to the file, then I need to find the last valid
     # sample in the file, so I only process after that point...
     if ((vip['output_clobber'] == 2) & (check_clobber == 1)):
-        xret, fsample, noutfilename = Output_Functions.create_xret(xret, fsample, vip, irs, Xa, Sa, z, bands, dimY, flagY)
+        xret, fsample, noutfilename = Output_Functions.create_xret(xret, fsample, vip, irs, Xa, Sa, z, bands, dimY, flagY, shour)
         check_clobber = 0
         if fsample < 0:
             VIP_Databases_functions.abort(lbltmpdir,date)
@@ -1094,7 +1090,18 @@ for i in range(len(irs['secs'])):                        # { loop_i
             xret = []
         if ((verbose >= 1) & (fsample > 0)):
             print(('Will append output to the file ' + noutfilename))
-
+    
+    # If we are not in append mode, but do not have clobber set to 1 then
+    # check to see if a conflicting file exists and if so abort
+    elif ((vip['output_clobber'] == 0) & (check_clobber == 1)):
+        xret, fsample, noutfilename = Output_Functions.create_xret(xret, fsample, vip, irs, Xa, Sa, z, bands, dimY, flagY, shour)
+        check_clobber = 0
+        if fsample < 0:
+           VIP_Databases_functions.abort(lbltmpdir,date)
+           sys.exit()
+        else:
+            xret = []
+        
     # If we are in 'append' mode, then skip any IRS samples that are
     # before the last time in the xret structure. Generally, the current
     # IRS sample will always be before the last one in the xret structure,
@@ -1141,7 +1148,7 @@ for i in range(len(irs['secs'])):                        # { loop_i
 
         if os.path.exists(lbldir):
             shutil.rmtree(lbldir)
-
+            
         if os.path.exists(lbllog):
             shutil.rmtree(lbllog)
 
@@ -1752,7 +1759,7 @@ for i in range(len(irs['secs'])):                        # { loop_i
             Output_Functions.write_variable(  Kij,vip['lbl_temp_dir']+'/tropoe_python_output.Kij.cdf')
             Output_Functions.write_variable(    Y,vip['lbl_temp_dir']+'/tropoe_python_output.Y.cdf')
             Output_Functions.write_variable(  FXn,vip['lbl_temp_dir']+'/tropoe_python_output.FXn.cdf')
-            #sys.exit()
+            sys.exit()
 
         # If we are trying to fix the shape of the TG profiles as a function of the
         # PBLH, then we need to make a special tweak here. The gain matrix for the
@@ -2185,7 +2192,7 @@ for i in range(len(irs['secs'])):                        # { loop_i
 
     success, noutfilename = Output_Functions.write_output(vip, ext_prof, mod_prof, rass_prof, ext_tseries,
               globatt, xret, prior, fsample, version, (endtime-starttime).total_seconds(),
-              modeflag, noutfilename, location, cbh_string, verbose)
+              modeflag, noutfilename, location, cbh_string, shour, verbose)
 
     if success == 0:
         VIP_Databases_functions.abort(lbltmpdir,date)

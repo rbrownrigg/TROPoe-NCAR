@@ -7,6 +7,7 @@ from datetime import datetime, timedelta
 
 import Other_functions
 import Calcs_Conversions
+import VIP_Databases_functions
 
 
 ################################################################################
@@ -66,13 +67,21 @@ def findfile(path,pattern):
 
          # Compile the regex expression, and return the files that are found
     prog  = re.compile(pattern)
-    files = [f for f in os.listdir(path) if re.search(prog, f)]
+    
+    # Check to see if the file directory exists
+    if os.path.exists(path):
+        files = [f for f in os.listdir(path) if re.search(prog, f)]
 
         # Now prepend the path to each files
-    for i in range(len(files)):
-        files[i] = path+'/'+files[i]
-    files.sort()
-    return files
+        for i in range(len(files)):
+            files[i] = path+'/'+files[i]
+        files.sort()
+        return files, 0
+    else:
+        print('The directory: ' + path)
+        print('    does not exist!')
+        return [], 1
+        
 
 
 ################################################################################
@@ -183,7 +192,10 @@ def read_irs_ch(path,date,irs_type,fv,fa,irs_spec_cal_factor,
     if verbose >= 3:
         print('Looking for IRS channel data as ' + filename)
 
-    files = findfile(path,filename)
+    files,status = findfile(path,filename)
+    if status == 1:
+        return err
+    
     if len(files) == 0:
         print('Error: Unable to find any IRS channel data -- aborting')
         return err
@@ -571,11 +583,22 @@ def read_all_data(date, retz, tres, dostop, verbose, avg_instant, ch1_path,
         # irs_type is used to subsample the MWR data)
 
         print(' Attempting to use MWR as the master instrument; no IRS data will be read in')
-
-        mwr_data = read_mwr(mwr_path, mwr_rootname, date, mwr_type, abs(irs_type), mwr_elev_field, mwr_n_tb_fields,
+        
+        # Check to make sure the directory exists and has files in it 
+        if os.path.isdir(mwr_path):
+            if len(os.listdir(mwr_path)) > 0:
+                mwr_data = read_mwr(mwr_path, mwr_rootname, date, mwr_type, abs(irs_type), mwr_elev_field, mwr_n_tb_fields,
                            mwr_tb_field_names, mwr_tb_freqs, mwr_tb_noise, mwr_tb_bias, mwr_tb_field1_tbmax,
                            verbose, single_date=True)
-
+            else:
+                print('The directory for the master instrument: ' + mwr_path)
+                print('     has no files in it!')
+                return 1, -999, -999, -999
+        else:
+            print('The directory for the master instrument: ' + mwr_path)
+            print('     does not exist!')
+            return 1, -999, -999, -999
+            
         if mwr_data['success'] != 1:
             print('Problem reading MWR data -- unable to continue because the MWR is the master instrument')
             fail = 1
@@ -616,8 +639,39 @@ def read_all_data(date, retz, tres, dostop, verbose, avg_instant, ch1_path,
 
     else:
 
-        # Read in the IRS data
-
+        # Read in the IRS data. Befoe we do though we are going to check if directories
+        # for the engineering, summmary, and ch1 files exist and have files
+        
+        if not os.path.isdir(eng_path):
+            print('The IRS engineering file directory: ' + eng_path)
+            print('    does not exist!')
+            return 1, -999, -999, -999
+        else:
+            if os.listdir(eng_path) == []:
+                print('The IRS engineering file directory: ' + eng_path)
+                print('    has no files in it!')
+                return 1, -999, -999, -999
+        
+        if not os.path.isdir(ch1_path):
+            print('The IRS channel file directory: ' + ch1_path)
+            print('    does not exist!')
+            return 1, -999, -999, -999
+        else:
+            if os.listdir(ch1_path) == []:
+                print('The IRS channel file directory: ' + ch1_path)
+                print('    has no files in it!')
+                return 1, -999, -999, -999
+            
+        if not os.path.isdir(sum_path):
+            print('The IRS summary file directory: ' + sum_path)
+            print('    does not exist!')
+            return 1, -999, -999, -999
+        else:
+            if os.listdir(sum_path) == []:
+                print('The IRS summary file directory: ' + sum_path)
+                print('    has no files in it!')
+                return 1, -999, -999, -999
+            
         irseng = read_irs_eng(eng_path,date,irs_type,verbose)
         if irseng['success'] == 0:
             print('Problem reading IRS eng data')
@@ -843,7 +897,10 @@ def read_mwr(path, rootname, date, mwr_type, step, mwr_elev_field, mwr_n_tb_fiel
     files = []
     if mwr_type > 0:
         for i in range(len(udate)):
-            files = files + (findfile(path,'*' + rootname + '*' + udate[i] + '*(cdf|nc)'))
+            tempfiles,status = (findfile(path,'*' + rootname + '*' + udate[i] + '*(cdf|nc)'))
+            if status == 1:
+                return err
+            files = files + tempfiles
         if len(files) == 0:
             print('Warning: No MWR files found for this date')
             mwr_type = 0
@@ -1094,7 +1151,10 @@ def read_mwrscan(path, rootname, date, mwrscan_type, mwrscan_elev_field, mwrscan
     files = []
     if mwrscan_type > 0:
         for i in range(len(udate)):
-            files = files + (findfile(path,'*' + rootname + '*' + udate[i] + '*(cdf|nc)'))
+            tempfiles,status = (findfile(path,'*' + rootname + '*' + udate[i] + '*(cdf|nc)'))
+            if status == 1:
+                return err
+            files = files + tempfiles
         if len(files) == 0:
             print('Warning: No MWR files found for this date')
             mwrscan_type = 0
@@ -1297,7 +1357,10 @@ def read_irs_eng(path, date, irs_type, verbose):
     if verbose == 3:
         print('Looking for IRS engineering data as ' + filename)
 
-    files = findfile(path,filename)
+    files,status = findfile(path,filename)
+    if status == 1:
+        return err
+
     if len(files) == 0:
         print('Error: Unable to find any IRS engineering data - aborting')
         print('Set irs_type=0 and rerun to compare format of IRS data to irs_type options')
@@ -1401,8 +1464,11 @@ def read_irs_sum(path,date,irs_type,smooth_noise,verbose):
 
     if verbose >= 3:
         print('Looking for IRS summary data as ' + filename)
-
-    files = findfile(path,filename)
+    
+    files, status = findfile(path,filename)
+    if status == 1:
+        return err
+    
     if len(files) == 0:
         print('Error: Unable to find any IRS summary data - aborting')
 
@@ -1589,7 +1655,10 @@ def read_vceil(path, date, vceil_type, ret_secs, verbose):
         if verbose == 3:
             print('Reading in VCEIL data')
         for i in range(len(udate)):
-            files = files + (findfile(path,'*(ceil|ct25)*' + udate[i] + '*.(cdf|nc)'))
+            tempfiles,status = (findfile(path,'*(ceil|ct25)*' + udate[i] + '*.(cdf|nc)'))
+            if status == 1:
+                return err
+            files = files + tempfiles
         if len(files) == 0:
             print('No CBH files found for this date')
             return err
@@ -1621,7 +1690,10 @@ def read_vceil(path, date, vceil_type, ret_secs, verbose):
             print('Reading in ASOS/AWOS')
 
         for i in range(len(udate)):
-            files = files + (findfile(path, '*(ceil|cbh)*' + udate[i] + '*.(cdf|nc)'))
+            tempfiles, status = (findfile(path, '*(ceil|cbh)*' + udate[i] + '*.(cdf|nc)'))
+            if status == 1:
+                return err
+            files = files + tempfiles
         if len(files) == 0:
             print('No CBH files found for this data')
             return err
@@ -1647,7 +1719,10 @@ def read_vceil(path, date, vceil_type, ret_secs, verbose):
         if verbose == 3:
             print('Reading in CLAMPS dlfp data')
         for i in range(len(udate)):
-            files = files + (findfile(path,'*dlfp*' + udate[i] + '*.(cdf|nc)'))
+            tempfiles, status = (findfile(path,'*dlfp*' + udate[i] + '*.(cdf|nc)'))
+            if status == 1:
+                return err
+            files = files + tempfiles
         if len(files) == 0:
             print('No CBH files found for this date')
             return err
@@ -1672,7 +1747,10 @@ def read_vceil(path, date, vceil_type, ret_secs, verbose):
         if verbose == 3:
             print(' Reading in ARM dlprofwstats data')
         for i in range(len(udate)):
-            files = files + (findfile(path,'*dlprofwstats*' + udate[i] + '*.(cdf|nc)'))
+            tempfiles, status = (findfile(path,'*dlprofwstats*' + udate[i] + '*.(cdf|nc)'))
+            if status == 1:
+                return err
+            files = files + tempfiles
         if len(files) == 0:
             print('No CBH files found for this date')
             return err
@@ -1698,7 +1776,10 @@ def read_vceil(path, date, vceil_type, ret_secs, verbose):
         if verbose == 3:
             print(' Reading in JOYCE Jenoptic data')
         for i in range(len(udate)):
-            files = files + (findfile(path,'*CHM*' + udate[i] + '*.(cdf|nc)'))
+            tempfiles, status = (findfile(path,'*CHM*' + udate[i] + '*.(cdf|nc)'))
+            if status == 1:
+                return err
+            files = files + tempfiles
         if len(files) == 0:
             print('No CBH files found for this date')
             return err
@@ -2152,7 +2233,10 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
 
         files = []
         for i in range(len(dates)):
-            files = files + sorted(findfile(wv_prof_path,'*sonde*' + dates[i] + '*.(cdf|nc)'))
+            tempfiles, status = findfile(wv_prof_path,'*sonde*' + dates[i] + '*.(cdf|nc)')
+            if status == 1:
+                return external
+            files = files + tempfiles
 
         external['nQprof'] = 0
         if len(files) == 0:
@@ -2235,7 +2319,10 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
         qunit = 'g/kg'
         files = []
         for i in range(len(dates)):
-            files = files + (findfile(wv_prof_path,'*rlprofmr*' + dates[i] + '*.(cdf|nc)'))
+            tempfiles, status = (findfile(wv_prof_path,'*rlprofmr*' + dates[i] + '*.(cdf|nc)'))
+            if status == 1:
+                return external
+            files = files + tempfiles
         if len(files) == 0:
             if verbose >= 1:
                 print('No ARM RLID WV found in this directory for this date')
@@ -2324,7 +2411,10 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
 
         files = []
         for i in range(len(dates)):
-            files = files + (findfile(wv_prof_path,'*' + str(int(dates[i])%1000000) + '*.(cdf|nc)'))
+            tempfiles, status = (findfile(wv_prof_path,'*' + str(int(dates[i])%1000000) + '*.(cdf|nc)'))
+            if status == 1:
+                return external
+            files = files + tempfiles
 
         if len(files) == 0:
             if verbose >= 1:
@@ -2371,7 +2461,10 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
 
         files = []
         for i in range(len(dates)):
-            files = files + (findfile(wv_prof_path,'*model*' + dates[i] + '*.(cdf|nc)'))
+            tempfiles, status = (findfile(wv_prof_path,'*model*' + dates[i] + '*.(cdf|nc)'))
+            if status == 1:
+                return external
+            files = files + tempfiles
         if len(files) == 0:
             if verbose >= 1:
                 print('No NWP model output data ound in this directory for this date')
@@ -2427,7 +2520,10 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
 
         files = []
         for i in range(len(dates)):
-            files = files + (findfile(wv_prof_path,'*dial*' + dates[i] + '*.(cdf|nc)'))
+            tempfiles, status = (findfile(wv_prof_path,'*dial*' + dates[i] + '*.(cdf|nc)'))
+            if status == 1:
+                return external
+            files = files + tempfiles
 
         if len(files) == 0:
             if verbose >= 1:
@@ -2481,7 +2577,10 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
 
         files = []
         for i in range(len(dates)):
-            files = files + (findfile(wv_prof_path,'*mpd*' + str(int(dates[i])) + '*.(cdf|nc)'))
+            tempfiles, status = (findfile(wv_prof_path,'*mpd*' + str(int(dates[i])) + '*.(cdf|nc)'))
+            if status == 1:
+                return external
+            files = files + tempfiles
 
         if len(files) == 0:
             if verbose >= 1:
@@ -2534,7 +2633,10 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
 
         files = []
         for i in range(len(dates)):
-            files = files + sorted(findfile(wv_prof_path,'*sonde*' + dates[i] + '*.(cdf|nc)'))
+            tempfiles, status = (findfile(wv_prof_path,'*sonde*' + dates[i] + '*.(cdf|nc)'))
+            if status == 1:
+                return external
+            files = files + tempfiles
 
         if len(files) == 0:
             if verbose >=1:
@@ -2626,7 +2728,10 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
 
         files = []
         for i in range(len(dates)):
-            files = files + sorted(findfile(temp_prof_path,'*sonde*' + dates[i] + '*.(cdf|nc)'))
+            tempfiles, status = (findfile(temp_prof_path,'*sonde*' + dates[i] + '*.(cdf|nc)'))
+            if status == 1:
+                return external
+            files = files + tempfiles
 
         external['nTprof'] = 0.
         if len(files) == 0:
@@ -2708,7 +2813,10 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
 
         files = []
         for i in range(len(dates)):
-            files = files + (findfile(temp_prof_path,'*rlproftemp*' + dates[i] + '*.(cdf|nc)'))
+            tempfiles, status = (findfile(temp_prof_path,'*rlproftemp*' + dates[i] + '*.(cdf|nc)'))
+            if status == 1:
+                return external
+            files = files + tempfiles
 
         if len(files) == 0:
             if verbose >= 1:
@@ -2790,7 +2898,10 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
 
         files = []
         for i in range(len(dates)):
-            files = files + (findfile(temp_prof_path,'*model*' + dates[i] + '*.(cdf|nc)'))
+            tempfiles, status = (findfile(temp_prof_path,'*model*' + dates[i] + '*.(cdf|nc)'))
+            if status == 1:
+                return external
+            files = files + tempfiles
 
         if len(files) == 0:
             if verbose >= 1:
@@ -2850,7 +2961,10 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
 
         files = []
         for i in range(len(dates)):
-            files = files + (findfile(temp_prof_path,'*rass*' + dates[i] + '*.(cdf|nc)'))
+            tempfiles, status = (findfile(temp_prof_path,'*rass*' + dates[i] + '*.(cdf|nc)'))
+            if status == 1:
+                return external
+            files = files + tempfiles
 
         if len(files) == 0:
             if verbose >= 1:
@@ -2901,7 +3015,10 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
 
         files = []
         for i in range(len(dates)):
-            files = files + sorted(findfile(temp_prof_path,'*sonde*' + dates[i] + '*.(cdf|nc)'))
+            tempfiles, status = (findfile(temp_prof_path,'*sonde*' + dates[i] + '*.(cdf|nc)'))
+            if status == 1:
+                return external
+            files = files + tempfiles
 
         if len(files) == 0:
             if verbose >= 1:
@@ -3256,7 +3373,10 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
 
         files = []
         for i in range(len(dates)):
-            files = files + (findfile(sfc_path,'*met*' + dates[i] + '*.(cdf|nc)'))
+            tempfiles, status = (findfile(sfc_path,'*met*' + dates[i] + '*.(cdf|nc)'))
+            if status == 1:
+                return external
+            files = files + tempfiles
         if len(files) == 0:
             if verbose >= 1:
                 print('No ARM met found in this directory for this date')
@@ -3300,7 +3420,10 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
 
         files = []
         for i in range(len(dates)):
-            files = files + (findfile(sfc_path,'*isfs*' + dates[i] + '*.(cdf|nc)'))
+            tempfiles, status = (findfile(sfc_path,'*isfs*' + dates[i] + '*.(cdf|nc)'))
+            if status == 1:
+                return external
+            files = files + tempfiles
 
         # Some folks are creating surface met data with the same data format
         # as the EOL ISFS dataset, but using "met" as the rootname. So if there
@@ -3308,7 +3431,10 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
 
         if len(files) == 0:
            for i in range(len(dates)):
-                files = files + (findfile(sfc_path,'*met*' + dates[i] + '*.(cdf|nc)'))
+                tempfiles, status = (findfile(sfc_path,'*met*' + dates[i] + '*.(cdf|nc)'))
+                if status == 1:
+                    return external
+                files = files + tempfiles
 
         if len(files) == 0:
             if verbose >= 1:
@@ -3359,7 +3485,10 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
 
         files = []
         for i in range(len(dates)):
-            files = files + (findfile(sfc_path,'*(mwr|met)*' + dates[i] + '*.(cdf|nc)'))
+            tempfiles, status = (findfile(sfc_path,'*(mwr|met)*' + dates[i] + '*.(cdf|nc)'))
+            if status == 1:
+                return external
+            files = files + tempfiles
 
         if len(files) == 0:
             if verbose >= 1:
@@ -3449,7 +3578,10 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
 
         files = []
         for i in range(len(dates)):
-            files = files + (findfile(sfc_path,'*met*' + dates[i] + '*.(cdf|nc)'))
+            tempfiles, status = (findfile(sfc_path,'*met*' + dates[i] + '*.(cdf|nc)'))
+            if status == 1:
+                return external
+            files = files + tempfiles
 
         if len(files) == 0:
             if verbose >= 1:
@@ -3506,7 +3638,10 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
 
         files = []
         for i in range(len(dates)):
-            files = files + (findfile(sfc_path,'*isfs*' + dates[i] + '*.(cdf|nc)'))
+            tempfiles, status = (findfile(sfc_path,'*isfs*' + dates[i] + '*.(cdf|nc)'))
+            if status == 1:
+                return external
+            files = files + tempfiles
 
         # Some folks are creating surface met data with the same data format
         # as the EOL ISFS dataset, but using "met" as the rootname. So if there
@@ -3514,7 +3649,10 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
 
         if len(files) == 0:
            for i in range(len(dates)):
-                files = files + (findfile(sfc_path,'*met*' + dates[i] + '*.(cdf|nc)'))
+                tempfiles, status = (findfile(sfc_path,'*met*' + dates[i] + '*.(cdf|nc)'))
+                if status == 1:
+                    return external
+                files = files + tempfiles
 
         if len(files) == 0:
             if verbose >= 1:
@@ -3578,7 +3716,10 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
 
         files = []
         for i in range(len(dates)):
-            files = files + (findfile(sfc_path,'*(mwr|met)*' + dates[i] + '*.(cdf|nc)'))
+            tempfiles, status = (findfile(sfc_path,'*(mwr|met)*' + dates[i] + '*.(cdf|nc)'))
+            if status == 1:
+                return external
+            files = files + tempfiles
 
         if len(files) == 0:
             if verbose >= 1:
@@ -3679,7 +3820,10 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
 
         files = []
         for i in range(len(dates)):
-            files = files + (findfile(sfc_path,'*met*' + dates[i] + '*.(cdf|nc)'))
+            tempfiles, status = (findfile(sfc_path,'*met*' + dates[i] + '*.(cdf|nc)'))
+            if status == 1:
+                return external
+            files = files + tempfiles
 
         if len(files) == 0:
             if verbose >= 1:
@@ -3716,7 +3860,10 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
 
         files = []
         for i in range(len(dates)):
-            files = files + (findfile(sfc_path,'*isfs*' + dates[i] + '*.(cdf|nc)'))
+            tempfiles, status = (findfile(sfc_path,'*isfs*' + dates[i] + '*.(cdf|nc)'))
+            if status == 1:
+                return external
+            files = files + tempfiles
 
         # Some folks are creating surface met data with the same data format
         # as the EOL ISFS dataset, but using "met" as the rootname. So if there
@@ -3724,7 +3871,10 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
 
         if len(files) == 0:
            for i in range(len(dates)):
-                files = files + (findfile(sfc_path,'*met*' + dates[i] + '*.(cdf|nc)'))
+                tempfiles, status = (findfile(sfc_path,'*met*' + dates[i] + '*.(cdf|nc)'))
+                if status == 1:
+                    return external
+                files = files + tempfiles
 
         if len(files) == 0:
             if verbose >= 1:
@@ -3766,7 +3916,10 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
 
         files = []
         for i in range(len(dates)):
-            files = files + (findfile(sfc_path,'*(mwr|met)*' + dates[i] + '*.(cdf|nc)'))
+            tempfiles, status = (findfile(sfc_path,'*(mwr|met)*' + dates[i] + '*.(cdf|nc)'))
+            if status == 1:
+                return external
+            files = files + tempfiles
 
         if len(files) == 0:
             if verbose >= 1:
@@ -3952,7 +4105,10 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
 
         files = []
         for i in range(len(dates)):
-            files = files + (findfile(co2_sfc_path,'*pgs*' + dates[i] + '*.(cdf|nc)'))
+            tempfiles, status = (findfile(co2_sfc_path,'*pgs*' + dates[i] + '*.(cdf|nc)'))
+            if status == 1:
+                return external
+            files = files + tempfiles
 
         if len(files) == 0:
             if verbose >= 1:
