@@ -610,11 +610,8 @@ def read_all_data(date, retz, tres, dostop, verbose, avg_instant, ch1_path,
 
             foo = np.where(mwr_data['psfc'] > 0)
             if len(foo) == 0:
-                print('Error: Flags set to use MWR as master instrument, but Psfc not found -- must abort')
-                fail = 1
-                if dostop:
-                    wait = input('Stopping inside routine for debugging. Press enter to continue')
-                return fail, -999, -999, -999
+                print('Warning: no surface data found in the MWR files. Default station_pres values will be used')
+                print('         unless an external surface pressure data source is provided.')
 
             wnum = np.arange(int((905-900)/0.5)+1)*0.5+900            #Simulated wavenumber array
             mrad = np.ones((len(wnum),len(mwr_data['secs'])))*-999.0   #Radiance is all missing
