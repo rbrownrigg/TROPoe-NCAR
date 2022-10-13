@@ -270,8 +270,10 @@ def read_vip_file(filename,globatt,verbose,debug,dostop):
             print('     '+obsolete_tags[foo[i]])
             return vip
 
+    # Create a tracking array to make sure all keys in the user provided
+    # vip file are used
+    track = np.ones(inputt.shape[0])
     # Look for these tags
-
     nfound = 1
     for key in vip.keys():
         if key != 'success':
@@ -285,6 +287,7 @@ def read_vip_file(filename,globatt,verbose,debug,dostop):
                     return vip
 
                 elif len(foo) == 1:
+                    track[foo] = 0
                     if verbose == 3:
                         print('Loading the key ' + key)
                     if key == 'spectral_bands':
@@ -370,6 +373,7 @@ def read_vip_file(filename,globatt,verbose,debug,dostop):
 
     for i in range(len(matching)):
         foo = np.where(matching[i] == inputt[:,0])[0]
+        track[foo] = 0
         globatt[matching[i][8:]] = inputt[foo,1][0]
 
     # Need to trap condition where spectral_bands was not set (and thus is the default string "None")
@@ -379,7 +383,14 @@ def read_vip_file(filename,globatt,verbose,debug,dostop):
         bhi = [618., 660, 713, 722, 588, 864.0, 877.5, 905.4]
         vip['spectral_bands'] = np.array([blo,bhi])
 
-    vip['success'] = 1
+    foo = np.nonzero(track)[0]
+    if len(foo) > 0:
+        print('There were undefined entries in the VIP file:')
+        for i in range(len(foo)):
+            print('    ' + inputt[foo,0][0])
+        return vip
+    else:
+        vip['success'] = 1
 
     if dostop:
         wait = input('Stopping inside to debug this bad boy. Press enter to continue')
