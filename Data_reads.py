@@ -379,16 +379,23 @@ def read_irs_ch(path,date,irs_type,fv,fa,irs_spec_cal_factor,
 
     chsecs = np.copy(secs)
     mrad = mrad.T
-
+    
     # Keep only the zenith pointing data, using the keyword specified in the VIP to control the behavior
     if((zenith_scene_mirror_angle < 3) | (zenith_scene_mirror_angle > 357)):
         foo = np.where((sceneMirrorAngle < 3) | (sceneMirrorAngle > 357))[0]
     else:
         foo = np.where((zenith_scene_mirror_angle-3 < sceneMirrorAngle) &
                        (sceneMirrorAngle < zenith_scene_mirror_angle+3))[0]
+        
     if len(foo) == 0:
-        print('Error in read_irs_ch: Unable to find any zenith pointing AERI/ASSIST data')
-        return err
+        # Check to see if all of the data is missing and if using AERI data then
+        # set to default value. If not abort. This can happen in ARM data
+        fah = np.where(sceneMirrorAngle > -100)[0]
+        if (len(fah) == 0) and (irs_type < 5):
+            sceneMirrorAngle[:] = zenith_scene_mirror_angle
+        else:
+            print('Error in read_irs_ch: Unable to find any zenith pointing AERI/ASSIST data')
+            return err
 
     chsecs           = np.copy(chsecs[foo])
     mrad             = np.copy(mrad[:,foo])
