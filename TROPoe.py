@@ -1,4 +1,4 @@
-__version__ = '0.5.44'
+__version__ = '0.5.45'
 
 import os
 import sys
@@ -563,7 +563,6 @@ if ext_tseries['success'] != 1:
 
 # If the surface pressure field is all negative, then use the default station_pres from the VIP file
 foo = np.where((irs['atmos_pres'][:] < 200) | (irs['atmos_pres'][:] > 1200))[0]
-print(irs['atmos_pres'][foo])
 if(len(foo) > 0):
     print('    Warning: changing the surface pressure of some IRS samples to the default "station_pres" in the VIP file')
     if(vip['station_pres'] < 0):

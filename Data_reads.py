@@ -777,8 +777,7 @@ def read_all_data(date, retz, tres, dostop, verbose, avg_instant, ch1_path,
     if vceil['success'] < 0:
         fail = 1
     elif vceil['success'] == 0:
-        if verbose >= 2:
-            print('Problem reading vceil dat -- assuming ceilometer reported clear entire time')
+        print('No vceil data -- using default cbh for entire period')
         vceil = {'success':2, 'secs':irsch1['secs'], 'ymd':irsch1['ymd'], 'hour':irsch1['hour'], 'cbh':np.ones(len(irsch1['secs']))*-1}
 
     if ((fail == 1) & (dostop)):
@@ -1617,10 +1616,13 @@ def read_vceil(path, date, vceil_type, ret_secs, verbose):
     err = {'success':0}
 
     files = []
-    if vceil_type <= 0:
+    if vceil_type < 0:
         print(' ')
         print('------------------------------------------------------')
-        print('****** options for the VIP parameter "chb_type" ******')
+        print('****** options for the VIP parameter "cbh_type" ******')
+        print('   cbh_type=0 --->')
+        print('             No cloud base height data used')
+        print('             Default value used for all times')
         print('   cbh_type=1 --->')
         print('             ARM-style Vaisala ceilometer input')
         print('                     Files named "*ceil*cdf" ')
@@ -1650,7 +1652,10 @@ def read_vceil(path, date, vceil_type, ret_secs, verbose):
         print(' ')
         err = {'success':-1}
         return err
-
+    elif vceil_type == 0:
+        if verbose >= 1:
+            print('User selected option for no cloud base height data')
+        return err
     elif ((vceil_type == 1) | (vceil_type == 5)):
         if verbose == 3:
             print('Reading in VCEIL data')
