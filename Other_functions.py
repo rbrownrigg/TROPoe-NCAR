@@ -339,7 +339,7 @@ def compute_pblh(ht, t, p, sigt, nudge=0.5, minht=0.300, maxht=6.0):
 # intensity (sbim, degC)
 ################################################################################
 
-def compute_sbi(z, t, start_height = 0.025):
+def compute_sbi(z, t, start_height = -1):
     
     for ii in range(1,len(z)):
         if z[ii] > start_height:
@@ -348,8 +348,8 @@ def compute_sbi(z, t, start_height = 0.025):
     if ii >= len(z)-1:
         return {'sbih':-999., 'sbim':-999.}
     
-    sbi = ii-1
-    for i in range(ii,len(t)):
+    sbi = ii
+    for i in range(ii+1,len(t)):
         if ((t[i] >= t[i-1]) & (sbi == i-1)):
             sbi = i
         else:
