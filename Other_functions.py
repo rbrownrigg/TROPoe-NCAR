@@ -39,11 +39,11 @@ import Calcs_Conversions
 # compute_cgamma()
 # lcurve()
 # compute_vres_from_akern()
-# aeri_zerofill()           -- TODO -- need to update to be consistent
+# aeri_zerofill()
 # fix_aeri_vlaser_mod()
 # compute_extra_layers()
-# aeri_ffovc()              -- TODO -- add this bad boy
-# change_aeri_ffovc()       -- TODO -- add this bad boy
+# irs_ffovc()              -- TODO -- add this bad boy
+# change_irs_ffovc()       -- TODO -- add this bad boy
 ################################################################################
 
 
@@ -1654,8 +1654,18 @@ def aeri_zerofill(iwnum,irad,channel,epad=0):
     loc = np.where((v_teststart[band] <= iwnum) & (iwnum <= v_testend[band]))
     tb = Calcs_Conversions.invplanck(iwnum[loc], irad[loc])
     avg_tb = np.mean(tb)
+
+    # Quick trap to prevent a divide-by-zero error in the planck function
+    if(v[0] < 0.00001):
+        orig_v0 = v[0]
+        v[0] = v[1]
+        replace_v0 = True
+    else:
+        replace_v0 = False
     r = Calcs_Conversions.planck(v, avg_tb)
-    r[0] = 0.
+    if(replace_v0):
+        v[0] = orig_v0
+        r[0] = 0.
 
     # Determine the bounds of the AERI data
     n_apts = len(iwnum)
@@ -1740,8 +1750,8 @@ def compute_extra_layers(maxz):
 # by the half angle of the field of view of the instrument (assuming the detector
 # is perfectly on axis -- following Knuteson et al. 2004)
 ################################################################################
-def change_aeri_ffovc(wnum,orad,orig_halfAngle,new_halfAngle):
-    print('Stubbing this change_aeri_ffovc function out -- it does nothing')
+def change_irs_ffovc(wnum,orad,orig_halfAngle,new_halfAngle):
+    print('Stubbing this change_irs_ffovc function out -- it does nothing')
     return orad
 
 ###############################################################################
