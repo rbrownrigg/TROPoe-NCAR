@@ -6,6 +6,7 @@ import calendar
 from datetime import datetime, timedelta
 
 import Other_functions
+import Output_Functions
 import Calcs_Conversions
 import VIP_Databases_functions
 
@@ -410,8 +411,7 @@ def read_irs_ch(path,date,irs_type,fv,fa,irs_spec_cal_factor,
 
     # Apply the spectral recalibration, if desired
     if(np.abs(irs_spec_cal_factor - 1.0) > 0.0000001):
-        sys.exit()
-        if(verbose >= 3): print('      Adjusting the IRSs spectral calibration')
+        if(verbose >= 1): print('      Adjusting the IRSs spectral calibration')
         tmp = mrad
         for jj in range(0,len(mrad[0,:])):
             tmp[:,jj] = Other_functions.fix_aeri_vlaser_mod(wnum,mrad[:,jj],irs_spec_cal_factor)
