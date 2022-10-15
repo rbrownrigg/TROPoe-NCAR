@@ -1,4 +1,16 @@
-__version__ = '0.5.54'
+# ----------------------------------------------------------------------------
+#
+#  Copyright (C) 2015,2022 David D Turner - All Rights Reserved
+#
+#  This file is part of the "TROPoe" retrieval system.
+#
+#  TROPoe is free software developed while the author was at NOAA, and is
+#  intended to be free software.  It is made available WITHOUT ANY WARRANTY.
+#  For more information, contact the author.
+#
+# ----------------------------------------------------------------------------
+
+__version__ = '0.5.55'
 
 import os
 import sys
@@ -136,7 +148,10 @@ globatt = {'algorithm_code': 'TROPoe Retrieval Code (formerly AERIoe)',
 
 # Start the retrieval
 print(' ')
-print('------------------------------------------------------------------------')
+print('-------------------------------------------------------------------------')
+print('---- TROPoe is a thermodynamic retrieval algorithm developed at NOAA ----')
+print('---- Contacts are dave.turner, joshua.gebauer, tyler.bell (@noaa.gov) ---')
+print(' ')
 print(('>>> Starting TROPoe retrieval for ' + str(date) + ' (from ' + str(shour) + ' to ' + str(ehour) + ' UTC) <<<'))
 
 #Find the VIP file and read it
@@ -145,7 +160,7 @@ vip = VIP_Databases_functions.read_vip_file(vip_filename, globatt = globatt, deb
 
 if vip['success'] != 1:
     print(('>>> TROPoe retrieval on ' + str(date) + ' FAILED and ABORTED <<<'))
-    print('--------------------------------------------------------------------')
+    print('---------------------------------------------------------------------')
     print(' ')
     sys.exit()
 
@@ -166,7 +181,7 @@ if not os.path.exists(vip['lbl_home'] + '/bin/lblrun'):
     print('Error: Unable to find the script "lblrun" in the "lbl_home"/bin directory')
     print('This is a critical component of the LBLRTM configuration - aborting')
     print(('>>> TROPoe retrieval on ' + str(date) + ' FAILED and ABORTED <<<'))
-    print('--------------------------------------------------------------------')
+    print('---------------------------------------------------------------------')
     print(' ')
     sys.exit()
 
@@ -174,18 +189,18 @@ if not os.path.exists(vip['lbl_home'] + '/bin/lblrun'):
 if not os.path.exists(prior_filename):
     print(('Error: Unable to find the prior data file: ' + prior_filename))
     print(('>>> TROPoe retrieval on ' + str(date) + ' FAILED and ABORTED <<<'))
-    print('--------------------------------------------------------------------')
+    print('---------------------------------------------------------------------')
     print(' ')
     sys.exit()
 
-print(('Using the prior file: ' + prior_filename))
+print(('  Using the prior file: ' + prior_filename))
 
 
 # Make sure that the output directory exists
 if not os.path.exists(vip['output_path']):
     print('Error: The output directory does not exist')
     print(('>>> TROPoe retrieval on ' + str(date) + ' FAILED and ABORTED <<<'))
-    print('--------------------------------------------------------------------')
+    print('---------------------------------------------------------------------')
     print(' ')
     sys.exit()
 
@@ -199,7 +214,7 @@ if vip['lbl_temp_dir'][0] == '$':
     if not tmpdir:
         print('Error: The LBLRTM temporary directory is being set to an environment variable that does not exist')
         print(('>>> TROPoe retrieval on ' + str(date) + ' FAILED and ABORTED <<<'))
-        print('--------------------------------------------------------------------')
+        print('---------------------------------------------------------------------')
         print(' ')
         sys.exit()
     for i in range(1,len(envpath)):
@@ -208,7 +223,7 @@ if vip['lbl_temp_dir'][0] == '$':
 
 # Create the temporary working directory
 lbltmpdir = vip['lbl_temp_dir'] + '/' + uniquekey
-print(('Setting the temporary directory for RT model runs to: ' + lbltmpdir))
+print(('  Setting the temporary directory for RT model runs to: ' + lbltmpdir))
 
 #Address this in Python 3 version
 try:
@@ -216,7 +231,7 @@ try:
 except:
     print('Error making the temporary directory')
     print(('>>> TROPoe retrieval on ' + str(date) + ' FAILED and ABORTED <<<'))
-    print('--------------------------------------------------------------------')
+    print('---------------------------------------------------------------------')
     print(' ')
 
 #Now we are ready to start the main retrieval.
@@ -310,9 +325,9 @@ modeflag = [dotemp, dowvmr, dolcloud, dolcloud, doicloud, doicloud, doco2, doch4
 
 # Select the LBLRTM version to use
 print(' ')
-print(('Working with the LBLRTM version ' + vip['lbl_version']))
-print(('  in the directory ' + vip['lbl_home']))
-print(('  and the TAPE3 file ' + vip['lbl_tape3']))
+print(('  Working with the LBLRTM version ' + vip['lbl_version']))
+print(('    in the directory ' + vip['lbl_home']))
+print(('    and the TAPE3 file ' + vip['lbl_tape3']))
 print(' ')
 
 # Quick check: make sure the LBLRTM path is properly set
@@ -376,7 +391,7 @@ if vip['mwr_type'] > 0:
 
 # Echo to the user the type of retrieval being performed
 print(' ')
-tmp = 'Retrieving: '
+tmp = '  Retrieving: '
 if dotemp == 1:
     tmp = tmp + 'T '
 if dowvmr == 1:
@@ -423,9 +438,9 @@ if verbose == 3:
 fid.close()
 
 if verbose >= 1:
-    print(('Retrieved profiles will have ' + str(len(z)) + ' levels (from prior)'))
+    print(('  Retrieved profiles will have ' + str(len(z)) + ' levels (from prior)'))
 if verbose >= 2:
-    print(('There were ' + str(nsonde_prior) + ' radiosondes used in the calculation of the prior'))
+    print(('    There were ' + str(nsonde_prior) + ' radiosondes used in the calculation of the prior'))
 
 # Inflate the lowest levels of the prior covariance matrix, if desired
 Sa, status = Other_functions.inflate_prior_covariance(Sa, z, vip['prior_t_ival'], vip['prior_t_iht'],
@@ -1068,7 +1083,7 @@ for i in range(len(irs['secs'])):                        # { loop_i
             vip['output_clobber'] = 0
             xret = []
         if ((verbose >= 1) & (fsample > 0)):
-            print(('Will append output to the file ' + noutfilename))
+            print(('  Will append output to the file ' + noutfilename))
     
     # If we are not in append mode, but do not have clobber set to 1 then
     # check to see if a conflicting file exists and if so abort
@@ -2192,7 +2207,7 @@ shutil.rmtree(lbltmp)
 
 totaltime = (endtime - starttime).total_seconds()
 
-print(('Processing took ' + str(totaltime) + ' seconds'))
+print(('  Processing took ' + str(totaltime) + ' seconds'))
 
 shutil.rmtree(lbltmpdir)
 

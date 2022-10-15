@@ -1,3 +1,15 @@
+# ----------------------------------------------------------------------------
+#
+#  Copyright (C) 2015,2022 David D Turner - All Rights Reserved
+#
+#  This file is part of the "TROPoe" retrieval system.
+#
+#  TROPoe is free software developed while the author was at NOAA, and is
+#  intended to be free software.  It is made available WITHOUT ANY WARRANTY.
+#  For more information, contact the author.
+#
+# ----------------------------------------------------------------------------
+
 import os
 import shutil
 import numpy as np
@@ -237,21 +249,21 @@ def read_vip_file(filename,globatt,verbose,debug,dostop):
     if os.path.exists(filename):
 
         if verbose >= 1:
-            print('Reading the VIP file: ' + filename)
+            print('  Reading the VIP file: ' + filename)
 
         try:
             # inputt = np.genfromtxt(filename, dtype=str,comments='#', usecols = (0,1,2))
             inputt = np.genfromtxt(filename, dtype=str, comments='#', delimiter='=', autostrip=True)
         except Exception as e:
             print(e)
-            print('There was an problem reading the VIP file. Check formatting.')
+            print('  There was an problem reading the VIP file. Check formatting.')
             return vip
     else:
-        print('The VIP file ' + filename + ' does not exist')
+        print('  The VIP file ' + filename + ' does not exist')
         return vip
 
     if len(inputt) == 0:
-        print('There were no valid lines found in the VIP file')
+        print('  There were no valid lines found in the VIP file')
         return vip
 
     # Look for obsolete tags, and abort if they are found (forcing user to update their VIP file)
@@ -361,14 +373,14 @@ def read_vip_file(filename,globatt,verbose,debug,dostop):
     if verbose == 3:
         print(vip)
     if verbose >= 2:
-        print('There were ' + str(nfound) + ' entries found out of ' + str(len(list(vip.keys()))))
+        print('    There were ' + str(nfound) + ' entries found out of ' + str(len(list(vip.keys()))))
 
     # Now look for any global attributes that might have been entered in the file
 
     matching = [s for s in inputt[:,0] if "globatt" in s]
 
     if verbose >= 2:
-        print('There were ' + str(len(matching)) + ' global attributes found')
+        print('    There were ' + str(len(matching)) + ' global attributes found')
 
     for i in range(len(matching)):
         foo = np.where(matching[i] == inputt[:,0])[0]
@@ -384,7 +396,7 @@ def read_vip_file(filename,globatt,verbose,debug,dostop):
 
     foo = np.nonzero(track)[0]
     if len(foo) > 0:
-        print('There were undefined entries in the VIP file:')
+        print('  There were undefined entries in the VIP file:')
         for i in range(len(foo)):
             print('    ' + inputt[foo,0][0])
         return vip
@@ -485,7 +497,7 @@ def read_scat_databases(dbname):
     ncols = 13
 
     #Open and read the single scattering property database
-    print('Reading: ' + dbname)
+    print('  Reading: ' + dbname)
     f = open(dbname, 'r')
     f.readline()
     f.readline()
@@ -536,6 +548,6 @@ def read_stdatmos(filename, stdatmos, verbose):
         return {'status':0}
 
     if verbose >= 1:
-        print('Using standard atmosphere: ' + temp['name'][idx].decode())
+        print('  Using standard atmosphere: ' + temp['name'][idx].decode())
 
     return {'status':1, 'z':temp['z'][idx,:], 'p':temp['p'][idx,:], 't':temp['t'][idx,:], 'w':temp['w'][idx,:], 'pwv':temp['pwv'][idx], 'name':temp['name'][idx]}
