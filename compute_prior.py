@@ -1,6 +1,6 @@
 # ----------------------------------------------------------------------------
 #
-#  Copyright (C) 2015 David D Turner - All Rights Reserved
+#  Copyright (C) 2015,2022 David D Turner - All Rights Reserved
 #
 #  This file is part of the "TROPoe" retrieval system.
 #
@@ -27,7 +27,7 @@
 #
 #  Author:
 #    Dave Turner
-#    National Severe Storms Laboratory / NOAA
+#    Global Systems Laboratory / NOAA
 #    Email: dave.turner@noaa.gov
 #
 #  Ported to Python 3.7 by Tyler Bell (2020)
