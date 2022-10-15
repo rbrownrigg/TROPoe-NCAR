@@ -539,7 +539,7 @@ def read_irs_ch(path,date,irs_type,fv,fa,irs_spec_cal_factor,
                 print('Error: the temperature used for the aft optics (Fa correction) is out of bounds')
                 return err
             Baft = Calcs_Conversions.planck(wnum,aft_temp)
-            nrad[:,i] = mrad[:,i] - fa*Baft + fa*(mrad[:,i]-Rc)
+            nrad[:,i] = (mrad[:,i] - fa*Baft) / (1. - fa)
         mrad = np.copy(nrad)
 
     if fv > 0:
@@ -547,8 +547,8 @@ def read_irs_ch(path,date,irs_type,fv,fa,irs_spec_cal_factor,
             print('Correcting IRS data with Fv = ' + str(fv))
         nrad = np.copy(mrad)
         for i in range(len(hour)):
-            brad = Calcs_Conversions.planck(wnum, bbsupport[i])
-            nrad[:,i] = (mrad[:,i] - fv*brad) / (1.-fv)
+            Brad = Calcs_Conversions.planck(wnum, bbsupport[i])
+            nrad[:,i] = (mrad[:,i] - fv*Brad) / (1. - fv)
         mrad = np.copy(nrad)
 
     return ({'success':1, 'secs':chsecs, 'ymd':ymd, 'yy':yy, 'mm':mm, 'dd':dd,
