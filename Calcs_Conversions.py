@@ -37,7 +37,7 @@ def planck(wn,temp):
     c1 = 1.191042722e-12
     c2 = 1.4387752          # units are [K cm]
     c1 = c1 * 1e7           # units are now [mW/m2/ster/cm-4]
-    rad = c1 * wn * wn *wn / (np.exp(c2 * wn / temp)-1.0)
+    rad = c1 * wn * wn * wn / (np.exp(c2 * wn / temp)-1.0)
     
     return rad
     
