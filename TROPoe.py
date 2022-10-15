@@ -1,4 +1,4 @@
-__version__ = '0.5.52'
+__version__ = '0.5.53'
 
 import os
 import sys
@@ -56,26 +56,6 @@ verbose = args.verbose
 doplot = args.doplot
 debug = args.debug
 dostop = args.dostop
-
-#Check for the TPSS environment variables. They will override anything that is
-#passed in via the command line
-
-tpss_date = os.getenv("tpss_date")
-tpss_pfile = os.getenv("tpss_pfile")
-tpss_vfile = os.getenv("tpss_vfile")
-tpss_shour = os.getenv("tpss_shour")
-tpss_ehour = os.getenv("tpss_ehour")
-
-if tpss_date:
-    date = int(tpss_date)
-if tpss_vfile:
-    vip_filename = tpss_vfile
-if tpss_pfile:
-    prior_filename = tpss_pfile
-if tpss_shour:
-    shour = float(tpss_shour)
-if tpss_ehour:
-    ehour = float(tpss_ehour)
 
 #Check to see if any of these are set; if not, fall back to default values
 
