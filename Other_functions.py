@@ -341,7 +341,7 @@ def compute_pblh(ht, t, p, sigt, nudge=0.5, minht=0.300, maxht=6.0):
 
 def compute_sbi(z, t, start_height = -1):
     
-    for ii in range(1,len(z)):
+    for ii in range(0,len(z)):
         if z[ii] > start_height:
             break
     
