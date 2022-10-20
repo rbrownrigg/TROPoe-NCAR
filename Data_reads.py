@@ -151,7 +151,7 @@ def recenter_prior(orig_prior_name, input_value, sfc_or_pwv=0):
     print(f'    {sfact_comment}')
 
     # Now iterate to find the best temperature, preserving the RH profile in the original prior
-    t1 = np.full_like(t0, -999.)  # Allocate an empty array
+    t1 = np.full_like(-999.,t0)      # Allocate an empty array
     off = np.arange(2001)/50. - 20.  # An array of temperature offsets
 
     for i in range(len(z0)):
@@ -349,7 +349,7 @@ def read_irs_ch(path,date,irs_type,fv,fa,irs_spec_cal_factor,
         if (len(np.where(np.array(list(fid.variables.keys())) == 'sceneMirrorAngle')[0])> 0):
             xscenemirrorangle = fid.variables['sceneMirrorAngle'][:]
         else:
-            xscenemirrorangle = np.full_like(to, zenith_scene_mirror_angle)
+            xscenemirrorangle = np.full_like(zenith_scene_mirror_angle, to)
 
         #Read in the field "missingDataFlag". If it does not exist, then abort
         if get_irs_missingDataFlag == 1:
