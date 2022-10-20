@@ -151,7 +151,7 @@ def recenter_prior(orig_prior_name, input_value, sfc_or_pwv=0):
     print(f'    {sfact_comment}')
 
     # Now iterate to find the best temperature, preserving the RH profile in the original prior
-    t1 = np.full_like(-999.,t0)      # Allocate an empty array
+    t1 = np.full_like(t0, -999.)     # Allocate an empty array
     off = np.arange(2001)/50. - 20.  # An array of temperature offsets
 
     for i in range(len(z0)):
@@ -254,7 +254,7 @@ def read_irs_ch(path,date,irs_type,fv,fa,irs_spec_cal_factor,
                     # The ASSIST has two flags that have to be merged together to mimic the AERI's hatchOpen flag
             xopen  = fid.variables['hatch_open_indicator'][:]
             xclose = fid.variables['hatch_closed_indicator'][:]
-            xhatchOpen = np.full_like(-3,xopen)
+            xhatchOpen = np.full_like(xopen,-3)
             foo = np.where(xopen == 1 and xclose == 0)[0]
             if(len(foo) > 0):
                 xhatchOpen[foo] = 1
@@ -288,7 +288,7 @@ def read_irs_ch(path,date,irs_type,fv,fa,irs_spec_cal_factor,
                     print('      Converting BBsupportStructureTemp from degC to degK')
                 xbbsupport += 273.15
         else:
-            xbbsupport = np.full_like(-999,to)
+            xbbsupport = np.full_like(to,-999)
 
         if len(np.where(np.array(list(fid.variables.keys())) == 'calibrationAmbientTemp')[0]) > 0:
             xcalibambt = fid.variables['calibrationAmbientTemp'][:]
@@ -305,7 +305,7 @@ def read_irs_ch(path,date,irs_type,fv,fa,irs_spec_cal_factor,
                     print('      Converting calibrationAmbientTemp from degC to degK')
                 xcalibambt += 273.15
         else:
-            xcalibambt = np.full_like(-999,to)
+            xcalibambt = np.full_like(to,-999)
 
         if len(np.where(np.array(list(fid.variables.keys())) == 'calibrationCBBtemp')[0]) > 0:
             xcalibcbbt = fid.variables['calibrationCBBtemp'][:]
@@ -322,7 +322,7 @@ def read_irs_ch(path,date,irs_type,fv,fa,irs_spec_cal_factor,
                     print('      Converting calibrationCBBtemp from degC to degK')
                 xcalibcbbt += 273.15
         else:
-            xcalibcbbt = np.full_like(-999,to)
+            xcalibcbbt = np.full_like(to,-999)
 
         if len(np.where(np.array(list(fid.variables.keys())) == 'calibrationHBBtemp')[0]) > 0:
             xcalibhbbt = fid.variables['calibrationHBBtemp'][:]
@@ -339,17 +339,17 @@ def read_irs_ch(path,date,irs_type,fv,fa,irs_spec_cal_factor,
                     print('      Converting calibrationHBBtemp from degC to degK')
                 xcalibhbbt += 273.15
         else:
-            xcalibhbbt = np.full_like(-999,to)
+            xcalibhbbt = np.full_like(to,-999)
 
         if len(np.where(np.array(list(fid.variables.keys())) == 'atmosphericPressure')[0]) > 0:
             xambPres = fid.variables['atmosphericPressure'][:]
         else:
-            xambPres = np.full_like(-999,to)
+            xambPres = np.full_like(to,-999)
 
         if (len(np.where(np.array(list(fid.variables.keys())) == 'sceneMirrorAngle')[0])> 0):
             xscenemirrorangle = fid.variables['sceneMirrorAngle'][:]
         else:
-            xscenemirrorangle = np.full_like(zenith_scene_mirror_angle, to)
+            xscenemirrorangle = np.full_like(to, zenith_scene_mirror_angle)
 
         #Read in the field "missingDataFlag". If it does not exist, then abort
         if get_irs_missingDataFlag == 1:
