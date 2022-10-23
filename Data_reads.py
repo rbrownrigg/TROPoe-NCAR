@@ -36,8 +36,9 @@ import VIP_Databases_functions
 # grid_irs()
 # grid_mwr()
 # grid_mwrscan()
-# read_external_profile_data()'
+# read_external_profile_data()
 # read_external_timeseries()
+# get_tropoe_version()
 ################################################################################
 
 ################################################################################
@@ -606,7 +607,8 @@ def read_all_data(date, retz, tres, dostop, verbose, avg_instant, ch1_path,
         # Check to make sure the directory exists and has files in it 
         if os.path.isdir(mwr_path):
             if len(os.listdir(mwr_path)) > 0:
-                mwr_data = read_mwr(mwr_path, mwr_rootname, date, mwr_type, abs(irs_type), mwr_elev_field, mwr_n_tb_fields,
+                mwr_data = read_mwr(mwr_path, mwr_rootname, date, mwr_type, abs(irs_type), 
+                           vip['mwr_freq_field'], mwr_elev_field, mwr_n_tb_fields,
                            mwr_tb_field_names, mwr_tb_freqs, mwr_tb_noise, mwr_tb_bias, mwr_tb_field1_tbmax,
                            verbose, single_date=True)
             else:
@@ -765,7 +767,7 @@ def read_all_data(date, retz, tres, dostop, verbose, avg_instant, ch1_path,
         ret_tavg = tres
 
     #Read in the MWR zenith data
-    mwr_data = read_mwr(mwr_path, mwr_rootname, date, mwr_type, 1, mwr_elev_field, mwr_n_tb_fields,
+    mwr_data = read_mwr(mwr_path, mwr_rootname, date, mwr_type, 1, vip['mwr_freq_field'], mwr_elev_field, mwr_n_tb_fields,
                         mwr_tb_field_names, mwr_tb_freqs, mwr_tb_noise, mwr_tb_bias, mwr_tb_field1_tbmax,
                         verbose)
 
@@ -776,7 +778,7 @@ def read_all_data(date, retz, tres, dostop, verbose, avg_instant, ch1_path,
 
     #Read in the MWR scan data
     mwrscan_data = read_mwrscan(vip['mwrscan_path'], vip['mwrscan_rootname'], date, vip['mwrscan_type'],
-                   vip['mwrscan_elev_field'], vip['mwrscan_n_tb_fields'], vip['mwrscan_tb_field_names'],
+                   vip['mwrscan_freq_field'], vip['mwrscan_elev_field'], vip['mwrscan_n_tb_fields'], vip['mwrscan_tb_field_names'],
                    vip['mwrscan_tb_freqs'], vip['mwrscan_tb_noise'], vip['mwrscan_tb_bias'],
                    vip['mwrscan_tb_field1_tbmax'], vip['mwrscan_n_elevations'], vip['mwrscan_elevations'], verbose)
 
@@ -841,7 +843,7 @@ def read_all_data(date, retz, tres, dostop, verbose, avg_instant, ch1_path,
 # This function is the one that actually reads in the MWR data.
 ################################################################################
 
-def read_mwr(path, rootname, date, mwr_type, step, mwr_elev_field, mwr_n_tb_fields,
+def read_mwr(path, rootname, date, mwr_type, step, mwr_freq_field, mwr_elev_field, mwr_n_tb_fields,
             mwr_tb_field_names, mwr_tb_freqs, mwr_tb_noise, mwr_tb_bias,
             mwr_tb_field1_tbmax, verbose, single_date=False):
 
@@ -877,6 +879,8 @@ def read_mwr(path, rootname, date, mwr_type, step, mwr_elev_field, mwr_n_tb_fiel
         print('             MWR Tb data are in individual 1-d variables in the input file')
         print('   mwr_type=2 --->')
         print('             MWR tb data are in a single 2-d variable in the input file')
+        print('   mwr_type=3 --->')
+        print('             MWR tb data are in a single 2-d variable in the input file, using the "Univ Cologne" format')
         print('-----------------------------------------------------------------')
         print(' ')
         err = {'success':-1}
@@ -925,17 +929,26 @@ def read_mwr(path, rootname, date, mwr_type, step, mwr_elev_field, mwr_n_tb_fiel
     nmwr_points = 0
     if mwr_type > 0:
         for i in range(len(files)):
-            if verbose >= 3:
-                print("Reading: " + files[i])
+            if verbose >= 2:
+                print("  Reading: " + files[i])
             fid = Dataset(files[i],'r')
-            bt = fid.variables['base_time'][:].astype('float')
-            to = fid.variables['time_offset'][:].astype('float')
+            if(mwr_type <= 2):
+                bt = fid.variables['base_time'][:].astype('float')
+                to = fid.variables['time_offset'][:].astype('float')
+                lat = fid.variables['lat'][:]
+                lon = fid.variables['lon'][:]
+                alt = fid.variables['alt'][:]
+            elif(mwr_type == 3):
+                if verbose >= 3:
+                    print("    using the Univ Cologne data format")
+                bt = 0
+                to = fid.variables['time'][:].astype('float')
+                lat = fid.variables['lat'][:]
+                lon = fid.variables['lon'][:]
+                alt = fid.variables['zsl'][:]
             if len(to) <= 1:
                 fid.close()
                 continue
-            lat = fid.variables['lat'][:]
-            lon = fid.variables['lon'][:]
-            alt = fid.variables['alt'][:]
 
             # Get the surface pressure field, if it exists
             # It might be "p_sfc" or "sfc_p" or "sfc_pres". Units are mb in both cases
@@ -955,7 +968,22 @@ def read_mwr(path, rootname, date, mwr_type, step, mwr_elev_field, mwr_n_tb_fiel
                        if len(foo) > 0:
                            psfcx = fid.variables['pres'][:]
                        else:
-                           psfcx = np.ones(to.shape)*-999.0
+                           foo = np.where(np.array(list(fid.variables.keys())) == 'pa')[0]
+                           if len(foo) > 0:
+                               psfcx  = fid.variables['pa'][:]
+                               psfcx /= 100.    # convert from Pa to hPa (note this is the Univ Cologne MWR format)
+                                        # There is a lot of missing data in the pressure field in this format.  So
+                                        # we want to interpolate across the gaps.  But we don't want to extrapolate,
+                                        # so we need to catch the first and last good point, and use that for the two
+                                        # ends of the day.
+                               foo    = np.where(psfcx > 0)[0]
+                               idx0 = foo[0]
+                               idx1 = foo[-1]
+                               psfcx  = np.interp(bt+to,bt+to[foo],psfcx[foo])
+                               psfcx[0:idx0]  = psfcx[idx0]
+                               psfcx[idx1:-1] = psfcx[idx1]
+                           else:
+                               psfcx = np.ones(to.shape)*-999.0
 
             # See if the elevation variable exists. If so, read it in. If not then
             # assume all samples are zenith pointing and create the elev field as such
@@ -986,9 +1014,9 @@ def read_mwr(path, rootname, date, mwr_type, step, mwr_elev_field, mwr_n_tb_fiel
                         else:
                             tbskyx = np.vstack((tbskyx,tmp))
 
-                elif mwr_type == 2:
+                elif((mwr_type == 2) | (mwr_type == 3)):
 
-                    # if mwr_type is 2, then I expect there to only be a single mwr_tb_field_name
+                    # if mwr_type is 2 or 3, then I expect there to only be a single mwr_tb_field_name
                     foo = np.where(np.array(list(fid.variables.keys())) == mwr_tb_field_names)[0]
                     if len(foo) == 0:
                         print('Error: Unable to find the Tb field ' + mwr_tb_field_names + ' in the MWR input file')
@@ -1000,17 +1028,11 @@ def read_mwr(path, rootname, date, mwr_type, step, mwr_elev_field, mwr_n_tb_fiel
                     # of the channels in the dataset are desired). Select the channels that are
                     # closest in frequency to the entered (desired) frequencies.
 
-                    foo = np.where(np.array(list(fid.variables.keys())) == 'freq')[0]
+                    foo = np.where(np.array(list(fid.variables.keys())) == mwr_freq_field)[0]
                     if len(foo) == 0:
-                        foo = np.where(np.array(list(fid.variables.keys())) == 'frequency')[0]
-
-                        if len(foo) == 0:
-                            print('Error: Unable to find the field "freq" or "frequency" in the MWR input file')
-                            return err
-                        else:
-                            freqx = fid.variables['frequency'][:]
-                    else:
-                        freqx = fid.variables['freq'][:]
+                        print('Error: Unable to find the VIP.mwr_freq_field ('+mwr_freq_field+') in the MWR input file')
+                        return err
+                    freqx = fid.variables[mwr_freq_field][:]
 
                     idx = np.ones(freq.shape)*-1
                     for j in range(len(freq)):
@@ -1098,7 +1120,7 @@ def read_mwr(path, rootname, date, mwr_type, step, mwr_elev_field, mwr_n_tb_fiel
 # This function reads in the mwr scan data.
 ################################################################################
 
-def read_mwrscan(path, rootname, date, mwrscan_type, mwrscan_elev_field, mwrscan_n_tb_fields,
+def read_mwrscan(path, rootname, date, mwrscan_type, mwrscan_freq_field, mwrscan_elev_field, mwrscan_n_tb_fields,
             mwrscan_tb_field_names, mwrscan_tb_freqs, mwrscan_tb_noise, mwrscan_tb_bias,
             mwrscan_tb_field1_tbmax, mwrscan_n_elevations, mwrscan_elevations, verbose):
 
@@ -1120,6 +1142,8 @@ def read_mwrscan(path, rootname, date, mwrscan_type, mwrscan_elev_field, mwrscan
         print('             MWR-scan Tb data are in individual 1-d variables in the input file')
         print('   mwrscan_type=2 --->')
         print('             MWR-scan tb data are in a single 2-d variable in the input file')
+        print('   mwrscan_type=3 --->')
+        print('             MWR-scan tb data are in a single 2-d variable in the input file, using the "Univ Cologne" format')
         print('-----------------------------------------------------------------')
         print(' ')
         err = {'success':-1}
@@ -1179,14 +1203,23 @@ def read_mwrscan(path, rootname, date, mwrscan_type, mwrscan_elev_field, mwrscan
     if mwrscan_type > 0:
         for i in range(len(files)):
             fid = Dataset(files[i],'r')
-            bt = fid.variables['base_time'][:].astype('float')
-            to = fid.variables['time_offset'][:].astype('float')
+            if(mwrscan_type <= 2):
+                bt = fid.variables['base_time'][:].astype('float')
+                to = fid.variables['time_offset'][:].astype('float')
+                lat = fid.variables['lat'][:]
+                lon = fid.variables['lon'][:]
+                alt = fid.variables['alt'][:]
+            elif(mwrscan_type == 3):
+                if verbose >= 3:
+                    print("    using the Univ Cologne data format")
+                bt = 0
+                to = fid.variables['time'][:].astype('float')
+                lat = fid.variables['lat'][:]
+                lon = fid.variables['lon'][:]
+                alt = fid.variables['zsl'][:]
             if len(to) <= 1:
                 fid.close()
                 continue
-            lat = fid.variables['lat'][:]
-            lon = fid.variables['lon'][:]
-            alt = fid.variables['alt'][:]
 
             # See if the elevation variable exists. If so, read it in. If not, then
             # assume all samples are zenith pointing and create the elev field as such
@@ -1249,6 +1282,50 @@ def read_mwrscan(path, rootname, date, mwrscan_type, mwrscan_elev_field, mwrscan
                         idx[j] = foo
                     tbskyx = np.copy(tbskyx[idx,:])
 
+                elif mwrscan_type == 3:
+
+                    # if mwrscan_type is 3, then I expect there to only be a single mwrscan_tb_field_name in the Univ Cologne format
+                    vid = np.where(np.array(list(fid.variables.keys())) == mwrscan_tb_field_names)[0]
+                    if len(vid) == 0:
+                        print('Error: Unable to find the Tb field ' + mwrscan_tb_field_names + ' in the MWR-scan input file')
+                        return err
+                    tbskyx = fid.variables[mwrscan_tb_field_names][:].T
+                    sz = tbskyx.shape
+                    if(len(sz) != 3):
+                        print('Error: For mwrscan_type == 3, the Tbsky field ('+mwrscan_tb_field_names+') needs to be 3-dimensional')
+                        sys.exit()
+
+                    # Now get the frequency field that goes with this 2-d array, as we need
+                    # to select the subset of channels that are desired (i.e. probably not all
+                    # of the channels in the dataset are desired). Select the channels that are
+                    # closest in frequency to the entered (desired) frequencies.
+
+                    foo = np.where(np.array(list(fid.variables.keys())) == mwrscan_freq_field)[0]
+                    if len(foo) == 0:
+                        print('Error: Unable to find the VIP.mwrscan_freq_field ('+mwrscan_freq_field+') in the MWR input file')
+                        return err
+                    freqx = fid.variables[mwrscan_freq_field][:]
+
+                    # I need to unroll the 3-d Tbsky data into a 2-d array, with elevation scans having different times
+                    newtb = np.zeros((len(freqx),len(elevx)*len(to)))
+                    newto = np.zeros(len(elevx)*len(to))
+                    newel = np.zeros(len(elevx)*len(to))
+                    for ii in range(len(to)):
+                        for jj in range(len(elevx)):
+                            newto[ii*len(elevx)+jj]   = to[ii]+jj
+                            newel[ii*len(elevx)+jj]   = elevx[jj]
+                            newtb[:,ii*len(elevx)+jj] = tbskyx[:,jj,ii]
+                    tbskyx = np.copy(newtb)
+                    to     = np.copy(newto)
+                    elevx  = np.copy(newel)
+
+                    idx = np.ones(freq.shape, dtype=int)*-1
+                    for j in range(len(freq)):
+                        dell = abs(freq[j]-freqx)
+                        foo = np.where(dell == np.nanmin(dell))[0]
+                        idx[j] = foo
+                    tbskyx = np.copy(tbskyx[idx,:])
+
                 else:
                     print('Error: Undefined mwrscan_type in VIP file -- aborting')
                     return err
@@ -1274,7 +1351,6 @@ def read_mwrscan(path, rootname, date, mwrscan_type, mwrscan_elev_field, mwrscan
         if mwrscan_type > 0:
 
             # Sanity check
-
             if mwrscan_n_tb_fields > 0:
                 if len(tbsky[:,0]) != mwrscan_n_tb_fields:
                     print('Big problem in read_mwrscan')
@@ -4275,3 +4351,16 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
           'co2_sfc_relative_height':co2_sfc_relative_height, 'nPsfc':external['nPsfc'],
           'ptype':ptype, 'psfc': p0}
     return external
+
+################################################################################
+# This function looks at the name of the TROPoe tar file to get the version of the code
+################################################################################
+
+def get_tropoe_version():
+    tropoe_tar_file = findfile("/tmp","TROPoe*tar.gz")[0]
+    tropoe_tar_file = tropoe_tar_file[0]
+    if(len(tropoe_tar_file) == 0):
+        version = 'UNKNOWN'
+    else:
+        version = tropoe_tar_file[5:-7]
+    return version
