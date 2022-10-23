@@ -10,7 +10,7 @@
 #
 # ----------------------------------------------------------------------------
 
-__version__ = '0.5.60'
+__version__ = '0.5.61'
 
 import os
 import sys
@@ -113,6 +113,9 @@ else:
 if verbose == 3:
     print(('The shell for all commands is', SHELL))
 
+# Get the version of the TROPoe package that was installed within the container
+tropoe_version = Data_reads.get_tropoe_version()
+
 #Capture the version of this file
 globatt = {'algorithm_code': 'TROPoe Retrieval Code (formerly AERIoe)',
            'algorithm_author': 'Dave Turner, Global Systems Laboratory / NOAA (dave.turner@noaa.gov)',
@@ -123,7 +126,8 @@ globatt = {'algorithm_code': 'TROPoe Retrieval Code (formerly AERIoe)',
            'algorithm_comment2': 'Original code was written in IDL and is described by the "AERIoe" papers listed below',
            'algorithm_comment3': 'Code was ported to python by Joshua Gebauer with contributions ' +
                                  'from Tyler Bell (both at the University of Oklahoma)',
-           'algorithm_version': __version__,
+           'algorithm_code_version': __version__,
+           'algorithm_package_version': tropoe_version,
            'algorithm_reference1': 'DD Turner and U Loehnert, 2014: Information Content and ' +
                     'Uncertanties in Thermodynamic Profiles and Liquid Cloud Properties ' +
                     'Retrieved from the Ground-Based Atmospheric Emitted Radiance ' +
