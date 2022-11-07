@@ -149,7 +149,7 @@ def write_output(vip, ext_prof, mod_prof, rass_prof, ext_tseries, globatt, xret,
         ss = datetime.utcfromtimestamp(xret[0]['secs']).second
         hms = hh*10000 + nn*100 + ss
 
-        nfilename = vip['output_path'] + '/' + vip['output_rootname'] + '.' + dt.strftime('%Y%m%d.%H%M%S') + '.cdf'
+        nfilename = vip['output_path'] + '/' + vip['output_rootname'] + '.' + dt.strftime('%Y%m%d.%H%M%S') + '.nc'
         
         
         if ((os.path.exists(nfilename)) & (vip['output_clobber'] == 0)):
@@ -907,7 +907,7 @@ def create_xret(xret, fsample, vip, irs, Xa, Sa, z, bands, obsdim, obsflag,shour
     ymd = yy*10000 + mm*100 + dd
 
     files = []
-    filename = vip['output_path'] + '/' + vip['output_rootname'] + '.' + str(ymd[0]) + '.*.cdf'
+    filename = vip['output_path'] + '/' + vip['output_rootname'] + '.' + str(ymd[0]) + '.*.nc'
     files = files + (glob.glob(filename))
 
     # If none are found, then just run code as normal. Note that xret and fsample
