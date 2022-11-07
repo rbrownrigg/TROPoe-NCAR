@@ -43,7 +43,7 @@ maxbands = 200  # The maximum number of bands to enable for the retrieval
 
 full_vip = ({
     'success': {'value': 0, 'comment': 'Interal success flag. Not for outside use', 'default': False},
-    'tres': {'value': 0, 'comment': 'Temporal resolution [min], 0 implies native IRS temporal resolution', 'default': True},
+    'tres': {'value': 0, 'comment': 'Temporal resolution [min], 0 implies maximum (native) temporal resolution', 'default': True},
     'avg_instant': {'value': 1, 'comment': 'A flag to specify -1:avg with no sqrt(N), 0:avg with sqrt(N), or 1:instantaneous', 'default': True},
     'tag': {'value': 'tropoe', 'comment': 'String for temporary files / directories\n', 'default': True},
 
@@ -63,8 +63,8 @@ full_vip = ({
     'irs_noise_inflation':{'value': 1.0, 'comment': 'Value to increase the assumed random error in the IRS data', 'default': False},
     'irs_smooth_noise': {'value': 0, 'comment': 'The temporal window [minutes] used to smooth the IRS noise with time', 'default': False},
     'irs_calib_pres': {'value': [0.0, 1.0], 'comment': 'Intercept [mb] and slope [mb/mb to calib (newP = int = slope*obsP) (need comma between them)', 'default': False},
-    'irs_use_missingDataFlag': {'value': 1, 'comment': 'Set this to 1 to use the field \'missingDataFlag\' (from the ch1 file) to remove bad IRS data from analysis. If not zero, then all IRS data will be processed,', 'default': False},
-    'irs_hatch_switch': {'value': 1, 'comment': '1 - only include hatchOpen=1 when averaging, 2 - include all IRS samples when averaging', 'default': False},
+    'irs_use_missingDataFlag': {'value': 1, 'comment': 'Set this to 1 to use the field \'missingDataFlag\' (from the ch1 file) to remove bad IRS data from analysis. If zero, then all IRS data will be processed,', 'default': False},
+    'irs_hatch_switch': {'value': 1, 'comment': '1 - only include hatchOpen=1 when averaging, 0 - include all IRS samples when averaging', 'default': False},
     'irs_fv': {'value': 0.0, 'comment': 'Apply a foreoptics obscuration correction', 'default': False},
     'irs_fa': {'value': 0.0, 'comment': 'Apply an aftoptics obscuration correction', 'default': False},
     'irs_old_ffov_halfangle': {'value': 23.0, 'comment': 'Original Half angle [millirad] of the finite field of view of the instrument', 'default': False},
