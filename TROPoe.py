@@ -10,7 +10,7 @@
 #
 # ----------------------------------------------------------------------------
 
-__version__ = '0.5.63'
+__version__ = '0.5.64'
 
 import os
 import sys
@@ -2152,7 +2152,7 @@ for i in range(len(irs['secs'])):                        # { loop_i
     # last time sample that was processed (i.e., "xsamp")
     if version == '':
         try:
-            version = globatt['algorithm_version'] + version_compute_jacobian
+            version = globatt['algorithm_code_version'] + version_compute_jacobian
         except:
             print('Did not find globatt version')
             version = 'Unknown Version' + version_compute_jacobian
