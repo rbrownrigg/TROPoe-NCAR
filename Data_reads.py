@@ -3087,8 +3087,8 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
                     stemp = np.copy(stempx)
                 else:
                     tsecs = np.append(tsecs, bt+to)
-                    temp  = np.append(temp,tempx, axis = 1)
-                    stemp = np.append(stemp,stempx, axis = 1)
+                    temp  = np.append(temp,tempx, axis = 0)
+                    stemp = np.append(stemp,stempx, axis = 0)
                 nprof = len(tsecs)
 
                 # There can be missgin data in the middle of the RASS profile,
