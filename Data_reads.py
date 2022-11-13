@@ -3699,6 +3699,7 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
                 to = to[foo].squeeze()
                 p = p[foo].squeeze()
                 t = t[foo].squeeze()
+                u = u[foo].squeeze()
                 qunit = 'g/kg'
                 qtype = 'ARM met station'
 
