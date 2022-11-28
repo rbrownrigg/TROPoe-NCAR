@@ -931,7 +931,6 @@ def create_xret(xret, fsample, vip, irs, Xa, Sa, z, bands, obsdim, obsflag,shour
             found = True
             break
     
-    found = True
     if found and vip['output_clobber'] == 0:
         print('A file with the same rootname and shour as the current run was found. Aborting retrieval')
         print('     to prevent clobbering.')
@@ -939,7 +938,11 @@ def create_xret(xret, fsample, vip, irs, Xa, Sa, z, bands, obsdim, obsflag,shour
         nfilename = files[i]
         return xret, -1, nfilename
     
-    if not found:
+    # There was a file for this day, but there were different shours
+    if not found and vip['output_clobber'] == 0:
+        return xret, fsample, nfilename
+    
+    if not found and vip['output_clobber'] == 2:
         print('The flag output_clobber was set to 2 for append, but no prior file')
         print('      with the same shour was found so code will run as normal')
         print('      and create a new file.')
