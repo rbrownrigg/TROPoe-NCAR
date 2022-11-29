@@ -2394,9 +2394,9 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
                  # Append the data to the growing structure
 
                  if external['nQprof'] <= 0:
-                     qsecs = bt + to[0]
-                     wv = np.interp(zzq,z,w,left=-999,right=-999)
-                     swv = np.interp(zzq,z,we,left=-999,right=-999)
+                     qsecs = np.array([bt + to[0]])
+                     wv = np.array([np.interp(zzq,z,w,left=-999,right=-999)])
+                     swv = np.array([np.interp(zzq,z,we,left=-999,right=-999)])
                  else:
                      qsecs = np.append(qsecs,bt+to[0])
                      wv = np.vstack((wv, np.interp(zzq,z,w,left=-999,right=-999)))
@@ -2791,9 +2791,9 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
                 # Append the data to the growing structure
 
                 if external['nQprof'] <= 0:
-                    qsecs = bt+to[0]
-                    wv = np.interp(zzq,z,w,left=-999,right=-999)
-                    swv = np.interp(zzq,z,we,left=-999,right=-999)
+                    qsecs = np.array([bt+to[0]])
+                    wv = np.array([np.interp(zzq,z,w,left=-999,right=-999)])
+                    swv = np.array([np.interp(zzq,z,we,left=-999,right=-999)])
                 else:
                     qsecs = np.append(qsecs,bt+to[0])
                     wv = np.vstack((wv, np.interp(zzq,z,w,left=-999,right=-999)))
@@ -2887,9 +2887,9 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
 
                 # Append the data to the growing structure
                 if external['nTprof'] <= 0:
-                    tsecs = bt+to[0]
-                    temp = np.interp(zzt,z,t,left=-999,right=-999)
-                    stemp = np.ones(len(zzt))*sigma_t
+                    tsecs = np.array([bt+to[0]])
+                    temp = np.array([np.interp(zzt,z,t,left=-999,right=-999)])
+                    stemp = np.array([np.ones(len(zzt))*sigma_t])
                 else:
                     tsecs = np.append(tsecs,bt+to[0])
                     temp = np.vstack((temp, np.interp(zzt,z,t,left=-999,right=-999)))
@@ -3174,9 +3174,9 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
                 # Append the data to the growing structure
 
                 if external['nTprof'] <= 0:
-                    tsecs = bt+to[0]
-                    temp = np.interp(zzt,z,t,left=-999,right=-999)
-                    stemp = np.interp(zzt,z,sigma_t,left=-999,right=-999)
+                    tsecs = np.array([bt+to[0]])
+                    temp = np.array([np.interp(zzt,z,t,left=-999,right=-999)])
+                    stemp = np.array([np.interp(zzt,z,sigma_t,left=-999,right=-999)])
                 else:
                     tsecs = np.append(tsecs,bt+to[0])
                     temp = np.vstack((temp, np.interp(zzt,z,t,left=-999,right=-999)))
@@ -3249,17 +3249,10 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
             tmp_swater[foo,:] = np.nan
 
 
-        # Now interpolate to the TROPoe temporal grid
-        if external['nQprof'] == 1:
-            # If there is only a single sample, then set all of the profiles to this
-            # same profile
-            for j in range(len(secs)):
-                new_water[:,j]  = np.copy(tmp_water)
-                new_swater[:,j] = np.copy(tmp_swater)
-        else:
-            for j in range(len(ht)):
-                new_water[j,:]  = np.interp(secs,qsecs,tmp_water[j,:])
-                new_swater[j,:] = np.interp(secs,qsecs,tmp_swater[j,:])
+        # Now interpolate to the TROPoe temporal grid. 
+        for j in range(len(ht)):
+            new_water[j,:]  = np.interp(secs,qsecs,tmp_water[j,:])
+            new_swater[j,:] = np.interp(secs,qsecs,tmp_swater[j,:])
 
         # Set the interpolated data before and after the end external times to missing
         # but we will allow the interpolated data to be used over some delta_time
@@ -3322,16 +3315,9 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
             tmp_stemp[foo,:] = np.nan
 
         # Now interpolate to the TROPoe temporal grid
-        if external['nTprof'] == 1:
-            # If there is only a single sample, then set all of the profiles to this
-            # same profile
-            for j in range(len(secs)):
-                new_temp[:,j] = np.copy(tmp_temp)
-                new_stemp[:,j] = np.copy(tmp_stemp)
-        else:
-            for j in range(len(ht)):
-                new_temp[j,:] = np.interp(secs,tsecs,tmp_temp[j,:])
-                new_stemp[j,:] = np.interp(secs,tsecs,tmp_stemp[j,:])
+        for j in range(len(ht)):
+            new_temp[j,:] = np.interp(secs,tsecs,tmp_temp[j,:])
+            new_stemp[j,:] = np.interp(secs,tsecs,tmp_stemp[j,:])
 
         # Set the interpolated data before and after the end external times to missing
         # but we will allow the interpolated data to be used over some delta_time
