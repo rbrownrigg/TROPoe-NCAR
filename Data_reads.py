@@ -718,7 +718,7 @@ def read_all_data(date, retz, tres, dostop, verbose, avg_instant, ch1_path,
 
         #Apply the additional IRS QC tests.
         foo = np.where((irsch1['wnum'] >= 675) & (irsch1['wnum'] < 680))[0]
-        if len(foo) == 0:
+        if len(foo) > 0:
             for i in range(len(irsch1['secs'])):
                 tmp = np.nanmean(irsch1['rad'][foo,i])
                 tb = Calcs_Conversions.invplanck(677.5,tmp)
