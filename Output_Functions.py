@@ -940,6 +940,7 @@ def create_xret(xret, fsample, vip, irs, Xa, Sa, z, bands, obsdim, obsflag,shour
     
     # There was a file for this day, but there were different shours
     if not found and vip['output_clobber'] == 0:
+        nfilename = ' '
         return xret, fsample, nfilename
     
     if not found and vip['output_clobber'] == 2:
