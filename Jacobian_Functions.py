@@ -2488,7 +2488,8 @@ def compute_jacobian_external_sfc_co2(Xn, p, z, sfc_relative_height, retrieve_co
 def compute_jacobian_microwavescan_3method(Xn, p, z, mwrscan, cbh, vip, workdir,
                 monortm_tfile, monortm_exec, fixt, fixwv, fixlcld, jac_maxht,
                 stdatmos, sfc_alt, verbose):
-
+    
+    monortm_outputfile = workdir+'/monortm_output.txt'      # A temporary output file
     flag = 0               # Failure
 
     # Allocate space for the Jacobian and forward calculation
