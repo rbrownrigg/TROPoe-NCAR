@@ -1768,6 +1768,7 @@ def compute_jacobian_microwave_finitediff(Xn, p, z, freq, cbh, vip, workdir,
                 monortm_tfile, monortm_exec, fixt, fixwv, fixlcld, jac_maxht,
                 stdatmos, sfc_alt, verbose):
 
+    monortm_outputfile = workdir+'/monortm_output.txt'      # A temporary output file
     flag = 0               # Failure
     k = len(z)
     t = np.copy(Xn[0:k])          # degC
@@ -1791,8 +1792,8 @@ def compute_jacobian_microwave_finitediff(Xn, p, z, freq, cbh, vip, workdir,
     # Perform the baseline calculation
     u = Calcs_Conversions.w2rh(w, p, t, 0) * 100
     Other_functions.write_arm_sonde_file((z+sfcz)*1000, p, t, u, workdir+'/'+monortm_tfile, silent = True)
-    command = monortm_exec + ' ' + monortm_tfile + ' {:3.1f} {:8.2f} {:6.3f} {:6.3f}'.format(1.0, lwp, cbh, cth)
-    a = LBLRTM_Functions.run_monortm(command, freq, z, stdatmos)
+    command = ('rm -f '+monortm_outputfile+' ; '+monortm_exec + ' ' + monortm_tfile + ' {:3.1f} {:8.2f} {:6.3f} {:6.3f}'.format(1.0, lwp, cbh, cth)+' > '+monortm_outputfile)
+    a = LBLRTM_Functions.run_monortm(command, freq, z, stdatmos, monortm_outputfile)
     if a['status'] == 0:
         print('Problem with MonoRTM calc 0')
         return flag, -999., -999., -999.
@@ -1811,8 +1812,8 @@ def compute_jacobian_microwave_finitediff(Xn, p, z, freq, cbh, vip, workdir,
                 t0[kk] += delta
                 u = Calcs_Conversions.w2rh(w, p, t0, 0)
                 Other_functions.write_arm_sonde_file((z+sfcz)*1000, p, t0, u, workdir+'/'+monortm_tfile, silent=True)
-                command = monortm_exec + ' ' + monortm_tfile + ' {:3.1f} {:8.2f} {:6.3f} {:6.3f}'.format(1.0, lwp, cbh, cth)
-                b = LBLRTM_Functions.run_monortm(command, freq, z, stdatmos)
+                command = ('rm -f '+monortm_outputfile+' ; '+monortm_exec + ' ' + monortm_tfile + ' {:3.1f} {:8.2f} {:6.3f} {:6.3f}'.format(1.0, lwp, cbh, cth)+' > '+monortm_outputfile)
+                b = LBLRTM_Functions.run_monortm(command, freq, z, stdatmos, monortm_outputfile)
                 if b['status'] == 0:
                     print('Problem with MonoRTM calc 1')
                     return flag, -999., -999., -999.
@@ -1836,8 +1837,8 @@ def compute_jacobian_microwave_finitediff(Xn, p, z, freq, cbh, vip, workdir,
                 w0[kk] += delta
                 u = Calcs_Conversions.w2rh[w0, p, t, 0] * 100
                 Other_functions.write_arm_sonde_file((z+sfcz)*1000, p, t, u, workdir+'/'+monortm_tfile, silent = True)
-                command = monortm_exec + ' ' + monortm_tfile + ' {:3.1f} {:8.2f} {:6.3f} {:6.3f}'.format(1.0, lwp, cbh, cth)
-                b = LBLRTM_Functions.run_monortm(command, freq, z, stdatmos)
+                command = ('rm -f '+monortm_outputfile+' ; '+monortm_exec + ' ' + monortm_tfile + ' {:3.1f} {:8.2f} {:6.3f} {:6.3f}'.format(1.0, lwp, cbh, cth)+' > '+monortm_outputfile)
+                b = LBLRTM_Functions.run_monortm(command, freq, z, stdatmos, monortm_outputfile)
                 if b['status'] == 0:
                     print('Problem with MonoRTM calc 2')
                     return flag, -999., -999., -999.
@@ -1853,8 +1854,8 @@ def compute_jacobian_microwave_finitediff(Xn, p, z, freq, cbh, vip, workdir,
     u = Calcs_Conversions.w2rh(w, p, t, 0) * 100
     Other_functions.write_arm_sonde_file((z+sfcz)*1000, p, t, u, workdir+'/'+monortm_tfile, silent = True)
     lwpp = lwp + 25.
-    command = monortm_exec + ' ' + monortm_tfile + ' {:3.1f} {:8.2f} {:6.3f} {:6.3f}'.format(1.0, lwpp, cbh, cth)
-    b = LBLRTM_Functions.run_monortm(command, freq, z, stdatmos)
+    command = ('rm -f '+monortm_outputfile+' ; '+monortm_exec + ' ' + monortm_tfile + ' {:3.1f} {:8.2f} {:6.3f} {:6.3f}'.format(1.0, lwpp, cbh, cth)+' > '+monortm_outputfile)
+    b = LBLRTM_Functions.run_monortm(command, freq, z, stdatmos, monortm_outputfile)
     if b['status'] == 0:
         print('Problem with MonoRTM calc 3')
     FXp = np.copy(b['tb'])
@@ -1879,6 +1880,7 @@ def compute_jacobian_microwave_3method(Xn, p, z, freq, cbh, vip, workdir,
                 monortm_tfile, monortm_exec, fixt, fixwv, fixlcld, jac_maxht,
                 stdatmos, sfc_alt, verbose):
 
+    monortm_outputfile = workdir+'/monortm_output.txt'      # A temporary output file
     flag = 0               # Failure
     k = len(z)
     t = np.copy(Xn[0:k])          # degC
@@ -1902,8 +1904,8 @@ def compute_jacobian_microwave_3method(Xn, p, z, freq, cbh, vip, workdir,
     # Perform the baseline calculation
     u = Calcs_Conversions.w2rh(w, p, t, 0) * 100
     Other_functions.write_arm_sonde_file((z+sfcz)*1000, p, t, u, workdir+'/'+monortm_tfile, silent = True)
-    command = monortm_exec + ' ' + monortm_tfile + ' {:3.1f} {:8.2f} {:6.3f} {:6.3f}'.format(1.0, lwp, cbh, cth)
-    a = LBLRTM_Functions.run_monortm(command, freq, z, stdatmos)
+    command = ('rm -f '+monortm_outputfile+' ; '+monortm_exec + ' ' + monortm_tfile + ' {:3.1f} {:8.2f} {:6.3f} {:6.3f}'.format(1.0, lwp, cbh, cth)+' > '+monortm_outputfile)
+    a = LBLRTM_Functions.run_monortm(command, freq, z, stdatmos, monortm_outputfile)
     if a['status'] == 0:
         print('Problem with MonoRTM calc 0')
         return flag, -999., -999., -999.
@@ -1914,8 +1916,8 @@ def compute_jacobian_microwave_3method(Xn, p, z, freq, cbh, vip, workdir,
         t0 = t + tpert
         u = Calcs_Conversions.w2rh(w, p, t0, 0) * 100
         Other_functions.write_arm_sonde_file((z+sfcz)*1000, p, t0, u, workdir+'/'+monortm_tfile, silent = True)
-        command = monortm_exec + ' ' + monortm_tfile + ' {:3.1f} {:8.2f} {:6.3f} {:6.3f}'.format(1.0, lwp, cbh, cth)
-        b = LBLRTM_Functions.run_monortm(command, freq, z, stdatmos)
+        command = ('rm -f '+monortm_outputfile+' ; '+monortm_exec + ' ' + monortm_tfile + ' {:3.1f} {:8.2f} {:6.3f} {:6.3f}'.format(1.0, lwp, cbh, cth)+' > '+monortm_outputfile)
+        b = LBLRTM_Functions.run_monortm(command, freq, z, stdatmos, monortm_outputfile)
         if b['status'] == 0:
             print('Problem with MonoRTM calc 1')
             return flag, -999., -999., -999.
@@ -1927,8 +1929,8 @@ def compute_jacobian_microwave_3method(Xn, p, z, freq, cbh, vip, workdir,
         w0 = w*h2opert
         u = Calcs_Conversions.w2rh(w0, p, t, 0) * 100
         Other_functions.write_arm_sonde_file((z+sfcz)*1000, p, t, u, workdir+'/'+monortm_tfile, silent = True)
-        command = monortm_exec + ' ' + monortm_tfile + ' {:3.1f} {:8.2f} {:6.3f} {:6.3f}'.format(1.0, lwp, cbh, cth)
-        c = LBLRTM_Functions.run_monortm(command, freq, z, stdatmos)
+        command = ('rm -f '+monortm_outputfile+' ; '+monortm_exec + ' ' + monortm_tfile + ' {:3.1f} {:8.2f} {:6.3f} {:6.3f}'.format(1.0, lwp, cbh, cth)+' > '+monortm_outputfile)
+        c = LBLRTM_Functions.run_monortm(command, freq, z, stdatmos, monortm_outputfile)
         if c['status'] == 0:
             print('Problem with MonoRTM calc 2')
             return flag, -999., -999., -999.
@@ -1939,8 +1941,8 @@ def compute_jacobian_microwave_3method(Xn, p, z, freq, cbh, vip, workdir,
         lwpp = lwp + 25.
         u = Calcs_Conversions.w2rh(w, p, t, 0) * 100
         Other_functions.write_arm_sonde_file((z+sfcz)*1000, p, t, u, workdir+'/'+monortm_tfile, silent = True)
-        command = monortm_exec + ' ' + monortm_tfile + ' {:3.1f} {:8.2f} {:6.3f} {:6.3f}'.format(1.0, lwpp, cbh, cth)
-        d = LBLRTM_Functions.run_monortm(command, freq, z, stdatmos)
+        command = ('rm -f '+monortm_outputfile+' ; '+monortm_exec + ' ' + monortm_tfile + ' {:3.1f} {:8.2f} {:6.3f} {:6.3f}'.format(1.0, lwpp, cbh, cth)+' > '+monortm_outputfile)
+        d = LBLRTM_Functions.run_monortm(command, freq, z, stdatmos, monortm_outputfile)
         if d['status'] == 0:
             print('Problem with MonoRTM calc 3')
             return flag, -999., -999., -999.
@@ -2537,12 +2539,12 @@ def compute_jacobian_microwavescan_3method(Xn, p, z, mwrscan, cbh, vip, workdir,
         elevOff = 0.1   # this is in degrees elevation
         didfail = 0     # If I am unable to get an accurate computation along the slant angle, then didfail = 1
         cnt = 0
-        command = monortm_exec + ' ' + monortm_tfile + ' {:3.1f} {:8.2f} {:6.3f} {:6.3f} {:6.3f}'.format(1.0, lwp, cbh, cth, 90-uelev[ii]+cnt*elevOff)
-        a = LBLRTM_Functions.run_monortm(command, mwrscan['freq'], z, stdatmos)
+        command = ('rm -f '+monortm_outputfile+' ; '+monortm_exec + ' ' + monortm_tfile + ' {:3.1f} {:8.2f} {:6.3f} {:6.3f} {:6.3f}'.format(1.0, lwp, cbh, cth, 90-uelev[ii]+cnt*elevOff)+' > '+monortm_outputfile)
+        a = LBLRTM_Functions.run_monortm(command, mwrscan['freq'], z, stdatmos, monortm_outputfile)
         while((a['status'] != 1) & (cnt < 2)):
             cnt += 1
-            command = monortm_exec + ' ' + monortm_tfile + ' {:3.1f} {:8.2f} {:6.3f} {:6.3f} {:6.3f}'.format(1.0, lwp, cbh, cth, 90-uelev[ii]+cnt*elevOff)
-            a = LBLRTM_Functions.run_monortm(command, mwrscan['freq'], z, stdatmos)
+            command = ('rm -f '+monortm_outputfile+' ; '+monortm_exec + ' ' + monortm_tfile + ' {:3.1f} {:8.2f} {:6.3f} {:6.3f} {:6.3f}'.format(1.0, lwp, cbh, cth, 90-uelev[ii]+cnt*elevOff)+' > '+monortm_outputfile)
+            a = LBLRTM_Functions.run_monortm(command, mwrscan['freq'], z, stdatmos, monortm_outputfile)
 
         if a['status'] == 0:
             print('    Bending angle problem with MonoRTM in mwrScan0')
@@ -2555,12 +2557,12 @@ def compute_jacobian_microwavescan_3method(Xn, p, z, mwrscan, cbh, vip, workdir,
             u = Calcs_Conversions.w2rh(w, p, t0, 0) * 100
             Other_functions.write_arm_sonde_file((z+sfcz)*1000, p, t0, u, workdir +'/' + monortm_tfile, silent = True)
             cnt = 0
-            command = monortm_exec + ' ' + monortm_tfile + ' {:3.1f} {:8.2f} {:6.3f} {:6.3f} {:6.3f}'.format(1.0, lwp, cbh, cth, 90-uelev[ii]+cnt*elevOff)
-            b = LBLRTM_Functions.run_monortm(command, mwrscan['freq'], z, stdatmos)
+            command = ('rm -f '+monortm_outputfile+' ; '+monortm_exec + ' ' + monortm_tfile + ' {:3.1f} {:8.2f} {:6.3f} {:6.3f} {:6.3f}'.format(1.0, lwp, cbh, cth, 90-uelev[ii]+cnt*elevOff)+' > '+monortm_outputfile)
+            b = LBLRTM_Functions.run_monortm(command, mwrscan['freq'], z, stdatmos, monortm_outputfile)
             while((b['status'] != 1) & (cnt < 2)):
                 cnt += 1
-                command = monortm_exec + ' ' + monortm_tfile + ' {:3.1f} {:8.2f} {:6.3f} {:6.3f} {:6.3f}'.format(1.0, lwp, cbh, cth, 90-uelev[ii]+cnt*elevOff)
-                b = LBLRTM_Functions.run_monortm(command, mwrscan['freq'], z, stdatmos)
+                command = ('rm -f '+monortm_outputfile+' ; '+monortm_exec + ' ' + monortm_tfile + ' {:3.1f} {:8.2f} {:6.3f} {:6.3f} {:6.3f}'.format(1.0, lwp, cbh, cth, 90-uelev[ii]+cnt*elevOff)+' > '+monortm_outputfile)
+                b = LBLRTM_Functions.run_monortm(command, mwrscan['freq'], z, stdatmos, monortm_outputfile)
             if b['status'] == 0:
                 print('    Bending angle problem with MonoRTM in mwrScan1')
                 didfail = 1
@@ -2573,12 +2575,12 @@ def compute_jacobian_microwavescan_3method(Xn, p, z, mwrscan, cbh, vip, workdir,
             u = Calcs_Conversions.w2rh(w0, p, t, 0) * 100
             Other_functions.write_arm_sonde_file((z+sfcz)*1000, p, t, u, workdir +'/' + monortm_tfile, silent = True)
             cnt = 0
-            command = monortm_exec + ' ' + monortm_tfile + ' {:3.1f} {:8.2f} {:6.3f} {:6.3f} {:6.3f}'.format(1.0, lwp, cbh, cth, 90-uelev[ii]+cnt*elevOff)
-            c = LBLRTM_Functions.run_monortm(command, mwrscan['freq'], z, stdatmos)
+            command = ('rm -f '+monortm_outputfile+' ; '+monortm_exec + ' ' + monortm_tfile + ' {:3.1f} {:8.2f} {:6.3f} {:6.3f} {:6.3f}'.format(1.0, lwp, cbh, cth, 90-uelev[ii]+cnt*elevOff)+' > '+monortm_outputfile)
+            c = LBLRTM_Functions.run_monortm(command, mwrscan['freq'], z, stdatmos, monortm_outputfile)
             while((c['status'] != 1) & (cnt < 2)):
                 cnt += 1
-                command = monortm_exec + ' ' + monortm_tfile + ' {:3.1f} {:8.2f} {:6.3f} {:6.3f} {:6.3f}'.format(1.0, lwp, cbh, cth, 90-uelev[ii]+cnt*elevOff)
-                c = LBLRTM_Functions.run_monortm(command, mwrscan['freq'], z, stdatmos)
+                command = ('rm -f '+monortm_outputfile+' ; '+monortm_exec + ' ' + monortm_tfile + ' {:3.1f} {:8.2f} {:6.3f} {:6.3f} {:6.3f}'.format(1.0, lwp, cbh, cth, 90-uelev[ii]+cnt*elevOff)+' > '+monortm_outputfile)
+                c = LBLRTM_Functions.run_monortm(command, mwrscan['freq'], z, stdatmos, monortm_outputfile)
             if c['status'] == 0:
                 print('    Bending angle problem with MonoRTM in mwrScan2')
                 didfail = 1
@@ -2590,12 +2592,12 @@ def compute_jacobian_microwavescan_3method(Xn, p, z, mwrscan, cbh, vip, workdir,
             u = Calcs_Conversions.w2rh(w, p, t, 0) * 100
             Other_functions.write_arm_sonde_file((z+sfcz)*1000, p, t, u, workdir +'/' + monortm_tfile, silent = True)
             cnt = 0
-            command = monortm_exec + ' ' + monortm_tfile + ' {:3.1f} {:8.2f} {:6.3f} {:6.3f} {:6.3f}'.format(1.0, lwp, cbh, cth, 90-uelev[ii]+cnt*elevOff)
-            d = LBLRTM_Functions.run_monortm(command, mwrscan['freq'], z, stdatmos)
+            command = ('rm -f '+monortm_outputfile+' ; '+monortm_exec + ' ' + monortm_tfile + ' {:3.1f} {:8.2f} {:6.3f} {:6.3f} {:6.3f}'.format(1.0, lwp, cbh, cth, 90-uelev[ii]+cnt*elevOff)+' > '+monortm_outputfile)
+            d = LBLRTM_Functions.run_monortm(command, mwrscan['freq'], z, stdatmos, monortm_outputfile)
             while((d['status'] != 1) & (cnt < 2)):
                 cnt += 1
-                command = monortm_exec + ' ' + monortm_tfile + ' {:3.1f} {:8.2f} {:6.3f} {:6.3f} {:6.3f}'.format(1.0, lwp, cbh, cth, 90-uelev[ii]+cnt*elevOff)
-                d = LBLRTM_Functions.run_monortm(command, mwrscan['freq'], z, stdatmos)
+                command = ('rm -f '+monortm_outputfile+' ; '+monortm_exec + ' ' + monortm_tfile + ' {:3.1f} {:8.2f} {:6.3f} {:6.3f} {:6.3f}'.format(1.0, lwp, cbh, cth, 90-uelev[ii]+cnt*elevOff)+' > '+monortm_outputfile)
+                d = LBLRTM_Functions.run_monortm(command, mwrscan['freq'], z, stdatmos, monortm_outputfile)
             if d['status'] == 0:
                 print('    Bending angle problem with MonoRTM in mwrScan3')
                 didfail = 1

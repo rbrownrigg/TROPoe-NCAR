@@ -11,6 +11,7 @@
 # ----------------------------------------------------------------------------
 
 import os
+import sys
 import numpy as np
 import struct
 from subprocess import Popen, PIPE
@@ -1528,19 +1529,22 @@ def read_tape27(filen = 'TAPE27'):
 # the profile of gaseous optical depth also.
 ################################################################################
 
-def run_monortm(command, freq, z, stdatmos):
+def run_monortm(command, freq, z, stdatmos, outputfile):
     
     # Define the error status
     error = {'status':0}
     
     # Run the command
-    process = Popen(command, stdout = PIPE, stderr = PIPE, shell=True, executable = '/bin/csh')
+    process = Popen(command, shell=True, executable = '/bin/csh')
     stdout, stderr = process.communicate()
-    stdout = stdout.decode().split('\n')
+    # Read in the output file into "stdout"
+    f = open(outputfile)
+    stdout = f.readlines()
+    f.close()
+    # Process / parse the output
     for i in range(len(stdout)):
-        stdout[i] = stdout[i].strip()
+        stdout[i] = stdout[i].strip('\n').strip()
     stdout = np.array(stdout)
-    
     if len(stdout) < (14 + len(freq) + len(z)):
         print('Error: the MonoRTM calculation was not successful')
         return error
