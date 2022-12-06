@@ -407,6 +407,7 @@ def read_irs_ch(path,date,irs_type,fv,fa,irs_spec_cal_factor,
         fah = np.where(sceneMirrorAngle > -100)[0]
         if (len(fah) == 0) and (irs_type < 5):
             sceneMirrorAngle[:] = zenith_scene_mirror_angle
+            foo = np.arange(len(sceneMirrorAngle))
         else:
             print('Error in read_irs_ch: Unable to find any zenith pointing AERI/ASSIST data')
             return err
