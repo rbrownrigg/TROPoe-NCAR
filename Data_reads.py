@@ -621,7 +621,7 @@ def read_all_data(date, retz, tres, dostop, verbose, avg_instant, ch1_path,
             print('     does not exist!')
             return 1, -999, -999, -999
             
-        if mwr_data['success'] != 1:
+        if (mwr_data['success'] != 1) or (mwr_data['type'] == 0):
             print('Problem reading MWR data -- unable to continue because the MWR is the master instrument')
             fail = 1
             return fail, -999, -999, -999
