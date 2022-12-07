@@ -1012,7 +1012,20 @@ for i in range(len(irs['secs'])):                        # { loop_i
         else:
             print(('Error: There were negative 1-sigma uncertainties in obs: ' + str(feh) + ' Skipping sample'))
             continue
-
+    
+    # Check if there is NaN's in the data
+    foo = np.where(np.isnan(sigY) | (np.isnan(Y)))[0]
+    if len(foo) >0:
+       tmp = np.copy(flagY[foo])
+       feh = np.unique(tmp)
+       if len(feh) <= 0:
+          print('This should not happen. Major error in quick check of 1-sigma uncertainties')
+          VIP_Databases_functions.abort(lbltmpdir,date)
+          sys.exit()
+       else:
+           print('There are NaNs in the obs_vector or 1-sigma uncertainties for obs: ' + str(feh) + ' Skipping sample')
+           continue
+        
     # Compute the estimate of the forward model uncertainty (Sf).
     # This is computed at Sf = kb # Sb # transpose(Kb), where
     # B is the vector of model parameters and Sb is its covariance matrix
