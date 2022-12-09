@@ -163,7 +163,8 @@ def epres(temp, rh):
     return ep
     
 ################################################################################
-# This function computes the saturation vapor pressure over liquid water or ice
+# This function computes the saturation vapor pressure [Pa] over liquid water or ice,
+# where temperature has units C.  Ice=0 for water, Ice=1 for ice
 ################################################################################
 
 def esat(temp,ice):
@@ -213,18 +214,18 @@ def esat(temp,ice):
     return es
     
 ################################################################################
-# This function converts water vapor mixing ratio to the partial pressure
-# of water vapor
+# This function converts water vapor mixing ratio [g/kg] using the ambient
+# pressure [mb] to the partial pressure of water vapor [mb]
 ################################################################################
 
 def w2e(w,p):
-    ww = w/1000.
+    ww = w/1000.                # Convert g/kg to g/g as a temporary variable
     e = p * ww / (0.622 + ww)
     return e
     
 ################################################################################
-# This function calculates relative humidity given the mixing ratio, the
-# barametric pressure, and temperature.
+# This function calculates relative humidity (as a fraction) given the 
+# mixing ratio [g/kg], the barametric pressure [mb], and temperature [C].  
 ################################################################################
 
 def w2rh(w, p, t, ice=0):
