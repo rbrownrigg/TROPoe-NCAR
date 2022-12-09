@@ -2126,8 +2126,8 @@ def compute_jacobian_external_temp_profiler(Xn, p, z, minht, maxht, temp_type):
         # The RASS's temperature data is in virtual temperature [C]
         t0 = np.copy(Xn[0:k])
         q0 = np.copy(Xn[k:2*k])
-        p0 = np.copy(p) * 100  # convert pressure from mb to pascalls (only used in Tv calc)
-        rh = Calcs_Conversions.w2rh(q0, p, t0, 0) * 100
+        p0 = np.copy(p) * 100  # convert pressure from mb to pascals (only used in Tv calc)
+        rh = Calcs_Conversions.w2rh(q0, p, t0, 0)   # RH is unitless between 0 and 1
         ttv = Calcs_Conversions.tvirt(t0, rh, p0)   # virtual temperature in [C]
 
         # Compute the jacobian over the appropriate height range
@@ -2138,7 +2138,7 @@ def compute_jacobian_external_temp_profiler(Xn, p, z, minht, maxht, temp_type):
             # Compute sensitivity to a perturbation in temperature
             t1 = t0.copy()
             t1[foo[i]] += tpert
-            rh = Calcs_Conversions.w2rh(q0, p, t1, 0) * 100
+            rh = Calcs_Conversions.w2rh(q0, p, t1, 0)   # RH is unitless
             tmp = Calcs_Conversions.tvirt(t1, rh, p0)   # virtual temperature in [C]
             Kij[i,foo[i]] = (tmp[foo[i]]-ttv[foo[i]]) / (t1[foo[i]] - t0[foo[i]])
 
@@ -2148,7 +2148,7 @@ def compute_jacobian_external_temp_profiler(Xn, p, z, minht, maxht, temp_type):
                 q1[foo[i]] = 0.05
             else:
                 q1[foo[i]] *= qpert
-            rh = Calcs_Conversions.w2rh(q1, p, t0, 0) * 100
+            rh = Calcs_Conversions.w2rh(q1, p, t0, 0)   # RH is unitless
             tmp = Calcs_Conversions.tvirt(t0, rh, p0)   # virtual temperature in [C]
             Kij[i,foo[i]+k] = (tmp[foo[i]]-ttv[foo[i]]) / (q1[foo[i]] - q0[foo[i]])
         FXn = ttv[foo]
