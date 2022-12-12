@@ -442,7 +442,7 @@ def write_output(vip, ext_prof, mod_prof, rass_prof, ext_tseries, globatt, xret,
             obs_flag.value_06 = 'Surface met water vapor in ' + ext_tseries['qunit'] + ' from ' + ext_tseries['qtype']
             obs_flag.value_06_comment1 = 'Surface met station is ' + str(ext_tseries['sfc_relative_height']) + ' m above height=0 level'
             if np.abs(ext_tseries['sfc_wv_mult_error']-1) > 0.01:
-                obs_flag.value_06_comment2 = 'Multiplying by ' + ext_tseries['sfc_wv_mult_error']
+                obs_flag.value_06_comment2 = 'Multiplying by ' + str(ext_tseries['sfc_wv_mult_error'])
             if ext_tseries['sfc_wv_rep_error'] > 0:
                 obs_flag.value_06_comment2 = 'Adding ' + str(ext_tseries['sfc_wv_rep_error']) + ' g/kg to uncertainty to account for representativeness error'
             marker[foo] = -1
