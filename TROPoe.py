@@ -10,7 +10,7 @@
 #
 # ----------------------------------------------------------------------------
 
-__version__ = '0.6.17'
+__version__ = '0.6.18'
 
 import os
 import sys
@@ -1140,7 +1140,7 @@ for i in range(len(irs['secs'])):                        # { loop_i
             gfactor = np.array([100.,10.,3.,1.])
         else:
             gfactor = np.array([1000.,300.,100.,30.,10.,3.,1.])
-    if len(gfactor) < vip['max_iterations']:
+    if len(gfactor) <= vip['max_iterations']:
         gfactor = np.append(gfactor, np.ones(vip['max_iterations']-len(gfactor)+3))
 
     # Select nice round numbers to use as the wavenumber limits for
