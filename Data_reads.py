@@ -3696,8 +3696,8 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
                 w0 = Calcs_Conversions.rh2w(t, u/100., p)
                 w1 = Calcs_Conversions.rh2w(t+sigma_t, u/100., p)
                 w2 = Calcs_Conversions.rh2w(t-sigma_t, u/100., p)
-                u_plus = (u+sigma_u)/100.
-                u_minus = (u+sigma_u)/100.
+                u_plus  = (u+sigma_u)/100.
+                u_minus = (u-sigma_u)/100.
                 u_plus[u_plus > 1] = 1
                 u_minus[u_minus < 0] = 0
                 w3 = Calcs_Conversions.rh2w(t, u_plus, p)
@@ -3775,8 +3775,8 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
                 w0 = Calcs_Conversions.rh2w(t, u/100., p)
                 w1 = Calcs_Conversions.rh2w(t+sigma_t, u/100., p)
                 w2 = Calcs_Conversions.rh2w(t-sigma_t, u/100., p)
-                u_plus = (u+sigma_u)/100.
-                u_minus = (u+sigma_u)/100.
+                u_plus  = (u+sigma_u)/100.
+                u_minus = (u-sigma_u)/100.
                 u_plus[u_plus > 1] = 1
                 u_minus[u_minus < 0] = 0
                 w3 = Calcs_Conversions.rh2w(t, u_plus, p)
@@ -3866,8 +3866,8 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
                 w0 = Calcs_Conversions.rh2w(t, u/100., p)
                 w1 = Calcs_Conversions.rh2w(t+sigma_t, u/100., p)
                 w2 = Calcs_Conversions.rh2w(t-sigma_t, u/100., p)
-                u_plus = (u+sigma_u)/100.
-                u_minus = (u+sigma_u)/100.
+                u_plus  = (u+sigma_u)/100.
+                u_minus = (u-sigma_u)/100.
                 u_plus[u_plus > 1] = 1
                 u_minus[u_minus < 0] = 0
                 w3 = Calcs_Conversions.rh2w(t, u_plus, p)
