@@ -10,7 +10,7 @@
 #
 # ----------------------------------------------------------------------------
 
-__version__ = '0.6.21'
+__version__ = '0.6.22'
 
 import os
 import sys
@@ -168,10 +168,7 @@ if vip['success'] != 1:
     print(' ')
     sys.exit()
 
-process = Popen('echo $$', stdout = PIPE, stderr = PIPE, shell=True, executable = SHELL)
-stdout, stderr = process.communicate()
-
-uniquekey = vip['tag'] + '.' + stdout[:-1].decode()
+uniquekey = vip['tag'] + '.' + str(np.random.randint(0,999999))
 
 if debug:
     print('Saving the VIP and globatt structure into "vip.npy" -- for debugging')
