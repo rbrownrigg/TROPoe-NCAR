@@ -1535,7 +1535,8 @@ def run_monortm(command, freq, z, stdatmos, outputfile):
     error = {'status':0}
     
     # Run the command
-    process = Popen(command, shell=True, executable = '/bin/csh')
+    newcommand = '('+command+') >& /dev/null'
+    process = Popen(newcommand, shell=True, executable = '/bin/csh')
     stdout, stderr = process.communicate()
     # Read in the output file into "stdout"
     f = open(outputfile)
