@@ -10,7 +10,7 @@
 #
 # ----------------------------------------------------------------------------
 
-__version__ = '0.6.23'
+__version__ = '0.6.24'
 
 import os
 import sys
@@ -1856,16 +1856,36 @@ for i in range(len(irs['secs'])):                        # { loop_i
         # make the next iteration of the LBLRTM croak
         multiplier = 5.
 
+        # First check the water vapor profile
         feh = np.arange(int(nX/2)) + int(nX/2)
+        
+        # Check for values that are too low
         foo = np.where((Xnp1[feh,0] < minQ) | (Xnp1[feh,0] < Xa[feh] - multiplier*np.sqrt((np.diag(Sa)[feh]))))[0]
 
         if len(foo) > 0:
-            Xnp1[feh[foo],0] = np.nanmax([Xa[feh[foo]] - np.sqrt(np.diag(Sa)[feh[foo]]), np.ones(len(Xa[feh[foo]]))*minQ], axis = 0)
-
+            # First check to make sure the entire profile isn't nonphysical
+            if len(foo) == len(z):
+                print('The entire water vapor profile is non-physical. Major error in TROPoe, must abort')
+                VIP_Databases_functions.abort(lbltmpdir,date)
+                sys.exit()
+            
+            # A nonphysical water vapor value exists so we are going interpolate across those values
+            # by calling this function
+            Xnp1[feh,0] = Other_functions.fix_nonphysical_wv(Xnp1[feh,0],z,foo)
+        
+        # Check for values that are too high
         foo = np.where((Xnp1[feh,0] > maxQ) | (Xnp1[feh,0] > Xa[feh] + multiplier*np.sqrt((np.diag(Sa)[feh]))))[0]
-
+        
         if len(foo) > 0:
-           Xnp1[feh[foo],0] = np.nanmin([Xa[feh[foo]] + np.sqrt(np.diag(Sa)[feh[foo]]), np.ones(len(Xa[feh[foo]]))*maxQ], axis = 0)
+            # First check to make sure the entire profile isn't nonphysical
+            if len(foo) == len(z):
+                print('The entire water vapor profile is non-physical. Major error in TROPoe, must abort')
+                VIP_Databases_functions.abort(lbltmpdir,date)
+                sys.exit()
+            
+            # A nonphysical water vapor value exists so we are going interpolate across those values
+            # by calling this function
+            Xnp1[feh,0] = Other_functions.fix_nonphysical_wv(Xnp1[feh,0],z,foo)
 
         if dolcloud == 1:
             Xnp1[nX,0] = np.nanmax([Xnp1[nX],0])

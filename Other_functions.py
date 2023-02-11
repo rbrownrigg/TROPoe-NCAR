@@ -1791,7 +1791,45 @@ def make_monotonic(heights):
             bad = False
         
     return indices
+
+###############################################################################
+# This function interpolates over nonphysical values. If the nonphysical values
+# is at the ends of the profile then the nearest good point is used at the new
+# value.
+###############################################################################
+
+def fix_nonphysical_wv(wv, z, foo):
     
+    old_wv = np.copy(wv)
+    old_wv[foo] = np.nan
+    
+    new_wv = []
+    for i, value in enumerate(old_wv):
+        if np.isnan(value):
+            # Find first good point
+            j = i
+            while np.isnan(old_wv[j]) and j > 0:
+                j -= 1
+        
+            # Find second good point
+            k = i
+            while np.isnan(old_wv[k]) and k < len(old_wv) - 1:
+                k += 1
+        
+            if np.isnan(old_wv[j]):
+                # The first value is nonphysical so set to nearest good value after
+                new_wv.append(old_wv[k])
+            elif np.isnan(old_wv[k]):
+                # The last value is nonphysical so set to nearest good value before
+                new_wv.append(old_wv[j])
+            else:
+                # Interpolate across the good values
+                new_wv.append(old_wv[j] + (old_wv[k] - old_wv[j]) * (z[i]-z[j])/(z[k]-z[j]))
+        else:
+            new_wv.append(value)
+    
+    return np.array(new_wv)
+        
     
         
     
