@@ -10,7 +10,7 @@
 #
 # ----------------------------------------------------------------------------
 
-__version__ = '0.6.24'
+__version__ = '0.6.25'
 
 import os
 import sys
@@ -168,6 +168,17 @@ if vip['success'] != 1:
     print(' ')
     sys.exit()
 
+# Disabling prior_chimney_ht for now. Leaving the code availabe in case we want
+# to incorporate it again.
+
+if vip['prior_chimney_ht'] > 0:
+    print('The vip parameter prior_chimney_ht is not operational.')
+    print('If you feel you need this parameter contact the program authors.')
+    print(('>>> TROPoe retrieval on ' + str(date) + ' FAILED and ABORTED <<<'))
+    print('---------------------------------------------------------------------')
+    print(' ')
+    sys.exit()
+    
 uniquekey = vip['tag'] + '.' + str(np.random.randint(0,999999))
 
 if debug:
@@ -2220,11 +2231,19 @@ for i in range(len(irs['secs'])):                        # { loop_i
     if xret[fsample]['rmsa'] > vip['qc_rms_value']:
         xret[fsample]['qcflag'] = 3
 
-    # Compute the various convective indices and other useful data
+    # Compute the various convective indices and other useful data.
+    derived = {}
+    derived['theta'] = Calcs_Conversions.t2theta(xret[-1]['Xn'][0:int(nX/2)], 0*xret[-1]['Xn'][int(nX/2):nX], xret[-1]['p'])
+    derived['thetae'] = Calcs_Conversions.t2thetae(xret[-1]['Xn'][0:int(nX/2)], xret[-1]['Xn'][int(nX/2):nX], xret[-1]['p'])
+    derived['rh'] = Calcs_Conversions.w2rh(xret[-1]['Xn'][int(nX/2):nX], xret[-1]['p'], xret[-1]['Xn'][0:int(nX/2)],0) * 100
+    derived['dewpt'] = Calcs_Conversions.rh2dpt(xret[-1]['Xn'][0:int(nX/2)], derived['rh']/100.)
+    
+    
+    dindices = Other_functions.calc_derived_indices(xret[-1],vip,derived)
     # Write the data into the netCDF file
 
     success, noutfilename = Output_Functions.write_output(vip, ext_prof, mod_prof, rass_prof, ext_tseries,
-              globatt, xret, prior, fsample, version, (endtime-starttime).total_seconds(),
+              globatt, xret, prior, fsample, derived, dindices, version, (endtime-starttime).total_seconds(),
               modeflag, noutfilename, location, cbh_string, shour, verbose)
 
     if success == 0:

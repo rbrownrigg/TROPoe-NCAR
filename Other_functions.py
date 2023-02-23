@@ -56,6 +56,7 @@ import Calcs_Conversions
 # compute_extra_layers()
 # irs_ffovc()              -- TODO -- add this bad boy
 # change_irs_ffovc()       -- TODO -- add this bad boy
+# fix_nonphysical_wv
 ################################################################################
 
 
@@ -358,7 +359,7 @@ def compute_sbi(z, t, start_height = -1):
             break
     
     if ii >= len(z)-1:
-        return {'sbih':-999., 'sbim':-999.}
+        return -999., -999.
     
     sbi = ii
     for i in range(ii+1,len(t)):
@@ -371,9 +372,9 @@ def compute_sbi(z, t, start_height = -1):
     if sbi > ii:
         sbih = z[sbi]
         sbim = t[sbi] - t[ii]
-        return {'sbih':sbih, 'sbim':sbim}
+        return sbih, sbim
     else:
-        return {'sbih':-999., 'sbim':-999.}
+        return -999., -999.
         
 ################################################################################
 # This function computes the lifting condensation level (LCL). The first three
@@ -1829,6 +1830,116 @@ def fix_nonphysical_wv(wv, z, foo):
             new_wv.append(value)
     
     return np.array(new_wv)
+
+###############################################################################
+# This function is the driver for calculating the derived indices that are 
+# provided with the final output. It performs a simple monte carlo sampling to 
+# derive the uncertanties in the indices. Note that even though the uncertainties
+# might not be Gaussian distributed, I am going to report a 1-sigma standard
+# deviation.
+###############################################################################
+
+def calc_derived_indices(xret,vip, derived, num_mc=20):
+    
+    # These are the derived indices that I will compute later one. I need to
+    # define them here in order to build the netcdf file correctly
+    dindex_name = ['pwv', 'pblh', 'sbih', 'sbim', 'lcl']
+    dindex_units = ['cm', 'km AGL', 'km AGL', 'C', 'km AGL']
+    indices = np.zeros(len(dindex_name))
+    sigma_indices = np.zeros(len(dindex_name))
+    
+    # Get the number of height levels
+    nht = len(xret['z'])
+    
+    # Extract out the temperature and water vapor profiles
+    pp = np.copy(xret['p'])
+    tt = np.copy(xret['Xn'][0:nht])
+    ww = np.copy(xret['Xn'][nht:2*nht])
+    zz = np.copy(xret['z'])
+    
+    # Extract out the posterior covariance matrix
+    Sop_tmp = np.copy(xret['Sop'][0:2*nht,0:2*nht])
+    sig_t = np.sqrt(np.diag(Sop_tmp))[0:nht]
+    
+    # Perform SVD of posterior covariance matrix
+    
+    u, w, v, = scipy.linalg.svd(Sop_tmp.T,False)
+    
+    # Generate the Monte Carlo profiles
+    
+    b = np.random.default_rng().normal(size=(2*nht,num_mc))
+    pert = u.dot(np.diag(np.sqrt(w))).dot(b)
+    tprofs = tt[:,None] + pert[0:nht,:]
+    wprofs = ww[:,None] + pert[nht:2*nht,:]
+    
+    # Now compute the indices
+    
+    # PWV
+    indices[0] = Calcs_Conversions.w2pwv(ww,pp)
+    
+    # PBLH
+    indices[1] = compute_pblh(zz, tt, pp, sig_t, minht=vip['min_PBL_height'],
+                              maxht=vip['max_PBL_height'], nudge=vip['nudge_PBL_height'])
+    
+    # SBIH & SBIM
+    indices[2], indices[3] = compute_sbi(zz,tt)
+    
+    # LCL
+    indices[4] = compute_lcl(tt[0],ww[0],pp[0],pp,zz)
+    
+    # and their uncertainties
+    tmp_pwv = np.zeros(num_mc)
+    tmp_pblh = np.zeros(num_mc)
+    tmp_sbih = np.zeros(num_mc)
+    tmp_sbim = np.zeros(num_mc)
+    tmp_lcl = np.zeros(num_mc)
+    for j in range(num_mc):
+        tmp_pwv[j] = Calcs_Conversions.w2pwv(wprofs[:,j],pp)
+        tmp_pblh[j] = compute_pblh(zz,tprofs[:,j],pp, sig_t, minht=vip['min_PBL_height'],
+                                  maxht=vip['max_PBL_height'], nudge=vip['nudge_PBL_height'])
+        tmp_sbih[j], tmp_sbim[j] = compute_sbi(zz,tprofs[:,j])
+        tmp_lcl[j] = compute_lcl(tprofs[0,j], wprofs[0,j], pp[0], pp, zz)
+    
+    # PWV
+    sigma_indices[0] = np.nanstd(indices[0]-tmp_pwv)
+    
+    # PBLH
+    foo = np.where(tmp_pblh > 0)[0]
+    if ((len(foo) > 1) & (indices[1] > 0)):
+        sigma_indices[1] = np.nanstd(indices[1]-tmp_pblh[foo])
+    else:
+        sigma_indices[1] = -999.
+    if ((sigma_indices[1] < vip['min_PBL_height']) & (indices[1] <= vip['min_PBL_height'])):
+        sigma_indices[1] = vip['min_PBL_height']
+    
+    # SBIH
+    foo = np.where(tmp_sbih > 0)[0]
+    if ((len(foo) > 1) & (indices[2] > 0)):
+        sigma_indices[2] = np.nanstd(indices[2]-tmp_sbih[foo])
+    else:
+        sigma_indices[2] = -999.
+    
+    # SBIM
+    foo = np.where(tmp_sbim > 0)[0]
+    if ((len(foo) > 1) & (indices[3] > 0)):
+        sigma_indices[3] = np.nanstd(indices[3]-tmp_sbim[foo])
+    else:
+        sigma_indices[3] = -999.
+    
+    # LCL
+    sigma_indices[4] = np.nanstd(indices[4]-tmp_lcl)
+    
+    return {'indices':indices, 'sigma_indices':sigma_indices, 'name':dindex_name,
+            'units':dindex_units}
+        
+    
+    
+    
+    
+    
+    
+    
+    
         
     
         

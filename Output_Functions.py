@@ -128,19 +128,20 @@ def write_variable(variable, filename):
 ################################################################################
 
 def write_output(vip, ext_prof, mod_prof, rass_prof, ext_tseries, globatt, xret, prior,
-                fsample, version, exectime, modeflag, nfilename, location,
+                fsample, derived, dindex, version, exectime, modeflag, nfilename, location,
                 cbh_string, shour, verbose):
 
     success = 0
     # I will replace all temp/WVMR data below the chimney height with this
     # flag
-    nochim = -888.
+    #nochim = -888.
 
     # These are the derived indices that I will compute later one. I need to
     # define them here in order to build the netcdf file correctly
     dindex_name = ['pwv', 'pblh', 'sbih', 'sbim', 'lcl']
     dindex_units = ['cm', 'km AGL', 'km AGL', 'C', 'km AGL']
-
+    nht = len(xret[0]['z'])
+    
     # If fsample is zero, then we will create the netCDF file
     if fsample == 0:
         dt = datetime.utcfromtimestamp(xret[0]['secs'])
@@ -160,7 +161,6 @@ def write_output(vip, ext_prof, mod_prof, rass_prof, ext_tseries, globatt, xret,
 
         fid = Dataset(nfilename, 'w')
         tdim = fid.createDimension('time', None)
-        nht = len(xret[0]['z'])
         hdim = fid.createDimension('height', nht)
         vdim = fid.createDimension('obs_dim', len(xret[0]['dimY']))
         gdim = fid.createDimension('gas_dim', 3)
@@ -397,7 +397,7 @@ def write_output(vip, ext_prof, mod_prof, rass_prof, ext_tseries, globatt, xret,
         sigma_dindices = fid.createVariable('sigma_dindices', 'f4', ('time','index_dim',))
         sigma_dindices.long_name = '1-sigma uncertainties in the derived indices'
         sigma_dindices.units = 'units depend on the index, see the field above '
-        sigma_dindices.comment1 = 'This field is derived fro mthe retrieved fields'
+        sigma_dindices.comment1 = 'This field is derived from the retrieved fields'
         sigma_dindices.comment2 = 'The uncertainties were determined using a monte carlo sampling of the posterior covariance matrix'
         sigma_dindices.comment3 = 'A value of -999 indicates that the uncertainty in this inded could not be computed (typically because the values were all unphysical)'
 
@@ -608,142 +608,19 @@ def write_output(vip, ext_prof, mod_prof, rass_prof, ext_tseries, globatt, xret,
             alt[:] = -999.
 
         fid.close()
-
-    # I am also storing some derived fields, so compute them here
-    # First, the profiles. Note I am NOT going to provide uncertainty
-    # values for these
-    nht = len(xret[0]['z'])
-    theta_tmp = np.zeros((nht,len(xret)))
-    thetae_tmp = np.zeros((nht,len(xret)))
-    rh_tmp = np.zeros((nht,len(xret)))
-    dewpt_tmp = np.zeros((nht,len(xret)))
-    temp_tmp = np.zeros((nht,len(xret)))
-    wvmr_tmp = np.zeros((nht,len(xret)))
-    stemp_tmp = np.zeros((nht,len(xret)))
-    swvmr_tmp = np.zeros((nht,len(xret)))
-    for i in range(len(xret)):
-        temp_tmp[:,i] = np.copy(xret[i]['Xn'][0:nht])
-        wvmr_tmp[:,i] = np.copy(xret[i]['Xn'][nht:2*nht])
-        sig = np.sqrt(np.diag(xret[i]['Sop']))
-        stemp_tmp[:,i] = np.copy(sig[0:nht])
-        swvmr_tmp[:,i] = np.copy(sig[nht:2*nht])
-        theta_tmp[:,i] = Calcs_Conversions.t2theta(xret[i]['Xn'][0:nht], 0*xret[i]['Xn'][nht:2*nht], xret[i]['p'])
-        thetae_tmp[:,i] = Calcs_Conversions.t2thetae(xret[i]['Xn'][0:nht], xret[i]['Xn'][nht:2*nht], xret[i]['p'])
-        rh_tmp[:,i] = Calcs_Conversions.w2rh(xret[i]['Xn'][nht:2*nht], xret[i]['p'], xret[i]['Xn'][0:nht],0) * 100
-        dewpt_tmp[:,i] = Calcs_Conversions.rh2dpt(xret[i]['Xn'][0:nht], rh_tmp[:,i]/100.)
-
-    foo = np.where(xret[0]['z'] < vip['prior_chimney_ht'])[0]
-    if len(foo) > 0:
-        temp_tmp[foo,:] = nochim
-        wvmr_tmp[foo,:] = nochim
-        stemp_tmp[foo,:] = nochim
-        swvmr_tmp[foo,:] = nochim
-        theta_tmp[foo,:] = nochim
-        thetae_tmp[foo,:] = nochim
-        dewpt_tmp[foo,:] = nochim
-        rh[foo,:] = nochim
-
-    # Now the derived indices. I am going to perform a simple monte carlo
-    # sampling here to derive some sense of the uncertainties in these indices.
-    # Note that even thought the uncertainties might not be Gaussian distributed,
-    # I am going to report a 1-sigma standard deviation
-
-    num_mc = 20                      # Number of points to use in the MC sampling
-    npts = len(xret) - fsample       # Number of times that need processed
-
-    # The derived indices
-    indices = np.zeros((len(dindex_name), npts))
-    sigma_indices = np.zeros((len(dindex_name), npts))
-    tmp = np.zeros(num_mc)
-    tprofs = np.zeros((nht, num_mc))
-    wprofs = np.zeros((nht, num_mc))
-    zz = np.copy(xret[0]['z'])
-
-    if len(dindex_name) != len(dindex_units):
-        print('Error in write_output: there is a dimension mismatch in the derived indices dindex_')
-        return success, nfilename
-
-    for i in range(npts):
-        # Extract out the temperature and water vapor profiles
-        pp = np.copy(xret[i+fsample]['p'])
-        tt = np.copy(xret[i+fsample]['Xn'][0:nht])
-        ww = np.copy(xret[i+fsample]['Xn'][nht:2*nht])
-
-        # Extract out the apriori temperature and water vapor profiles
-        ta = np.copy(prior['Xa'][0:nht])
-        wa = np.copy(prior['Xa'][nht:2*nht])
-
-        # Extract out the posterior covariance matrix
-        Sop_tmp = np.copy(xret[i]['Sop'])
-        Sop_tmp = Sop_tmp[0:2*nht,0:2*nht]
-        sig_t = np.sqrt(np.diag(Sop_tmp))[0:nht]
-
-        # Perform SVD of posterior covariance matrix
-        # Note that in order to follow the logic of the original IDL code I
-        # have to do the SVD on the transpose of the posterior covariance matrix
-        # since IDL is a column major language
-
-        u, w, v = scipy.linalg.svd(Sop_tmp.T, False)
-
-        b = np.zeros((2*nht,num_mc))
-        for j in range(num_mc):
-            b[:,j] = np.random.normal(size = 2*nht)
-        pert = u.dot(np.diag(np.sqrt(w))).dot(b)
-        tprofs = tt[:,None] + pert[0:nht,:]
-        wprofs = ww[:,None] + pert[nht:2*nht,:]
-
-        # Now compute the indices and their uncertainties
-        for ii in range(len(dindex_name)):
-            if dindex_name[ii] == 'pwv':
-                indices[ii,i] = Calcs_Conversions.w2pwv(ww,pp)
-                for j in range(num_mc):
-                    tmp[j] = Calcs_Conversions.w2pwv(wprofs[:,j], pp)
-                sigma_indices[ii,i] = np.nanstd(indices[ii,i] - tmp)
-
-            elif dindex_name[ii] == 'pblh':
-                minht = vip['min_PBL_height']
-                maxht = vip['max_PBL_height']
-                nudge = vip['nudge_PBL_height']
-                indices[ii,i] = Other_functions.compute_pblh(zz, tt, pp, sig_t, minht=minht, maxht=maxht, nudge=nudge)
-                for j in range(num_mc):
-                    tmp[j] = Other_functions.compute_pblh(zz, tprofs[:, j], pp, sig_t, minht=minht, maxht=maxht, nudge=nudge)
-                foo = np.where(tmp > 0)[0]
-                if (len(foo) > 1) & (indices[ii,i] > 0):
-                    sigma_indices[ii,i] = np.nanstd(indices[ii,i] - tmp[foo])
-                else:
-                    sigma_indices[ii,i] = -999.
-                if (sigma_indices[ii,i] < vip['min_PBL_height']) & (indices[ii,i] <= vip['min_PBL_height']):
-                    sigma_indices[ii,i] = vip['min_PBL_height']
-
-            elif dindex_name[ii] == 'sbih':
-                indices[ii,i] = Other_functions.compute_sbi(zz,tt)['sbih']
-                for j in range(num_mc):
-                    tmp[j] = Other_functions.compute_sbi(zz,tprofs[:,j])['sbih']
-                foo = np.where(tmp > 0)[0]
-                if ((len(foo) > 1) & (indices[ii,i] > 0)):
-                    sigma_indices[ii,i] = np.nanstd(indices[ii,i] - tmp[foo])
-                else:
-                    sigma_indices[ii,i] = -999.
-
-            elif dindex_name[ii] == 'sbim':
-                indices[ii,i] = Other_functions.compute_sbi(zz,tt)['sbim']
-                for j in range(num_mc):
-                    tmp[j] = Other_functions.compute_sbi(zz,tprofs[:,j])['sbim']
-                foo = np.where(tmp > 0)[0]
-                if ((len(foo) > 1) & (indices[ii,i] > 0)):
-                    sigma_indices[ii,i] = np.nanstd(indices[ii,i] - tmp[foo])
-                else:
-                    sigma_indices[ii,i] = -999.
-
-            elif dindex_name[ii] == 'lcl':
-                indices[ii,i] = Other_functions.compute_lcl(tt[0],ww[0],pp[0],pp,zz)
-                for j in range(num_mc):
-                    tmp[j] = Other_functions.compute_lcl(tprofs[0,j], wprofs[0,j], pp[0], pp, zz)
-                    sigma_indices[ii,i] = np.nanstd(indices[ii,i] - tmp)
-
-            else:
-                print('WARNING: There is some derived index that is not properly being computed in TROPoe')
-
+        
+    # Commenting this out but leaving it here in case we need to come back to it
+    
+    # foo = np.where(xret[0]['z'] < vip['prior_chimney_ht'])[0]
+    # if len(foo) > 0:
+    #     temp_tmp[foo,:] = nochim
+    #     wvmr_tmp[foo,:] = nochim
+    #     stemp_tmp[foo,:] = nochim
+    #     swvmr_tmp[foo,:] = nochim
+    #     theta_tmp[foo,:] = nochim
+    #     thetae_tmp[foo,:] = nochim
+    #     dewpt_tmp[foo,:] = nochim
+    #     rh[foo,:] = nochim
 
     # Now append all of the samples from fsample onward into the file
     if verbose >= 3:
@@ -812,79 +689,78 @@ def write_output(vip, ext_prof, mod_prof, rass_prof, ext_tseries, globatt, xret,
         Sop = fid.variables['Sop']
         Akernal = fid.variables['Akernal']
 
-    npts = len(xret) - fsample
     basetime = fid.variables['base_time'][:]
-    for i in range(npts):
-        time_offset[fsample+i] = xret[fsample+i]['secs'] - basetime
-        time[fsample+i] = xret[fsample+i]['hour']*60*60     # compute the seconds since midnight
-        hour[fsample+i] = xret[fsample+i]['hour']
-        qc_flag[fsample+i] = xret[fsample+i]['qcflag']
+    
+    time_offset[fsample] = xret[fsample]['secs'] - basetime
+    time[fsample] = xret[fsample]['hour']*60*60     # compute the seconds since midnight
+    hour[fsample] = xret[fsample]['hour']
+    qc_flag[fsample] = xret[fsample]['qcflag']
 
-        did = np.where(np.array(list(fid.dimensions.keys())) == 'height')[0]
-        if len(did) == 0:
-            print('Whoaa -- this should not happen -- aborting')
-            return success, nfilename
+    did = np.where(np.array(list(fid.dimensions.keys())) == 'height')[0]
+    if len(did) == 0:
+        print('Whoaa -- this should not happen -- aborting')
+        return success, nfilename
+    
+    if fid.dimensions['height'].size != len(xret[0]['z']):
+        print('Whoaa -- this should not happen size -- aborting')
+        return success, nfilename
 
-        if fid.dimensions['height'].size != len(xret[0]['z']):
-            print('Whoaa -- this should not happen size -- aborting')
-            return success, nfilename
+    temperature[fsample,:] = xret[fsample]['Xn'][0:nht]
+    waterVapor[fsample,:] = xret[fsample]['Xn'][nht:2*nht]
+    lwp[fsample] = xret[fsample]['Xn'][2*nht]
+    lReff[fsample] = xret[fsample]['Xn'][2*nht+1]
+    iTau[fsample] = xret[fsample]['Xn'][2*nht+2]
+    iReff[fsample] = xret[fsample]['Xn'][2*nht+3]
+    co2[fsample,:] = xret[fsample]['Xn'][2*nht+4:2*nht+7]
+    ch4[fsample,:] = xret[fsample]['Xn'][2*nht+7:2*nht+10]
+    n2o[fsample,:] = xret[fsample]['Xn'][2*nht+10:2*nht+13]
 
-        temperature[fsample+i,:] = xret[fsample+i]['Xn'][0:nht]
-        waterVapor[fsample+i,:] = xret[fsample+i]['Xn'][nht:2*nht]
-        lwp[fsample+i] = xret[fsample+i]['Xn'][2*nht]
-        lReff[fsample+i] = xret[fsample+i]['Xn'][2*nht+1]
-        iTau[fsample+i] = xret[fsample+i]['Xn'][2*nht+2]
-        iReff[fsample+i] = xret[fsample+i]['Xn'][2*nht+3]
-        co2[fsample+i,:] = xret[fsample+i]['Xn'][2*nht+4:2*nht+7]
-        ch4[fsample+i,:] = xret[fsample+i]['Xn'][2*nht+7:2*nht+10]
-        n2o[fsample+i,:] = xret[fsample+i]['Xn'][2*nht+10:2*nht+13]
+    sig = np.sqrt(np.diag(xret[fsample]['Sop']))
+    sigmaT[fsample,:] = sig[:nht]
+    sigmaWV[fsample,:] = sig[nht:2*nht]
+    sigma_lwp[fsample] = sig[2*nht]
+    sigma_lReff[fsample] = sig[2*nht+1]
+    sigma_iTau[fsample] = sig[2*nht+2]
+    sigma_iReff[fsample] = sig[2*nht+3]
+    sigma_co2[fsample,:] = sig[2*nht+4:2*nht+7]
+    sigma_ch4[fsample,:] = sig[2*nht+7:2*nht+10]
+    sigma_n2o[fsample,:] = sig[2*nht+10:2*nht+13]
 
-        sigmaT[fsample+i,:] = stemp_tmp[:,fsample+i]
-        sigmaWV[fsample+i,:] = swvmr_tmp[:,fsample+i]
-        sig = np.sqrt(np.diag(xret[fsample+i]['Sop']))
-        sigma_lwp[fsample+i] = sig[2*nht]
-        sigma_lReff[fsample+i] = sig[2*nht+1]
-        sigma_iTau[fsample+i] = sig[2*nht+2]
-        sigma_iReff[fsample+i] = sig[2*nht+3]
-        sigma_co2[fsample+i,:] = sig[2*nht+4:2*nht+7]
-        sigma_ch4[fsample+i,:] = sig[2*nht+7:2*nht+10]
-        sigma_n2o[fsample+i,:] = sig[2*nht+10:2*nht+13]
+    converged_flag[fsample] = xret[fsample]['converged']
+    gamma[fsample] = xret[fsample]['gamma']
+    n_iter[fsample] = xret[fsample]['niter']
+    rmsr[fsample] = xret[fsample]['rmsr']
+    rmsa[fsample] = xret[fsample]['rmsa']
+    rmsp[fsample] = xret[fsample]['rmsp']
+    chi2[fsample] = xret[fsample]['chi2']
+    convergence_criteria[fsample] = xret[fsample]['di2m']
+    dfs[fsample,:] = xret[fsample]['dfs']
+    sic[fsample] = xret[fsample]['sic']
+    vres_temp[fsample,:] = xret[fsample]['vres'][0,:]
+    vres_wv[fsample,:] = xret[fsample]['vres'][1,:]
+    cdfs_temp[fsample,:] = xret[fsample]['cdfs'][0,:]
+    cdfs_wv[fsample,:] = xret[fsample]['cdfs'][1,:]
+    
+    hatchOpen[fsample] = xret[fsample]['hatchopen']
+    cbh[fsample] = xret[fsample]['cbh']
+    cbh_flag[fsample] = xret[fsample]['cbhflag']
+    pressure[fsample,:] = xret[fsample]['p'][0:nht]
 
-        converged_flag[fsample+i] = xret[fsample+i]['converged']
-        gamma[fsample+i] = xret[fsample+i]['gamma']
-        n_iter[fsample+i] = xret[fsample+i]['niter']
-        rmsr[fsample+i] = xret[fsample+i]['rmsr']
-        rmsa[fsample+i] = xret[fsample+i]['rmsa']
-        rmsp[fsample+i] = xret[fsample+i]['rmsp']
-        chi2[fsample+i] = xret[fsample+i]['chi2']
-        convergence_criteria[fsample+i] = xret[fsample+i]['di2m']
-        dfs[fsample+i,:] = xret[fsample+i]['dfs']
-        sic[fsample+i] = xret[fsample+i]['sic']
-        vres_temp[fsample+i,:] = xret[fsample+i]['vres'][0,:]
-        vres_wv[fsample+i,:] = xret[fsample+i]['vres'][1,:]
-        cdfs_temp[fsample+i,:] = xret[fsample+i]['cdfs'][0,:]
-        cdfs_wv[fsample+i,:] = xret[fsample+i]['cdfs'][1,:]
+    theta[fsample,:] = derived['theta'][:]
+    thetae[fsample,:] = derived['thetae'][:]
+    rh[fsample,:] = derived['rh'][:]
+    dewpt[fsample,:] = derived['dewpt']
+    dindices[fsample,:] = dindex['indices']
+    sigma_dindices[fsample,:] = dindex['sigma_indices']
 
-        hatchOpen[fsample+i] = xret[fsample+i]['hatchopen']
-        cbh[fsample+i] = xret[fsample+i]['cbh']
-        cbh_flag[fsample+i] = xret[fsample+i]['cbhflag']
-        pressure[fsample+i,:] = xret[fsample+i]['p'][0:nht]
+    obs_vector[fsample,:] = xret[fsample]['Y']
+    obs_vector_uncertainty[fsample,:] = xret[fsample]['sigY']
+    forward_calc[fsample,:] = xret[fsample]['FXn']
 
-        theta[fsample+i,:] = np.transpose(theta_tmp[:,fsample+i])
-        thetae[fsample+i,:] = np.transpose(thetae_tmp[:,fsample+i])
-        rh[fsample+i,:] = np.transpose(rh_tmp[:,fsample+i])
-        dewpt[fsample+i,:] = np.transpose(dewpt_tmp[:,fsample+i])
-        dindices[fsample+i,:] = np.transpose(indices[:,i])
-        sigma_dindices[fsample+i,:] = np.transpose(sigma_indices[:,i])
-
-        obs_vector[fsample+i,:] = xret[fsample+i]['Y']
-        obs_vector_uncertainty[fsample+i,:] = xret[fsample+i]['sigY']
-        forward_calc[fsample+i,:] = xret[fsample+i]['FXn']
-
-        if vip['output_file_keep_small'] == 0:
-            Xop[fsample+i,:] = xret[fsample+i]['Xn']
-            Sop[fsample+i,:,:] = xret[fsample+i]['Sop']
-            Akernal[fsample+i,:,:] = xret[fsample+i]['Akern']
+    if vip['output_file_keep_small'] == 0:
+        Xop[fsample,:] = xret[fsample]['Xn']
+        Sop[fsample,:,:] = xret[fsample]['Sop']
+        Akernal[fsample,:,:] = xret[fsample]['Akern']
 
     fid.close()
     success = 1
