@@ -14,6 +14,7 @@
 import os, re
 import sys
 import numpy as np
+import scipy.io
 from netCDF4 import Dataset
 import calendar
 from datetime import datetime, timedelta
@@ -40,6 +41,7 @@ import VIP_Databases_functions
 # read_external_profile_data()
 # read_external_timeseries()
 # get_tropoe_version()
+# recenter_prior()
 ################################################################################
 
 ################################################################################
@@ -100,81 +102,133 @@ def findfile(path,pattern):
 
 
 ################################################################################
-# This function recenters a prior file
+# This function recenters the prior information
 ################################################################################
 
-def recenter_prior(orig_prior_name, input_value, sfc_or_pwv=0):
+def recenter_prior(z0, p0, Xa, Sa, input_value, sfc_or_pwv=0, changeTmethod=0, verbose=1):
     """
-    This code recenters the mean of the prior dataset, preserving the RH profile
-    :param orig_prior_name: The path/name of the input prior file to read
-    :param new_prior_name: The path/name of the new output file to create
-    :param input_value: The input value used to scale the mean WV profile in the prior
+    This code recenters the mean of the prior dataset.  
+    The water vapor profile is recentered first, using a height-independent scale factor determined 
+    from either the surfaceWVMR value or the PWV (selected using the sfc_or_pwv flag).  
+    The temperature profile is then recentered, using either the "conserve-RH" or 
+    "conserve-covariance" methods.  
+    Note that the uncertainty of the water vapor is also recentered, but not the temperature. 
+    :z: The vertical grid of the prior
+    :p: The mean pressure profile of the prior
+    :Xa: The mean profiles of [temperature,waterVapor] (also called [T,q])
+    :Sa: The covariance matrix of [[TT,Tq],[qT,qq]]
     :param sfc_or_pwv: This keyword indicates the what the input_value represents:
+                            0-> the default value, which forces the user to actually think!
                             1-> implies that the input_value is the surface WVMR [g/kg]
                             2-> implies that the input_value is the column PWV [cm]
-                            Note the default value is 0, which forces the user to actually think!
-    :return: Returns 1 if the prior was successfully scaled, 0 if the function failed.
+    :param changeTmethod: This keyword indicates which method is used to recenter the temperature
+                            0-> the default value, which forces the user to actually think!
+                            1-> indicates that the conserve-RH method should be used
+                            2-> indicates that the conserve-covariance method should be used
+    :param verbose: This keyword indicates how noisy the routine should be
+    :return: successFlag, newXa, newSa
+            SuccessFlag is 1 if the prior was successfully scaled, 0 if the function failed.
+            newXa is the new mean prior
+            newSa is the new prior covariance matrix
     """
 
     if ((sfc_or_pwv < 1) | (sfc_or_pwv > 2)):
         print('Error: the sfc_or_pwv keyword has an undefined value (must be 1 or 2) -- see usage')
         return 0
+    if ((changeTmethod < 1) | (changeTmethod > 2)):
+        print('Error: the changeTmethod keyword has an undefined value (must be 1 or 2) -- see usage')
+        return 0
 
-    # Grab the data from the previous prior
-    fid = Dataset(orig_prior_name)
-    z0 = fid['height'][:]
-    p0 = fid['mean_pressure'][:]
-    t0 = fid['mean_temperature'][:]
-    q0 = fid['mean_mixingratio'][:]
-    fid.close()
+    # Extract out the mean temperature and humidity profiles
+    k    = len(z0)
+    t0   = Xa[0:k]
+    q0   = Xa[k:2*k]
+
+    # Compute the correlation matrix from the prior's covariance
+    sig   = np.sqrt(np.diag(Sa))
+    sigT0 = sig[0:k]
+    sigQ0 = sig[k:2*k]
+    corM  = np.copy(Sa)
+    for i in range(len(sig)):
+        for j in range(len(sig)):
+            corM[i,j] = Sa[i,j] / (sig[i] * sig[j])
 
     # Calculate the RH and PWV from this prior
-    u0 = Calcs_Conversions.w2rh(q0, p0, t0, 0)
+    u0   = Calcs_Conversions.w2rh(q0, p0, t0, 0)
     pwv0 = Calcs_Conversions.w2pwv(q0, p0)
 
+    # Scale the WV profile
     if sfc_or_pwv == 1:
-        print('    Recenter_prior is using the scale-by-surface method')
+        if(verbose >= 2):
+            print('    Recenter_prior is using the scale-by-surface method')
         input_comment = f"surface WVMR value of {input_value:5.2f} g/kg"
         sf = input_value / q0[0]
         sfact_comment = f'The WVMR profile was scaled by a factor of {sf:5.2f}'
-        q1 = q0 * sf
+        q1    = q0 * sf
+        sigQ1 = sigQ0 * sf
 
     elif sfc_or_pwv == 2:
-        print('    Recenter_prior is using the scale-by-PWV method')
+        if(verbose >= 2):
+            print('    Recenter_prior is using the scale-by-PWV method')
         input_comment = f"column PWV value of {input_value:5.2f} cm"
         sf = input_value / pwv0
         sfact_comment = f'The WVMR profile was scaled by a factor of {sf:5.2f}'
-        q1 = q0 * sf
+        q1    = q0 * sf
+        sigQ1 = sigQ0 * sf
 
     else:
-        print("This should not happen within recenter_prior")
+        print("Error with sfc_or_pwv: This should not happen within recenter_prior")
         return 0
 
-    print(f'    {sfact_comment}')
+    if(verbose >= 2):
+        print(f'    {sfact_comment}')
 
-    # Now iterate to find the best temperature, preserving the RH profile in the original prior
-    t1 = np.full_like(t0, -999.)     # Allocate an empty array
-    off = np.arange(2001)/50. - 20.  # An array of temperature offsets
+    # Adjust the temperature depending on the method selected
+    if changeTmethod == 1:
+            # Now iterate to find the best temperature, preserving the RH profile in the original prior
+        tmethod_comment = 'converve-RH method'
+        t1 = np.full_like(t0, -999.)     # Allocate an empty array
+        off = np.arange(2001)/50. - 20.  # An array of temperature offsets
 
-    for i in range(len(z0)):
-        tmp = Calcs_Conversions.w2rh(q1[i], p0[i], t0[i] + off)
-        foo = np.argmin(np.abs(tmp - u0[i]))
-        t1[i] = t0[i] + off[foo]
+        for i in range(len(z0)):
+            tmp = Calcs_Conversions.w2rh(q1[i], p0[i], t0[i] + off)
+            foo = np.argmin(np.abs(tmp - u0[i]))
+            t1[i] = t0[i] + off[foo]
+    elif changeTmethod == 2:
+        tmethod_comment = 'converve-covariance method'
+        covTQ = np.zeros((len(z0),len(z0)))
+        covQQ = np.zeros((len(z0),len(z0)))
+        for i in range(len(z0)):
+            for j in range(len(z0)):
+                covTQ[i,j] = Sa[i,len(z0)+j]
+                covQQ[i,j] = Sa[len(z0)+i,len(z0)+j]
+        sf2qqInv = scipy.linalg.pinv(sf*sf*covQQ)
+        slope = (sf*covTQ).dot(sf2qqInv)
+        t1 = t0 + slope.dot(q1-q0)
+    else:
+        print("Error with changeTmethod: This should not happen within recenter_prior")
+        return 0
 
-    Xa = np.append(t1, q1)
+    # Now create the new mean prior and its covariance matrix
+    newXa  = np.append(t1, q1)
+    newSig = np.append(sigT0, sigQ1)
+    newSa  = np.copy(Sa)
+    for i in range(len(newSig)):
+        for j in range(len(newSig)):
+            newSa[i,j] = corM[i,j] * (newSig[i] * newSig[j])
 
     comments = {'Comment_on_recentering1': 'The WVMR profile prior recentered using a '+input_comment,
                 'Comment_on_recentering2': sfact_comment,
-                'Comment_on_recentering3': 'The temperature prior was derived by conserving the RH profile'
+                'Comment_on_recentering3': 'The temperature prior was recentered using the '+tmethod_comment
     }
 
-    return Xa, comments
+    # Echo some output, indicating how the prior was rescaled
+    if(verbose >= 1):
+        print('    The prior dataset was recentered')
+        for i in range(len(list(comments.keys()))):
+            print('      '+list(comments.keys())[i]+': '+comments[list(comments.keys())[i]])
 
-
-
-
-
-
+    return 1, newXa, newSa, comments
 
 ################################################################################
 # This function reads the IRS channel data file
