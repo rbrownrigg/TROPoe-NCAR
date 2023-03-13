@@ -1,16 +1,17 @@
 # ----------------------------------------------------------------------------
 #
-#  Copyright (C) 2015,2022 David D Turner - All Rights Reserved
+#  Copyright (C) 2015,2022,2023 by David D Turner, Joshua Gebauer, and Tyler Bell 
+#  All Rights Reserved
 #
 #  This file is part of the "TROPoe" retrieval system.
 #
-#  TROPoe is free software developed while the author was at NOAA, and is
+#  TROPoe is free software developed while the authors were at NOAA, and is
 #  intended to be free software.  It is made available WITHOUT ANY WARRANTY.
-#  For more information, contact the author.
+#  For more information, contact the authors.
 #
 # ----------------------------------------------------------------------------
 
-__version__ = '0.6.25'
+__version__ = '0.6.26'
 
 import os
 import sys
@@ -118,14 +119,17 @@ tropoe_version = Data_reads.get_tropoe_version()
 
 #Capture the version of this file
 globatt = {'algorithm_code': 'TROPoe Retrieval Code (formerly AERIoe)',
-           'algorithm_author': 'Dave Turner, Global Systems Laboratory / NOAA (dave.turner@noaa.gov)',
+           'algorithm_authors': 'Dave Turner, NOAA Global Systems Laboratory (dave.turner@noaa.gov), ' +
+                                'Josh Gebauer, NOAA National Severe Storms Laboratory / CIWRO (joshua.gebauer@noaa.gov), ' +
+                                'Tyler Bell, NOAA National Severe Storms Laboratory / CIWRO (tyler.bell@noaa.gov)',
            'algorithm_comment1': 'TROPoe is a physical-iterative algorithm that retrieves thermodynamic profiles from ' +
                                  'a wide range of ground-based remote sensors.  It was primarily designed to use either ' +
                                  'infrared spectrometers or microwave radiometers as the primary instrument, and include ' +
                                  'observations from other sources to improve the quality of the retrieved profiles',
            'algorithm_comment2': 'Original code was written in IDL and is described by the "AERIoe" papers listed below',
-           'algorithm_comment3': 'Code was ported to python by Joshua Gebauer with contributions ' +
-                                 'from Tyler Bell (both at the University of Oklahoma)',
+           'algorithm_comment3': 'Code was ported to python, and packaged into a container with the ' +
+                                 'needed radiative transfer models and other required inputs',
+           'algorithm_disclaimer': 'TROPoe was developed by NOAA and is provided on an as-is basis, with no warranty',
            'algorithm_code_version': __version__,
            'algorithm_package_version': tropoe_version,
            'algorithm_reference1': 'DD Turner and U Loehnert, 2014: Information Content and ' +
@@ -155,6 +159,7 @@ print(' ')
 print('-------------------------------------------------------------------------')
 print('---- TROPoe is a thermodynamic retrieval algorithm developed at NOAA ----')
 print('---- Contacts are dave.turner, joshua.gebauer, tyler.bell (@noaa.gov) ---')
+print('------- The code is provided on an "as-is" basis, with no warranty ------')
 print(' ')
 print(('>>> Starting TROPoe retrieval for ' + str(date) + ' (from ' + str(shour) + ' to ' + str(ehour) + ' UTC) <<<'))
 

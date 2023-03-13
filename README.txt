@@ -1,7 +1,7 @@
 -----------
 DISCLAIMER
 -----------
-This repository is a scientific product and is not official communication of the National Oceanic and Atmospheric Administration (NOAA), or the United States Department of Commerce. All NOAA GitHub project code is provided on an ‘as is’ basis and the user assumes responsibility for its use. NOAA has relinquished control of the information and no longer has responsibility to protect the integrity, confidentiality, or availability of the information. Any claims against the Department of Commerce or Department of Commerce bureaus stemming from the use of this GitHub project will be governed by all applicable Federal law. Any reference to specific commercial products, processes, or services by service mark, trademark, manufacturer, or otherwise, does not constitute or imply their endorsement, recommendation or favoring by the Department of Commerce. The Department of Commerce seal and logo, or the seal and logo of a DOC bureau, shall not be used in any manner to imply endorsement of any commercial product or activity by DOC or the United States Government.
+This repository is a scientific product and is not official communication of the National Oceanic and Atmospheric Administration (NOAA), or the United States Department of Commerce. All NOAA GitHub project code is provided on an ‘as is’ basis, with no warranty, and the user assumes responsibility for its use. NOAA has relinquished control of the information and no longer has responsibility to protect the integrity, confidentiality, or availability of the information. Any claims against the Department of Commerce or NOAA stemming from the use of this GitHub project will be governed by all applicable Federal law. Any reference to specific commercial products, processes, or services by service mark, trademark, manufacturer, or otherwise, does not constitute or imply their endorsement, recommendation or favoring by the Department of Commerce. The Department of Commerce seal and logo, or the seal and logo of a DOC bureau, shall not be used in any manner to imply endorsement of any commercial product or activity by DOC or the United States Government.
 
 -----------
 DESCRIPTION
@@ -52,32 +52,11 @@ argparse
 
 Note: Most of these packages are standard in python distributions
 
-
 ------------
 INSTRUCTIONS
 ------------
 
-For the retrieval to be run LBLRTM needs to be installed and the lblrun.shippert_modification needs to be added to the install. This file is included in the TROPoe distribution. If MWR data is going to be used, then MonoRTM also needs to be installed.
-
-
-1. The prior needs to be computed. This can be made from compute_prior.py (not yet implimented) or an already created prior dataset can be used.
-
-2. Edit the VIP file. This controls the input parameters for the retrieval. Read the User's Guide for info on the options available.
-
-3. Change directory to the location of the python source code
-
-4. Run the retrieval using the following command:
-
-python TROPoe.py retrieval_date VIP_filename prior_filename <--shour shour> <--ehour ehour> <--verbose verbose>
-  where
-    retrieval_date  is in yyyymmdd format (i.e., 8-digit)
-    VIP_filename    is the path/filename of the VIP file
-    prior_filename  is the path/filename of the input a-priori data
-
-Optional arguments:
-    --shour     - the start hour. Default is 0.
-    --ehour     - the end hour. If -1 then all AERI times are used. Default is -1.
-    --verbose   - 0-3, controls the verbosity of the retrieval. 0 is very quiet, 3 is very noisy. Default is 1.
+This software has been implemented in a Docker container, making it much easier to use as the radiative transfer models and other miscellaneous input information is included inside the container.  We recommend you use this run_tropoe_ops.sh script to run this software.  The TROPoe User's Guide provides the instructions needed to get the container, configure the retrieval, run the code, and interpret the output.
 
 ------------
 REFERENCES
@@ -91,10 +70,11 @@ Turner, D.D., and U. Loehnert, 2014: Information content and uncertainties in th
 
 
 ------------
-CONTACTS
+Authors
 ------------
 
-Dr. Dave Turner, NOAA Global Systems Laboratory
-Email: dave.turner@noaa.gov
+Dr. Dave Turner, NOAA Global Systems Laboratory, dave.turner@noaa.gov
+Dr. Joshua Gebauer, NOAA National Severe Storms Laboratory / CIWRO, joshua.gebauer@noaa.gov
+Dr. Tyler Bell, NOAA National Severe Storms Laboratory / CIWRO, tyler.bell@noaa.gov
 
 
