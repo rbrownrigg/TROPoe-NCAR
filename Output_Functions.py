@@ -138,8 +138,6 @@ def write_output(vip, ext_prof, mod_prof, rass_prof, ext_tseries, globatt, xret,
 
     # These are the derived indices that I will compute later one. I need to
     # define them here in order to build the netcdf file correctly
-    dindex_name = ['pwv', 'pblh', 'sbih', 'sbim', 'lcl']
-    dindex_units = ['cm', 'km AGL', 'km AGL', 'C', 'km AGL']
     nht = len(xret[0]['z'])
     
     # If fsample is zero, then we will create the netCDF file
@@ -167,7 +165,7 @@ def write_output(vip, ext_prof, mod_prof, rass_prof, ext_tseries, globatt, xret,
         ddim = fid.createDimension('dfs_dim', len(xret[0]['dfs']))
         if vip['output_file_keep_small'] == 0:
             adim = fid.createDimension('arb', len(xret[0]['Xn']))
-        idim = fid.createDimension('index_dim', len(dindex_name))
+        idim = fid.createDimension('index_dim', len(dindex['name']))
 
         base_time = fid.createVariable('base_time','i4')
         base_time.long_name = 'Epoch time'
@@ -383,16 +381,26 @@ def write_output(vip, ext_prof, mod_prof, rass_prof, ext_tseries, globatt, xret,
         dindices.units = 'units depends on the index; see comments below'
         dindices.comment0 = 'This field is derived from the retrieved fields'
         dindices.comment1 = 'A value of -999 indicates that this inded could not be computed (typically because the value was aphysical)'
-        dindices.field_0_name = 'pwv'
-        dindices.field_0_units = 'cm'
-        dindices.field_1_name = 'pblh'
-        dindices.field_1_units = 'km AGL'
-        dindices.field_2_name = 'sbih'
-        dindices.field_2_units = 'km AGL'
-        dindices.field_3_name = 'sbim'
-        dindices.field_3_units = 'C'
-        dindices.field_4_name = 'lcl'
-        dindices.field_4_units = 'km AGL'
+        dindices.field_0_name = dindex['name'][0]
+        dindices.field_0_units = dindex['units'][0]
+        dindices.field_1_name = dindex['name'][1]
+        dindices.field_1_units = dindex['units'][1]
+        dindices.field_2_name = dindex['name'][2]
+        dindices.field_2_units = dindex['units'][2]
+        dindices.field_3_name = dindex['name'][3]
+        dindices.field_3_units = dindex['units'][3]
+        dindices.field_4_name = dindex['name'][4]
+        dindices.field_4_units = dindex['units'][4]
+        dindices.field_5_name = dindex['name'][5]
+        dindices.field_5_units = dindex['units'][5]
+        dindices.field_6_name = dindex['name'][6]
+        dindices.field_6_units = dindex['units'][6]
+        dindices.field_7_name = dindex['name'][7]
+        dindices.field_7_units = dindex['units'][7]
+        dindices.field_8_name = dindex['name'][8]
+        dindices.field_8_units = dindex['units'][8]
+        dindices.field_9_name = dindex['name'][9]
+        dindices.field_9_units = dindex['units'][9]
 
         sigma_dindices = fid.createVariable('sigma_dindices', 'f4', ('time','index_dim',))
         sigma_dindices.long_name = '1-sigma uncertainties in the derived indices'
@@ -749,9 +757,9 @@ def write_output(vip, ext_prof, mod_prof, rass_prof, ext_tseries, globatt, xret,
     theta[fsample,:] = derived['theta'][:]
     thetae[fsample,:] = derived['thetae'][:]
     rh[fsample,:] = derived['rh'][:]
-    dewpt[fsample,:] = derived['dewpt']
-    dindices[fsample,:] = dindex['indices']
-    sigma_dindices[fsample,:] = dindex['sigma_indices']
+    dewpt[fsample,:] = derived['dewpt'][:]
+    dindices[fsample,:] = dindex['indices'][:]
+    sigma_dindices[fsample,:] = dindex['sigma_indices'][:]
 
     obs_vector[fsample,:] = xret[fsample]['Y']
     obs_vector_uncertainty[fsample,:] = xret[fsample]['sigY']

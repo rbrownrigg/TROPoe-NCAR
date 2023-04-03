@@ -14,6 +14,7 @@ import sys
 import numpy as np
 import scipy.io
 import scipy.interpolate
+import scipy.integrate
 from datetime import datetime
 from netCDF4 import Dataset
 
@@ -396,10 +397,12 @@ def compute_lcl(tsfc, wsfc, psfc, p, z):
         ws[i] = Calcs_Conversions.wsat(tt[i], pp[i])
     foo = np.where(wsfc >= ws)[0]
     if len(foo) <= 0:
-        return -999.
+        return -999., -999.
     fct = scipy.interpolate.interp1d(p,z)
     zlcl = fct(pp[foo[0]])
-    return zlcl
+    
+    
+    return zlcl, pp[foo[0]]
     
 ################################################################################
 # This function, suggested by Kobra Khosravian, is used to get the value of the "a2"
@@ -1832,6 +1835,322 @@ def fix_nonphysical_wv(wv, z, foo):
     return np.array(new_wv)
 
 ###############################################################################
+# This function determines the parcel temperature that comes from pseudoadiabatic lapse
+# rates. Adapted from Metpy.
+###############################################################################
+
+def moist_lapse(pressure,temperature,lcl):
+    Rd = 287.04749
+    Lv = 2.50084e6
+    Cp_d = 1004.6662
+    epsilon = 0.6219571
+    
+    # This requires us to use an ODE solver so need to define the function here
+    def dt(p,t):
+        rs = 0.001*Calcs_Conversions.wsat(t-273.16,p)
+        frac = (
+            (Rd * t + Lv * rs)
+            / (Cp_d + (
+                Lv*Lv*rs*epsilon
+                / (Rd*t**2)
+            ))
+        )
+        
+        return frac/p
+    
+    tt = np.atleast_1d(temperature+273.16)
+    pp = np.atleast_1d(pressure)
+    
+    # Put pressure in increasing order for now
+    pp = pp[::-1]
+    
+    # We are going to use a ode solver
+    solver_arg = {'fun': dt, 'y0': tt, 'method':'RK45', 'atol': 1e-7,
+                  'rtol':1.5-8}
+    
+    # Need to handle the initial pressure point
+    ret = np.broadcast_to(tt[:, np.newaxis], (tt.size,1))
+    
+    # Put pressure back in decreasing form
+    pp = pp[::-1]
+    # Because we know how this is getting passed we only have points above
+    # the reference pressure, so integrate upward.
+    
+    trace = scipy.integrate.solve_ivp(t_span=(pp[0],pp[-1]),
+                                      t_eval=pp[1:], **solver_arg).y
+    
+    ret = np.concatenate((ret,trace), axis=-1)
+    
+    return ret.squeeze()
+
+###############################################################################
+# This function finds the level of free convectin and the equilibrium level
+# from a parcel profile and environental temperature profile. Adapted from Metpy.
+###############################################################################
+def find_lfc_el(t, p, parcel, lcl):
+    
+    
+    # We first need to find the intersections between the parcel profiles and
+    # the environment, but exclude first point in the search
+    nearest_idx, = np.nonzero(np.diff(np.sign(parcel[1:]-t[1:])))
+    
+    # Need to add one here since the first point wasn't in the array
+    nearest_idx = nearest_idx+1
+    
+    next_idx = nearest_idx + 1
+   
+    sign_change = np.sign(parcel[next_idx]-t[next_idx])
+   
+    # Calculate the x-intersecion
+    x0 = np.log(p[nearest_idx])
+    x1 = np.log(p[next_idx])
+   
+    a0 = parcel[nearest_idx]
+    a1 = parcel[next_idx]
+   
+    b0 = t[nearest_idx]
+    b1 = t[next_idx]
+   
+    delta_y0 = a0 - b0
+    delta_y1 = a1 - b1
+    intersect_x = (delta_y1*x0 - delta_y0*x1)/(delta_y1 - delta_y0)
+    
+    if len(intersect_x) == 0:
+        increasing = np.array([])
+        decreasing = np.array([])
+    else:
+        # Return the coordinates back to linear
+        intersect_x = np.exp(intersect_x)
+        
+        # There shouldn't be masked values but just double check here
+        duplicates = (np.ediff1d(intersect_x, to_end=1) != 0)
+    
+        intersect_x = intersect_x[duplicates]
+        sign_change = sign_change[duplicates]
+    
+        increasing = intersect_x[sign_change > 0]
+        decreasing = intersect_x[sign_change < 0]
+        
+        
+    # if there is no intersections see if the lfc is the lcl 
+    # and set the el to a nan
+    if len(increasing) == 0:
+        # Is there any positive area above the LCL
+        mask = p < lcl
+        if np.all((parcel[mask]<t[mask]) | (np.isclose(parcel[mask],t[mask]))):
+            # LFC doesn't exist
+            lfc = np.nan
+        else:
+            lfc = np.copy(lcl)
+    
+    else:
+        # The LFC will be the lowest (so highest pressure), positive sign change
+        # First we have to make sure that the LFC is greater or equal the LCL
+        
+        idx = increasing <= lcl
+        
+        if not any(idx):
+            if len(decreasing) > 0:
+                if np.min(decreasing) > lcl:
+                    lfc = np.nan
+                else:
+                    lfc = np.copy(lcl)
+            else:
+                lfc = np.nan
+        else:
+            lfc = np.nanmax(increasing[idx])
+    
+    # Now find the EL
+    if len(decreasing) > 0 and decreasing[-1] < lcl:
+        el = np.nanmin(decreasing)
+    else:
+        el = np.nan
+    
+    return lfc, el
+                
+    
+###############################################################################
+# This function calculates SBCAPE and CIN from the retrieved profiles. We assume
+# that the LCL pressure has already been calculated. Portions of this function
+# were adapted from Metpy.
+###############################################################################
+
+def cape_cin(t,p,lcl):
+    
+    kappa = 0.286
+    Rd = 287.04749
+    
+    # First we need to construct the parcel profile
+    parcel = []
+    
+    # if the lcl wasn't found then the parcel profile is just dry adiabatic
+    if lcl == -999:
+        parcel.extend(((t+273.16)*((p/p[0])**kappa))-273.16)
+    else:
+        
+        # Start with the temperature profile from surface to lcl which is
+        # dry adiabatic
+        foo = np.where((p > lcl) & (~np.isclose(p,lcl)))[0]
+        
+        parcel.extend(((t[0]+273.16)*((p[foo]/p[0])**kappa))-273.16)
+        
+        # Add in the LCL
+        
+        parcel.append(((t[0]+273.16)*((lcl/p[0])**kappa))-273.16)
+        
+        foo = np.where((p < lcl) & (~np.isclose(p,lcl)))[0]
+        
+        # If there are pressures above the LCL add pseudo-adiabatic ascent
+        if len(foo) != 0:
+            parcel.extend(moist_lapse(np.append(np.atleast_1d(lcl),p[foo])
+                                      ,parcel[-1], lcl)[1:]-273.16)
+        
+        parcel = np.array(parcel)
+        
+        
+        # We need to make sure that the LCL is included in the environment
+        # temperature and pressure
+        if any(np.isclose(p,lcl)):
+            new_p = np.copy(p)
+            new_t = np.copy(t)
+        
+        else:
+            # Need to add in the LCL. We have the index where it needs to be
+            # inserted stored in foo
+            
+            if len(foo) != 0:
+                new_p = np.insert(p,foo[0],lcl)
+                new_t = np.insert(t,foo[0],np.interp(lcl,p[::-1],t[::-1]))
+            else:
+                # The lcl is above the input profile so we will not include
+                # it. This shouldn't happen, but leaving this in just in case.
+                new_p = np.copy(p)
+                new_t = np.copy(t)
+                
+                
+        # Now we need to find the LFC and EL
+        lfc, el = find_lfc_el(new_t, new_p, parcel,lcl)
+        
+        # If ther is no LFC then there is no CAPE or CIN and can return zeros
+        if np.isnan(lfc):
+            return 0, 0
+        
+        # If there is no EL then use the top of the profile
+        if np.isnan(el):
+            el = new_p[-1]
+        
+        # Difference between the parcel path and measured temperature profiles
+        y = parcel - new_t
+        
+        # We need to find the zero crossings.
+        zeros = np.zeros_like(y)
+        nearest_idx, = np.nonzero(np.diff(np.sign(y[1:]-zeros[1:])))
+        nearest_idx += 1
+        next_idx = nearest_idx +1
+       
+        # Calculate the x-intersecion
+        x0 = np.log(new_p[nearest_idx])
+        x1 = np.log(new_p[next_idx])
+       
+        a0 = y[nearest_idx]
+        a1 = y[next_idx]
+       
+        b0 = zeros[nearest_idx]
+        b1 = zeros[next_idx]
+       
+        delta_y0 = a0 - b0
+        delta_y1 = a1 - b1
+        intersect_x = (delta_y1*x0 - delta_y0*x1)/(delta_y1 - delta_y0)
+        
+        intersect_y = ((intersect_x - x0) / (x1 - x0)) * (a1 - a0) + a0
+        
+        # Return the coordinates back to linear
+        intersect_x = np.exp(intersect_x)
+        
+        if len(intersect_x) != 0:
+        # There shouldn't be duplicates but just double check here
+            duplicates = (np.ediff1d(intersect_x, to_end=1) != 0)
+            intersect_x = intersect_x[duplicates]
+            intersect_y = intersect_y[duplicates]
+        
+        x = np.concatenate((p, intersect_x))
+        y = np.concatenate((y, intersect_y))
+        
+        # Resort so that the data are in order
+        sort_idx = np.argsort(x)
+        x = x[sort_idx]
+        y = y[sort_idx]
+        
+        # Remove duplicates data points if there are any
+        keep_idx = np.ediff1d(x, to_end=[1]) > 1e-6
+        x = x[keep_idx]
+        y = y[keep_idx]
+        
+        # CAPE
+        # Only use data between the LFC and EL for calculation
+        p_mask = np.where(((x < lfc) | (np.isclose(x,lfc))) & 
+                          ((x>el) | (np.isclose(x,el))))
+        x_clipped = x[p_mask]
+        y_clipped = y[p_mask]
+        cape = Rd*np.trapz(y_clipped,np.log(x_clipped))
+        
+        # CIN
+        # Only use data between the surface and LFC for calculation
+        p_mask = np.where(((x>lfc) | (np.isclose(x,lfc))))
+        x_clipped = x[p_mask]
+        y_clipped = y[p_mask]
+        cin = Rd*np.trapz(y_clipped,np.log(x_clipped)) 
+        
+        if cin > 0:
+            cin = 0
+            
+        if cape < 0:
+            cape = 0
+            cin = 0
+            
+        return cape, cin
+
+###############################################################################
+# This function gives the temperature and water vapor profile that is used to 
+# calculate MLCAPE and CIN.
+###############################################################################
+
+def mixed_layer(t,p,wv, depth = 100):
+    
+    # Convert the temperature to potential temperature
+    theta = Calcs_Conversions.t2theta(t, np.zeros(len(t)), p)
+    
+    p_top = p[0] - depth
+    
+    p_layer = p[p>=p_top]
+    t_layer = theta[p>=p_top]
+    wv_layer = wv[p>=p_top]
+    
+    # Check to make sure that the top pressure is in the the layer. If not 
+    # interpolate to the top pressure.
+    
+    if not np.any(np.isclose(p_top,p_layer)):
+        p_layer = np.append(p_layer, p_top)
+        t_layer = np.append(t_layer, np.interp(np.log(p_top),np.log(p[::-1]),theta[::-1]))
+        wv_layer = np.append(wv_layer, np.interp(np.log(p_top),np.log(p[::-1]),wv[::-1]))
+      
+    t_mix = -np.trapz(t_layer,p_layer)/np.abs(p_layer[0]-p_layer[-1])
+    wv_mix = -np.trapz(wv_layer,p_layer)/np.abs(p_layer[0]-p_layer[-1])
+    
+    # Convert t_mix back to temperature
+    t_mix = Calcs_Conversions.theta2t(t_mix, 0, p_layer[0])
+    
+    pressure_prof = p[p < (p[0]-depth)]
+    temp_prof = t[p < (p[0]-depth)]
+    wv_prof = wv[p < (p[0]-depth)]
+    
+    pressure_prof = np.append(np.atleast_1d(p_layer[0]),pressure_prof)
+    temp_prof = np.append(np.atleast_1d(t_mix),temp_prof)
+    wv_prof = np.append(np.atleast_1d(wv_mix), wv_prof)
+    
+    return pressure_prof, temp_prof, wv_prof
+
+###############################################################################
 # This function is the driver for calculating the derived indices that are 
 # provided with the final output. It performs a simple monte carlo sampling to 
 # derive the uncertanties in the indices. Note that even though the uncertainties
@@ -1843,8 +2162,11 @@ def calc_derived_indices(xret,vip, derived, num_mc=20):
     
     # These are the derived indices that I will compute later one. I need to
     # define them here in order to build the netcdf file correctly
-    dindex_name = ['pwv', 'pblh', 'sbih', 'sbim', 'lcl']
-    dindex_units = ['cm', 'km AGL', 'km AGL', 'C', 'km AGL']
+    dindex_name = ['pwv', 'pblh', 'sbih', 'sbim', 'sbLCL', 'sbCAPE', 'sbCIN', 
+                   'mlLCL','mlCAPE', 'mlCIN']
+    dindex_units = ['cm', 'km AGL', 'km AGL', 'C', 'km AGL', 'J/kg', 'J/kg',
+                    'km AGL', 'J/kg', 'J/kg']
+    
     indices = np.zeros(len(dindex_name))
     sigma_indices = np.zeros(len(dindex_name))
     
@@ -1884,8 +2206,32 @@ def calc_derived_indices(xret,vip, derived, num_mc=20):
     # SBIH & SBIM
     indices[2], indices[3] = compute_sbi(zz,tt)
     
-    # LCL
-    indices[4] = compute_lcl(tt[0],ww[0],pp[0],pp,zz)
+    # sbLCL
+    indices[4], plcl = compute_lcl(tt[0],ww[0],pp[0],pp,zz)
+    
+    # sbCAPE, sbCIN
+    # For now putting this in a try, except statment to make sure this
+    # does cause TROPoe to quit if something goes wrong
+    try:
+        indices[5], indices[6] = cape_cin(tt, pp, plcl)
+    except:
+        print('Something went wrong in CAPE and CIN calculation.')
+        indices[5] = -999.
+        indices[6] = -999.
+    
+    try:
+        # Find mixed layer profiles for the ML indices. 
+        mlpp, mltt, mlww = mixed_layer(tt, pp, ww)
+    
+        # mlLCL
+        indices[7], pmllcl = compute_lcl(mltt[0],mlww[0],mlpp[0],pp,zz)
+    
+        indices[8], indices[9] = cape_cin(mltt,mlpp, pmllcl)
+    except:
+        print('Something went wrong in MLCAPE and CIN calculation')
+        indices[7] = -999.
+        indices[8] = -999.
+        indices[9] = -999.
     
     # and their uncertainties
     tmp_pwv = np.zeros(num_mc)
@@ -1893,13 +2239,35 @@ def calc_derived_indices(xret,vip, derived, num_mc=20):
     tmp_sbih = np.zeros(num_mc)
     tmp_sbim = np.zeros(num_mc)
     tmp_lcl = np.zeros(num_mc)
+    tmp_CAPE = np.zeros(num_mc)
+    tmp_CIN = np.zeros(num_mc)
+    tmp_mllcl = np.zeros(num_mc)
+    tmp_MLCAPE = np.zeros(num_mc)
+    tmp_MLCIN = np.zeros(num_mc
+                         )
     for j in range(num_mc):
         tmp_pwv[j] = Calcs_Conversions.w2pwv(wprofs[:,j],pp)
         tmp_pblh[j] = compute_pblh(zz,tprofs[:,j],pp, sig_t, minht=vip['min_PBL_height'],
                                   maxht=vip['max_PBL_height'], nudge=vip['nudge_PBL_height'])
         tmp_sbih[j], tmp_sbim[j] = compute_sbi(zz,tprofs[:,j])
-        tmp_lcl[j] = compute_lcl(tprofs[0,j], wprofs[0,j], pp[0], pp, zz)
-    
+        tmp_lcl[j], tmp_plcl = compute_lcl(tprofs[0,j], wprofs[0,j], pp[0], pp, zz)
+        
+        try:
+            tmp_CAPE[j], tmp_CIN[j] = cape_cin(tprofs[:,j], pp, tmp_plcl)
+        except:
+            print('Something went wrong in CAPE and CIN calculation.')
+            tmp_CAPE[j] = -999.
+            tmp_CIN[j] = -999.
+        
+        try:
+            tmp_mlpp, tmp_mltt, tmp_mlww, = mixed_layer(tprofs[:,j], pp, wprofs[:,j])
+            tmp_mllcl[j], tmp_pmllcl = compute_lcl(tmp_mltt[0], tmp_mlww[0], tmp_mlpp[0],pp,zz)
+            tmp_MLCAPE[j], tmp_MLCIN[j] = cape_cin(tmp_mltt, tmp_mlpp, tmp_pmllcl)
+        except:
+            print('Something went wrong in MLCAPE and CIN calculation.')
+            tmp_CAPE[j] = -999.
+            tmp_CIN[j] = -999.
+        
     # PWV
     sigma_indices[0] = np.nanstd(indices[0]-tmp_pwv)
     
@@ -1928,6 +2296,41 @@ def calc_derived_indices(xret,vip, derived, num_mc=20):
     
     # LCL
     sigma_indices[4] = np.nanstd(indices[4]-tmp_lcl)
+    
+    # sbCAPE
+    foo = np.where(tmp_CAPE >= 0)[0]
+    if ((len(foo) > 1) & (indices[5] >= 0)):
+        sigma_indices[5] = np.nanstd(indices[5]-tmp_CAPE[foo])
+    else:
+        sigma_indices[5] = -999.
+    
+    # sbCIN
+    foo = np.where(tmp_CIN >= -900)[0]
+    if ((len(foo) > 1) & (indices[6] >= -900)):
+        sigma_indices[6] = np.nanstd(indices[6]-tmp_CIN[foo])
+    else:
+        sigma_indices[6] = -999.
+    
+    # mlLCL
+    foo = np.where(tmp_mllcl > 0)[0]
+    if ((len(foo) > 1) & (indices[7] > 0)):
+        sigma_indices[7] = np.nanstd(indices[7]-tmp_mllcl[foo])
+    else:
+        sigma_indices[7] = -999.
+        
+    # MLCAPE
+    foo = np.where(tmp_MLCAPE >= 0)[0]
+    if ((len(foo) > 1) & (indices[8] >= 0)):
+        sigma_indices[8] = np.nanstd(indices[8]-tmp_MLCAPE[foo])
+    else:
+        sigma_indices[8] = -999.
+    
+    # MLCIN
+    foo = np.where(tmp_CIN >= -900)[0]
+    if ((len(foo) > 1) & (indices[9] >= -900)):
+        sigma_indices[9] = np.nanstd(indices[9]-tmp_MLCIN[foo])
+    else:
+        sigma_indices[9] = -999.
     
     return {'indices':indices, 'sigma_indices':sigma_indices, 'name':dindex_name,
             'units':dindex_units}
