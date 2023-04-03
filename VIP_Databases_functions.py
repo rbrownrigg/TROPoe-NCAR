@@ -1,12 +1,13 @@
 # ----------------------------------------------------------------------------
 #
-#  Copyright (C) 2015,2022 David D Turner - All Rights Reserved
+#  Copyright (C) 2015,2022, 2023 by David D Turner, Joshua Gebauer, and Tyler Bell 
+#  All Rights Reserved
 #
 #  This file is part of the "TROPoe" retrieval system.
 #
-#  TROPoe is free software developed while the author was at NOAA, and is
+#  TROPoe is free software developed while the authors were at NOAA, and is
 #  intended to be free software.  It is made available WITHOUT ANY WARRANTY.
-#  For more information, contact the author.
+#  For more information, contact the authors.
 #
 # ----------------------------------------------------------------------------
 
@@ -209,8 +210,8 @@ full_vip = ({
     'icloud_ssp': {'value': '/home/tropoe/vip/src/input/ssp_db_files/ssp_db.mie_ice.gamma_sigma_0p100', 'comment': 'SSP file for   ice  cloud properties', 'default': False},
     'qc_rms_value': {'value': 10.0, 'comment': 'The RMS value between ((obs minus calc)/obs_uncert) spectra, with values less than this being \'good\' \n', 'default': True},
 
-    'recenter_prior': {'value': 0, 'comment': '0 - do not recenter, 1 - Recenter based on sfc wv field, 2 - Recenter based on PWV', 'default': False},
-    'recenter_prior_input': {'value': 0, 'comment': 'Sfc WVMR or PWV value to use in the recentering process. Set to zero for the value to be determined from other input data (i.e. sfc met)', 'default': False},
+    'recenter_prior': {'value': 0, 'comment': '0 - do not recenter, 1 - Recenter WVMR based on sfc wv field and using conserve-RH for temp, 2 - Recenter WVMR based on PWV and conserve-RH for temp, 3 - Recenter WVMR based on sfc wv field and using conserve-covariance for temp, 4 - Recenter WVMR based on PWV and conserve-covariance for temp', 'default': True},
+    'recenter_input': {'value': 0, 'comment': 'Sfc WVMR or PWV value to use in the recentering process. Set to zero for the value to be determined from other input data (i.e. sfc met)', 'default': False},
     'prior_t_ival': {'value': 1.0, 'comment': 'The prior inflation factor (>= 1) to apply at the surface for temperature', 'default': False},
     'prior_t_iht': {'value': 1.0, 'comment': 'The height [km AGL] where the inflation factor goes to 1 (linear) for temperature', 'default': False},
     'prior_q_ival': {'value': 1.0, 'comment': 'The prior inflation factor (>= 1) to apply at the surface for water vapor mixing ratio', 'default': False},

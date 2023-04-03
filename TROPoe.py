@@ -1,16 +1,17 @@
 # ----------------------------------------------------------------------------
 #
-#  Copyright (C) 2015,2022 David D Turner - All Rights Reserved
+#  Copyright (C) 2015,2022,2023 by David D Turner, Joshua Gebauer, and Tyler Bell 
+#  All Rights Reserved
 #
 #  This file is part of the "TROPoe" retrieval system.
 #
-#  TROPoe is free software developed while the author was at NOAA, and is
+#  TROPoe is free software developed while the authors were at NOAA, and is
 #  intended to be free software.  It is made available WITHOUT ANY WARRANTY.
-#  For more information, contact the author.
+#  For more information, contact the authors.
 #
 # ----------------------------------------------------------------------------
-
-__version__ = '0.6.26'
+=
+__version__ = '0.6.27'
 
 import os
 import sys
@@ -118,14 +119,17 @@ tropoe_version = Data_reads.get_tropoe_version()
 
 #Capture the version of this file
 globatt = {'algorithm_code': 'TROPoe Retrieval Code (formerly AERIoe)',
-           'algorithm_author': 'Dave Turner, Global Systems Laboratory / NOAA (dave.turner@noaa.gov)',
+           'algorithm_authors': 'Dave Turner, NOAA Global Systems Laboratory (dave.turner@noaa.gov), ' +
+                                'Josh Gebauer, NOAA National Severe Storms Laboratory / CIWRO (joshua.gebauer@noaa.gov), ' +
+                                'Tyler Bell, NOAA National Severe Storms Laboratory / CIWRO (tyler.bell@noaa.gov)',
            'algorithm_comment1': 'TROPoe is a physical-iterative algorithm that retrieves thermodynamic profiles from ' +
                                  'a wide range of ground-based remote sensors.  It was primarily designed to use either ' +
                                  'infrared spectrometers or microwave radiometers as the primary instrument, and include ' +
                                  'observations from other sources to improve the quality of the retrieved profiles',
            'algorithm_comment2': 'Original code was written in IDL and is described by the "AERIoe" papers listed below',
-           'algorithm_comment3': 'Code was ported to python by Joshua Gebauer with contributions ' +
-                                 'from Tyler Bell (both at the University of Oklahoma)',
+           'algorithm_comment3': 'Code was ported to python, and packaged into a container with the ' +
+                                 'needed radiative transfer models and other required inputs',
+           'algorithm_disclaimer': 'TROPoe was developed by NOAA and is provided on an as-is basis, with no warranty',
            'algorithm_code_version': __version__,
            'algorithm_package_version': tropoe_version,
            'algorithm_reference1': 'DD Turner and U Loehnert, 2014: Information Content and ' +
@@ -155,6 +159,7 @@ print(' ')
 print('-------------------------------------------------------------------------')
 print('---- TROPoe is a thermodynamic retrieval algorithm developed at NOAA ----')
 print('---- Contacts are dave.turner, joshua.gebauer, tyler.bell (@noaa.gov) ---')
+print('------- The code is provided on an "as-is" basis, with no warranty ------')
 print(' ')
 print(('>>> Starting TROPoe retrieval for ' + str(date) + ' (from ' + str(shour) + ' to ' + str(ehour) + ' UTC) <<<'))
 
@@ -246,8 +251,6 @@ except:
     print('---------------------------------------------------------------------')
     print(' ')
 
-#Now we are ready to start the main retrieval.
-notqcov = 0    # I will leave this here for now, but later will add this to the vip file. If "1" it assumes no covariance between T & Q
 cvgmult = 0.25 # I will leave this here for now, but later will add this to the vip file. It is a multiplier to apply to the convergence test (0.1 - 1.0)
 
 success = 0
@@ -429,8 +432,8 @@ except:
     print('Error: Unable to open the XaSa file')
     VIP_Databases_functions.abort(lbltmpdir,date)
     sys.exit()
-
-z = fid.variables['height'][:]
+z  = fid.variables['height'][:]
+pa = fid.variables['mean_pressure'][:]
 Xa = fid.variables['mean_prior'][:]
 Sa = fid.variables['covariance_prior'][:]
 try:
@@ -458,37 +461,9 @@ if verbose >= 2:
 Sa, status = Other_functions.inflate_prior_covariance(Sa, z, vip['prior_t_ival'], vip['prior_t_iht'],
              vip['prior_q_ival'], vip['prior_q_iht'], vip['prior_tq_cov_val'],
              vip['prior_chimney_ht'], verbose)
-
 if status == 0:
     VIP_Databases_functions.abort(lbltmpdir,date)
     sys.exit()
-
-# Get the bias spectrum
-# Set this to an IDL (py) file that contains the bias to remove from the IRS data.
-# Must contain at least two fields: "wnum" and "bias", where the latter is
-# computed as IRS - LBLRTM. If this is not set, then no bias will be removed from
-# the IRS data.  !!!!!NOTE!!!! THIS IS NOT CURRENTLY IMPLEMENTED.
-remove_bias = 0
-#if len(irs_bias) > 0:
-#    if not os.path.exists(irs_bias):
-#        print 'Error: The irs_bias keyword is not set to a valid filename'
-#        abort(lbltmpdir,date)
-#        sys.exit()
-#    else:
-#        temp = scipy.io.readsav(irs_bias, python_dict = True)
-#    if ((len(temp['wnum']) == 0) | (len(temp['bias']) == 0)):
-#        print 'Error: The fields "wnum" and/or "bias" do not exist in irs_bias file'
-#        abort(lbltmpdir,date)
-#        sys.exit()
-#    if len(temp['wnum']) != len(temp['bias']):
-#        print 'Error: The fields "wnum" and "bias" do not have proper dimensions in rhe irs_bias file'
-#        abort(lbltmpdir,date)
-#        sys.exit()
-#    bwnum = temp['wnum']
-#    bspec = temp['bias']
-#    remove_bias = 1
-#else:
-#remove_bias = 0
 
 # Read in the data
 fail, irs, mwr, mwrscan = Data_reads.read_all_data(date, z, vip['tres'], dostop, verbose, vip['avg_instant'],
@@ -508,7 +483,6 @@ if fail == 1:
     sys.exit()
 
 # Read in any external sources of WV and temperature profiles
-
 ext_prof = Data_reads.read_external_profile_data(date, z, irs['secs'], vip['tres'], vip['avg_instant'],
               vip['ext_wv_prof_type'], vip['ext_wv_prof_path'], vip['ext_wv_noise_mult_hts'],
               vip['ext_wv_noise_mult_val'], vip['ext_wv_prof_minht'], vip['ext_wv_prof_maxht'],
@@ -523,7 +497,6 @@ if ext_prof['success'] != 1:
     sys.exit()
 
 # Read in any model sources of WV and temperature profiles
-
 mod_prof = Data_reads.read_external_profile_data(date, z, irs['secs'], vip['tres'], vip['avg_instant'],
               vip['mod_wv_prof_type'], vip['mod_wv_prof_path'], vip['mod_wv_noise_mult_hts'],
               vip['mod_wv_noise_mult_val'], vip['mod_wv_prof_minht'], vip['mod_wv_prof_maxht'],
@@ -596,34 +569,8 @@ if(location['alt'] <= 0):
     print('    Error: the station altitude must be > 0 [m MSL]')
     sys.exit()
 
-# Apply the IRS bias spectrum
-if remove_bias == 1:
-    #if verbose >= 2:
-    #    print 'Removing a spectral bias from the IRS observations'
-    #if ((np.nanmin(bwum)+1 < np.nanmin(irs['wnum'])) | (np.nanmax(bwnum)-1 > np.nanmax(irs['wnum']))):
-    #    print 'Error: the spectral bias does not seem to cover the proper wnum range'
-    #   VIP_Databases_functions.abort(lbltmpdir,date)
-    #    sys.exit()
-    #bias = np.interp(irs['wnum'],bwnum,bspec)
-    #for i in range(len(irs['secs'])):
-    #    irs['radmn'][:,i] -= bias
-    print('Error: Remove bias is not functional at all. Have to end.')
-    VIP_Databases_functions.abort(lbltmpdir,date)
-    sys.exit()
-else:
-    if verbose >= 2:
-        print('Did not remove a spectral bias from the IRS observations')
-
-if notqcov == 1:
-    k = len(z)
-    for i in range(k):
-        for j in range(k,2*k):
-            Sa[i,j] = 0
-            Sa[j,i] = 0
-
 # Do I use a hardcoded value for CO2, or use my simple model to predict
 # the concentration? Unit is ppm
-
 if vip['prior_co2_mn'][0] < 0:
    vip['prior_co2_mn'][0] = Other_functions.predict_co2_concentration(irs['yy'][0], irs['mm'][0], irs['dd'][0])
 
@@ -640,36 +587,44 @@ if ((nfooco2 > 0) | (nfooch4 > 0) | (nfoon2o > 0)):
     sys.exit()
 
 # Recenter the prior if desired
-if vip['recenter_prior'] == 1:
-    # Rescale based on surface water vapor
-
-    if vip['recenter_prior_input'] > 0:   # Rescale based on the value inputted into the vip
-        Xa, comments = Data_reads.recenter_prior(prior_filename, vip['recenter_prior_input'], vip['recenter_prior'])
-
-        # Update the global attributes to note that prior recentering was performed
-        globatt.update(comments)
-
-    elif ((vip['ext_sfc_wv_type'] > 0) & (ext_tseries['nQsfc'] > 0)):  # Rescale based on the ext_sfc data
-        foo = np.where(ext_tseries['wv'] > 0)  # Need to take out an -999s
-        input_value = np.mean(ext_tseries['wv'][foo])
-        Xa, comments = Data_reads.recenter_prior(prior_filename, input_value, vip['recenter_prior'])
-
-        # Update the global attributes to note that prior recentering was performed
-        globatt.update(comments)
-
-    elif vip['ext_sfc_wv_type'] <= 0:
-        print("Error: In order to recenter the prior, an ext_sfc_wv_type is required")
+if vip['recenter_prior'] > 0:
+    # If the vip.recenter_input is set, this is the override value
+    if vip['recenter_input'] > 0:   # Rescale based on the value inputted into the vip
+        recenter_input_value = vip['recenter_input']
+    elif ((vip['recenter_prior'] == 1) | (vip['recenter_prior'] == 3)):
+        if ((vip['ext_sfc_wv_type'] > 0) & (ext_tseries['nQsfc'] > 0)):  # Rescale based on the ext_sfc data
+            foo = np.where(ext_tseries['wv'] > 0)  # Need to take out an -999s
+            recenter_input_value = np.mean(ext_tseries['wv'][foo])
+        else:
+            print('Warning: Trying to recenter the prior using the surface met, but there are no valid WV surface obs')
+            print('            So the prior was not rescaled')
+    elif ((vip['recenter_prior'] == 2) | (vip['recenter_prior'] == 4)):
+        print('Warning: Trying to recenter the prior using an external PWV obs, but one does not exist yet -- aborting')
+        VIP_Databases_functions.abort(lbltmpdir, date)
+        sys.exit()
+    else:
+        print('Error: the flag set in vip.recenter_prior is illegal; it must be one of {0,1,2,3,4} -- aborting')
         VIP_Databases_functions.abort(lbltmpdir, date)
         sys.exit()
 
-    elif ext_tseries['nQsfc'] == 0:
-        print("WARNING: No surface WV points found in the file, so the prior will not be recentered!")
+    # Determine which method to scale the temperature
+    if ((vip['recenter_prior'] == 1) | (vip['recenter_prior'] == 3)):
+        changeTmethod = 0
+        if vip['recenter_prior'] == 1:
+            changeTmethod = 1
+        elif vip['recenter_prior'] == 3:
+            changeTmethod = 2
 
-elif vip['recenter_prior'] == 2:
-    print("Error: Recentering prior based on PWV (recenter_prior=2) is not yet implemented. Exiting...")
-    VIP_Databases_functions.abort(lbltmpdir, date)
-    sys.exit()
+    # Recenter the prior, using the inputs determined above
+    successflag, newXa, newSa, comments = Data_reads.recenter_prior(z, pa, Xa, Sa, 
+                    recenter_input_value, sfc_or_pwv=1, changeTmethod=changeTmethod)
 
+    # Now replace the variables, if successful
+    #   and update the global attributes to note that prior recentering was performed
+    if successflag == 1:
+        Xa = newXa
+        Sa = newSa
+        globatt.update(comments)
 
 # Splice these trace gases and clouds into the Xa and Sa matrices.
 # I am assuming no correlations between the TGs and clouds and the T/Q profiles
