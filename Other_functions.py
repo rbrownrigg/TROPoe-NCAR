@@ -2244,8 +2244,8 @@ def calc_derived_indices(xret,vip, derived, num_mc=20):
     tmp_CIN = np.zeros(num_mc)
     tmp_mllcl = np.zeros(num_mc)
     tmp_MLCAPE = np.zeros(num_mc)
-    tmp_MLCIN = np.zeros(num_mc
-                         )
+    tmp_MLCIN = np.zeros(num_mc)
+                         
     for j in range(num_mc):
         tmp_pwv[j] = Calcs_Conversions.w2pwv(wprofs[:,j],pp)
         tmp_pblh[j] = compute_pblh(zz,tprofs[:,j],pp, sig_t, minht=vip['min_PBL_height'],
