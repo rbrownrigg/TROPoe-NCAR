@@ -10,7 +10,7 @@
 #  For more information, contact the authors.
 #
 # ----------------------------------------------------------------------------
-=
+
 __version__ = '0.6.27'
 
 import os
@@ -162,6 +162,7 @@ print('---- Contacts are dave.turner, joshua.gebauer, tyler.bell (@noaa.gov) ---
 print('------- The code is provided on an "as-is" basis, with no warranty ------')
 print(' ')
 print(('>>> Starting TROPoe retrieval for ' + str(date) + ' (from ' + str(shour) + ' to ' + str(ehour) + ' UTC) <<<'))
+print('  TROPoe version: '+tropoe_version)
 
 #Find the VIP file and read it
 

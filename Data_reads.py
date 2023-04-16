@@ -4400,10 +4400,10 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
 ################################################################################
 
 def get_tropoe_version():
-    tropoe_tar_file = findfile("/tmp","TROPoe*tar.gz")[0]
-    tropoe_tar_file = tropoe_tar_file[0]
+    tropoe_tar_file = findfile(".","TROPoe*tar.gz")[0]
     if(len(tropoe_tar_file) == 0):
         version = 'UNKNOWN'
     else:
-        version = tropoe_tar_file[5:-7]
+        tropoe_tar_file = tropoe_tar_file[0]
+        version = tropoe_tar_file[2:-7]
     return version
