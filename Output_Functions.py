@@ -420,7 +420,7 @@ def write_output(vip, ext_prof, mod_prof, rass_prof, ext_tseries, globatt, xret,
         marker = np.copy(xret[0]['flagY'])
         foo = np.where(xret[0]['flagY'] == 1)[0]
         if len(foo) > 0:
-            obs_flag.value_01 = 'cm^(-1) (i.e., wavenumber)'
+            obs_flag.value_01 = 'Radiance in wavenumber -- i.e., cm^(-1)'
             marker[foo] = -1
 
         foo = np.where(xret[0]['flagY'] == 2)[0]
