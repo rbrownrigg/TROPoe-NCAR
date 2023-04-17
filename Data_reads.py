@@ -1820,6 +1820,10 @@ def read_vceil(path, date, vceil_type, ret_secs, verbose):
         print('                     Files named "*CHM*nc" ')
         print('                     Reads field "cbh", which has units m AGL')
         print('                     Time field is weird (starts at 1904)')
+        print('   cbh_type=7 --->')
+        print('             E-PROFILE style ceilometer input')
+        print('                     Files named "L2*nc" ')
+        print('                     Reads field "cbh", which has units m AGL')
         print('-------------------------------------------------------')
         print(' ')
         err = {'success':-1}
@@ -1829,8 +1833,8 @@ def read_vceil(path, date, vceil_type, ret_secs, verbose):
             print('User selected option for no cloud base height data')
         return err
     elif ((vceil_type == 1) | (vceil_type == 5)):
-        if verbose == 3:
-            print('Reading in VCEIL data')
+        if verbose >= 1:
+            print('Reading in CEIL data')
         for i in range(len(udate)):
             tempfiles,status = (findfile(path,'*(ceil|ct25)*' + udate[i] + '*.(cdf|nc)'))
             if status == 1:
@@ -1863,8 +1867,8 @@ def read_vceil(path, date, vceil_type, ret_secs, verbose):
                 cbh = np.append(cbh,cbhx)
 
     elif vceil_type == 2:
-        if verbose == 3:
-            print('Reading in ASOS/AWOS')
+        if verbose >= 1:
+            print('Reading in ASOS/AWOS ceilometer')
 
         for i in range(len(udate)):
             tempfiles, status = (findfile(path, '*(ceil|cbh)*' + udate[i] + '*.(cdf|nc)'))
@@ -1893,7 +1897,7 @@ def read_vceil(path, date, vceil_type, ret_secs, verbose):
                 cbh = np.append(cbh,cbhx)
 
     elif vceil_type == 3:
-        if verbose == 3:
+        if verbose >= 1:
             print('Reading in CLAMPS dlfp data')
         for i in range(len(udate)):
             tempfiles, status = (findfile(path,'*dlfp*' + udate[i] + '*.(cdf|nc)'))
@@ -1921,7 +1925,7 @@ def read_vceil(path, date, vceil_type, ret_secs, verbose):
                 cbh = np.append(cbh,cbhx)
 
     elif vceil_type == 4:
-        if verbose == 3:
+        if verbose >= 1:
             print(' Reading in ARM dlprofwstats data')
         for i in range(len(udate)):
             tempfiles, status = (findfile(path,'*dlprofwstats*' + udate[i] + '*.(cdf|nc)'))
@@ -1950,7 +1954,7 @@ def read_vceil(path, date, vceil_type, ret_secs, verbose):
         cbh = cbh/1000.              # Convert m AGL to km AGL
 
     elif vceil_type == 6:
-        if verbose == 3:
+        if verbose >= 1:
             print(' Reading in JOYCE Jenoptic data')
         for i in range(len(udate)):
             tempfiles, status = (findfile(path,'*CHM*' + udate[i] + '*.(cdf|nc)'))
@@ -1977,6 +1981,37 @@ def read_vceil(path, date, vceil_type, ret_secs, verbose):
                 cbh = np.append(cbh,cbhx)
         secs -= 2.0828448e+09   # This is the appropriate offset to apply to get to unix time
         cbh = cbh/1000.              # Convert m AGL to km AGL
+
+    elif vceil_type == 7:
+        if verbose >= 1:
+            print(' Reading in E-PROFILE ceilometer data')
+        for i in range(len(udate)):
+            tempfiles, status = (findfile(path,'L2*' + udate[i] + '*.nc'))
+            if status == 1:
+                return err
+            files = files + tempfiles
+        if len(files) == 0:
+            print('No CBH files found for this date')
+            return err
+
+        for i in range(len(files)):
+            if verbose == 3:
+                print(' Reading the file ' + files[i])
+            fid = Dataset(files[i],'r')
+            to  = fid.variables['time'][:].astype('float')
+	               # Because the E-PROFILE has this field as a 2-d field
+            cbhx = fid.variables['cloud_base_height'][:,0]  
+            fid.close()
+
+            if i == 0:
+                secs = to
+                cbh  = np.copy(cbhx)
+            else:
+                secs = np.append(secs,to)
+                cbh  = np.append(cbh,cbhx)
+        secs *= (24.*60*60)	     # Convert unix days into unit time
+        cbh = cbh/1000.              # Convert m AGL to km AGL
+        bt  = secs[0]
 
     else:
         print('Error in read_vceil: Undefined ceilometer type')
