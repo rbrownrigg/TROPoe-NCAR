@@ -937,6 +937,8 @@ def read_mwr(path, rootname, date, mwr_type, step, mwr_freq_field, mwr_elev_fiel
         print('             MWR tb data are in a single 2-d variable in the input file')
         print('   mwr_type=3 --->')
         print('             MWR tb data are in a single 2-d variable in the input file, using the "Univ Cologne" format')
+        print('   mwr_type=4 --->')
+        print('             MWR tb data are in a single 2-d variable in the input file, using the "E-PROFILE" format')
         print('-----------------------------------------------------------------')
         print(' ')
         err = {'success':-1}
@@ -1002,6 +1004,14 @@ def read_mwr(path, rootname, date, mwr_type, step, mwr_freq_field, mwr_elev_fiel
                 lat = fid.variables['lat'][:]
                 lon = fid.variables['lon'][:]
                 alt = fid.variables['zsl'][:]
+            elif(mwr_type == 4):
+                if verbose >= 3:
+                    print("    using the E-PROFILE data format")
+                bt = 0
+                to = fid.variables['time'][:].astype('float')
+                lat = fid.variables['station_latitude'][0]
+                lon = fid.variables['station_longitude'][0]
+                alt = fid.variables['station_altitude'][0]
             if len(to) <= 1:
                 fid.close()
                 continue
@@ -1024,22 +1034,26 @@ def read_mwr(path, rootname, date, mwr_type, step, mwr_freq_field, mwr_elev_fiel
                        if len(foo) > 0:
                            psfcx = fid.variables['pres'][:]
                        else:
-                           foo = np.where(np.array(list(fid.variables.keys())) == 'pa')[0]
+                           foo = np.where(np.array(list(fid.variables.keys())) == 'air_pressure')[0]
                            if len(foo) > 0:
-                               psfcx  = fid.variables['pa'][:]
-                               psfcx /= 100.    # convert from Pa to hPa (note this is the Univ Cologne MWR format)
+                               psfcx = fid.variables['air_pressure'][:]
+                           else:
+                               foo = np.where(np.array(list(fid.variables.keys())) == 'pa')[0]
+                               if len(foo) > 0:
+                                   psfcx  = fid.variables['pa'][:]
+                                   psfcx /= 100.    # convert from Pa to hPa (note this is the Univ Cologne MWR format)
                                         # There is a lot of missing data in the pressure field in this format.  So
                                         # we want to interpolate across the gaps.  But we don't want to extrapolate,
                                         # so we need to catch the first and last good point, and use that for the two
                                         # ends of the day.
-                               foo    = np.where(psfcx > 0)[0]
-                               idx0 = foo[0]
-                               idx1 = foo[-1]
-                               psfcx  = np.interp(bt+to,bt+to[foo],psfcx[foo])
-                               psfcx[0:idx0]  = psfcx[idx0]
-                               psfcx[idx1:-1] = psfcx[idx1]
-                           else:
-                               psfcx = np.ones(to.shape)*-999.0
+                                   foo    = np.where(psfcx > 0)[0]
+                                   idx0 = foo[0]
+                                   idx1 = foo[-1]
+                                   psfcx  = np.interp(bt+to,bt+to[foo],psfcx[foo])
+                                   psfcx[0:idx0]  = psfcx[idx0]
+                                   psfcx[idx1:-1] = psfcx[idx1]
+                               else:
+                                   psfcx = np.ones(to.shape)*-999.0
 
             # See if the elevation variable exists. If so, read it in. If not then
             # assume all samples are zenith pointing and create the elev field as such
@@ -1070,7 +1084,7 @@ def read_mwr(path, rootname, date, mwr_type, step, mwr_freq_field, mwr_elev_fiel
                         else:
                             tbskyx = np.vstack((tbskyx,tmp))
 
-                elif((mwr_type == 2) | (mwr_type == 3)):
+                elif((mwr_type == 2) | (mwr_type == 3) | (mwr_type == 4)):
 
                     # if mwr_type is 2 or 3, then I expect there to only be a single mwr_tb_field_name
                     foo = np.where(np.array(list(fid.variables.keys())) == mwr_tb_field_names)[0]
@@ -1200,6 +1214,8 @@ def read_mwrscan(path, rootname, date, mwrscan_type, mwrscan_freq_field, mwrscan
         print('             MWR-scan tb data are in a single 2-d variable in the input file')
         print('   mwrscan_type=3 --->')
         print('             MWR-scan tb data are in a single 2-d variable in the input file, using the "Univ Cologne" format')
+        print('   mwrscan_type=4 --->')
+        print('             MWR-scan tb data are in a single 2-d variable in the input file, using the "E-PROFILE" format')
         print('-----------------------------------------------------------------')
         print(' ')
         err = {'success':-1}
@@ -1273,6 +1289,14 @@ def read_mwrscan(path, rootname, date, mwrscan_type, mwrscan_freq_field, mwrscan
                 lat = fid.variables['lat'][:]
                 lon = fid.variables['lon'][:]
                 alt = fid.variables['zsl'][:]
+            elif(mwrscan_type == 4):
+                if verbose >= 3:
+                    print("    using the E-PROFILE data format")
+                bt = 0
+                to = fid.variables['time'][:].astype('float')
+                lat = fid.variables['station_latitude'][0]
+                lon = fid.variables['station_longitude'][0]
+                alt = fid.variables['station_altitude'][0]
             if len(to) <= 1:
                 fid.close()
                 continue
@@ -1305,7 +1329,7 @@ def read_mwrscan(path, rootname, date, mwrscan_type, mwrscan_freq_field, mwrscan
                         else:
                             tbskyx = np.vstack((tbskyx,tmp))
 
-                elif mwrscan_type == 2:
+                elif ((mwrscan_type == 2) | (mwrscan_type == 4)):
 
                     # if mwrscan_type is 2, then I expect there to only be a single mwrscan_tb_field_name
                     vid = np.where(np.array(list(fid.variables.keys())) == mwrscan_tb_field_names)[0]
