@@ -51,7 +51,9 @@ import VIP_Databases_functions
 #   pattern:    the file pattern to find.  Can have wildcards or python options (t1|t2|t3)
 ################################################################################
 
-def findfile(path,pattern):
+def findfile(path,pattern,verbose=2):
+    if(verbose >= 2):
+        print('      Searching for files matching '+path+'/'+pattern)
     #print('Input path is: '+path)
     #print('Input pattern is: '+pattern)
 
@@ -240,11 +242,11 @@ def read_irs_ch(path,date,irs_type,fv,fa,irs_spec_cal_factor,
                 old_ffov_halfangle, new_ffov_halfangle, verbose):
 
     if verbose >= 2:
-        print('Reading irs_ch data in ' + path)
+        print('  Reading irs_ch data in ' + path)
     err = {'success':0}
     if irs_type <= 0:
-        print(('This piece of code should not be exercised, as this option should be screened ' +
-               'in read_irs_eng() earlier'))
+        print(('Error in read_irs_ch: This piece of code should not be exercised, as ' +
+               'this option should be screened in read_irs_eng() earlier'))
         return err
     elif ((irs_type == 1) | (irs_type == 4)):
         filename = '*aeri*ch*' + str(date) + '*(cdf|nc)'
@@ -259,7 +261,7 @@ def read_irs_ch(path,date,irs_type,fv,fa,irs_spec_cal_factor,
         return err
 
     if verbose >= 3:
-        print('Looking for IRS channel data as ' + filename)
+        print('    Looking for IRS channel data as ' + filename)
 
     files,status = findfile(path,filename)
     if status == 1:
@@ -318,7 +320,7 @@ def read_irs_ch(path,date,irs_type,fv,fa,irs_spec_cal_factor,
             if(len(foo) > 0):
                 xhatchOpen[foo] = 0
         else:
-            print(('Warning: Unable to find IRS hatchOpen or hatchIndicator field in ' +
+            print(('Warning in read_irs_ch: Unable to find IRS hatchOpen or hatchIndicator field in ' +
                   'data file -- assuming hatch is always open'))
             xhatchOpen = np.ones(len(to))
 
@@ -549,7 +551,8 @@ def read_irs_ch(path,date,irs_type,fv,fa,irs_spec_cal_factor,
     #both turned on
 
     if ((fv > 0) & (fa > 0)):
-        print('Error: both the obscuration (Fv) and aft-optics (Fa) corrections are turned on')
+        print('Error in irs_read_ch: both the IRS obscuration (Fv) and ' + 
+	          'aft-optics (Fa) corrections are turned on in the VIP -- turn one or both off')
         return err
 
     #Recalibrate the IRS data to ensure that the BB emissivity is correct.
@@ -557,7 +560,7 @@ def read_irs_ch(path,date,irs_type,fv,fa,irs_spec_cal_factor,
     #but we should be using something in excess of 35 (more like 39)
 
     if verbose == 3:
-        print('Correcting for the blackbody emissivity cavity factor')
+        print('    Correcting for the blackbody emissivity cavity factor')
     nrad = mrad * 0
     emisn = Other_functions.get_aeri_bb_emis(wnum, cavity_factor=39.0, verbose=verbose)
     for i in range(len(hour)):
@@ -583,7 +586,7 @@ def read_irs_ch(path,date,irs_type,fv,fa,irs_spec_cal_factor,
 
     if fa > 0:
         if verbose >= 2:
-            print('Correcting IRS data with Fa = ' + str(fa))
+            print('    Correcting IRS data with Fa = ' + str(fa))
         nrad = np.copy(mrad)
         for i in range(len(hour)):
             Bref = Calcs_Conversions.planck(wnum,calibambt[i])
@@ -593,7 +596,7 @@ def read_irs_ch(path,date,irs_type,fv,fa,irs_spec_cal_factor,
 
             #Apply a bit of QC here!
             if ((calibcbbt[i] - 20 > aft_temp) | (aft_temp > calibhbbt[i]+2)):
-                print('Error: the temperature used for the aft optics (Fa correction) is out of bounds')
+                print('Error: the temperature used for the IRS aft optics (Fa correction) is out of bounds')
                 return err
             Baft = Calcs_Conversions.planck(wnum,aft_temp)
             nrad[:,i] = (mrad[:,i] - fa*Baft) / (1. - fa)
@@ -601,7 +604,7 @@ def read_irs_ch(path,date,irs_type,fv,fa,irs_spec_cal_factor,
 
     if fv > 0:
         if verbose >= 2:
-            print('Correcting IRS data with Fv = ' + str(fv))
+            print('      Correcting IRS data with Fv = ' + str(fv))
         nrad = np.copy(mrad)
         for i in range(len(hour)):
             Brad = Calcs_Conversions.planck(wnum, bbsupport[i])
@@ -658,7 +661,7 @@ def read_all_data(date, retz, tres, dostop, verbose, avg_instant, ch1_path,
         # we are reading in HATPRO data which can have >3000 samples per day (i.e., the
         # irs_type is used to subsample the MWR data)
 
-        print(' Attempting to use MWR as the master instrument; no IRS data will be read in')
+        print('  Attempting to use MWR as the master instrument; no IRS data will be read in')
         
         # Check to make sure the directory exists and has files in it 
         if os.path.isdir(mwr_path):
@@ -668,12 +671,12 @@ def read_all_data(date, retz, tres, dostop, verbose, avg_instant, ch1_path,
                            mwr_tb_field_names, mwr_tb_freqs, mwr_tb_noise, mwr_tb_bias, mwr_tb_field1_tbmax,
                            verbose, single_date=True)
             else:
-                print('The directory for the master instrument: ' + mwr_path)
-                print('     has no files in it!')
+                print('  The directory for the master instrument: ' + mwr_path)
+                print('      has no files in it!')
                 return 1, -999, -999, -999
         else:
-            print('The directory for the master instrument: ' + mwr_path)
-            print('     does not exist!')
+            print('  The directory for the master instrument: ' + mwr_path)
+            print('      does not exist!')
             return 1, -999, -999, -999
             
         if (mwr_data['success'] != 1) or (mwr_data['type'] == 0):
@@ -687,8 +690,8 @@ def read_all_data(date, retz, tres, dostop, verbose, avg_instant, ch1_path,
 
             foo = np.where(mwr_data['psfc'] > 0)
             if len(foo) == 0:
-                print('Warning: no surface data found in the MWR files. Default station_pres values will be used')
-                print('         unless an external surface pressure data source is provided.')
+                print('    Warning: no surface data found in the MWR files. Default station_pres values will be used')
+                print('        unless an external surface pressure data source is provided.')
 
             wnum = np.arange(int((905-900)/0.5)+1)*0.5+900            #Simulated wavenumber array
             mrad = np.ones((len(wnum),len(mwr_data['secs'])))*-999.0   #Radiance is all missing
@@ -717,38 +720,38 @@ def read_all_data(date, retz, tres, dostop, verbose, avg_instant, ch1_path,
         # for the engineering, summmary, and ch1 files exist and have files
         
         if not os.path.isdir(eng_path):
-            print('The IRS engineering file directory: ' + eng_path)
+            print('  The IRS engineering file directory: ' + eng_path)
             print('    does not exist!')
             return 1, -999, -999, -999
         else:
             if os.listdir(eng_path) == []:
-                print('The IRS engineering file directory: ' + eng_path)
+                print('  The IRS engineering file directory: ' + eng_path)
                 print('    has no files in it!')
                 return 1, -999, -999, -999
         
         if not os.path.isdir(ch1_path):
-            print('The IRS channel file directory: ' + ch1_path)
+            print('  The IRS channel file directory: ' + ch1_path)
             print('    does not exist!')
             return 1, -999, -999, -999
         else:
             if os.listdir(ch1_path) == []:
-                print('The IRS channel file directory: ' + ch1_path)
+                print('  The IRS channel file directory: ' + ch1_path)
                 print('    has no files in it!')
                 return 1, -999, -999, -999
             
         if not os.path.isdir(sum_path):
-            print('The IRS summary file directory: ' + sum_path)
+            print('  The IRS summary file directory: ' + sum_path)
             print('    does not exist!')
             return 1, -999, -999, -999
         else:
             if os.listdir(sum_path) == []:
-                print('The IRS summary file directory: ' + sum_path)
+                print('  The IRS summary file directory: ' + sum_path)
                 print('    has no files in it!')
                 return 1, -999, -999, -999
             
         irseng = read_irs_eng(eng_path,date,irs_type,verbose)
         if irseng['success'] == 0:
-            print('Problem reading IRS eng data')
+            print('  Problem reading IRS eng data')
             if dostop:
                 wait = input('Stopping inside routine for debugging. Press enter to continue')
             fail = 1
@@ -788,7 +791,7 @@ def read_all_data(date, retz, tres, dostop, verbose, avg_instant, ch1_path,
 
         #Calibrate the IRS pressure sensor using a linear function
         if len(cal_irs_pres) != 2:
-            print('The calibration information for the IRS pressure sensor is ill-formed')
+            print('  Error: The calibration information for the IRS pressure sensor is ill-formed')
             fail = 1
         else:
             irsch1['atmos_pres'] = cal_irs_pres[0] + irsch1['atmos_pres'] *cal_irs_pres[1]
@@ -830,7 +833,7 @@ def read_all_data(date, retz, tres, dostop, verbose, avg_instant, ch1_path,
     if mwr_data['success'] != 1:
         print('Problem reading in MWR-zenith data')
     elif mwr_data['type'] > 0:
-        print('Reading in MWR-zenith data')
+        print('  Reading in MWR-zenith data')
 
     #Read in the MWR scan data
     mwrscan_data = read_mwrscan(vip['mwrscan_path'], vip['mwrscan_rootname'], date, vip['mwrscan_type'],
@@ -843,7 +846,7 @@ def read_all_data(date, retz, tres, dostop, verbose, avg_instant, ch1_path,
         fail = 1
         return fail, -999, -999, -999
     elif mwrscan_data['type'] > 0:
-        print('Reading in MWR-scan data')
+        print('  Reading in MWR-scan data')
 
     #Read in the ceilometer data
     vceil = read_vceil(vceil_path, date, vceil_type, ret_secs, verbose)
@@ -851,7 +854,7 @@ def read_all_data(date, retz, tres, dostop, verbose, avg_instant, ch1_path,
     if vceil['success'] < 0:
         fail = 1
     elif vceil['success'] == 0:
-        print('No vceil data -- using default cbh for entire period')
+        print('  No vceil data -- using default cbh for entire period')
         vceil = {'success':2, 'secs':irsch1['secs'], 'ymd':irsch1['ymd'], 'hour':irsch1['hour'], 'cbh':np.ones(len(irsch1['secs']))*-1}
 
     if ((fail == 1) & (dostop)):
@@ -904,7 +907,7 @@ def read_mwr(path, rootname, date, mwr_type, step, mwr_freq_field, mwr_elev_fiel
             mwr_tb_field1_tbmax, verbose, single_date=False):
 
     if verbose >= 2:
-        print('Reading MWR data in ' + path)
+        print('  Reading MWR data in ' + path)
     err = {'success':0, 'type':-1}
 
     # Check to make sure "step" is an integer greater than 0
@@ -979,7 +982,7 @@ def read_mwr(path, rootname, date, mwr_type, step, mwr_freq_field, mwr_elev_fiel
                 return err
             files = files + tempfiles
         if len(files) == 0:
-            print('Warning: No MWR files found for this date')
+            print('  Warning: No MWR files found for this date')
             mwr_type = 0
 
     # Only read MWR data if mwr_type > 0
@@ -988,7 +991,7 @@ def read_mwr(path, rootname, date, mwr_type, step, mwr_freq_field, mwr_elev_fiel
     if mwr_type > 0:
         for i in range(len(files)):
             if verbose >= 2:
-                print("  Reading: " + files[i])
+                print("    Reading: " + files[i])
             fid = Dataset(files[i],'r')
             if(mwr_type <= 2):
                 bt = fid.variables['base_time'][:].astype('float')
@@ -1061,7 +1064,7 @@ def read_mwr(path, rootname, date, mwr_type, step, mwr_freq_field, mwr_elev_fiel
             if len(foo) > 0:
                 elevx = fid.variables[mwr_elev_field][:]
             else:
-                print('Warning: Unable to find the field ' + mwr_elev_field + ' in the MWR input file')
+                print('    Warning: Unable to find the field ' + mwr_elev_field + ' in the MWR input file')
                 elevx = np.ones(to.shape)*90.0
 
             # Now read in the Tb data, if desired
@@ -1142,7 +1145,7 @@ def read_mwr(path, rootname, date, mwr_type, step, mwr_freq_field, mwr_elev_fiel
 
             if mwr_n_tb_fields > 0:
                 if len(tbsky[:,0]) != mwr_n_tb_fields:
-                    print('Big problem in read_mwr')
+                    print('Error: Big problem in read_mwr')
                     return err
                 tbsky0 = np.copy(tbsky)
                 for i in range(mwr_n_tb_fields):
@@ -1157,7 +1160,7 @@ def read_mwr(path, rootname, date, mwr_type, step, mwr_freq_field, mwr_elev_fiel
                 foo = np.where(((elev >= 89) & (elev < 91)))[0]
 
             if len(foo) == 0:
-                print('Warning: All MWR data are at elevations other than 90 degrees (zenith)')
+                print('  Warning: All MWR data are at elevations other than 90 degrees (zenith)')
                 mwr_type = 0
             else:
                 secs = secs[foo]
@@ -1195,7 +1198,7 @@ def read_mwrscan(path, rootname, date, mwrscan_type, mwrscan_freq_field, mwrscan
             mwrscan_tb_field1_tbmax, mwrscan_n_elevations, mwrscan_elevations, verbose):
 
     if verbose >= 2:
-        print('Reading MWR-scan data in ' + path)
+        print('  Reading MWR-scan data in ' + path)
     err = {'success':0, 'type':-1}
 
     # Read in the data from yesterday, today, and tomorrow
@@ -1267,7 +1270,7 @@ def read_mwrscan(path, rootname, date, mwrscan_type, mwrscan_freq_field, mwrscan
                 return err
             files = files + tempfiles
         if len(files) == 0:
-            print('Warning: No MWR files found for this date')
+            print('  Warning: No MWR files found for this date')
             mwrscan_type = 0
 
     # Only read MWR-scan data if mwrscan_type > 0
@@ -1307,7 +1310,7 @@ def read_mwrscan(path, rootname, date, mwrscan_type, mwrscan_freq_field, mwrscan
             if len(vid) > 0:
                 elevx = fid.variables[mwrscan_elev_field][:]
             else:
-                print('Warning: Unable to find the field ' + mwrscan_elev_field + ' in the MWR-scan input file')
+                print('  Warning: Unable to find the field ' + mwrscan_elev_field + ' in the MWR-scan input file')
 
             # Now read in the Tb data, if desired
             if mwrscan_n_tb_fields > 0:
@@ -1433,7 +1436,7 @@ def read_mwrscan(path, rootname, date, mwrscan_type, mwrscan_freq_field, mwrscan
             # Sanity check
             if mwrscan_n_tb_fields > 0:
                 if len(tbsky[:,0]) != mwrscan_n_tb_fields:
-                    print('Big problem in read_mwrscan')
+                    print('Error: Big problem in read_mwrscan')
                     return err
                 tbsky0 = np.copy(tbsky)
                 for i in range(mwrscan_n_tb_fields):
@@ -1454,7 +1457,7 @@ def read_mwrscan(path, rootname, date, mwrscan_type, mwrscan_freq_field, mwrscan
                     keep_samples[foo] = 1
             foo = np.where(keep_samples == 1)[0]
             if len(foo) == 0:
-                print('Warning: Did not find any MWR-scan data at the desired elevations')
+                print('  Warning: Did not find any MWR-scan data at the desired elevations')
                 mwrscan_type = 0
             else:
                 secs = np.copy(secs[foo])
@@ -1486,7 +1489,7 @@ def read_mwrscan(path, rootname, date, mwrscan_type, mwrscan_freq_field, mwrscan
 def read_irs_eng(path, date, irs_type, verbose):
 
     if verbose >= 2:
-        print('Reading irs_eng data in ' + path)
+        print('  Reading irs_eng data in ' + path)
     err = {'success':0}
     if irs_type <= 0:
         print(' ')
@@ -1526,7 +1529,7 @@ def read_irs_eng(path, date, irs_type, verbose):
         return err
 
     if verbose == 3:
-        print('Looking for IRS engineering data as ' + filename)
+        print('    Looking for IRS engineering data as ' + filename)
 
     files,status = findfile(path,filename)
     if status == 1:
@@ -1615,10 +1618,10 @@ def read_irs_eng(path, date, irs_type, verbose):
 
 def read_irs_sum(path,date,irs_type,smooth_noise,verbose):
     if verbose >= 2:
-        print('Reading irs_sum data in ' + path)
+        print('  Reading irs_sum data in ' + path)
     err = {'success':0}
     if irs_type <= 0:
-        print(('This piece of code should not be exercised, as this option should ' +
+        print(('Error in read_irs_sum: This piece of code should not be exercised, as this option should ' +
                'be screened in read_irs_eng() earlier'))
         return err
     elif ((irs_type == 1) | (irs_type == 4)):
@@ -1634,7 +1637,7 @@ def read_irs_sum(path,date,irs_type,smooth_noise,verbose):
         return err
 
     if verbose >= 3:
-        print('Looking for IRS summary data as ' + filename)
+        print('  Looking for IRS summary data as ' + filename)
     
     files, status = findfile(path,filename)
     if status == 1:
@@ -1733,7 +1736,7 @@ def read_irs_sum(path,date,irs_type,smooth_noise,verbose):
 
     if smooth_noise > 0:
         if verbose >= 2:
-            print('Smoothing the IRS noise temporally')
+            print('  Smoothing the IRS noise temporally')
 
             #Derive the number of points to use in the smoother. The
             #variable "smooth_noise" is the temporal window in minutes,
@@ -1757,7 +1760,7 @@ def read_irs_sum(path,date,irs_type,smooth_noise,verbose):
         for i in range(wnum):
             snoise[i,:], flag = Other_functions.smooth(snoise[i,:],npts)
             if flag == 0:
-                print('Error in smooth function. Aborting.')
+                print('Error in IRS smoothing function. Aborting.')
                 return err
         noise = np.copy(snoise)
 
@@ -1776,7 +1779,7 @@ def read_irs_sum(path,date,irs_type,smooth_noise,verbose):
 
 def read_vceil(path, date, vceil_type, ret_secs, verbose):
     if verbose >= 2:
-        print('Reading ceilometer data in ' + path)
+        print('  Reading ceilometer data in ' + path)
 
     # Read in the cloud base height data from yesterday, today, and tomorrow.
     udate = [(datetime.strptime(str(date), '%Y%m%d') - timedelta(days=1)).strftime('%Y%m%d') ,
@@ -1830,18 +1833,18 @@ def read_vceil(path, date, vceil_type, ret_secs, verbose):
         return err
     elif vceil_type == 0:
         if verbose >= 1:
-            print('User selected option for no cloud base height data')
+            print('  User selected the option indicating to use the default cloud cloud base height set in the VIP')
         return err
     elif ((vceil_type == 1) | (vceil_type == 5)):
         if verbose >= 1:
-            print('Reading in CEIL data')
+            print('  Reading in CEIL data')
         for i in range(len(udate)):
             tempfiles,status = (findfile(path,'*(ceil|ct25)*' + udate[i] + '*.(cdf|nc)'))
             if status == 1:
                 return err
             files = files + tempfiles
         if len(files) == 0:
-            print('No CBH files found for this date')
+            print('    No CBH files found for this date')
             return err
 
         for i in range(len(files)):
@@ -1853,7 +1856,7 @@ def read_vceil(path, date, vceil_type, ret_secs, verbose):
                 to = fid.variables['time'][:].astype('float')
             else:
                 fid.close()
-                print(' Error reading the time fields -- aborting read_vceil')
+                print('  Error reading the time fields -- aborting read_vceil')
                 return err
             cbhx = fid.variables['first_cbh'][:]
             fid.close()
@@ -1868,7 +1871,7 @@ def read_vceil(path, date, vceil_type, ret_secs, verbose):
 
     elif vceil_type == 2:
         if verbose >= 1:
-            print('Reading in ASOS/AWOS ceilometer')
+            print('    Reading in ASOS/AWOS ceilometer')
 
         for i in range(len(udate)):
             tempfiles, status = (findfile(path, '*(ceil|cbh)*' + udate[i] + '*.(cdf|nc)'))
@@ -1876,12 +1879,12 @@ def read_vceil(path, date, vceil_type, ret_secs, verbose):
                 return err
             files = files + tempfiles
         if len(files) == 0:
-            print('No CBH files found for this data')
+            print('  No CBH files found for this data')
             return err
 
         for i in range(len(files)):
             if verbose == 3:
-                print(' Reading in file ' + files[i])
+                print('    Reading in file ' + files[i])
 
             fid = Dataset(files[i],'r')
             bt = fid.variables['base_time'][:].astype('float')
@@ -1898,18 +1901,18 @@ def read_vceil(path, date, vceil_type, ret_secs, verbose):
 
     elif vceil_type == 3:
         if verbose >= 1:
-            print('Reading in CLAMPS dlfp data')
+            print('  Reading in CLAMPS dlfp data')
         for i in range(len(udate)):
             tempfiles, status = (findfile(path,'*dlfp*' + udate[i] + '*.(cdf|nc)'))
             if status == 1:
                 return err
             files = files + tempfiles
         if len(files) == 0:
-            print('No CBH files found for this date')
+            print('    No CBH files found for this date')
             return err
         for i in range(len(files)):
             if verbose == 3:
-                print('Reading the file ' + files[i])
+                print('    Reading the file ' + files[i])
 
             fid = Dataset(files[i],'r')
             bt = fid.variables['base_time'][:].astype('float')
@@ -1926,19 +1929,19 @@ def read_vceil(path, date, vceil_type, ret_secs, verbose):
 
     elif vceil_type == 4:
         if verbose >= 1:
-            print(' Reading in ARM dlprofwstats data')
+            print('  Reading in ARM dlprofwstats data')
         for i in range(len(udate)):
             tempfiles, status = (findfile(path,'*dlprofwstats*' + udate[i] + '*.(cdf|nc)'))
             if status == 1:
                 return err
             files = files + tempfiles
         if len(files) == 0:
-            print('No CBH files found for this date')
+            print('    No CBH files found for this date')
             return err
 
         for i in range(len(files)):
             if verbose == 3:
-                print(' Reading the file ' + files[i])
+                print('    Reading the file ' + files[i])
             fid = Dataset(files[i],'r')
             bt = fid.variables['base_time'][:].astype('float')
             to = fid.variables['time_offset'][:].astype('float')
@@ -1955,19 +1958,19 @@ def read_vceil(path, date, vceil_type, ret_secs, verbose):
 
     elif vceil_type == 6:
         if verbose >= 1:
-            print(' Reading in JOYCE Jenoptic data')
+            print('  Reading in JOYCE Jenoptic data')
         for i in range(len(udate)):
             tempfiles, status = (findfile(path,'*CHM*' + udate[i] + '*.(cdf|nc)'))
             if status == 1:
                 return err
             files = files + tempfiles
         if len(files) == 0:
-            print('No CBH files found for this date')
+            print('    No CBH files found for this date')
             return err
 
         for i in range(len(files)):
             if verbose == 3:
-                print(' Reading the file ' + files[i])
+                print('    Reading the file ' + files[i])
             fid = Dataset(files[i],'r')
             to  = fid.variables['time'][:]
             cbhx = fid.variables['cbh'][:]
@@ -1984,19 +1987,19 @@ def read_vceil(path, date, vceil_type, ret_secs, verbose):
 
     elif vceil_type == 7:
         if verbose >= 1:
-            print(' Reading in E-PROFILE ceilometer data')
+            print('  Reading in E-PROFILE ceilometer data')
         for i in range(len(udate)):
             tempfiles, status = (findfile(path,'L2*' + udate[i] + '*.nc'))
             if status == 1:
                 return err
             files = files + tempfiles
         if len(files) == 0:
-            print('No CBH files found for this date')
+            print('    No CBH files found for this date')
             return err
 
         for i in range(len(files)):
             if verbose == 3:
-                print(' Reading the file ' + files[i])
+                print('    Reading the file ' + files[i])
             fid = Dataset(files[i],'r')
             to  = fid.variables['time'][:].astype('float')
 	               # Because the E-PROFILE has this field as a 2-d field
@@ -2041,7 +2044,7 @@ def grid_irs(ch1, irssum, avg_instant, hatchOpenSwitch, missingDataFlagSwitch,
               secs, tavg, irs_noise_inflation, verbose):
 
     if verbose == 3:
-        print('Temporally gridding the IRS data')
+        print('    Temporally gridding the IRS data')
 
     err = {'success':0}
 
@@ -2058,7 +2061,7 @@ def grid_irs(ch1, irssum, avg_instant, hatchOpenSwitch, missingDataFlagSwitch,
 
         if ((hatchOpenSwitch == 1) & (missingDataFlagSwitch == 0)):
             if ((i == 0) & (verbose >= 2)):
-                print('Only averaging IRS data where hatchOpen is 1 (missingDataFlag is anything)')
+                print('      Only averaging IRS data where hatchOpen is 1 (missingDataFlag is anything)')
             if ((avg_instant == 0) | (avg_instant == -1)):
                 foo = np.where((secs[i]-tavg*60./2. <= ch1['secs']) & (ch1['secs'] < secs[i]+tavg*60./2.) &
                                ((ch1['hatchopen'] >= 0.8) & (ch1['hatchopen'] < 1.2)))[0]
@@ -2072,7 +2075,7 @@ def grid_irs(ch1, irssum, avg_instant, hatchOpenSwitch, missingDataFlagSwitch,
                     nfoo = 1
         elif ((hatchOpenSwitch == 0) & (missingDataFlagSwitch == 0)):
             if ((i == 0) & (verbose >= 2)):
-                print('Averaging all IRS data regardless of hatchOpen or missingDataFlag')
+                print('      Averaging all IRS data regardless of hatchOpen or missingDataFlag')
             if ((avg_instant == 0) | (avg_instant == -1)):
                 foo = np.where((secs[i]-tavg*60./2. <= ch1['secs']) & (ch1['secs'] < secs[i]+tavg*60./2.))[0]
             else:
@@ -2085,7 +2088,7 @@ def grid_irs(ch1, irssum, avg_instant, hatchOpenSwitch, missingDataFlagSwitch,
                     nfoo = 1
         elif ((hatchOpenSwitch == 1) & (missingDataFlagSwitch == 1)):
             if ((i == 0) & (verbose >= 2)):
-                print('Only averaging IRS data where hatchOpen is 1 and missingDataFlag is 0')
+                print('      Only averaging IRS data where hatchOpen is 1 and missingDataFlag is 0')
             if ((avg_instant == 0) | (avg_instant == -1)):
                foo = np.where((secs[i]-tavg*60./2. <= ch1['secs']) & (ch1['secs'] < secs[i]+tavg*60./2.) &
                                (ch1['missingDataFlag'] == 0) & ((ch1['hatchopen'] >= 0.8) & (ch1['hatchopen'] < 1.2)))[0]
@@ -2100,7 +2103,7 @@ def grid_irs(ch1, irssum, avg_instant, hatchOpenSwitch, missingDataFlagSwitch,
 
         elif ((hatchOpenSwitch == 0) & (missingDataFlagSwitch == 1)):
             if ((i == 0) & (verbose >= 2)):
-                print('Averaging all IRS data where missingDataFlag is 0 (hatchOpen can be anything)')
+                print('      Averaging all IRS data where missingDataFlag is 0 (hatchOpen can be anything)')
 
             if ((avg_instant == 0) | (avg_instant == -1)):
                foo = np.where((secs[i]-tavg*60./2. <= ch1['secs']) & (ch1['secs'] < secs[i]+tavg*60./2.) &
@@ -2115,7 +2118,7 @@ def grid_irs(ch1, irssum, avg_instant, hatchOpenSwitch, missingDataFlagSwitch,
                     nfoo = 1
 
         else:
-            print('This piece of code should never be executed -- logic trap in grid_irs()')
+            print('Error: This piece of code should never be executed -- logic trap in grid_irs()')
             return err
 
         if len(foo) == 0:
@@ -2175,9 +2178,6 @@ def grid_irs(ch1, irssum, avg_instant, hatchOpenSwitch, missingDataFlagSwitch,
                       hatflag[i] = 0                           # Hatch was always closed
                     else:
                       hatflag[i] = 3                           # If we are here it is neither
-            #print len(ch1['secs'])
-            #print len(ch1['atmos_pres'])
-            #print foo
             atmos_pres[i] = np.nanmean(ch1['atmos_pres'][foo])
 
         # Get the summary data on this grid
@@ -2248,7 +2248,7 @@ def grid_irs(ch1, irssum, avg_instant, hatchOpenSwitch, missingDataFlagSwitch,
 def grid_mwr(mwr, avg_instant, secs, tavg, time_delta, verbose):
 
     if verbose == 3:
-        print('Temporally gridding the MWR data')
+        print('  Temporally gridding the MWR data')
     err = {'success':0}
 
     yy = np.array([datetime.utcfromtimestamp(x).year for x in secs])
@@ -2265,7 +2265,7 @@ def grid_mwr(mwr, avg_instant, secs, tavg, time_delta, verbose):
     # If the Tavg is too low (or zero), then inflate it somewhat. Units are minutes
 
     if tavg < 2:
-        print('Tavg for MWR data is too small. Setting it equal to 2 seconds.')
+        print('    Tavg for MWR data is too small. Setting it equal to 2 seconds.')
         twin = 2
     else:
         twin = tavg
@@ -2314,7 +2314,7 @@ def grid_mwr(mwr, avg_instant, secs, tavg, time_delta, verbose):
                     for j in range(mwr['n_fields']):
                         tbsky[j,i] = mwr['tbsky_corr'][j,foo[bar]]
     else:
-        print(' Error: the avg_instant flag has an unknown value in grid mwr()')
+        print('Error: the avg_instant flag has an unknown value in grid mwr()')
         return err
 
     # The structure being returned depends on the number of Tb fields desired
@@ -2334,7 +2334,7 @@ def grid_mwr(mwr, avg_instant, secs, tavg, time_delta, verbose):
 def grid_mwrscan(mwrscan, secs, n_elevations, elevations, timewindow, verbose):
 
     if verbose == 3:
-        print(' Temporally gridding the MWR-scan data')
+        print('  Temporally gridding the MWR-scan data')
     err = {'success':0}
 
         # An observation has to be within +/- this threshold to be considered at this angle
@@ -2363,7 +2363,7 @@ def grid_mwrscan(mwrscan, secs, n_elevations, elevations, timewindow, verbose):
     # Compute the time window to use in seconds, and it should be at least 2 minutes
 
     if ((timewindow*3600.) < (2.*60)):
-        print('Original time window for averaging mwr scan data was too small. Changing to 2 minutes.')
+        print('    Original time window for averaging mwr scan data was too small. Changing to 2 minutes.')
         twin = 2*60.
     else:
         twin = timewindow*3600.
@@ -2441,7 +2441,7 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
 
     elif wv_prof_type == 1:
         if verbose >= 1:
-            print('Reading in ARM radiosonde data to contrain the WV profile')
+            print('  Reading in ARM radiosonde data to constrain the WV profile')
 
         files = []
         for i in range(len(dates)):
@@ -2453,7 +2453,7 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
         external['nQprof'] = 0
         if len(files) == 0:
             if verbose >= 1:
-                print('No ARM radiosondes found in this directory for this date')
+                print('      No ARM radiosondes found in this directory for this date')
         else:
             maxht = int(wv_prof_maxht+0.1)
             if maxht < wv_prof_maxht:
@@ -2526,7 +2526,7 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
 
     elif wv_prof_type == 2:
         if verbose >= 1:
-            print('Reading in ARM Raman lidar (rlprofmr) data to constrain the WV profile')
+            print('    Reading in ARM Raman lidar (rlprofmr) data to constrain the WV profile')
 
         qunit = 'g/kg'
         files = []
@@ -2537,11 +2537,11 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
             files = files + tempfiles
         if len(files) == 0:
             if verbose >= 1:
-                print('No ARM RLID WV found in this directory for this date')
+                print('      No ARM RLID WV found in this directory for this date')
             external['nQprof'] = 0.
         else:
             if verbose >= 2:
-                print('Reading ' + str(len(files)) + ' ARM RLID WV data files')
+                print('      Reading ' + str(len(files)) + ' ARM RLID WV data files')
             nprof = 0.
             for i in range(len(files)):
                 fid = Dataset(files[i],'r')
@@ -2563,7 +2563,8 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
 
                     foo = np.where(htx > 0.070)[0]
                     if len(foo) == 0:
-                        print('This should not happen when processing the RLID WV data')
+                        print('Error: This should not happen when processing the RLID WV data')
+                        return external
                     htx = htx[foo]
                     wvx = wvx[:,foo]
                     swvx = swvx[:,foo]
@@ -2571,7 +2572,7 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
                     # And only keep samples where the qc_flag is 0 (i.e. good quality)
                     foo = np.where(qcflag == 0)[0]
                     if len(foo) == 0:
-                        print('Warning: no good samples found for the RLID WV on this day')
+                        print('      Warning: no good samples found for the RLID WV on this day')
                         continue
                     else:
                         to = to[foo]
@@ -2589,7 +2590,8 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
                     #Only keep data above 70 m to ensure the 60-m tower isn't included
                     foo = np.where(htx > 0.070)[0]
                     if len(foo) == 0:
-                        print('This should not happen when processing the RLID WV data')
+                        print('Error: This should not happen when processing the RLID WV data')
+                        return external
                     htx = htx[foo]
                     wvx = wvx[:,foo]
                     swvx = swvx[:,foo]
@@ -2619,7 +2621,7 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
 
     elif wv_prof_type == 3:
         if verbose >= 1:
-            print('Reading in NCAR WV DIAL data to constrain the WV profile')
+            print('  Reading in NCAR WV DIAL data to constrain the WV profile')
 
         files = []
         for i in range(len(dates)):
@@ -2630,11 +2632,11 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
 
         if len(files) == 0:
             if verbose >= 1:
-                print('No NCAR WV DIAL found in this directory for this date')
+                print('    No NCAR WV DIAL found in this directory for this date')
             external['nQprof'] = 0.0
         else:
             if verbose >= 2:
-                print('Reading ' + str(len(files)) + ' NCAR WV DIAL data files')
+                print('    Reading ' + str(len(files)) + ' NCAR WV DIAL data files')
             for i in range(len(files)):
                 fid = Dataset(files[i],'r')
                 secsx = fid.variables['time_unix'][:]
@@ -2669,7 +2671,7 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
 
     elif wv_prof_type == 4:
         if verbose >= 1:
-            print('Reading in NWP model output to constrain the WV profile')
+            print('  Reading in NWP model output to constrain the WV profile')
 
         files = []
         for i in range(len(dates)):
@@ -2679,11 +2681,11 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
             files = files + tempfiles
         if len(files) == 0:
             if verbose >= 1:
-                print('No NWP model output data ound in this directory for this date')
+                print('    No NWP model output data ound in this directory for this date')
             external['nQprof'] = 0
         else:
             if verbose >= 2:
-                print('Reading ' + str(len(files))  + ' NWP output WV files')
+                print('    Reading ' + str(len(files))  + ' NWP output WV files')
             for i in range(len(files)):
                 fid = Dataset(files[i], 'r')
                 bt = fid.variables['base_time'][0].astype('float')
@@ -2728,7 +2730,7 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
     # Read in the Vaisala water vapor DIAL profiles
     elif wv_prof_type == 5:
         if verbose >= 1:
-            print('Reading in Vaisala WV DIAL to constrain the WV profile')
+            print('  Reading in Vaisala WV DIAL to constrain the WV profile')
 
         files = []
         for i in range(len(dates)):
@@ -2739,11 +2741,11 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
 
         if len(files) == 0:
             if verbose >= 1:
-                print('No Vaisala WV DIAL data found in this directory for this date')
+                print('    No Vaisala WV DIAL data found in this directory for this date')
             external['nQprof'] = 0
         else:
             if verbose >= 2:
-                print('Reading ' + str(len(files)) + ' Vaisala WV DIAL files')
+                print('    Reading ' + str(len(files)) + ' Vaisala WV DIAL files')
 
             for i in range(len(files)):
                 fid = Dataset(files[i], 'r')
@@ -2785,7 +2787,7 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
 
     elif wv_prof_type == 6:
         if verbose >= 1:
-            print('Reading in NCAR MPD data to constrain the WV profile')
+            print('  Reading in NCAR MPD data to constrain the WV profile')
 
         files = []
         for i in range(len(dates)):
@@ -2796,11 +2798,11 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
 
         if len(files) == 0:
             if verbose >= 1:
-                print('No NCAR MPD data found in this directory for this date')
+                print('    No NCAR MPD data found in this directory for this date')
             external['nQprof'] = 0.0
         else:
             if verbose >= 2:
-                print('Reading ' + str(len(files)) + ' NCAR MPD data files')
+                print('    Reading ' + str(len(files)) + ' NCAR MPD data files')
             for i in range(len(files)):
                 fid = Dataset(files[i],'r')
                 bt = (datetime.strptime(files[i][-18:-10],'%Y%m%d') - datetime(1970,1,1)).total_seconds()
@@ -2841,7 +2843,7 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
 
     elif wv_prof_type == 99:
         if verbose >= 1:
-            print('Reading in RHUBC-2 AER GVRP-retrieval radiosonde data to constrain the WV profile')
+            print('  Reading in RHUBC-2 AER GVRP-retrieval radiosonde data to constrain the WV profile')
 
         files = []
         for i in range(len(dates)):
@@ -2852,7 +2854,7 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
 
         if len(files) == 0:
             if verbose >=1:
-                print('No AER GVRP radiosondes found in this directory for this date')
+                print('    No AER GVRP radiosondes found in this directory for this date')
             external['nQprof'] = 0
         else:
             maxht = int(wv_prof_maxht + 0.1)
@@ -2936,7 +2938,7 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
 
     elif temp_prof_type == 1:
         if verbose >= 1:
-            print('Reading in ARM radiosonde data to constrain the temp profile')
+            print('  Reading in ARM radiosonde data to constrain the temp profile')
 
         files = []
         for i in range(len(dates)):
@@ -2948,11 +2950,11 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
         external['nTprof'] = 0.
         if len(files) == 0:
             if verbose >= 1:
-                print('No ARM radiosondes found in this directory for this date')
+                print('    No ARM radiosondes found in this directory for this date')
 
         else:
             if verbose >= 2:
-                print('Reading ' + str(len(files)) + ' ARM radiosonde files')
+                print('    Reading ' + str(len(files)) + ' ARM radiosonde files')
             maxht = int(temp_prof_maxht+0.1)
             if (maxht < temp_prof_maxht):
                 maxht += 1
@@ -3018,7 +3020,7 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
 
     elif temp_prof_type == 2:
         if verbose >= 1:
-            print('Reading in ARM Raman lidar (rlproftemp) data to constrain the temp profile')
+            print('  Reading in ARM Raman lidar (rlproftemp) data to constrain the temp profile')
 
         ttype = 'ARM Raman lidar (rlproftemp)'
         tunit = 'C'
@@ -3032,11 +3034,11 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
 
         if len(files) == 0:
             if verbose >= 1:
-                print('No ARM RLID TEMP found in this directory for this date')
+                print('    No ARM RLID TEMP found in this directory for this date')
             external['nTprof'] = 0
         else:
             if verbose >= 2:
-                print('Reading ' + str(len(files)) + ' ARM RLID TEMP data files')
+                print('    Reading ' + str(len(files)) + ' ARM RLID TEMP data files')
 
             nprof = 0
             for i in range(len(files)):
@@ -3057,8 +3059,8 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
 
                     foo = np.where(htx > 0.070)[0]
                     if len(foo) == 0:
-                        print('This should not happen when processing the RLID WV data')
-
+                        print('Error: This should not happen when processing the RLID WV data')
+                        return external
                     htx = htx[foo]
                     tempx = tempx[:,foo]
                     stempx = stempx[:,foo]
@@ -3078,8 +3080,8 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
 
                     foo = np.where(htx > 0.070)[0]
                     if len(foo) == 0:
-                        print('This should not happen when processing the RLID WV data')
-
+                        print('Error: This should not happen when processing the RLID WV data')
+                        return external
                     htx = htx[foo]
                     tempx = tempx[:,foo]
                     stempx = stempx[:,foo]
@@ -3106,7 +3108,7 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
     # Read in the numerical weather model soundings (Greg Blumberg's format)
     elif temp_prof_type == 4:
         if verbose >= 1:
-            print('Reading in NWP model output to constrain the temperature profile')
+            print('  Reading in NWP model output to constrain the temperature profile')
 
         files = []
         for i in range(len(dates)):
@@ -3117,11 +3119,11 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
 
         if len(files) == 0:
             if verbose >= 1:
-                print('No NWP model output data found in this directory for this date')
+                print('    No NWP model output data found in this directory for this date')
             external['nTprof'] = 0
         else:
             if verbose >= 2:
-                print('Reading ' + str(len(files)) + ' NWP output temp files')
+                print('    Reading ' + str(len(files)) + ' NWP output temp files')
             for i in range(len(files)):
                 fid = Dataset(files[i], 'r')
                 bt = fid.variables['base_time'][0].astype('float')
@@ -3166,7 +3168,7 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
             # Read in the RASS virtual temperature data
     elif temp_prof_type == 5:
         if verbose >= 1:
-            print('Reading in RASS virtual temperature data')
+            print('  Reading in RASS virtual temperature data')
 
         ttype = 'RASS Tv data'
         tunit = 'C'
@@ -3180,11 +3182,11 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
 
         if len(files) == 0:
             if verbose >= 1:
-                print('No RASS data found in this directory for this date')
+                print('    No RASS data found in this directory for this date')
             external['nTprof'] = 0
         else:
             if verbose >= 2:
-                print('Reading ' + str(len(files)) + ' RASS data files')
+                print('    Reading ' + str(len(files)) + ' RASS data files')
 
             nprof = 0
             for i in range(len(files)):
@@ -3223,7 +3225,7 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
     # Read in the RHUBC-2 radiosonde data from AER's files
     elif temp_prof_type == 99:
         if verbose >= 1:
-            print('Reading in RHUBC-2 AER radiosonde data to constrain the temperature profile')
+            print('  Reading in RHUBC-2 AER radiosonde data to constrain the temperature profile')
 
         files = []
         for i in range(len(dates)):
@@ -3234,7 +3236,7 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
 
         if len(files) == 0:
             if verbose >= 1:
-                print('No ARM radiosondes found in this directory for this date')
+                print('    No ARM radiosondes found in this directory for this date')
             external['nTprof'] = 0
         else:
             maxht = int(temp_prof_maxht + 0.1)
@@ -3466,7 +3468,7 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
             print('Error in read_external_profile_data: wv_noise_multiplier_val must be >= 1')
             return external
         if verbose >= 2:
-            print('Applying external_wv_noise_multiplier')
+            print('    Applying external_wv_noise_multiplier')
         for j in range(len(secs)):
             feh = np.where(new_swater[:,j] > -900)[0]
             if len(feh) > 0:
@@ -3482,7 +3484,7 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
             print('Error in read_external_profile_data: temp_noise_adder should not be negative')
             return external
         if verbose >= 2:
-            print('Applying externl_temp_noise_adder')
+            print('    Applying externl_temp_noise_adder')
         for j in range(len(secs)):
             feh = np.where(new_stemp[:,j] > -900)[0]
             if len(feh) > 0:
@@ -3567,7 +3569,7 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
     # Read in the ARM met temperature data
     elif (sfc_temp_type == 1):
         if verbose >= 1:
-            print('Reading in ARM met temperature data')
+            print('  Reading in ARM met temperature data')
 
         files = []
         for i in range(len(dates)):
@@ -3577,7 +3579,7 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
             files = files + tempfiles
         if len(files) == 0:
             if verbose >= 1:
-                print('No ARM met found in this directory for this date')
+                print('    No ARM met found in this directory for this date')
         else:
             for i in range(len(files)):
                 fid = Dataset(files[i], 'r')
@@ -3614,7 +3616,7 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
 
     elif sfc_temp_type == 2:
         if verbose >= 1:
-            print('Reading in NCAR ISFS met temperature data')
+            print('  Reading in NCAR ISFS met temperature data')
 
         files = []
         for i in range(len(dates)):
@@ -3636,7 +3638,7 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
 
         if len(files) == 0:
             if verbose >= 1:
-                print('No NCAR ISFS met found in this directory for this date')
+                print('    No NCAR ISFS met found in this directory for this date')
         else:
             for i in range(len(files)):
                 fid = Dataset(files[i],'r')
@@ -3679,7 +3681,7 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
 
     elif sfc_temp_type == 3:
         if verbose >= 1:
-            print('Reading in MWR met temperature data')
+            print('  Reading in MWR met temperature data')
 
         files = []
         for i in range(len(dates)):
@@ -3690,7 +3692,7 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
 
         if len(files) == 0:
             if verbose >= 1:
-                print('No MWR met found in this directory for this date')
+                print('    No MWR met found in this directory for this date')
         else:
             for i in range(len(files)):
                 fid = Dataset(files[i],'r')
@@ -3772,7 +3774,7 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
 
     elif sfc_wv_type == 1:
         if verbose >= 1:
-            print('Reading in ARM met water vapor data')
+            print('  Reading in ARM met water vapor data')
 
         files = []
         for i in range(len(dates)):
@@ -3783,7 +3785,7 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
 
         if len(files) == 0:
             if verbose >= 1:
-                print('No ARM met found in this directory for this date')
+                print('    No ARM met found in this directory for this date')
         else:
             for i in range(len(files)):
                 fid = Dataset(files[i], 'r')
@@ -3833,7 +3835,7 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
 
     elif sfc_wv_type == 2:
         if verbose >= 1:
-            print('Reading in NCAR ISFS met water vapor data')
+            print('  Reading in NCAR ISFS met water vapor data')
 
         files = []
         for i in range(len(dates)):
@@ -3855,7 +3857,7 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
 
         if len(files) == 0:
             if verbose >= 1:
-                print('No NCAR ISFS met found in this directory for this date')
+                print('    No NCAR ISFS met found in this directory for this date')
 
         else:
             for i in range(len(files)):
@@ -3911,7 +3913,7 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
         # Read in the MWR met data
     elif sfc_wv_type == 3:
         if verbose >= 1:
-            print('Reading in MWR met water vapor data')
+            print('  Reading in MWR met water vapor data')
 
         files = []
         for i in range(len(dates)):
@@ -3922,7 +3924,7 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
 
         if len(files) == 0:
             if verbose >= 1:
-                print('No MWR met found in this directory for this date')
+                print('    No MWR met found in this directory for this date')
         else:
             for i in range(len(files)):
                 fid = Dataset(files[i],'r')
@@ -4015,7 +4017,7 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
 
     elif sfc_p_type == 1:
         if verbose >= 1:
-            print('Reading in ARM met pressure  data')
+            print('  Reading in ARM met pressure  data')
 
         files = []
         for i in range(len(dates)):
@@ -4026,7 +4028,7 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
 
         if len(files) == 0:
             if verbose >= 1:
-                print('No ARM met found in this directory for this date, using IRS psfc')
+                print('    No ARM met found in this directory for this date, using IRS psfc')
         else:
             for i in range(len(files)):
                 fid = Dataset(files[i], 'r')
@@ -4055,7 +4057,7 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
 
     elif sfc_p_type == 2:
         if verbose >= 1:
-            print('Reading in NCAR ISFS pressure data')
+            print('  Reading in NCAR ISFS pressure data')
 
         files = []
         for i in range(len(dates)):
@@ -4077,7 +4079,7 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
 
         if len(files) == 0:
             if verbose >= 1:
-                print('No NCAR ISFS met found in this directory for this date, using IRS psfc')
+                print('    No NCAR ISFS met found in this directory for this date, using IRS psfc')
 
         else:
             for i in range(len(files)):
@@ -4111,7 +4113,7 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
         # Read in the MWR met data
     elif sfc_p_type == 3:
         if verbose >= 1:
-            print('Reading in MWR met pressure data')
+            print('  Reading in MWR met pressure data')
 
         files = []
         for i in range(len(dates)):
@@ -4122,7 +4124,7 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
 
         if len(files) == 0:
             if verbose >= 1:
-                print('No MWR met found in this directory for this date, using IRS psfc')
+                print('    No MWR met found in this directory for this date, using IRS psfc')
         else:
             for i in range(len(files)):
                 fid = Dataset(files[i],'r')
@@ -4300,7 +4302,7 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
     # Read in the surface in-situ CO2 data (assuming DDT's PGS qc1turn datastream)
     elif co2_sfc_type == 1:
         if verbose >= 1:
-            print('Reading in ARM PGS qc1turn datastream')
+            print('  Reading in ARM PGS qc1turn datastream')
 
         files = []
         for i in range(len(dates)):
@@ -4311,7 +4313,7 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
 
         if len(files) == 0:
             if verbose >= 1:
-                print('No ARM CO2 found in this directory for this date')
+                print('    No ARM CO2 found in this directory for this date')
         else:
             for i in range(len(files)):
                 fid = Dataset(files[i],'r')
