@@ -1871,7 +1871,7 @@ def read_vceil(path, date, vceil_type, ret_secs, verbose):
 
     elif vceil_type == 2:
         if verbose >= 1:
-            print('    Reading in ASOS/AWOS ceilometer')
+            print('  Reading in ASOS/AWOS ceilometer')
 
         for i in range(len(udate)):
             tempfiles, status = (findfile(path, '*(ceil|cbh)*' + udate[i] + '*.(cdf|nc)'))
@@ -3537,7 +3537,8 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
 
 def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
             sfc_wv_type, sfc_path, sfc_temp_npts, sfc_wv_npts, sfc_temp_rep_error, sfc_wv_mult_error,
-            sfc_wv_rep_error, sfc_time_delta, sfc_relative_height, co2_sfc_type,
+            sfc_wv_rep_error, sfc_rh_sigma_error, sfc_temp_sigma_error, 
+            sfc_time_delta, sfc_relative_height, co2_sfc_type,
             co2_sfc_npts, co2_sfc_rep_error, co2_sfc_path, co2_sfc_relative_height,
             co2_sfc_time_delta, sfc_p_type, dostop, verbose):
 
@@ -3612,7 +3613,7 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
                 ttype = 'ARM met station'
 
                 # Append the data to the growing structure
-                sigma_t = 0.5
+                sigma_t = sfc_temp_sigma_error
                 if external['nTsfc'] <= 0:
                     tsecs = bt+to
                     temp = np.copy(t)
@@ -3677,7 +3678,7 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
                 ttype = 'NCAR ISFS met station'
 
                 # Append the data to the growing structure
-                sigma_t = 0.5
+                sigma_t = sfc_temp_sigma_error
                 if external['nTsfc'] <= 0:
                     tsecs = bt+to
                     temp = np.copy(t)
@@ -3756,7 +3757,7 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
                 ttype = 'Microwave radiometer met station'
 
                 # Append the data to the growing structure
-                sigma_t = 0.5
+                sigma_t = sfc_temp_sigma_error
                 if external['nTsfc'] <= 0:
                     tsecs = bt+to
                     temp = np.copy(t)
@@ -3818,8 +3819,8 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
                 qtype = 'ARM met station'
 
                 # Append the data to the growing structure
-                sigma_t = 0.5     # degC
-                sigma_u = 3.0     # %RH
+                sigma_t = sfc_temp_sigma_error     # degC
+                sigma_u = sfc_rh_sigma_error       # %RH
                 w0 = Calcs_Conversions.rh2w(t, u/100., p)
                 w1 = Calcs_Conversions.rh2w(t+sigma_t, u/100., p)
                 w2 = Calcs_Conversions.rh2w(t-sigma_t, u/100., p)
@@ -3897,8 +3898,8 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
                 qtype = 'NCAR ISFS met station'
 
                 # Append the data to the growing structure
-                sigma_t = 0.5      # degC
-                sigma_u = 3.0      # %RH
+                sigma_t = sfc_temp_sigma_error      # degC
+                sigma_u = sfc_rh_sigma_error        # %RH
                 w0 = Calcs_Conversions.rh2w(t, u/100., p)
                 w1 = Calcs_Conversions.rh2w(t+sigma_t, u/100., p)
                 w2 = Calcs_Conversions.rh2w(t-sigma_t, u/100., p)
@@ -3988,8 +3989,8 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
                 qtype = 'Microwave radiometer met station'
 
                 # Append the data to the growing structure
-                sigma_t = 0.5      # degC
-                sigma_u = 3.0      # %RH
+                sigma_t = sfc_temp_sigma_error      # degC
+                sigma_u = sfc_rh_sigma_error        # %RH
                 w0 = Calcs_Conversions.rh2w(t, u/100., p)
                 w1 = Calcs_Conversions.rh2w(t+sigma_t, u/100., p)
                 w2 = Calcs_Conversions.rh2w(t-sigma_t, u/100., p)

@@ -532,7 +532,9 @@ if(rass_prof['success'] != 1):
 ext_tseries = Data_reads.read_external_timeseries(date, irs['secs'], vip['tres'], vip['avg_instant'],
               vip['ext_sfc_temp_type'], vip['ext_sfc_wv_type'], vip['ext_sfc_path'],
               vip['ext_sfc_temp_npts'], vip['ext_sfc_wv_npts'], vip['ext_sfc_temp_rep_error'],
-              vip['ext_sfc_wv_mult_error'], vip['ext_sfc_wv_rep_error'], vip['ext_sfc_time_delta'],
+              vip['ext_sfc_wv_mult_error'], vip['ext_sfc_wv_rep_error'], 
+              vip['ext_sfc_rh_random_error'], vip['ext_sfc_temp_random_error'], 
+              vip['ext_sfc_time_delta'],
               vip['ext_sfc_relative_height'], vip['co2_sfc_type'], vip['co2_sfc_npts'],
               vip['co2_sfc_rep_error'], vip['co2_sfc_path'], vip['co2_sfc_relative_height'],
               vip['co2_sfc_time_delta'], vip['ext_sfc_pres_type'], dostop, verbose)
@@ -755,7 +757,7 @@ for i in range(len(irs['secs'])):                        # { loop_i
     # See if we want to use the external sfc pressure instead of irs pressure
     # and check to make sure external data read went okay
     if ((vip['ext_sfc_pres_type'] > 0) & (ext_tseries['nPsfc'] >= 0)):
-        print("Replacing IRS pressure with " +  ext_tseries['ptype'] + " pressure")
+        print("    Replacing IRS pressure with " +  ext_tseries['ptype'] + " pressure")
         irs['atmos_pres'][i] = ext_tseries['psfc'][i]
 
     # Make sure the IRS's surface pressure is a valid value, as
@@ -2095,7 +2097,7 @@ for i in range(len(irs['secs'])):                        # { loop_i
     elif converged == 2:
         print('    Converged (best RMS as RMS drastically increased)')
     elif converged == 9:
-        print('    Converged (found NaN in Xnp1 so abort sample)')
+        print('    Did not converge (found NaN in Xnp1 so abort sample)')
     else:
 
         # If the retrieval did not converged but performed max_iter iterations
@@ -2137,7 +2139,7 @@ for i in range(len(irs['secs'])):                        # { loop_i
                 'rmsr':rmsr, 'rmsp':rmsp, 'chi2':chi2, 'converged':converged}
 
         xsamp.append(xtmp)
-        print('Converged! (best RMS after max_iter)')
+        print('    Converged! (best RMS after max_iter)')
 
     # Store the data, regardless whether it converges or not
     if xret == []:
