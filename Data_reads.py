@@ -2004,18 +2004,29 @@ def read_vceil(path, date, vceil_type, ret_secs, verbose):
             to  = fid.variables['time'][:].astype('float')
 	               # Because the E-PROFILE has this field as a 2-d field
             cbhx = fid.variables['cloud_base_height'][:,0]  
+            visx = fid.variables['vertical_visibility'][:]
             fid.close()
 
             if i == 0:
                 secs = to
                 cbh  = np.copy(cbhx)
+                vis  = np.copy(visx)
             else:
                 secs = np.append(secs,to)
                 cbh  = np.append(cbh,cbhx)
+                vis  = np.append(vis,visx)
         secs *= (24.*60*60)	     # Convert unix days into unit time
         cbh = cbh/1000.              # Convert m AGL to km AGL
+        vis = vis/1000.              # Convert m AGL to km AGL
         bt  = secs[0]
 
+		# If the CBH <= and vis > 0, the replace the CBH with visibility
+        foo = np.where( (cbh <= 0) & (vis > 0) )[0]
+        if len(foo) > 1:
+            if verbose >= 1:
+                print('      Replacing some non-positive CBH values with visibility ' +
+                              'in the E-PROFILE ceilometer reader')
+            cbh[foo] = vis[foo]
     else:
         print('Error in read_vceil: Undefined ceilometer type')
         return err
