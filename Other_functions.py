@@ -201,6 +201,8 @@ def trace_gas_prof(types, z, coef):
         #       Coef[1] is the value at the surface relative to Coef[0] [ppm]
         #       Coef[2] is the shape parameter. It should be between (approx) -20 to -1. [unitless]
         tg_prof = coef[0] + coef[1]*np.exp( coef[2]*z)
+        print('Error in trace_gas_prof: profile shape =1 (exponential profile is disabled -- aborting')
+        return -999.
     elif types == 2:
         # The stair step profile
         #       Coef[0] is the value in the free troposhere [ppm]
