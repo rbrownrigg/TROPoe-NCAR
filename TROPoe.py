@@ -416,11 +416,11 @@ if dolcloud == 1:
     tmp = tmp + 'Liq_Cloud '
 if doicloud == 1:
     tmp = tmp + 'Ice_Cloud '
-if doco2 == 1:
+if doco2 >= 1:
     tmp = tmp + 'CO2 '
-if doch4 == 1:
+if doch4 >= 1:
     tmp = tmp + 'CH4 '
-if don2o == 1:
+if don2o >= 1:
     tmp = tmp + 'N2O '
 print(tmp)
 print(' ')
@@ -585,7 +585,7 @@ nfooch4 = len(np.where(tmpch4 < 0)[0])
 tmpn2o = Other_functions.trace_gas_prof(vip['retrieve_n2o'], z, vip['prior_n2o_mn'])
 nfoon2o = len(np.where(tmpn2o < 0)[0])
 if ((nfooco2 > 0) | (nfooch4 > 0) | (nfoon2o > 0)):
-    print('Error: The CO2, CH4, and/or N2O parameters are incorrect giving negative values - aborting')
+    print('Error: The CO2, CH4, and/or N2O parameters are incorrect - aborting')
     VIP_Databases_functions.abort(lbltmpdir,date)
     sys.exit()
 
@@ -694,7 +694,6 @@ if ((vip['retrieve_lcloud'] == 0) & (vip['retrieve_icloud'] == 0)):
 
 # Now loop over the observations and perform the retrievals
 xret = []                  #Initialize. Will overwrite this if a succesful ret
-read_deltaod = 0           # Initialize.
 already_saved = 0          # Flag to say if saved already or not...
 fsample = 0                # Counter for number of spectra processed
 precompute_prior_jacobian = {'status':0}    # This will allow us to store the forward calculations from the prior, makes code faster
@@ -1142,12 +1141,21 @@ for i in range(len(irs['secs'])):                        # { loop_i
         else:
             pblh = Other_functions.compute_pblh(z, Xn[0:int(nX / 2)], p, np.sqrt(np.diag(Sop[0:int(nX/2), 0:int(nX/2)])),
                                    minht=vip['min_PBL_height'], maxht=vip['max_PBL_height'], nudge=vip['nudge_PBL_height'])
+
         coef = Other_functions.get_a2_pblh(pblh)           # Get the shape coef for this PBL height
-        if ((vip['retrieve_co2'] == 1) & (vip['fix_co2_shape'] == 1)):
+        if (vip['retrieve_co2'] == 2):
+            Xn[nX+4+2] = pblh
+        elif ((vip['retrieve_co2'] == 1) & (vip['fix_co2_shape'] == 1)):
             Xn[nX+4+2] = coef
-        if ((vip['retrieve_ch4'] == 1) & (vip['fix_ch4_shape'] == 1)):
+
+        if (vip['retrieve_ch4'] == 2):
+            Xn[nX+4+3+2] = pblh
+        elif ((vip['retrieve_ch4'] == 1) & (vip['fix_ch4_shape'] == 1)):
             Xn[nX+4+3+2] = coef
-        if ((vip['retrieve_n2o'] == 1) & (vip['fix_n2o_shape'] == 1)):
+
+        if (vip['retrieve_n2o'] == 2):
+            Xn[nX+4+6+2] = pblh
+        elif ((vip['retrieve_n2o'] == 1) & (vip['fix_n2o_shape'] == 1)):
             Xn[nX+4+6+2] = coef
 
         # Decorrelate the levels above the PBLH from the levels below in the prior.
@@ -1168,12 +1176,11 @@ for i in range(len(irs['secs'])):                        # { loop_i
                     # If this type, then IRS data aren't being used in the retrieval
                     # so the forward calc should be missing and the Jacobian is 0
                 flag = 1
-                version_compute_jacobian = 'No IRS data in retrieval, so LBLRTM not used'
             else:
                 print('Need to port the compute_jacobian_finitediff function. Have to abort... Sorry!!')
                 VIP_Databases_functions.abort(lbltmpdir,date)
                 sys.exit()
-                flag, Kij, FXn, wnumc, version_compute_jacobian, totaltime  = \
+                flag, Kij, FXn, wnumc, totaltime  = \
                            Jacobian_Functions.compute_jacobian_finitediff(Xn, p, z,
                            vip['lbl_home'], lbldir, lbltmp, vip['lbl_std_atmos'], lbltp5, lbltp3,
                            cbh, sspl, sspi, lblwnum1, lblwnum2,
@@ -1184,68 +1191,15 @@ for i in range(len(irs['secs'])):                        # { loop_i
                            verbose, debug, doapidize=True)
 
         elif vip['lblrtm_jac_option'] == 2:
-            print('Need to port the compute_jacobian_3method function. Have to abort... Sorry!!')
+            print('Error: the lblrtm_jac_option == 2 (3method) method is no longer available.  Use option == 4 instead')
             VIP_Databases_functions.abort(lbltmpdir,date)
             sys.exit()
-            if vip['irs_type'] <= -1:
-                    # If this type, then IRS data aren't being used in the retrieval
-                    # so the forward calc should be missing and the Jacobian is 0
-                flag = 1
-                version_compute_jacobian = 'No IRS data in retrieval, so LBLRTM not used'
-            else:
-                flag, Kij, FXn, wnumc, version_compute_jacobian, totaltime  = \
-                           Jacobian_Functions.compute_jacobian_3method(Xn, p, z,
-                           vip['lbl_home'], lbldir, lbltmp, vip['lbl_std_atmos'], lbltp5, lbltp3,
-                           cbh, sspl, sspi, lblwnum1, lblwnum2,
-                           fixtemp, fixwvmr, doco2, doch4, don2o, fixlcloud, fixicloud,
-                           vip['fix_co2_shape'], vip['fix_ch4_shape'], vip['fix_n2o_shape'],
-                           vip['jac_max_ht'], vip['lblrtm_forward_threshold'],
-                           location['alt'], rt_extra_layers, stdatmos,
-                           verbose, debug, doapidize=True)
 
         elif vip['lblrtm_jac_option'] == 3:
-            # If I am here, read in the delta OD information
-            # It should be in the XaSa file. But only do it once!
-            if read_deltaod <= 0:
-                fid = Dataset(prior_filename, 'r')
-                vid = np.where(np.array(list(fid.variables.keys())) == 'delta_od')[0]
-                if len(vid) == 0:
-                    fid.close()
-                    print('Error: The XaSa prior file does not have the needed deltaOD info')
-                    VIP_Databases_functions.abort(lbltmpdir,date)
-                    sys.exit()
-                awnum = fid.variables['wnum'][:]
-                adeltaod = fid.variables['delta_od'][:]
-                fid.close()
-                foo = np.where((lblwnum1 <= awnum) & (awnum <= lblwnum2))[0]
-                if len(foo) <= 0:
-                    print('Error: The delta OD spectral range does not match LBLRTM spectral range')
-                    VIP_Databases_functions.abort(lbltmpdir,date)
-                    sys.exit()
-                awnum = awnum[foo]
-                adeltaod = adeltaod[foo]
-                read_deltaod = 1
-
-            if vip['irs_type'] <= -1:
-                # If this type, then IRS data aren't being used in the retrieval
-                # so the forward calc should be missing and the Jacobian is 0
-                wnumc = np.copy(irs['wnum'])
-                FXn = np.ones(len(wnumc))*-999.
-                Kij = np.zeros((len(wnumc),len(Xn)))
-                flag = 1
-                version_compute_jacobian = 'No IRS data in retrieval, so LBLRTM not used'
-            else:
-                # Otherwise, run the forward model and compute the Jacobian
-                flag, Kij, FXn, wnumc, version_compute_jacobian, totaltime  = \
-                           Jacobian_Functions.compute_jacobian_deltaod(Xn, p, z,
-                           vip['lbl_home'], lbldir, lbltmp, vip['lbl_std_atmos'], lbltp5, lbltp3,
-                           cbh, sspl, sspi, lblwnum1, lblwnum2,
-                           fixtemp, fixwvmr, doco2, doch4, don2o, fixlcloud, fixicloud,
-                           vip['fix_co2_shape'], vip['fix_ch4_shape'], vip['fix_n2o_shape'],
-                           vip['jac_max_ht'], awnum, adeltaod, vip['lblrtm_forward_threshold'],
-                           location['alt'], rt_extra_layers, stdatmos,
-                           verbose, debug, doapodize=True)
-
+            print('Error: the lblrtm_jac_option == 3 (deltaOD) method is no longer available.  Use option == 4 instead')
+            VIP_Databases_functions.abort(lbltmpdir,date)
+            sys.exit()
+            
         elif vip['lblrtm_jac_option'] == 4:
                 # Will use the jacobian_interpol method
             if vip['irs_type'] <= -1:
@@ -1255,7 +1209,6 @@ for i in range(len(irs['secs'])):                        # { loop_i
                 FXn = np.ones(len(wnumc))*-999.
                 Kij = np.zeros((len(wnumc),len(Xn)))
                 flag = 1
-                version_compute_jacobian = 'No IRS data in retrieval, so LBLRTM not used'
             else:
                 if((precompute_prior_jacobian['status'] == 1) & (itern == 0)):
                         # Load the forward calculation stuff from the precompute prior data
@@ -1267,8 +1220,8 @@ for i in range(len(irs['secs'])):                        # { loop_i
                     wnumc = precompute_prior_jacobian['wnumc0']
                 else:
                         # Otherwise, run the forward model and compute the Jacobian
-                    flag, Kij, FXn, wnumc, version_compute_jacobian, totaltime  = \
-                           Jacobian_Functions.compute_jacobian_interpol(Xn, p, z,
+                    flag, Kij, FXn, wnumc, totaltime  = \
+                           Jacobian_Functions.compute_jacobian_irs_interpol(Xn, p, z,
                            vip['lbl_home'], lbldir, lbltmp, vip['lbl_std_atmos'], lbltp5, lbltp3,
                            cbh, sspl, sspi, lblwnum1, lblwnum2,
                            fixtemp, fixwvmr, doco2, doch4, don2o, fixlcloud, fixicloud,
@@ -2151,10 +2104,10 @@ for i in range(len(irs['secs'])):                        # { loop_i
     # last time sample that was processed (i.e., "xsamp")
     if version == '':
         try:
-            version = globatt['algorithm_code_version'] + version_compute_jacobian
+            version = globatt['algorithm_code_version']
         except:
             print('Did not find globatt version')
-            version = 'Unknown Version' + version_compute_jacobian
+            version = 'Unknown Version'
 
     endtime = datetime.now()
 
