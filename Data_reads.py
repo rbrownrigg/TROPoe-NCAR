@@ -241,7 +241,7 @@ def read_irs_ch(path,date,irs_type,fv,fa,irs_spec_cal_factor,
                 zenith_scene_mirror_angle,
                 old_ffov_halfangle, new_ffov_halfangle, verbose):
 
-    if verbose >= 2:
+    if verbose >= 1:
         print('  Reading irs_ch data in ' + path)
     err = {'success':0}
     if irs_type <= 0:
@@ -1488,7 +1488,7 @@ def read_mwrscan(path, rootname, date, mwrscan_type, mwrscan_freq_field, mwrscan
 
 def read_irs_eng(path, date, irs_type, verbose):
 
-    if verbose >= 2:
+    if verbose >= 1:
         print('  Reading irs_eng data in ' + path)
     err = {'success':0}
     if irs_type <= 0:
@@ -1617,7 +1617,7 @@ def read_irs_eng(path, date, irs_type, verbose):
 ################################################################################
 
 def read_irs_sum(path,date,irs_type,smooth_noise,verbose):
-    if verbose >= 2:
+    if verbose >= 1:
         print('  Reading irs_sum data in ' + path)
     err = {'success':0}
     if irs_type <= 0:
@@ -4029,7 +4029,7 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
 
     elif sfc_p_type == 1:
         if verbose >= 1:
-            print('  Reading in ARM met pressure  data')
+            print('  Reading in ARM met pressure data')
 
         files = []
         for i in range(len(dates)):
@@ -4473,7 +4473,7 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
 ################################################################################
 
 def get_tropoe_version():
-    tropoe_tar_file = findfile(".","TROPoe*tar.gz")[0]
+    tropoe_tar_file = findfile(".","TROPoe*tar.gz",verbose=1)[0]
     if(len(tropoe_tar_file) == 0):
         version = 'UNKNOWN'
     else:
