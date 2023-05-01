@@ -1066,6 +1066,7 @@ for i in range(len(irs['secs'])):                        # { loop_i
             xret = []
         if ((verbose >= 1) & (fsample > 0)):
             print(('  Will append output to the file ' + noutfilename))
+            print(f'    Starting with sample {fsample:4d}')
     
     # If we are not in append mode, but do not have clobber set to 1 then
     # check to see if a conflicting file exists and if so abort
