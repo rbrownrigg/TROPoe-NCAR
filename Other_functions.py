@@ -885,8 +885,11 @@ def cloud_reflectivity(dwnum, tau, ice = False):
         aref40[foo] = aref40[bar[0]]
     
     # This bit of logic scales the reflectivity spectrum to account for the
-    # change in optical depth of the cloud
-    emis = 1.-np.exp(-tau)
+    # change in optical depth of the cloud. Watch for negative optical depth
+    dtau = tau
+    if(tau < 0):
+        dtau = 0
+    emis = 1.-np.exp(-dtau)
     reflect = aref40 * (emis**0.8)
     dreflect = np.interp(dwnum,awnum,reflect)
     
