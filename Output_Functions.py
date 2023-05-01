@@ -815,7 +815,7 @@ def create_xret(xret, fsample, vip, irs, Xa, Sa, z, bands, obsdim, obsflag,shour
         if np.isclose(shour,previous_shour):
             found = True
             break
-    
+
     if found and vip['output_clobber'] == 0:
         print('A file with the same rootname and shour as the current run was found. Aborting retrieval')
         print('     to prevent clobbering.')
@@ -835,8 +835,12 @@ def create_xret(xret, fsample, vip, irs, Xa, Sa, z, bands, obsdim, obsflag,shour
         nfilename = ' '
         return xret, fsample, nfilename
         
+    if not found:
+        print('Error: There seems to be some condition that was unanticipated -- aborting')
+        sys.exit()
+
     # Otherwise, let's initialize from the last file
-    nfilename = files[-1]
+    nfilename = files[i]
     fid = Dataset(nfilename, 'r')
     bt = fid.variables['base_time'][:]
     to = fid.variables['time_offset'][:]
