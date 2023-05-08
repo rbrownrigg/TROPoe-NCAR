@@ -2222,8 +2222,8 @@ def calc_derived_indices(xret,vip, derived, num_mc=20):
         indices[5], indices[6] = cape_cin(tt, pp, plcl)
     except:
         print('Something went wrong in CAPE and CIN calculation.')
-        indices[5] = -999.
-        indices[6] = -999.
+        indices[5] = -9999.
+        indices[6] = -9999.
     
     try:
         # Find mixed layer profiles for the ML indices. 
@@ -2236,8 +2236,8 @@ def calc_derived_indices(xret,vip, derived, num_mc=20):
     except:
         print('Something went wrong in MLCAPE and CIN calculation')
         indices[7] = -999.
-        indices[8] = -999.
-        indices[9] = -999.
+        indices[8] = -9999.
+        indices[9] = -9999.
     
     # and their uncertainties
     tmp_pwv = np.zeros(num_mc)
@@ -2262,8 +2262,8 @@ def calc_derived_indices(xret,vip, derived, num_mc=20):
             tmp_CAPE[j], tmp_CIN[j] = cape_cin(tprofs[:,j], pp, tmp_plcl)
         except:
             print('Something went wrong in CAPE and CIN calculation.')
-            tmp_CAPE[j] = -999.
-            tmp_CIN[j] = -999.
+            tmp_CAPE[j] = -9999.
+            tmp_CIN[j] = -9999.
         
         try:
             tmp_mlpp, tmp_mltt, tmp_mlww, = mixed_layer(tprofs[:,j], pp, wprofs[:,j])
@@ -2271,8 +2271,8 @@ def calc_derived_indices(xret,vip, derived, num_mc=20):
             tmp_MLCAPE[j], tmp_MLCIN[j] = cape_cin(tmp_mltt, tmp_mlpp, tmp_pmllcl)
         except:
             print('Something went wrong in MLCAPE and CIN calculation.')
-            tmp_CAPE[j] = -999.
-            tmp_CIN[j] = -999.
+            tmp_CAPE[j] = -9999.
+            tmp_CIN[j] = -9999.
         
     # PWV
     sigma_indices[0] = np.nanstd(indices[0]-tmp_pwv)
@@ -2308,14 +2308,14 @@ def calc_derived_indices(xret,vip, derived, num_mc=20):
     if ((len(foo) > 1) & (indices[5] >= 0)):
         sigma_indices[5] = np.nanstd(indices[5]-tmp_CAPE[foo])
     else:
-        sigma_indices[5] = -999.
+        sigma_indices[5] = -9999.
     
     # sbCIN
-    foo = np.where(tmp_CIN >= -900)[0]
-    if ((len(foo) > 1) & (indices[6] >= -900)):
+    foo = np.where(tmp_CIN >= -9000)[0]
+    if ((len(foo) > 1) & (indices[6] >= -9000)):
         sigma_indices[6] = np.nanstd(indices[6]-tmp_CIN[foo])
     else:
-        sigma_indices[6] = -999.
+        sigma_indices[6] = -9999.
     
     # mlLCL
     foo = np.where(tmp_mllcl > 0)[0]
@@ -2329,14 +2329,14 @@ def calc_derived_indices(xret,vip, derived, num_mc=20):
     if ((len(foo) > 1) & (indices[8] >= 0)):
         sigma_indices[8] = np.nanstd(indices[8]-tmp_MLCAPE[foo])
     else:
-        sigma_indices[8] = -999.
+        sigma_indices[8] = -9999.
     
     # MLCIN
-    foo = np.where(tmp_CIN >= -900)[0]
-    if ((len(foo) > 1) & (indices[9] >= -900)):
+    foo = np.where(tmp_CIN >= -9000)[0]
+    if ((len(foo) > 1) & (indices[9] >= -9000)):
         sigma_indices[9] = np.nanstd(indices[9]-tmp_MLCIN[foo])
     else:
-        sigma_indices[9] = -999.
+        sigma_indices[9] = -9999.
     
     return {'indices':indices, 'sigma_indices':sigma_indices, 'name':dindex_name,
             'units':dindex_units}
