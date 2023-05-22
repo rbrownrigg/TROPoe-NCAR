@@ -239,6 +239,9 @@ if vip['lbl_temp_dir'][0] == '$':
         tmpdir = tmpdir + '/' + envpath[i]
     vip['lbl_temp_dir'] = tmpdir
 
+# Get the IRS band inflation information into a structure
+irs_band_noise_inflation = Other_functions.decompose_irs_band_noise_inflation(vip, verbose=verbose)
+
 # Create the temporary working directory
 lbltmpdir = vip['lbl_temp_dir'] + '/' + uniquekey
 print(('  Setting the temporary directory for RT model runs to: ' + lbltmpdir))
@@ -252,8 +255,7 @@ except:
     print('---------------------------------------------------------------------')
     print(' ')
 
-cvgmult = 0.25 # I will leave this here for now, but later will add this to the vip file. It is a multiplier to apply to the convergence test (0.1 - 1.0)
-
+    
 success = 0
 
 # House keeping stuff
@@ -285,8 +287,8 @@ miniReff = np.nanmin(sspi['data'][2,:])*1.01
 maxiReff = np.nanmax(sspi['data'][2,:])
 
 # Perform some more baseline checking of the keywords
-if ((cvgmult  < 0.1) | (cvgmult > 1)):
-    print('Error: cvgmult is too small or too large')
+if ((vip['cvgmult'] < 0.1) | (vip['cvgmult'] > 1)):
+    print('Error: The error criteria vip.cvgmult is too small or too large (must be between 0.1 and 1.0)')
     VIP_Databases_functions.abort(lbltmpdir,date)
     sys.exit()
 
@@ -564,7 +566,7 @@ if ehour < 0:
 location = {'lat':irs['lat'], 'lon':irs['lon'], 'alt': int(irs['alt'])}
 if vip['station_alt'] >= 0:
     if verbose >= 2:
-        print('Overriding lat/lon/alt with info from VIP file')
+        print('  Overriding lat/lon/alt with info from VIP file')
     location = {'lat':vip['station_lat'], 'lon':vip['station_lon'], 'alt':int(vip['station_alt'])}
 
 # Very simple check to make sure station altitude makes sense [m MSL]
@@ -676,7 +678,7 @@ if len(foo) <= 0:
         print('No samples were found after this start time. Quitting')
         VIP_Databases_functions.abort(lbltmpdir,date)
         sys.exit()
-    print('Resetting the end hour to process at least 1 sample')
+    print('  Resetting the end hour to process at least 1 sample')
     if len(foo) < 2:
         ehour = irs['hour'][foo] + 1/3600.     # Added 1 second to this IRS sample to make sure to get it
     else:
@@ -950,6 +952,36 @@ for i in range(len(irs['secs'])):                        # { loop_i
         dimY = np.append(dimY, z[foo])
 
     nY = len(Y)
+
+    # Now, inflate the noise in the IRS spectral band, if it is set and there is a valid surface WVMR measurement
+    if((irs_band_noise_inflation['onoff'] > 0) & (vip['irs_type'] > 0)):
+        if verbose >= 1:
+            print('    Inflating the noise in the IRS spectral band between ',
+                      irs_band_noise_inflation['wnum1'], ' and ',irs_band_noise_inflation['wnum2'], ' cm-1')
+        feh6 = np.where(flagY == 6)[0]
+        feh1 = np.where(flagY == 1)[0]
+        if len(feh1) <= 0:
+            print('Error: Unable to find any IRS wavenumbers in this test (inflate noise band)')
+            sys.exit()
+        if len(feh6) > 0:
+            if np.mean(Y[feh6]) <= 0:
+                print('      Warning: the wurface WVMR value was not positive')
+            else:
+                bar = np.where((irs_band_noise_inflation['wnum1'] <= dimY[feh1]) &
+                        (dimY[feh1] <= irs_band_noise_inflation['wnum2']))[0]
+                if len(bar) > 0:
+                    tmpxval = np.mean(Y[feh6])
+                    if(tmpxval < np.min(irs_band_noise_inflation['wvmr'])):
+                        tmpxval = np.min(irs_band_noise_inflation['wvmr'])
+                    if(tmpxval > np.max(irs_band_noise_inflation['wvmr'])):
+                        tmpxval = np.max(irs_band_noise_inflation['wvmr'])
+                    tmpyval = np.interp(tmpxval, 
+                              irs_band_noise_inflation['wvmr'],
+                              irs_band_noise_inflation['multiplier'])
+                    if(verbose >= 1):
+                        print(f'      Scaling the IRS band noise by a factor of {tmpyval:.2f}')
+                        print(f'      {len(bar):d} spectral elements had their noise changed')
+                    sigY[feh1[bar]] = sigY[feh1[bar]] * tmpyval
 
     # Quick check: All of the 1-sigma uncertainties from the observations
     # should have been positive. If not then abort as extra logic needs
@@ -2010,7 +2042,7 @@ for i in range(len(irs['secs'])):                        # { loop_i
 
             # But also check for convergence in the normal manner
             if ((gfactor[itern-1] <= 1) & (gfactor[itern] == 1)):
-                if di2m < cvgmult * nY:
+                if di2m < vip['cvgmult'] * nY:
                     converged = 1                    # Converged in "classical sense"
 
         prev_di2m = di2m
