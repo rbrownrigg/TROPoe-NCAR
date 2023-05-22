@@ -58,7 +58,8 @@ import Calcs_Conversions
 # compute_extra_layers()
 # irs_ffovc()              -- TODO -- add this bad boy
 # change_irs_ffovc()       -- TODO -- add this bad boy
-# fix_nonphysical_wv
+# fix_nonphysical_wv()
+# decompose_irs_band_noise_inflation()
 ################################################################################
 
 
@@ -519,10 +520,10 @@ def find_cloud(irsch1, vceil, window_in, window_out, default_cbh):
 # 12/17/02 in an email
 ################################################################################
 
-def get_aeri_bb_emis(wn,cavity_factor = 12.79, option=0, verbose=0):
+def get_aeri_bb_emis(wn,cavity_factor = 12.79, option=0, verbose=1):
     
-    if ((cavity_factor == 12.79) & (option == 0) & (verbose > 1)):
-        print('WARNING: Cavity factor set to default value of 12.79')
+    if ((cavity_factor == 12.79) & (option == 0) & (verbose > 1) & (verbose < 5)):
+        print('    WARNING: Cavity factor set to default value of 12.79 (in get_aeri_bb_emis)')
 
     #The emissivity spectrum, from Dave Tobin's file
     v = [400.00000, 500.00000, 550.00000, 600.00000, 650.00000, 700.00000,
@@ -2342,15 +2343,45 @@ def calc_derived_indices(xret,vip, derived, num_mc=20):
             'units':dindex_units}
         
     
-    
-    
-    
-    
-    
-    
-    
-        
-    
-        
-    
+###############################################################################
+# This function decomposes the keywords in the VIP file associated with the IRS
+# band noise inflation, and returns a structure with these parameters
+###############################################################################
+
+def decompose_irs_band_noise_inflation(vip, verbose=2):
+     err = {'success':0}
+     onoff = vip['irs_band_noise_inflation']
+     tmp   = vip['irs_band_noise_wnums']
+     wnums = tmp.split(',')
+     wnums = np.array(wnums).astype(np.float)
+     if(len(wnums) != 2):
+         print('Error: unable to find two wavenumbers in vip.irs_band_noise_wnums')
+         return err
+     if(wnums[0] >= wnums[1]):
+         print('Error: vip.irs_band_noise_wnums[0] >= vip.irs_band_noise_wnums[1]')
+         return err
+     npts = vip['irs_band_noise_sfc_npts']
+     tmp  = vip['irs_band_noise_sfc_wvmr_vals']
+     wvmr = tmp.split(',')
+     wvmr = np.array(wvmr).astype(np.float)
+     if(len(wvmr) != npts):
+         print('Error: number of elements in vip.irs_band_noise_sfc_wvmr_vals does not match vip.irs_band_noise_sfc_npts')
+         return err
+     tmp  = vip['irs_band_noise_sfc_multiplier']
+     mult = tmp.split(',')
+     mult = np.array(mult).astype(np.float)
+     if(len(mult) != npts):
+         print('Error: number of elements in vip.irs_band_noise_sfc_multiplier does not match vip.irs_band_noise_sfc_npts')
+         return err
+     out = {'success':1, 'onoff':onoff, 'wnum1':wnums[0], 'wnum2':wnums[1], 'npts':npts, 
+         'wvmr':wvmr, 'multiplier':mult}
+     if(verbose >= 2):
+         print('  Inside decompose_irs_band_noise_inflation(), here are the values:')
+         print('        onoff',out['onoff'])
+         print('        wnum1',out['wnum1'])
+         print('        wnum2',out['wnum2'])
+         print('        npts',out['npts'])
+         print('        wvmr',out['wvmr'])
+         print('        multiplier',out['multiplier'])
+     return out
 
