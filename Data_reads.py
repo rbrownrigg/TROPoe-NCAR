@@ -564,7 +564,7 @@ def read_irs_ch(path,date,irs_type,fv,fa,irs_spec_cal_factor,
     nrad = mrad * 0
     emisn = Other_functions.get_aeri_bb_emis(wnum, cavity_factor=39.0, verbose=verbose)
     for i in range(len(hour)):
-        emiso = Other_functions.get_aeri_bb_emis(wnum, cavity_factor=bbcavfactor[i], verbose=verbose)
+        emiso = Other_functions.get_aeri_bb_emis(wnum, cavity_factor=bbcavfactor[i], verbose=verbose+i)
         nrad[:,i] = Other_functions.aeri_recal(wnum, mrad[:,i], calibhbbt[i], calibhbbt[i], calibcbbt[i],
                     calibcbbt[i], calibambt[i], calibambt[i], emiso, emisn, emiso, emisn)
 
