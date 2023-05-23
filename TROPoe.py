@@ -804,7 +804,9 @@ for i in range(len(irs['secs'])):                        # { loop_i
     # the uncertainties in the IRS radiance are uncorrelated (channel-to-channel)
     # If I want to add off-diagonal elements (due to application of the noise
     # filter) this is the right place to do that....
-    Sy = np.diag(sigY**2)
+    #   Note that I cannot place the irs_band_noise_inflation logic here, 
+    #   as I don't have the sfc WVMR value yet
+    Sy = np.diag(sigY**2) # DDT-delete
 
     # Append on the other observations, making sur to capture their "type"
     # using the flag values above and their dimensions. Note that I am assuming
@@ -830,7 +832,7 @@ for i in range(len(irs['secs'])):                        # { loop_i
         Y = np.append(Y,tbsky)
         nSy = np.diag(noise**2)
         zero = np.zeros((len(noise),len(sigY)))
-        Sy = np.append(np.append(Sy,zero,axis=0),np.append(zero.T,nSy,axis=0),axis=1)
+        Sy = np.append(np.append(Sy,zero,axis=0),np.append(zero.T,nSy,axis=0),axis=1) # DDT-delete
         sigY = np.append(sigY,noise)
         flagY = np.append(flagY, np.ones(vip['mwr_tb_replicate']*mwr['n_fields'])*2)
         dimY = np.append(dimY,freq)
@@ -844,7 +846,7 @@ for i in range(len(irs['secs'])):                        # { loop_i
         Y = np.append(Y,ext_prof['temp'][foo,i])
         nSy = np.diag(ext_prof['sig_temp'][foo,i]**2)
         zero = np.zeros((len(foo),len(sigY)))
-        Sy = np.append(np.append(Sy,zero,axis=0),np.append(zero.T,nSy,axis=0),axis=1)
+        Sy = np.append(np.append(Sy,zero,axis=0),np.append(zero.T,nSy,axis=0),axis=1) # DDT-delete
         sigY = np.append(sigY, ext_prof['sig_temp'][foo,i])
         flagY = np.append(flagY, np.ones(len(foo))*3)
         dimY = np.append(dimY, z[foo])
@@ -863,7 +865,7 @@ for i in range(len(irs['secs'])):                        # { loop_i
         else:
             nSy = np.diag(ext_prof['sig_wv'][foo,i]**2)
         zero = np.zeros((len(foo),len(sigY)))
-        Sy = np.append(np.append(Sy,zero,axis=0),np.append(zero.T,nSy,axis=0),axis=1)
+        Sy = np.append(np.append(Sy,zero,axis=0),np.append(zero.T,nSy,axis=0),axis=1) # DDT-delete
         sigY = np.append(sigY, ext_prof['sig_wv'][foo,i])
         flagY = np.append(flagY, np.ones(len(foo))*4)
         dimY = np.append(dimY, z[foo])
@@ -872,7 +874,7 @@ for i in range(len(irs['secs'])):                        # { loop_i
         Y = np.append(Y, ext_tseries['temp'][:,i])
         nSy = np.diag(ext_tseries['stemp'][:,i]**2)
         zero = np.zeros((ext_tseries['nptsT'],len(sigY)))
-        Sy = np.append(np.append(Sy,zero,axis=0),np.append(zero.T,nSy,axis=0),axis=1)
+        Sy = np.append(np.append(Sy,zero,axis=0),np.append(zero.T,nSy,axis=0),axis=1) # DDT-delete
         sigY = np.append(sigY, ext_tseries['stemp'][:,i])
         flagY = np.append(flagY, np.ones(ext_tseries['nptsT'])*5)
         dimY = np.append(dimY, np.ones(ext_tseries['nptsT'])*ext_tseries['sfc_relative_height'])
@@ -881,7 +883,7 @@ for i in range(len(irs['secs'])):                        # { loop_i
         Y = np.append(Y, ext_tseries['wv'][:,i])
         nSy = np.diag(ext_tseries['swv'][:,i]**2)
         zero = np.zeros((ext_tseries['nptsQ'],len(sigY)))
-        Sy = np.append(np.append(Sy,zero,axis=0),np.append(zero.T,nSy,axis=0),axis=1)
+        Sy = np.append(np.append(Sy,zero,axis=0),np.append(zero.T,nSy,axis=0),axis=1) # DDT-delete
         sigY = np.append(sigY, ext_tseries['swv'][:,i])
         flagY = np.append(flagY, np.ones(ext_tseries['nptsQ'])*6)
         dimY = np.append(dimY, np.ones(ext_tseries['nptsQ'])*ext_tseries['sfc_relative_height'])
@@ -895,7 +897,7 @@ for i in range(len(irs['secs'])):                        # { loop_i
         Y = np.append(Y,mod_prof['temp'][foo,i])
         nSy = np.diag(mod_prof['sig_temp'][foo,i]**2)
         zero = np.zeros((len(foo),len(sigY)))
-        Sy = np.append(np.append(Sy,zero,axis=0),np.append(zero.T,nSy,axis=0),axis=1)
+        Sy = np.append(np.append(Sy,zero,axis=0),np.append(zero.T,nSy,axis=0),axis=1) # DDT-delete
         sigY = np.append(sigY, mod_prof['sig_temp'][foo,i])
         flagY = np.append(flagY, np.ones(len(foo))*7)
         dimY = np.append(dimY, z[foo])
@@ -909,7 +911,7 @@ for i in range(len(irs['secs'])):                        # { loop_i
         Y = np.append(Y,mod_prof['wv'][foo,i])
         nSy = np.diag(mod_prof['sig_wv'][foo,i]**2)
         zero = np.zeros((len(foo),len(sigY)))
-        Sy = np.append(np.append(Sy,zero,axis=0),np.append(zero.T,nSy,axis=0),axis=1)
+        Sy = np.append(np.append(Sy,zero,axis=0),np.append(zero.T,nSy,axis=0),axis=1) # DDT-delete
         sigY = np.append(sigY, mod_prof['sig_wv'][foo,i])
         flagY = np.append(flagY, np.ones(len(foo))*8)
         dimY = np.append(dimY, z[foo])
@@ -918,7 +920,7 @@ for i in range(len(irs['secs'])):                        # { loop_i
         Y = np.append(Y,ext_tseries['co2'][:,i])
         nSy = np.diag(ext_tseries['sco2'][:,i]**2)
         zero = np.zeros((ext_tseries['nptsCO2'],len(sigY)))
-        Sy = np.append(np.append(Sy,zero,axis=0),np.append(zero.T,nSy,axis=0),axis=1)
+        Sy = np.append(np.append(Sy,zero,axis=0),np.append(zero.T,nSy,axis=0),axis=1) # DDT-delete
         sigY = np.append(sigY, ext_tseries['sco2'][:,i])
         flagY = np.append(flagY, np.ones(ext_tseries['nptsCO2'])*9)
         dimY = np.append(dimY,np.ones(ext_tseries['nptsCO2'])*ext_tseries['co2_sfc_relative_height'])
@@ -932,7 +934,7 @@ for i in range(len(irs['secs'])):                        # { loop_i
         Y = np.append(Y, tbsky)
         nSy = np.diag(noise**2)
         zero = np.zeros((len(noise),len(sigY)))
-        Sy = np.append(np.append(Sy,zero,axis=0),np.append(zero.T,nSy,axis=0),axis=1)
+        Sy = np.append(np.append(Sy,zero,axis=0),np.append(zero.T,nSy,axis=0),axis=1) # DDT-delete
         sigY = np.append(sigY, noise)
         flagY = np.append(flagY, np.ones(len(mwrscan['dim']))*10)
         dimY = np.append(dimY, mwrscan['dim'])
@@ -946,7 +948,7 @@ for i in range(len(irs['secs'])):                        # { loop_i
         Y = np.append(Y,rass_prof['temp'][foo,i])
         nSy = np.diag(rass_prof['sig_temp'][foo,i]**2)
         zero = np.zeros((len(foo),len(sigY)))
-        Sy = np.append(np.append(Sy,zero,axis=0),np.append(zero.T,nSy,axis=0),axis=1)
+        Sy = np.append(np.append(Sy,zero,axis=0),np.append(zero.T,nSy,axis=0),axis=1) # DDT-delete
         sigY = np.append(sigY, rass_prof['sig_temp'][foo,i])
         flagY = np.append(flagY, np.ones(len(foo))*11)
         dimY = np.append(dimY, z[foo])
@@ -1023,6 +1025,10 @@ for i in range(len(irs['secs'])):                        # { loop_i
            print('There are NaNs in the obs_vector or 1-sigma uncertainties for obs: ' + str(feh) + ' Skipping sample')
            continue
         
+    # Compute Sy, assuming this is a diagonal matrix.  
+    # Note that I have some logic above that needs to be deleted (marked with DDT-delete, if we are sure this matrix is always diagonal)
+    Sy = np.diag(sigY**2)
+
     # Compute the estimate of the forward model uncertainty (Sf).
     # This is computed at Sf = kb # Sb # transpose(Kb), where
     # B is the vector of model parameters and Sb is its covariance matrix
