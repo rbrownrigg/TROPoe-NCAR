@@ -436,7 +436,7 @@ except:
     VIP_Databases_functions.abort(lbltmpdir,date)
     sys.exit()
 z  = fid.variables['height'][:]
-pa = fid.variables['mean_pressure'][:]
+Pa = fid.variables['mean_pressure'][:]
 Xa = fid.variables['mean_prior'][:]
 Sa = fid.variables['covariance_prior'][:]
 try:
@@ -454,6 +454,28 @@ maxQ = float( fid.QC_limits_q.split()[9])
 if verbose == 3:
     print(('QC limits for Q are ' + str(minQ) + ' and ' + str(maxQ)))
 fid.close()
+
+# Interpolate the input prior to the new specified height grid
+zz = vip['zgrid'].split(',')
+zz = np.array(zz).astype(float)
+if Other_functions.test_monotonic(zz) == False:
+    print('Error: The input vip.zgrid is not strictly monotonically ascending -- aborting')
+    VIP_Databases_functions.abort(lbltmpdir,date)
+    sys.exit()
+if zz[0] != 0:
+    print('Error: The first level of the input vip.zgrid is not zero (a requirement) -- aborting')
+    VIP_Databases_functions.abort(lbltmpdir,date)
+    sys.exit()
+if np.max(zz) >= np.max(z):
+    print(f'Error: The maximum height in the input vip.grid must be less than {np.max(z):.3f} km')
+    VIP_Databases_functions.abort(lbltmpdir,date)
+    sys.exit()
+newXa,newSa,newPa = Other_functions.interpolate_prior_covariance(z,Xa,Sa,Pa,zz,verbose=verbose)
+        # Replace the prior values from the input file with the values on the input zgrid
+z  = zz
+Pa = newPa
+Xa = newXa
+Sa = newSa
 
 if verbose >= 1:
     print(('  Retrieved profiles will have ' + str(len(z)) + ' levels (from prior)'))
@@ -621,7 +643,7 @@ if vip['recenter_prior'] > 0:
             changeTmethod = 2
 
     # Recenter the prior, using the inputs determined above
-    successflag, newXa, newSa, comments = Data_reads.recenter_prior(z, pa, Xa, Sa, 
+    successflag, newXa, newSa, comments = Data_reads.recenter_prior(z, Pa, Xa, Sa, 
                     recenter_input_value, sfc_or_pwv=1, changeTmethod=changeTmethod)
 
     # Now replace the variables, if successful
