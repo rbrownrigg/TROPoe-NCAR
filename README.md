@@ -24,7 +24,7 @@ TROPoe has been packed into a Docker container to make the maintanence and distr
 
 TROPoe is designed to be extremely flexible, and to be able to perform both operational-like retrievals and experimental retrievals.  The configuration of the retrieval is controlled by the VIP (variable-input parameter) file.  The VIP file is a set of key=value pairs, which are used to override the default configuration stored internally in the code.  This is described in detail by the User's Guide.
 
-##Dependencies 
+## Dependencies 
 python 3.x.  Note that all of these packages are part of the Docker container already.  
 
 os
@@ -44,16 +44,16 @@ argparse
 
 Note: Most of these packages are standard in python distributions
 
-##Instructions
+## Instructions
 
 This software has been implemented in a Docker container, making it much easier to use as the radiative transfer models and other miscellaneous input information is included inside the container.  We recommend you use this run_tropoe_ops.sh script to run this software.  The TROPoe User's Guide provides the instructions needed to get the container, configure the retrieval, run the code, and interpret the output.
 
-##Disclamer
+## Disclamer
 
 This repository is a scientific product and is not official communication of the National Oceanic and Atmospheric Administration (NOAA), or the United States Department of Commerce. All NOAA GitHub project code is provided on an ‘as is’ basis, with no warranty, and the user assumes responsibility for its use. NOAA has relinquished control of the information and no longer has responsibility to protect the integrity, confidentiality, or availability of the information. Any claims against the Department of Commerce or NOAA stemming from the use of this GitHub project will be governed by all applicable Federal law. Any reference to specific commercial products, processes, or services by service mark, trademark, manufacturer, or otherwise, does not constitute or imply their endorsement, recommendation or favoring by the Department of Commerce. The Department of Commerce seal and logo, or the seal and logo of a DOC bureau, shall not be used in any manner to imply endorsement of any commercial product or activity by DOC or the United States Government.
 
 
-##References
+## References
 
 Turner, D.D., and U. Loehnert, 2021: Ground-based temperature and humidity profiling: Combining active and passive remote sensors. Atmos. Meas. Technol., 14, 3033-3048, doi:[10.5194/amt-14-3033-2021](https://doi.org/10.5194/amt-14-3033-2021).
 
