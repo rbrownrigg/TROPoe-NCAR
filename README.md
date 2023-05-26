@@ -6,17 +6,17 @@ TROPoe is an python version of Dave Turner's IDL-based AERIoe algorithm. The ori
 
 The functions are separated in files by the tasks that they perform so users can find and edit them (if needed) efficiently.
 
--VIP_Databases_function.py - Functions that read in the VIP file and other databases needed for the retrieval
+VIP_Databases_function.py - Functions that read in the VIP file and other databases needed for the retrieval
 
--Calcs_Conversions.py - Functions that perform basic meteorological calculations and variable conversions.
+Calcs_Conversions.py - Functions that perform basic meteorological calculations and variable conversions.
 
--Data_reads.py - These functions control the reading of the all the data used in the retrieval
+Data_reads.py - These functions control the reading of the all the data used in the retrieval
 
--Jacobian_Functions - Functions that calculate the jacobians and forward operators for the retrieval
+Jacobian_Functions - Functions that calculate the jacobians and forward operators for the retrieval
 
--Output_Functions - These functions write the output file from the retrieval
+Output_Functions - These functions write the output file from the retrieval
 
--Other_Functions - These functions don't really fit in the other categories
+Other_Functions - These functions don't really fit in the other categories
 
 TROPoe depends strongly on the forward models used to map from the state space (i.e., thermodynamic profiles and cloud properties) into the observation space (i.e., microwave and/or infrared spectral radiance).  It uses the MonoRTM and LBLRTM as the forward models, respectively.  
 
@@ -27,20 +27,20 @@ TROPoe is designed to be extremely flexible, and to be able to perform both oper
 ## Dependencies 
 python 3.x.  Note that all of these packages are part of the Docker container already.  
 
--os
--sys
--shutil
--copy
--numpy
--scipy
--netCDF4
--datetime
--calendar
--glob
--subprocess
--struct
--time
--argparse
+- os
+- sys
+- shutil
+- copy
+- numpy
+- scipy
+- netCDF4
+- datetime
+- calendar
+- glob
+- subprocess
+- struct
+- time
+- argparse
 
 Note: Most of these packages are standard in python distributions
 
@@ -62,8 +62,8 @@ Turner, D.D., and W.G. Blumberg, 2019: Improvements to the AERIoe thermodynamic 
 Turner, D.D., and U. Loehnert, 2014: Information content and uncertainties in thermodynamic profiles and liquid cloud properties retrieved from the ground-based Atmospheric Emitted Radiance Interferometer (AERI). J. Appl. Meteor. Clim., 53, 752-771, doi:[10.1175/JAMC-D-13-0126.1](https://doi.org/10.1175/JAMC-D-13-0126.1).
 
 
-##Authors
+## Authors
 
--[Dr. Dave Turner](https://gsl.noaa.gov/profiles/dave.turner), NOAA Global Systems Laboratory, dave.turner@noaa.gov
--[Dr. Joshua Gebauer](https://bliss.science/authors/joshua-gebauer/), NOAA National Severe Storms Laboratory / CIWRO, joshua.gebauer@noaa.gov
--[Dr. Tyler Bell](https://bliss.science/authors/tyler-bell/), NOAA National Severe Storms Laboratory / CIWRO, tyler.bell@noaa.gov
+- [Dr. Dave Turner](https://gsl.noaa.gov/profiles/dave.turner), NOAA Global Systems Laboratory, dave.turner@noaa.gov
+- [Dr. Joshua Gebauer](https://bliss.science/authors/joshua-gebauer/), NOAA National Severe Storms Laboratory / CIWRO, joshua.gebauer@noaa.gov
+- [Dr. Tyler Bell](https://bliss.science/authors/tyler-bell/), NOAA National Severe Storms Laboratory / CIWRO, tyler.bell@noaa.gov
