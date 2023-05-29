@@ -73,6 +73,8 @@ full_vip = ({
     'irs_calib_pres': {'value': [0.0, 1.0], 'comment': 'Intercept [mb] and slope [mb/mb to calib (newP = int = slope*obsP) (need comma between them)', 'default': False},
     'irs_use_missingDataFlag': {'value': 1, 'comment': 'Set this to 1 to use the field \'missingDataFlag\' (from the ch1 file) to remove bad IRS data from analysis. If zero, then all IRS data will be processed,', 'default': False},
     'irs_hatch_switch': {'value': 1, 'comment': '1 - only include hatchOpen=1 when averaging, 0 - include all IRS samples when averaging', 'default': False},
+    'irs_ignore_status_hatch': {'value': 0, 'comment': '0 -- use the hatchOpen flag; 1 -- ignore the hatchOpen flag', 'default': False}, 
+    'irs_ignore_status_missingDataFlag': {'value': 0, 'comment': '0 -- use the missingDataFlag flag; 1 -- ignore the missingDataFlag flag', 'default': False}, 
     'irs_fv': {'value': 0.0, 'comment': 'Apply a foreoptics obscuration correction', 'default': False},
     'irs_fa': {'value': 0.0, 'comment': 'Apply an aftoptics obscuration correction', 'default': False},
     'irs_old_ffov_halfangle': {'value': 23.0, 'comment': 'Original Half angle [millirad] of the finite field of view of the instrument', 'default': False},

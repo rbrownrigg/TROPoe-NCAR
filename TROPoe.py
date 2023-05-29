@@ -750,6 +750,12 @@ if vip['output_clobber'] == 2 or vip['output_clobber'] == 0:
 else:
     check_clobber = 0
 
+# Quick check to make sure that the stdout messages make sense
+if(vip['irs_type'] <= -1):
+    itype = 'MWR'
+else:
+    itype = 'IRS'
+
 # This defines the extra vertical layers that will be added to both
 # the infrared and microwave radiative transfer calculations
 rt_extra_layers = Other_functions.compute_extra_layers(np.max(z))
@@ -765,17 +771,19 @@ for i in range(len(irs['secs'])):                        # { loop_i
 
     # Make sure that the IRS data aren't missing or considered bad
     adderr = ''
-    if ((irs['missingDataFlag'][i] > 0) | (irs['missingDataFlag'][i] <= -1)):
-        if(vip['irs_type'] <= -1):
-            itype = 'MWR'
-        else:
-            itype = 'IRS'
+    if(itype == 'IRS'):
+        if(vip['irs_ignore_status_missingDataFlag'] != 1):
+            if(irs['missingDataFlag'][i] != 0):
+                adderr = '(missingDataFlag is set)'
+        if(vip['irs_ignore_status_hatch'] != 1):
             if(irs['hatchopen'][i] != 1):
                 adderr = '(hatch not open)'
-        print(f"  Sample {i:2d} at {irs['hour'][i]:.4f} UTC -- no valid {itype:s} data found ",adderr)
-        continue
-    else:
-        print(f"  Sample {i:2d} at {irs['hour'][i]:.4f} UTC is being processed (cbh is {irs['cbh'][i]:.3f})")
+
+        if(adderr != ''):
+            print(f"  Sample {i:2d} at {irs['hour'][i]:.4f} UTC -- no valid {itype:s} data found ",adderr)
+            continue
+
+    print(f"  Sample {i:2d} at {irs['hour'][i]:.4f} UTC is being processed (cbh is {irs['cbh'][i]:.3f})")
 
     # See if we want to use the external sfc pressure instead of irs pressure
     # and check to make sure external data read went okay
