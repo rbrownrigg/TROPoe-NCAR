@@ -64,6 +64,7 @@ import Output_Functions
 # change_irs_ffovc()       -- TODO -- add this bad boy
 # fix_nonphysical_wv()
 # decompose_irs_band_noise_inflation()
+# calc_derived_indices()
 ################################################################################
 
 
@@ -2277,21 +2278,10 @@ def calc_derived_indices(xret,vip, derived, num_mc=20):
     tt = np.copy(xret['Xn'][0:nht])
     ww = np.copy(xret['Xn'][nht:2*nht])
     zz = np.copy(xret['z'])
-    
-    # Extract out the posterior covariance matrix
+
+    # Extract out the posterior covariance matrix, and get the 1-sigma uncertainties
     Sop_tmp = np.copy(xret['Sop'][0:2*nht,0:2*nht])
     sig_t = np.sqrt(np.diag(Sop_tmp))[0:nht]
-    
-    # Perform SVD of posterior covariance matrix
-    
-    u, w, v, = scipy.linalg.svd(Sop_tmp.T,False)
-    
-    # Generate the Monte Carlo profiles
-    
-    b = np.random.default_rng().normal(size=(2*nht,num_mc))
-    pert = u.dot(np.diag(np.sqrt(w))).dot(b)
-    tprofs = tt[:,None] + pert[0:nht,:]
-    wprofs = ww[:,None] + pert[nht:2*nht,:]
     
     # Now compute the indices
     
@@ -2332,104 +2322,119 @@ def calc_derived_indices(xret,vip, derived, num_mc=20):
         indices[8] = -9999.
         indices[9] = -9999.
     
-    # and their uncertainties
-    tmp_pwv = np.zeros(num_mc)
-    tmp_pblh = np.zeros(num_mc)
-    tmp_sbih = np.zeros(num_mc)
-    tmp_sbim = np.zeros(num_mc)
-    tmp_lcl = np.zeros(num_mc)
-    tmp_CAPE = np.zeros(num_mc)
-    tmp_CIN = np.zeros(num_mc)
-    tmp_mllcl = np.zeros(num_mc)
-    tmp_MLCAPE = np.zeros(num_mc)
-    tmp_MLCIN = np.zeros(num_mc)
+    # Only compute the uncertainties in the indices if the number of Monte Carlo 
+    # samples is strictly positive; otherwise, return -9999 as the uncertainties
+    if num_mc <= 0:
+        print('      Not computing the uncertainties in the derived indices')
+        sigma_indices = np.zeros_like(indices) - 9999.
+    else:
+        # Perform SVD of posterior covariance matrix
+        u, w, v, = scipy.linalg.svd(Sop_tmp.T,False)
+    
+        # Generate the Monte Carlo profiles
+        b = np.random.default_rng().normal(size=(2*nht,num_mc))
+        pert = u.dot(np.diag(np.sqrt(w))).dot(b)
+        tprofs = tt[:,None] + pert[0:nht,:]
+        wprofs = ww[:,None] + pert[nht:2*nht,:]
+    
+        # allocate room to compute the indices for the various profiles in the MC sampling
+        tmp_pwv = np.zeros(num_mc)
+        tmp_pblh = np.zeros(num_mc)
+        tmp_sbih = np.zeros(num_mc)
+        tmp_sbim = np.zeros(num_mc)
+        tmp_lcl = np.zeros(num_mc)
+        tmp_CAPE = np.zeros(num_mc)
+        tmp_CIN = np.zeros(num_mc)
+        tmp_mllcl = np.zeros(num_mc)
+        tmp_MLCAPE = np.zeros(num_mc)
+        tmp_MLCIN = np.zeros(num_mc)
                          
-    for j in range(num_mc):
-        tmp_pwv[j] = Calcs_Conversions.w2pwv(wprofs[:,j],pp)
-        tmp_pblh[j] = compute_pblh(zz,tprofs[:,j],pp, sig_t, minht=vip['min_PBL_height'],
+        for j in range(num_mc):
+            tmp_pwv[j] = Calcs_Conversions.w2pwv(wprofs[:,j],pp)
+            tmp_pblh[j] = compute_pblh(zz,tprofs[:,j],pp, sig_t, minht=vip['min_PBL_height'],
                                   maxht=vip['max_PBL_height'], nudge=vip['nudge_PBL_height'])
-        tmp_sbih[j], tmp_sbim[j] = compute_sbi(zz,tprofs[:,j])
-        tmp_lcl[j], tmp_plcl = compute_lcl(tprofs[0,j], wprofs[0,j], pp[0], pp, zz)
+            tmp_sbih[j], tmp_sbim[j] = compute_sbi(zz,tprofs[:,j])
+            tmp_lcl[j], tmp_plcl = compute_lcl(tprofs[0,j], wprofs[0,j], pp[0], pp, zz)
         
-        try:
-            tmp_CAPE[j], tmp_CIN[j] = cape_cin(tprofs[:,j], pp, tmp_plcl)
-        except:
-            print('Something went wrong in CAPE and CIN calculation.')
-            tmp_CAPE[j] = -9999.
-            tmp_CIN[j] = -9999.
+            try:
+                tmp_CAPE[j], tmp_CIN[j] = cape_cin(tprofs[:,j], pp, tmp_plcl)
+            except:
+                print('Something went wrong in CAPE and CIN calculation.')
+                tmp_CAPE[j] = -9999.
+                tmp_CIN[j] = -9999.
         
-        try:
-            tmp_mlpp, tmp_mltt, tmp_mlww, = mixed_layer(tprofs[:,j], pp, wprofs[:,j])
-            tmp_mllcl[j], tmp_pmllcl = compute_lcl(tmp_mltt[0], tmp_mlww[0], tmp_mlpp[0],pp,zz)
-            tmp_MLCAPE[j], tmp_MLCIN[j] = cape_cin(tmp_mltt, tmp_mlpp, tmp_pmllcl)
-        except:
-            print('Something went wrong in MLCAPE and CIN calculation.')
-            tmp_CAPE[j] = -9999.
-            tmp_CIN[j] = -9999.
+            try:
+                tmp_mlpp, tmp_mltt, tmp_mlww, = mixed_layer(tprofs[:,j], pp, wprofs[:,j])
+                tmp_mllcl[j], tmp_pmllcl = compute_lcl(tmp_mltt[0], tmp_mlww[0], tmp_mlpp[0],pp,zz)
+                tmp_MLCAPE[j], tmp_MLCIN[j] = cape_cin(tmp_mltt, tmp_mlpp, tmp_pmllcl)
+            except:
+                print('Something went wrong in MLCAPE and CIN calculation.')
+                tmp_CAPE[j] = -9999.
+                tmp_CIN[j] = -9999.
         
-    # PWV
-    sigma_indices[0] = np.nanstd(indices[0]-tmp_pwv)
+        # PWV
+        sigma_indices[0] = np.nanstd(indices[0]-tmp_pwv)
     
-    # PBLH
-    foo = np.where(tmp_pblh > 0)[0]
-    if ((len(foo) > 1) & (indices[1] > 0)):
-        sigma_indices[1] = np.nanstd(indices[1]-tmp_pblh[foo])
-    else:
-        sigma_indices[1] = -999.
-    if ((sigma_indices[1] < vip['min_PBL_height']) & (indices[1] <= vip['min_PBL_height'])):
-        sigma_indices[1] = vip['min_PBL_height']
+        # PBLH
+        foo = np.where(tmp_pblh > 0)[0]
+        if ((len(foo) > 1) & (indices[1] > 0)):
+            sigma_indices[1] = np.nanstd(indices[1]-tmp_pblh[foo])
+        else:
+            sigma_indices[1] = -999.
+        if ((sigma_indices[1] < vip['min_PBL_height']) & (indices[1] <= vip['min_PBL_height'])):
+            sigma_indices[1] = vip['min_PBL_height']
     
-    # SBIH
-    foo = np.where(tmp_sbih > 0)[0]
-    if ((len(foo) > 1) & (indices[2] > 0)):
-        sigma_indices[2] = np.nanstd(indices[2]-tmp_sbih[foo])
-    else:
-        sigma_indices[2] = -999.
+        # SBIH
+        foo = np.where(tmp_sbih > 0)[0]
+        if ((len(foo) > 1) & (indices[2] > 0)):
+            sigma_indices[2] = np.nanstd(indices[2]-tmp_sbih[foo])
+        else:
+            sigma_indices[2] = -999.
     
-    # SBIM
-    foo = np.where(tmp_sbim > 0)[0]
-    if ((len(foo) > 1) & (indices[3] > 0)):
-        sigma_indices[3] = np.nanstd(indices[3]-tmp_sbim[foo])
-    else:
-        sigma_indices[3] = -999.
+        # SBIM
+        foo = np.where(tmp_sbim > 0)[0]
+        if ((len(foo) > 1) & (indices[3] > 0)):
+            sigma_indices[3] = np.nanstd(indices[3]-tmp_sbim[foo])
+        else:
+            sigma_indices[3] = -999.
     
-    # LCL
-    sigma_indices[4] = np.nanstd(indices[4]-tmp_lcl)
+        # LCL
+        sigma_indices[4] = np.nanstd(indices[4]-tmp_lcl)
     
-    # sbCAPE
-    foo = np.where(tmp_CAPE >= 0)[0]
-    if ((len(foo) > 1) & (indices[5] >= 0)):
-        sigma_indices[5] = np.nanstd(indices[5]-tmp_CAPE[foo])
-    else:
-        sigma_indices[5] = -9999.
+        # sbCAPE
+        foo = np.where(tmp_CAPE >= 0)[0]
+        if ((len(foo) > 1) & (indices[5] >= 0)):
+            sigma_indices[5] = np.nanstd(indices[5]-tmp_CAPE[foo])
+        else:
+            sigma_indices[5] = -9999.
     
-    # sbCIN
-    foo = np.where(tmp_CIN >= -9000)[0]
-    if ((len(foo) > 1) & (indices[6] >= -9000)):
-        sigma_indices[6] = np.nanstd(indices[6]-tmp_CIN[foo])
-    else:
-        sigma_indices[6] = -9999.
+        # sbCIN
+        foo = np.where(tmp_CIN >= -9000)[0]
+        if ((len(foo) > 1) & (indices[6] >= -9000)):
+            sigma_indices[6] = np.nanstd(indices[6]-tmp_CIN[foo])
+        else:
+            sigma_indices[6] = -9999.
     
-    # mlLCL
-    foo = np.where(tmp_mllcl > 0)[0]
-    if ((len(foo) > 1) & (indices[7] > 0)):
-        sigma_indices[7] = np.nanstd(indices[7]-tmp_mllcl[foo])
-    else:
-        sigma_indices[7] = -999.
+        # mlLCL
+        foo = np.where(tmp_mllcl > 0)[0]
+        if ((len(foo) > 1) & (indices[7] > 0)):
+            sigma_indices[7] = np.nanstd(indices[7]-tmp_mllcl[foo])
+        else:
+            sigma_indices[7] = -999.
         
-    # MLCAPE
-    foo = np.where(tmp_MLCAPE >= 0)[0]
-    if ((len(foo) > 1) & (indices[8] >= 0)):
-        sigma_indices[8] = np.nanstd(indices[8]-tmp_MLCAPE[foo])
-    else:
-        sigma_indices[8] = -9999.
+        # MLCAPE
+        foo = np.where(tmp_MLCAPE >= 0)[0]
+        if ((len(foo) > 1) & (indices[8] >= 0)):
+            sigma_indices[8] = np.nanstd(indices[8]-tmp_MLCAPE[foo])
+        else:
+            sigma_indices[8] = -9999.
     
-    # MLCIN
-    foo = np.where(tmp_CIN >= -9000)[0]
-    if ((len(foo) > 1) & (indices[9] >= -9000)):
-        sigma_indices[9] = np.nanstd(indices[9]-tmp_MLCIN[foo])
-    else:
-        sigma_indices[9] = -9999.
+        # MLCIN
+        foo = np.where(tmp_CIN >= -9000)[0]
+        if ((len(foo) > 1) & (indices[9] >= -9000)):
+            sigma_indices[9] = np.nanstd(indices[9]-tmp_MLCIN[foo])
+        else:
+            sigma_indices[9] = -9999.
     
     return {'indices':indices, 'sigma_indices':sigma_indices, 'name':dindex_name,
             'units':dindex_units}
