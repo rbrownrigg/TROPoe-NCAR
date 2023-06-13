@@ -171,7 +171,7 @@ def write_output(vip, ext_prof, mod_prof, rass_prof, ext_tseries, globatt, xret,
 
         base_time = fid.createVariable('base_time','i4')
         base_time.long_name = 'Epoch time'
-        base_time.units = 'Seconds since 1970/01/01 00:00:00 UTC'
+        base_time.units = 'Seconds since 1970/01/01 00:00:00 0:00 UTC'
 
         time_offset = fid.createVariable('time_offset', 'f8', ('time',))
         time_offset.long_name = 'Time offset from base_time'
@@ -179,11 +179,11 @@ def write_output(vip, ext_prof, mod_prof, rass_prof, ext_tseries, globatt, xret,
 
         time = fid.createVariable('time', 'f8', ('time',))
         time.long_name = 'Time'
-        time.units = 'Seconds from 00:00 UTC'
+        time.units = 'Seconds from 00:00 0:00 UTC'
 
         hour = fid.createVariable('hour', 'f8', ('time',))
         hour.long_name = 'Time'
-        hour.units = 'Hours from 00:00 UTC'
+        hour.units = 'Hours from 00:00 0:00 UTC'
 
         qc_flag = fid.createVariable('qc_flag', 'i2', ('time',))
         qc_flag.long_name = 'Manual QC flag'
