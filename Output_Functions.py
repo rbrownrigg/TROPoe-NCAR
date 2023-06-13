@@ -165,7 +165,8 @@ def write_output(vip, ext_prof, mod_prof, rass_prof, ext_tseries, globatt, xret,
         gdim = fid.createDimension('gas_dim', 3)
         ddim = fid.createDimension('dfs_dim', len(xret[0]['dfs']))
         if vip['output_file_keep_small'] == 0:
-            adim = fid.createDimension('arb', len(xret[0]['Xn']))
+            adim1 = fid.createDimension('arb_dim1', len(xret[0]['Xn']))
+            adim2 = fid.createDimension('arb_dim2', len(xret[0]['Xn']))
         idim = fid.createDimension('index_dim', len(dindex['name']))
 
         base_time = fid.createVariable('base_time','i4')
@@ -511,31 +512,39 @@ def write_output(vip, ext_prof, mod_prof, rass_prof, ext_tseries, globatt, xret,
         # If we are trying to keep the output file small, then do not include
         # these fields in the output file
         if vip['output_file_keep_small'] == 0:
-            arb = fid.createVariable('arb', 'i2', ('arb',))
-            arb.long_name = 'Arbitrary dimension'
-            arb.units = 'mixed units'
-            arb.comment = ('contains temeprature profile (1), water vapor profile (2)'
+            arb1 = fid.createVariable('arb1', 'i2', ('arb_dim1',))
+            arb1.long_name = 'Arbitrary dimension'
+            arb1.units = 'mixed units'
+            arb1.comment = ('contains temeprature profile (1), water vapor profile (2)'
                        + ' liquid cloud path (3), liquid water Reff (4), '
                        + 'ice cloud optical depth (5), ice cloud Reff (6), carbon dioxide (7)'
                        + ' methane (8), nitrous oxide (9)')
 
-            Xop = fid.createVariable('Xop', 'f4', ('time','arb',))
+            arb2 = fid.createVariable('arb2', 'i2', ('arb_dim2',))
+            arb2.long_name = 'Arbitrary dimension'
+            arb2.units = 'mixed units'
+            arb2.comment = ('contains temeprature profile (1), water vapor profile (2)'
+                       + ' liquid cloud path (3), liquid water Reff (4), '
+                       + 'ice cloud optical depth (5), ice cloud Reff (6), carbon dioxide (7)'
+                       + ' methane (8), nitrous oxide (9)')
+
+            Xop = fid.createVariable('Xop', 'f4', ('time','arb_dim1',))
             Xop.long_name = 'Optimal solution'
             Xop.units = 'mixed units -- see field arb above'
 
-            Sop = fid.createVariable('Sop', 'f4', ('time','arb','arb',))
+            Sop = fid.createVariable('Sop', 'f4', ('time','arb_dim1','arb_dim2',))
             Sop.long_name = 'Covariance matrix of the solution'
             Sop.units = 'mixed units -- see field arb above'
 
-            Akernal = fid.createVariable('Akernal', 'f4', ('time','arb','arb',))
+            Akernal = fid.createVariable('Akernal', 'f4', ('time','arb_dim1','arb_dim2',))
             Akernal.long_name = 'Averaging kernal'
             Akernal.units = 'mixed units -- see field arb above'
 
-            Xa = fid.createVariable('Xa', 'f4', ('arb',))
+            Xa = fid.createVariable('Xa', 'f4', ('arb_dim1',))
             Xa.long_name = 'Prior mean state'
             Xa.units = 'mixed units -- see field arb above'
 
-            Sa = fid.createVariable('Sa', 'f4', ('arb','arb',))
+            Sa = fid.createVariable('Sa', 'f4', ('arb_dim1','arb_dim2',))
             Sa.long_name = 'Prior covariance'
             Sa.units = 'mixed units -- see field arb above'
 
@@ -580,7 +589,8 @@ def write_output(vip, ext_prof, mod_prof, rass_prof, ext_tseries, globatt, xret,
         tmp = np.append(tmp, np.array([3,4,5,6,7,7,7,8,8,8,9,9,9]))
 
         if vip['output_file_keep_small'] == 0:
-            arb[:] = tmp
+            arb1[:] = tmp
+            arb2[:] = tmp
             Xa[:] = prior['Xa']
             Sa[:,:] = prior['Sa']
 
