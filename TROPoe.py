@@ -11,7 +11,7 @@
 #
 # ----------------------------------------------------------------------------
 
-__version__ = '0.6.64'
+__version__ = '0.6.65'
 
 import os
 import sys
@@ -774,10 +774,13 @@ for i in range(len(irs['secs'])):                        # { loop_i
     if(itype == 'IRS'):
         if(vip['irs_ignore_status_missingDataFlag'] != 1):
             if(irs['missingDataFlag'][i] != 0):
-                adderr = '(missingDataFlag is set)'
+                if(irs['missingDataFlag'][i] == 10):
+                    adderr = adderr+'(IRS radiance at 675 cm-1 is outside QC range -- check VIP file)'
+                else:
+                    adderr = adderr+'(missingDataFlag is set)'
         if(vip['irs_ignore_status_hatch'] != 1):
             if(irs['hatchopen'][i] != 1):
-                adderr = '(hatch not open)'
+                adderr = adderr+'(hatch not open)'
 
         if(adderr != ''):
             print(f"  Sample {i:2d} at {irs['hour'][i]:.4f} UTC -- no valid {itype:s} data found ",adderr)
