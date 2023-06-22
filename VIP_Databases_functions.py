@@ -46,7 +46,7 @@ full_vip = ({
     'success': {'value': 0, 'comment': 'Interal success flag. Not for outside use', 'default': False},
     'tres': {'value': 0, 'comment': 'Temporal resolution [min], 0 implies maximum (native) temporal resolution', 'default': True},
     'avg_instant': {'value': 1, 'comment': 'A flag to specify -1:avg with no sqrt(N), 0:avg with sqrt(N), or 1:instantaneous', 'default': True},
-    'tag': {'value': 'tropoe', 'comment': 'String for temporary files / directories\n', 'default': True},
+    'tag': {'value': 'tropoe', 'comment': 'String for temporary files / directories\n', 'default': False},
 
     'zgrid': {'value': '0.000, 0.010, 0.021, 0.033, 0.046, 0.061, 0.077, 0.095, 0.114, 0.136, 0.159, 0.185, 0.214, 0.245, 0.280, 0.318, 0.359, 0.405, 0.456, 0.512, 0.573, 0.640, 0.714, 0.795, 0.885, 0.983, 1.092, 1.211, 1.342, 1.486, 1.645, 1.819, 2.011, 2.223, 2.455, 2.710, 2.991, 3.300, 3.640, 4.014, 4.426, 4.879, 5.376, 5.924, 6.526, 7.189, 7.918, 8.720, 9.602,10.572,11.639,12.813,14.104,15.525,17.087','comment': 'Comma delimited list of heights for the z-grid to use in the retrieval [km]\n', 'default': True},
 
