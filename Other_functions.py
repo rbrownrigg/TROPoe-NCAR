@@ -2264,7 +2264,7 @@ def mixed_layer(t,p,wv, depth = 100):
 # deviation.
 ###############################################################################
 
-def calc_derived_indices(xret,vip, derived, num_mc=20):
+def calc_derived_indices(xret, vip, derived, verbose, num_mc=20):
     
     # These are the derived indices that I will compute later one. I need to
     # define them here in order to build the netcdf file correctly
@@ -2310,7 +2310,7 @@ def calc_derived_indices(xret,vip, derived, num_mc=20):
     try:
         indices[5], indices[6] = cape_cin(tt, pp, plcl)
     except:
-        print('Something went wrong in CAPE and CIN calculation.')
+        print('Something went wrong in SBCAPE and CIN calculation.')
         indices[5] = -9999.
         indices[6] = -9999.
     
@@ -2365,7 +2365,8 @@ def calc_derived_indices(xret,vip, derived, num_mc=20):
             try:
                 tmp_CAPE[j], tmp_CIN[j] = cape_cin(tprofs[:,j], pp, tmp_plcl)
             except:
-                print('Something went wrong in CAPE and CIN calculation.')
+                if verbose > 1:
+                    print('Something went wrong in SBCAPE and CIN error calculation.')
                 tmp_CAPE[j] = -9999.
                 tmp_CIN[j] = -9999.
         
@@ -2374,7 +2375,8 @@ def calc_derived_indices(xret,vip, derived, num_mc=20):
                 tmp_mllcl[j], tmp_pmllcl = compute_lcl(tmp_mltt[0], tmp_mlww[0], tmp_mlpp[0],pp,zz)
                 tmp_MLCAPE[j], tmp_MLCIN[j] = cape_cin(tmp_mltt, tmp_mlpp, tmp_pmllcl)
             except:
-                print('Something went wrong in MLCAPE and CIN calculation.')
+                if verbose > 1:
+                    print('Something went wrong in MLCAPE and CIN error calculation.')
                 tmp_CAPE[j] = -9999.
                 tmp_CIN[j] = -9999.
         
@@ -2405,7 +2407,11 @@ def calc_derived_indices(xret,vip, derived, num_mc=20):
             sigma_indices[3] = -999.
     
         # LCL
-        sigma_indices[4] = np.nanstd(indices[4]-tmp_lcl)
+        foo = np.where(tmp_lcl > 0)[0]
+        if ((len(foo) > 1) & (indices[4] > 0)):
+            sigma_indices[4] = np.nanstd(indices[4]-tmp_lcl[foo])
+        else:
+            sigma_indices[4] = -999.
     
         # sbCAPE
         foo = np.where(tmp_CAPE >= 0)[0]

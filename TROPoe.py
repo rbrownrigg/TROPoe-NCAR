@@ -2225,7 +2225,7 @@ for i in range(len(irs['secs'])):                        # { loop_i
     derived['dewpt'] = Calcs_Conversions.rh2dpt(xret[-1]['Xn'][0:int(nX/2)], derived['rh']/100.)
     
     
-    dindices = Other_functions.calc_derived_indices(xret[-1],vip,derived)
+    dindices = Other_functions.calc_derived_indices(xret[-1],vip,derived,verbose)
     # Write the data into the netCDF file
 
     success, noutfilename = Output_Functions.write_output(vip, ext_prof, mod_prof, rass_prof, ext_tseries,
