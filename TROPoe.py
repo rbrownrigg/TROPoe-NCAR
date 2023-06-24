@@ -642,16 +642,19 @@ if vip['recenter_prior'] > 0:
         elif vip['recenter_prior'] == 3:
             changeTmethod = 2
 
-    # Recenter the prior, using the inputs determined above
-    successflag, newXa, newSa, comments = Data_reads.recenter_prior(z, Pa, Xa, Sa, 
+    # Quick check to make sure the recenter value is ok before trying to recenter the prior
+    if recenter_input_value > 0:
+
+        # Recenter the prior, using the inputs determined above
+        successflag, newXa, newSa, comments = Data_reads.recenter_prior(z, Pa, Xa, Sa, 
                     recenter_input_value, sfc_or_pwv=1, changeTmethod=changeTmethod)
 
-    # Now replace the variables, if successful
-    #   and update the global attributes to note that prior recentering was performed
-    if successflag == 1:
-        Xa = newXa
-        Sa = newSa
-        globatt.update(comments)
+        # Now replace the variables, if successful
+        #   and update the global attributes to note that prior recentering was performed
+        if successflag == 1:
+            Xa = newXa
+            Sa = newSa
+            globatt.update(comments)
 
 # Splice these trace gases and clouds into the Xa and Sa matrices.
 # I am assuming no correlations between the TGs and clouds and the T/Q profiles
