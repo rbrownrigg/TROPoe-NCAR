@@ -1689,10 +1689,16 @@ def compute_vres_from_akern(akern, z, do_cdfs = False, do_area = False):
     zres.append((z[i]-z[i-1])*2)
     zres = np.array(zres)
     
-    # Now scale the diagonal of the averaging kernal by this
-    # vertical spacing
-    tval = akern[0,0]
-    qval = akern[k,k]
+    # Now scale the diagonal of the averaging kernal by this vertical spacing
+    mval = 0.0001	# This is the minimum value for the DFS for the first level
+    if akern[0,0] > mval:
+        tval = akern[0,0]
+    else:
+        tval = mval
+    if akern[k,k] > mval:
+        qval = akern[k,k]
+    else:
+        qval = mval
     for i in range(k):
         # Watch for zeros along the averaging kernal diagonal. If that
         # happens, then use the last good value for the vres calculation
