@@ -1054,7 +1054,9 @@ def compute_jacobian_microwave_3method(Xn, p, z, freq, cbh, vip, workdir,
         command = 'sleep 1'
 
     if fixwv != 1:
-        h2opert = 0.99
+	# Set the size of the perturbation as a crude function of the WVMR at the surface
+        h2opert = np.interp(w[0],[0.01,0.1,2],[0.75,0.90,0.99])
+
         w0 = w*h2opert
         u = Calcs_Conversions.w2rh(w0, p, t, 0) * 100
         Other_functions.write_arm_sonde_file((z+sfcz)*1000, p, t, u, workdir+'/'+monortm_tfile, silent = True)
@@ -1700,7 +1702,9 @@ def compute_jacobian_microwavescan_3method(Xn, p, z, mwrscan, cbh, vip, workdir,
             command = 'sleep 1'
 
         if fixwv != 1:
-            h2opert = 0.99
+	    # Set the size of the perturbation as a crude function of the WVMR at the surface
+            h2opert = np.interp(w[0],[0.01,0.1,2],[0.75,0.90,0.99])
+
             w0 = w*h2opert
             u = Calcs_Conversions.w2rh(w0, p, t, 0) * 100
             Other_functions.write_arm_sonde_file((z+sfcz)*1000, p, t, u, workdir +'/' + monortm_tfile, silent = True)
