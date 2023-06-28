@@ -787,6 +787,7 @@ for i in range(len(irs['secs'])):                        # { loop_i
 
         if(adderr != ''):
             print(f"  Sample {i:2d} at {irs['hour'][i]:.4f} UTC -- no valid {itype:s} data found ",adderr)
+            print(f"                     missingDataFlag is {irs['missingDataFlag'][i]:.1f} and hatchOpen is {irs['hatchopen'][i]:.1f}")
             continue
 
     print(f"  Sample {i:2d} at {irs['hour'][i]:.4f} UTC is being processed (cbh is {irs['cbh'][i]:.3f})")
