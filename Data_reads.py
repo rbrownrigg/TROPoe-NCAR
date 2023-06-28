@@ -462,7 +462,7 @@ def read_irs_ch(path,date,irs_type,fv,fa,irs_spec_cal_factor,
         # Check to see if all of the data is missing and if using AERI data then
         # set to default value. If not abort. This can happen in ARM data
         fah = np.where(sceneMirrorAngle > -100)[0]
-        if (len(fah) == 0) and (irs_type < 5):
+        if((len(fah) == 0) & (irs_type < 5)):
             sceneMirrorAngle[:] = zenith_scene_mirror_angle
             foo = np.arange(len(sceneMirrorAngle))
         else:
@@ -783,6 +783,11 @@ def read_all_data(date, retz, tres, dostop, verbose, avg_instant, ch1_path,
                 tb = Calcs_Conversions.invplanck(677.5,tmp)
                 if ((tb < irs_min_675_tb) | (tb > irs_max_675_tb)):
                     irsch1['missingDataFlag'][i] = 10
+            isclose = np.isclose(irsch1['missingDataFlag'][:],10)
+            foo = np.where(isclose == True)[0]
+            if(len(foo) == len(irsch1['secs'])):
+                print('Error: all of the IRS data are outside the 675 cm-1 BT range - aborting')
+                fail = 1
 
         if ((fail == 1) & (dostop != 0)):
             wait = input('Stopping inside routine for debugging. Press enter to continue')
@@ -2054,8 +2059,9 @@ def read_vceil(path, date, vceil_type, ret_secs, verbose):
 def grid_irs(ch1, irssum, avg_instant, hatchOpenSwitch, missingDataFlagSwitch,
               secs, tavg, irs_noise_inflation, verbose):
 
-    if verbose == 3:
+    if verbose >= 3:
         print('    Temporally gridding the IRS data')
+    print(f'  In grid_irs: hatchOpenSwitch is {hatchOpenSwitch:d} and missingDataFlagSwitch is {missingDataFlagSwitch:d}')
 
     err = {'success':0}
 
@@ -2083,7 +2089,6 @@ def grid_irs(ch1, irssum, avg_instant, hatchOpenSwitch, missingDataFlagSwitch,
 
                 if len(foo) > 1:
                     foo = np.array([foo[0]])
-                    nfoo = 1
         elif ((hatchOpenSwitch == 0) & (missingDataFlagSwitch == 0)):
             if ((i == 0) & (verbose >= 2)):
                 print('      Averaging all IRS data regardless of hatchOpen or missingDataFlag')
@@ -2096,7 +2101,6 @@ def grid_irs(ch1, irssum, avg_instant, hatchOpenSwitch, missingDataFlagSwitch,
 
                 if len(foo) > 1:
                     foo = np.array([foo[0]])
-                    nfoo = 1
         elif ((hatchOpenSwitch == 1) & (missingDataFlagSwitch == 1)):
             if ((i == 0) & (verbose >= 2)):
                 print('      Only averaging IRS data where hatchOpen is 1 and missingDataFlag is 0')
@@ -2106,11 +2110,10 @@ def grid_irs(ch1, irssum, avg_instant, hatchOpenSwitch, missingDataFlagSwitch,
             else:
                dell = np.abs(secs[i] - ch1['secs'])
                foo = np.where((secs[i]-tavg*60./2. <= ch1['secs']) & (ch1['secs'] < secs[i]+tavg*60./2.) &
-                               (ch1['missingDataFlag'] == 0) & (dell == np.nanmin(dell)) & ((ch1['hatchopen'] >= 0.8) & (ch1['hatchopen'] < 1.2)))[0]
+                               (np.isclose(ch1['missingDataFlag'],0)) & (dell == np.nanmin(dell)) & ((ch1['hatchopen'] >= 0.8) & (ch1['hatchopen'] < 1.2)))[0]
 
                if len(foo) > 1:
                     foo = np.array([foo[0]])
-                    nfoo = 1
 
         elif ((hatchOpenSwitch == 0) & (missingDataFlagSwitch == 1)):
             if ((i == 0) & (verbose >= 2)):
@@ -2126,7 +2129,6 @@ def grid_irs(ch1, irssum, avg_instant, hatchOpenSwitch, missingDataFlagSwitch,
 
                if len(foo) > 1:
                     foo = np.array([foo[0]])
-                    nfoo = 1
 
         else:
             print('Error: This piece of code should never be executed -- logic trap in grid_irs()')
