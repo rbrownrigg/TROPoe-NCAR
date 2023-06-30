@@ -1290,10 +1290,10 @@ for i in range(len(irs['secs'])):                        # { loop_i
                         # Load the forward calculation stuff from the precompute prior data
                     if(verbose >= 1):
                         print('    Preloading forward calculation and jacobian from prior structure')
-                    FXn   = precompute_prior_jacobian['FX0']
-                    Kij   = precompute_prior_jacobian['Kij0']
-                    flag  = precompute_prior_jacobian['flag0']
-                    wnumc = precompute_prior_jacobian['wnumc0']
+                    FXn   = np.copy(precompute_prior_jacobian['FX0'])
+                    Kij   = np.copy(precompute_prior_jacobian['Kij0'])
+                    flag  = np.copy(precompute_prior_jacobian['flag0'])
+                    wnumc = np.copy(precompute_prior_jacobian['wnumc0'])
                 else:
                         # Otherwise, run the forward model and compute the Jacobian
                     flag, Kij, FXn, wnumc, totaltime  = \
