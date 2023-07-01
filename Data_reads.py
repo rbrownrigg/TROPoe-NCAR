@@ -785,9 +785,11 @@ def read_all_data(date, retz, tres, dostop, verbose, avg_instant, ch1_path,
                     irsch1['missingDataFlag'][i] = 10
             isclose = np.isclose(irsch1['missingDataFlag'][:],10)
             foo = np.where(isclose == True)[0]
-            if(len(foo) == len(irsch1['secs'])):
-                print('Error: all of the IRS data are outside the 675 cm-1 BT range - aborting')
+            if(len(foo) >= 0.9*len(irsch1['secs'])):
+                print('Error: more than 90% of the IRS data are outside the 675 cm-1 BT range - aborting')
                 fail = 1
+            if(len(foo) > 0.5*len(irsch1['secs'])):
+                print('WARNING: more than 50% of the IRS data are outside the 675 cm-1 BT range')
 
         if ((fail == 1) & (dostop != 0)):
             wait = input('Stopping inside routine for debugging. Press enter to continue')
@@ -1069,7 +1071,8 @@ def read_mwr(path, rootname, date, mwr_type, step, mwr_freq_field, mwr_elev_fiel
             if len(foo) > 0:
                 elevx = fid.variables[mwr_elev_field][:]
             else:
-                print('    Warning: Unable to find the field ' + mwr_elev_field + ' in the MWR input file')
+                if((mwr_elev_field != 'none')): 
+                    print('    Warning: Unable to find the elevation field ' + mwr_elev_field + ' in the MWR input file')
                 elevx = np.ones(to.shape)*90.0
 
             # Now read in the Tb data, if desired
@@ -1729,6 +1732,12 @@ def read_irs_sum(path,date,irs_type,smooth_noise,verbose):
     noise1 = noise1.T
     noise2 = noise2.T
 
+    # Only keep the noise from the MCT detector below 1800 cm-1
+    foo    = np.where(wnum1 < 1800)[0]
+    wnum1  = wnum1[foo]
+    noise1 = noise1[foo,:]
+
+    # Now append the noise from the InSB detector above that limit
     foo = np.where(wnum2 >= np.nanmax(wnum1)+0.1)[0]
     wnum = np.append(wnum1,wnum2[foo])
     noise = np.append(noise1,noise2[foo,:], axis = 0)
@@ -2061,7 +2070,8 @@ def grid_irs(ch1, irssum, avg_instant, hatchOpenSwitch, missingDataFlagSwitch,
 
     if verbose >= 3:
         print('    Temporally gridding the IRS data')
-    print(f'  In grid_irs: hatchOpenSwitch is {hatchOpenSwitch:d} and missingDataFlagSwitch is {missingDataFlagSwitch:d}')
+    if verbose >= 2:
+        print(f'  In grid_irs: hatchOpenSwitch is {hatchOpenSwitch:d} and missingDataFlagSwitch is {missingDataFlagSwitch:d}')
 
     err = {'success':0}
 
