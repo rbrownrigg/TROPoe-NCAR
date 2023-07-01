@@ -994,7 +994,7 @@ for i in range(len(irs['secs'])):                        # { loop_i
 
     # Now, inflate the noise in the IRS spectral band, if it is set and there is a valid surface WVMR measurement
     if((irs_band_noise_inflation['onoff'] > 0) & (vip['irs_type'] > 0)):
-        if verbose >= 1:
+        if verbose >= 2:
             print('    Inflating the noise in the IRS spectral band between ',
                       irs_band_noise_inflation['wnum1'], ' and ',irs_band_noise_inflation['wnum2'], ' cm-1')
         feh6 = np.where(flagY == 6)[0]
