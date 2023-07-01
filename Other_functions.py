@@ -1328,7 +1328,8 @@ def convolve_to_aeri(wnum, radiance):
     else:
         # If this happens, warn the user and still use sfac=16, but
         # this will not be an optimal interpolation
-        print('Warning in convolve_to_aeri: Unanticipated problem in computing new_x')
+        if(aeri_dv / new_delx) < 8:
+            print('Warning in convolve_to_aeri: Unanticipated problem in computing new_x')
         sfac = 16.
     
     new_aeri_dv = aeri_dv / sfac
