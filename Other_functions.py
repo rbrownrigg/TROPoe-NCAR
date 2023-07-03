@@ -588,9 +588,11 @@ def find_cloud(irsch1, vceil, window_in, window_out, default_cbh):
                 vflag[i] = 3
     
     return ({'success':1, 'secs':irsch1['secs'], 'ymd':irsch1['ymd'], 'hour':irsch1['hour'],
-            'wnum':irsch1['wnum'], 'rad':irsch1['rad'], 'cbh':vcbh, 'cbhflag':vflag,
-            'atmos_pres':irsch1['atmos_pres'], 'fv':irsch1['fv'], 'fa':irsch1['fa'],
-            'missingDataFlag':irsch1['missingDataFlag'], 'hatchopen':irsch1['hatchopen']})
+            'yy':irsch1['yy'], 'mm':irsch1['mm'], 'dd':irsch1['dd'], 'cbh':vcbh, 'cbhflag':vflag,
+            'hatchopen':irsch1['hatchopen'], 'avg_instant':irsch1['avg_instant'],
+            'wnum':irsch1['wnum'], 'radmn':irsch1['radmn'], 'noise':irsch1['noise'], 'atmos_pres':irsch1['atmos_pres'],
+            'tsfc':irsch1['tsfc'], 'fv':irsch1['fv'], 'fa':irsch1['fa'], 'missingDataFlag':irsch1['missingDataFlag'],
+            'lat':irsch1['lat'],'lon':irsch1['lon'],'alt':irsch1['alt']})
 
 ################################################################################
 # This routine returns the emissivity spectrum for the AERI blackbodies,

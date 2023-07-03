@@ -862,24 +862,25 @@ def read_all_data(date, retz, tres, dostop, verbose, avg_instant, ch1_path,
     elif fail == 1:
         return fail, -999, -999, -999
 
-    # Now apply a temporal screen to see if there are cloudy samples in the
-    # IRS data by looking at the standard deviation of the 11 um data. If there
-    # are cloudy samples, use the lidar to get an estimate of the cloud
-    # base height for the subsequent retrieval
-
-    cirsch1 = Other_functions.find_cloud(irsch1, vceil, vceil_window_in, vceil_window_out, vceil_default_cbh)
 
     # Now put the IRS and MWR data on the same temporal grid.  Realize
     # that the RL sample time is for the start of the period, whereas the
     # IRS sample time is the middle of its period and the MWR's is the end.
 
-    irs = grid_irs(cirsch1, irssum, avg_instant, hatchOpenSwitch, missingDataFlagSwitch,
+    irs = grid_irs(irsch1, irssum, avg_instant, hatchOpenSwitch, missingDataFlagSwitch,
                     ret_secs, ret_tavg, irs_noise_inflation, verbose)
 
     if irs['success'] == 0:
         fail = 1
         return fail, -999, -999, -999
 
+    # Now apply a temporal screen to see if there are cloudy samples in the
+    # IRS data by looking at the standard deviation of the 11 um data. If there
+    # are cloudy samples, use the lidar to get an estimate of the cloud
+    # base height for the subsequent retrieval
+
+    cirs = Other_functions.find_cloud(irs, vceil, vceil_window_in, vceil_window_out, vceil_default_cbh)
+    
     mwr = grid_mwr(mwr_data, avg_instant, ret_secs, ret_tavg, vip['mwr_time_delta'], verbose)
 
     if mwr['success'] == 0:
@@ -896,7 +897,7 @@ def read_all_data(date, retz, tres, dostop, verbose, avg_instant, ch1_path,
     if dostop:
         wait = input('Stopping inside to debug this bad boy. Press enter to continue')
 
-    return fail, irs, mwr, mwrscan
+    return fail, cirs, mwr, mwrscan
 
 ################################################################################
 # This function is the one that actually reads in the MWR data.
@@ -2061,8 +2062,6 @@ def grid_irs(ch1, irssum, avg_instant, hatchOpenSwitch, missingDataFlagSwitch,
 
     rrad = np.zeros((len(ch1['wnum']),len(secs)))
     nrad = np.zeros((len(irssum['wnum']),len(secs)))
-    cbh = np.zeros(len(secs))
-    cbhflag = np.zeros(len(secs))
     hatflag = np.zeros(len(secs))
     mssflag = np.zeros(len(secs))
     atmos_pres = np.zeros(len(secs))
@@ -2134,15 +2133,12 @@ def grid_irs(ch1, irssum, avg_instant, hatchOpenSwitch, missingDataFlagSwitch,
 
         if len(foo) == 0:
             rrad[:,i] = -9999.
-            cbhflag[i] = -9999
             hatflag[i] = -9999
             mssflag[i] = 1    #The sample is missing
             atmos_pres[i] = -9999.
         else:
             if len(foo) == 1:
                 rrad[:,i] = np.squeeze(ch1['rad'][:,foo])
-                cbh[i] = ch1['cbh'][foo]
-                cbhflag[i] = ch1['cbhflag'][foo]
                 hatflag[i] = ch1['hatchopen'][foo]
                 mssflag[i] = ch1['missingDataFlag'][foo]
                 atmos_pres[i] = ch1['atmos_pres'][foo]
@@ -2150,29 +2146,6 @@ def grid_irs(ch1, irssum, avg_instant, hatchOpenSwitch, missingDataFlagSwitch,
                 rrad[:,i] = np.nansum(ch1['rad'][:,foo], axis = 1)/np.float(len(foo))
                 mssflag[i] = np.nanmax(ch1['missingDataFlag'][foo])
 
-                # Determine the appropriate value for the cbh.  If one of the
-                # "inners" are set, then use the median of these values.  Otherwise,
-                # use the median of the "outers".  Last resort is to use the "default"
-
-                bar = np.where(ch1['cbhflag'][foo] == 1)[0]    # Look for "inners"
-                if len(bar) > 0:
-                    if len(bar) == 1:
-                        cbh[i] = ch1['cbh'][foo[bar]]
-                    else:
-                        cbh[i] = np.nanmedian(ch1['cbh'][foo[bar]])
-                    cbhflag[i] = 1
-
-                else:
-                    bar = np.where(ch1['cbhflag'][foo] == 2)[0] # Look for "outers"
-                    if len(bar) > 0:
-                        if len(bar) == 1:
-                            cbh[i] = ch1['cbh'][foo[bar]]
-                        else:
-                            cbh[i] = np.nanmedian(ch1['cbh'][foo[bar]])
-                        cbhflag[i] = 2
-                    else:
-                        cbh[i] = np.nanmedian(ch1['cbh'][foo])
-                        cbhflag[i] = 3
 
                 # Determine the appropriate value for the hatch, given there
                 # are several IRS samples in this window.  If the hatch is open
@@ -2247,7 +2220,7 @@ def grid_irs(ch1, irssum, avg_instant, hatchOpenSwitch, missingDataFlagSwitch,
     hour = np.array([((datetime.utcfromtimestamp(x)-datetime(yy[0],mm[0],dd[0])).total_seconds())/3600. for x in secs])
 
     return ({'success':1, 'secs':secs, 'ymd':ymd, 'hour':hour, 'yy':yy, 'mm':mm, 'dd':dd,
-            'cbh':cbh, 'cbhflag':cbhflag, 'hatchopen':hatflag, 'avg_instant':avg_instant,
+            'hatchopen':hatflag, 'avg_instant':avg_instant,
             'wnum':wnum, 'radmn':rrad, 'noise':noise, 'atmos_pres':atmos_pres,
             'tsfc':Tsfc, 'fv':ch1['fv'], 'fa':ch1['fa'], 'missingDataFlag':mssflag,
             'lat':irssum['lat'],'lon':irssum['lon'],'alt':irssum['alt']})
