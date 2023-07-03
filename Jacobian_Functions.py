@@ -18,6 +18,7 @@ from datetime import datetime
 from subprocess import Popen, PIPE
 
 import Other_functions
+import Output_Functions
 import Calcs_Conversions
 import LBLRTM_Functions
 import sys
@@ -136,6 +137,8 @@ def compute_jacobian_irs_interpol(X, p, zz, lblhome, lbldir, lblroot, lbl_std_at
 
     if fixwv != 1:
         h2opert = 0.99
+	# Set the size of the perturbation as a crude function of the WVMR at the surface
+#        h2opert = np.interp(w[0],[0.01,0.1,2],[0.80,0.90,0.99])
 
         LBLRTM_Functions.rundecker(3, lbl_std_atmos, zz+sfcz, p, t, w*h2opert,
              co2_profile=co2prof, ch4_profile=ch4prof, n2o_profile=n2oprof,
@@ -225,8 +228,10 @@ def compute_jacobian_irs_interpol(X, p, zz, lblhome, lbldir, lblroot, lbl_std_at
     files1 = files1 + sorted(glob.glob(lbldir+'.1/OD*'))
     if len(files1) != len(mlayerz)-1:
         print('This should not happen (0) in compute_jacobian_interpol')
+        print(f'DDT -- the number of lbloutput files is {len(files1):d} and the number of layers is {len(mlayerz)-1:d}')
         if verbose >= 3:
             print('The working LBLRTM directory is ' +lbldir+ '.1')
+            print('    Here is LBLRTM command issued: '+command)
         if debug:
             wait = input('Stopping inside compute_jacobian_interpol to debug. Press enter to continue')
         else:

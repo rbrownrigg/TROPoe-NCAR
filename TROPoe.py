@@ -787,6 +787,7 @@ for i in range(len(irs['secs'])):                        # { loop_i
 
         if(adderr != ''):
             print(f"  Sample {i:2d} at {irs['hour'][i]:.4f} UTC -- no valid {itype:s} data found ",adderr)
+            print(f"                     missingDataFlag is {irs['missingDataFlag'][i]:.1f} and hatchOpen is {irs['hatchopen'][i]:.1f}")
             continue
 
     print(f"  Sample {i:2d} at {irs['hour'][i]:.4f} UTC is being processed (cbh is {irs['cbh'][i]:.3f})")
@@ -993,7 +994,7 @@ for i in range(len(irs['secs'])):                        # { loop_i
 
     # Now, inflate the noise in the IRS spectral band, if it is set and there is a valid surface WVMR measurement
     if((irs_band_noise_inflation['onoff'] > 0) & (vip['irs_type'] > 0)):
-        if verbose >= 1:
+        if verbose >= 2:
             print('    Inflating the noise in the IRS spectral band between ',
                       irs_band_noise_inflation['wnum1'], ' and ',irs_band_noise_inflation['wnum2'], ' cm-1')
         feh6 = np.where(flagY == 6)[0]
@@ -1289,10 +1290,10 @@ for i in range(len(irs['secs'])):                        # { loop_i
                         # Load the forward calculation stuff from the precompute prior data
                     if(verbose >= 1):
                         print('    Preloading forward calculation and jacobian from prior structure')
-                    FXn   = precompute_prior_jacobian['FX0']
-                    Kij   = precompute_prior_jacobian['Kij0']
-                    flag  = precompute_prior_jacobian['flag0']
-                    wnumc = precompute_prior_jacobian['wnumc0']
+                    FXn   = np.copy(precompute_prior_jacobian['FX0'])
+                    Kij   = np.copy(precompute_prior_jacobian['Kij0'])
+                    flag  = np.copy(precompute_prior_jacobian['flag0'])
+                    wnumc = np.copy(precompute_prior_jacobian['wnumc0'])
                 else:
                         # Otherwise, run the forward model and compute the Jacobian
                     flag, Kij, FXn, wnumc, totaltime  = \
