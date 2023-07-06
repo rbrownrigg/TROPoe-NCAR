@@ -128,7 +128,7 @@ def write_variable(variable, filename):
 # This function writes out netCDF files with the output
 ################################################################################
 
-def write_output(vip, ext_prof, mod_prof, rass_prof, ext_tseries, globatt, xret, prior,
+def write_output(vip, ext_prof, mod_prof, ext_tseries, globatt, xret, prior,
                 fsample, derived, dindex, version, exectime, modeflag, nfilename, location,
                 cbh_string, shour, verbose):
 
@@ -478,11 +478,6 @@ def write_output(vip, ext_prof, mod_prof, rass_prof, ext_tseries, globatt, xret,
         if len(foo) > 0:
             obs_flag.value_10 = 'Brightness temperature in K from a scanning microwave radiometer'
             obs_flag.value_10_comment1 = 'Dimension is coded to be (frequency[GHz]*100)+(elevation_angle[deg]/1000)'
-            marker[foo] = -1
-
-        foo = np.where(xret[0]['flagY'] == 11)[0]
-        if len(foo) > 0:
-            obs_flag.value_11 = 'Virtual temperature in ' + rass_prof['tunit'] + ' from ' + rass_prof['ttype']
             marker[foo] = -1
 
         # If there were any values for marker that were not treated above,

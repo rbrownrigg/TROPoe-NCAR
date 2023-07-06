@@ -135,7 +135,7 @@ full_vip = ({
     'ext_wv_add_rel_error': {'value': 0.0, 'comment': 'When using the RLID, I may want to include a relative error contribution to the uncertainty to account for calibration. This is a correlated error component, and thus effects the off-diagonal elements of the observation covariance matrix. Units are [%]', 'default': False},
     'ext_wv_time_delta': {'value': 1.0, 'comment': 'Maximum amount of time from endpoints of external WV dataset to extrapolate [hours]\n', 'default': False},
 
-    'ext_temp_prof_type': {'value': 0, 'comment': 'External temperature profile source: 0-none; 1-sonde; 2-ARM Raman lidar (rlproftemp); 4-Model sounding', 'default': False},
+    'ext_temp_prof_type': {'value': 0, 'comment': 'External temperature profile source: 0-none; 1-sonde; 2-ARM Raman lidar (rlproftemp); 4-Model sounding, 5-RASS', 'default': False},
     'ext_temp_prof_path': {'value': 'None', 'comment': 'Path to external profile of temp data', 'default': False},
     'ext_temp_prof_minht': {'value': 0.0, 'comment': 'Minimum height to use the data from the external temp profiler [km AGL]', 'default': False},
     'ext_temp_prof_maxht': {'value': 10.0, 'comment': 'Maximum height to use the data from the external temp profiler [km AGL]', 'default': False},
@@ -167,14 +167,6 @@ full_vip = ({
     'co2_sfc_path': {'value': 'None', 'comment': 'Path to the external surface CO2 data', 'default': False},
     'co2_sfc_relative_height': {'value': 0, 'comment': 'Relative height of the CO2 surface measurement to the IRS zenith port [m]; note if in-situ obs is below IRS port then the value should be negative', 'default': False},
     'co2_sfc_time_delta': {'value': 1.5, 'comment': 'Maximum amount of time from endpoints of external CO2 in-situ dataset to extrapolate [hours] \n', 'default': False},
-
-    'rass_prof_type': {'value': 0, 'comment': '0 - none, 5 - RASS Tv field has units C (no other values work)', 'default': False},
-    'rass_prof_path': {'value': 'None', 'comment': 'Path to the RASS data', 'default': False},
-    'rass_prof_minht': {'value': 0.0, 'comment': 'Minimum height to use the data from the RASS [km AGL]', 'default': False},
-    'rass_prof_maxht': {'value': 5.0, 'comment': 'Maximum height to use the data from the RASS [km AGL]', 'default': False},
-    'rass_noise_adder_val': {'value': [0.0, 0.0, 0.0], 'comment': '3-element comma delimited list of additive values to apply the noise profile of the RASS temperature profile (must be >= 0).', 'default': False},
-    'rass_noise_adder_hts': {'value': [0.0, 3, 20], 'comment': '3-element comma delimited list with the corresponding heights for the additive value [km AGL]', 'default': False},
-    'rass_time_delta': {'value': 2.5, 'comment': 'The maximum amount of time [hours] that the RASS sample must be to the sampling time to be used. \n', 'default': False},
 
     'cbh_type': {'value': 0, 'comment': '0 - output options and stop, 1 - VCEIL, 2 - Gregs ASOS CBH file, 3 - CLAMPS DLfp data, 4 - ARM dlprofwstats data', 'default': True},
     'cbh_path': {'value': 'None', 'comment': 'Path to the CBH data', 'default': True},
@@ -358,8 +350,6 @@ def read_vip_file(filename,globatt,verbose,debug,dostop):
                           (key == 'mod_wv_noise_mult_hts') |
                           (key == 'mod_temp_noise_adder_val') |
                           (key == 'mod_temp_noise_adder_hts') |
-                          (key == 'rass_noise_adder_val') |
-                          (key == 'rass_noise_adder_hts') |
                           (key == 'prior_co2_mn') |
                           (key == 'prior_co2_sd') |
                           (key == 'prior_ch4_mn') |
