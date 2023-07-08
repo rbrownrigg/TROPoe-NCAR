@@ -2273,8 +2273,8 @@ def calc_derived_indices(xret, vip, derived, verbose, num_mc=20):
     # define them here in order to build the netcdf file correctly
     dindex_name = ['pwv', 'pblh', 'sbih', 'sbim', 'sbLCL', 'sbCAPE', 'sbCIN', 
                    'mlLCL','mlCAPE', 'mlCIN']
-    dindex_units = ['cm', 'km AGL', 'km AGL', 'C', 'km AGL', 'J/kg', 'J/kg',
-                    'km AGL', 'J/kg', 'J/kg']
+    dindex_units = ['cm', 'km', 'km', 'C', 'km', 'J/kg', 'J/kg',
+                    'km', 'J/kg', 'J/kg']
     
     indices = np.zeros(len(dindex_name))
     sigma_indices = np.zeros(len(dindex_name))

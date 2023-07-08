@@ -167,11 +167,10 @@ def write_output(vip, ext_prof, mod_prof, ext_tseries, globatt, xret, prior,
         if vip['output_file_keep_small'] == 0:
             adim1 = fid.createDimension('arb_dim1', len(xret[0]['Xn']))
             adim2 = fid.createDimension('arb_dim2', len(xret[0]['Xn']))
-        idim = fid.createDimension('index_dim', len(dindex['name']))
 
         base_time = fid.createVariable('base_time','i4')
         base_time.long_name = 'Epoch time'
-        base_time.units = 'Seconds since 1970/01/01 00:00:00 0:00 UTC'
+        base_time.units = 'seconds since 1970-1-1 00:00:00 0:00'
 
         time_offset = fid.createVariable('time_offset', 'f8', ('time',))
         time_offset.long_name = 'Time offset from base_time'
@@ -179,15 +178,15 @@ def write_output(vip, ext_prof, mod_prof, ext_tseries, globatt, xret, prior,
 
         time = fid.createVariable('time', 'f8', ('time',))
         time.long_name = 'Time'
-        time.units = 'Seconds from 00:00 0:00 UTC'
+        time.units = 'seconds since ' + dt.strftime('%Y-%m-%d') +' 00:00:00 0:00 UTC'
+        time.calendar = 'standard'
 
         hour = fid.createVariable('hour', 'f8', ('time',))
         hour.long_name = 'Time'
-        hour.units = 'Hours from 00:00 0:00 UTC'
+        hour.units = 'hours since ' + dt.strftime('%Y-%m-%d') +' 00:00:00 0:00 UTC'
 
         qc_flag = fid.createVariable('qc_flag', 'i2', ('time',))
         qc_flag.long_name = 'Manual QC flag'
-        qc_flag.units = 'unitless'
         qc_flag.comment = 'value of 0 implies quality is ok; non-zero values indicate that the sample has suspect quality'
         qc_flag.value_1 = 'Implies hatch was not open for full observing period'
         qc_flag.value_2 = 'Implies retrieval did not converge'
@@ -195,8 +194,8 @@ def write_output(vip, ext_prof, mod_prof, ext_tseries, globatt, xret, prior,
         qc_flag.RMS_threshold_used_for_QC = str(vip['qc_rms_value']) + ' [unitless]'
 
         height = fid.createVariable('height', 'f4', ('height',))
-        height.long_name = 'Height'
-        height.units = 'km AGL'
+        height.long_name = 'Height above ground level'
+        height.units = 'km'
 
         temperature = fid.createVariable('temperature', 'f4', ('time','height',))
         temperature.long_name = 'Temperature'
@@ -216,7 +215,6 @@ def write_output(vip, ext_prof, mod_prof, ext_tseries, globatt, xret, prior,
 
         iTau = fid.createVariable('iTau', 'f4', ('time',))
         iTau.long_name = 'Ice cloud optical depth (geometric limit)'
-        iTau.units = 'unitless'
 
         iReff = fid.createVariable('iReff', 'f4', ('time',))
         iReff.long_name = 'Ice effective radius'
@@ -252,7 +250,6 @@ def write_output(vip, ext_prof, mod_prof, ext_tseries, globatt, xret, prior,
 
         sigma_iTau = fid.createVariable('sigma_iTau', 'f4', ('time',))
         sigma_iTau.long_name = '1-sigma uncertainty in ice cloud optical depth (geometric limit)'
-        sigma_iTau.units = 'unitless'
 
         sigma_iReff = fid.createVariable('sigma_iReff', 'f4', ('time',))
         sigma_iReff.long_name = '1-sigma uncertainty in ice effective radius'
@@ -272,7 +269,6 @@ def write_output(vip, ext_prof, mod_prof, ext_tseries, globatt, xret, prior,
 
         converged_flag = fid.createVariable('converged_flag', 'i2', ('time',))
         converged_flag.long_name = 'Convergence flag'
-        converged_flag.units = 'unitless'
         converged_flag.value_0 = '0 indicates no convergence'
         converged_flag.value_1 = '1 indicates convergence in Rodgers sense (i.e., di2m << dimY)'
         converged_flag.value_2 = '2 indicates convergence (best rms after rms increased drastically'
@@ -281,46 +277,37 @@ def write_output(vip, ext_prof, mod_prof, ext_tseries, globatt, xret, prior,
 
         gamma = fid.createVariable('gamma', 'f4', ('time',))
         gamma.long_name = 'Gamma parameter'
-        gamma.units = 'unitless'
 
         n_iter = fid.createVariable('n_iter', 'i2', ('time',))
         n_iter.long_name = 'Number of iterations performed'
-        n_iter.units = 'unitless'
 
         rmsr = fid.createVariable('rmsr', 'f4', ('time',))
         rmsr.long_name = 'Root mean square error between IRS and MWR obs in the observation vector and the forward calculation'
-        rmsr.units = 'unitless'
         rmsr.comment1 = 'Computed as sqrt( sum_over_i[ ((Y_i - F(Xn_i)) / Y_i)^2 ] / sizeY)'
         rmsr.comment2 = 'Only IRS radiance observations in the observation vector are used'
 
         rmsa = fid.createVariable('rmsa', 'f4', ('time',))
         rmsa.long_name = 'Root mean square error between observation vector and the forward calculation'
-        rmsa.units = 'unitless'
         rmsa.comment1 = 'Computed as sqrt( sum_over_i[ ((Y_i - F(Xn_i)) / Y_i)^2 ] / sizeY)'
         rmsa.comment2 = 'Entire observation vector used in this calculation'
 
         rmsp = fid.createVariable('rmsp', 'f4', ('time',))
         rmsp.long_name = 'Root mean square error between prior T/q profile and the retrieved T/q profile'
-        rmsp.units = 'unitless'
         rmsp.comment1 = 'Computed as sqrt( mean[ ((Xa - Xn) / sigma_Xa)^2 ] )'
 
         chi2 = fid.createVariable('chi2', 'f4', ('time',))
         chi2.long_name = 'Chi-square statistic of Y vs. F(Xn)'
-        chi2.units = 'unitless'
         chi2.comment = 'Computed as sqrt( sum_over_i[ ((Y_i - F(Xn_i)) / Y_i)^2 ] / sizeY)'
 
         convergence_criteria = fid.createVariable('convergence_criteria', 'f4', ('time',))
         convergence_criteria.long_name = 'Convergence criteria di^2'
-        convergence_criteria.units = 'unitless'
 
         dfs = fid.createVariable('dfs', 'f4', ('time','dfs_dim',))
         dfs.long_name = 'Degrees of freedom of signal'
-        dfs.units = 'unitless'
         dfs.comment = 'total DFS, then DFS for each of temperature, waterVapor, LWP, L_Reff, I_tau, I_Reff, carbonDioxide, methane, nitrousOxide'
 
         sic = fid.createVariable('sic', 'f4', ('time',))
         sic.long_name = 'Shannon information content'
-        sic.units = 'unitless'
 
         vres_temp = fid.createVariable('vres_temperature', 'f4', ('time','height',))
         vres_temp.long_name = 'Vertical resolution of the temperature profile'
@@ -331,23 +318,19 @@ def write_output(vip, ext_prof, mod_prof, ext_tseries, globatt, xret, prior,
 
         cdfs_temp = fid.createVariable('cdfs_temperature', 'f4', ('time','height',))
         cdfs_temp.long_name = 'Vertical profile of the cumulative degrees of freedom of signal for temperature'
-        cdfs_temp.units = 'unitless'
         cdfs_wv = fid.createVariable('cdfs_waterVapor', 'f4', ('time','height',))
         cdfs_wv.long_name = 'Vertical profile of the cumulative degrees of freedom of signal for water vapor'
-        cdfs_wv.units = 'unitless'
 
         hatchOpen = fid.createVariable('hatchOpen', 'i2', ('time',))
         hatchOpen.long_name = 'Flag indicating if the IRSs hatch was open'
-        hatchOpen.units = 'unitless'
         hatchOpen.comment = '1 - hatch open, 0 - hatch closed, other values indicate hatch is either not working or indeterminant'
 
         cbh = fid.createVariable('cbh', 'f4', ('time',))
-        cbh.long_name = 'Cloud base height'
-        cbh.units = 'km AGL'
+        cbh.long_name = 'Cloud base height above ground level'
+        cbh.units = 'km'
 
         cbh_flag = fid.createVariable('cbh_flag', 'i2', ('time',))
         cbh_flag.long_name = 'Flag indicating the source of the cbh'
-        cbh_flag.units = 'unitless'
         cbh_flag.comment1 = 'Value 0 implies Clear Sky radiance'
         cbh_flag.comment2 = 'Value 1 implies Inner Window radiance'
         cbh_flag.comment3 = 'Value 2 implies Outer Window radiance'
@@ -378,42 +361,138 @@ def write_output(vip, ext_prof, mod_prof, ext_tseries, globatt, xret, prior,
         dewpt.units = 'C'
         dewpt.comment = 'This field is derived from the retrieved fields'
 
-        dindices = fid.createVariable('dindices', 'f4', ('time','index_dim',))
-        dindices.long_name = 'Derived indices'
-        dindices.units = 'units depends on the index; see comments below'
-        dindices.comment0 = 'This field is derived from the retrieved fields'
-        dindices.comment1 = 'A value of -999 indicates that this inded could not be computed (typically because the value was aphysical)'
-        dindices.field_0_name = dindex['name'][0]
-        dindices.field_0_units = dindex['units'][0]
-        dindices.field_1_name = dindex['name'][1]
-        dindices.field_1_units = dindex['units'][1]
-        dindices.field_2_name = dindex['name'][2]
-        dindices.field_2_units = dindex['units'][2]
-        dindices.field_3_name = dindex['name'][3]
-        dindices.field_3_units = dindex['units'][3]
-        dindices.field_4_name = dindex['name'][4]
-        dindices.field_4_units = dindex['units'][4]
-        dindices.field_5_name = dindex['name'][5]
-        dindices.field_5_units = dindex['units'][5]
-        dindices.field_6_name = dindex['name'][6]
-        dindices.field_6_units = dindex['units'][6]
-        dindices.field_7_name = dindex['name'][7]
-        dindices.field_7_units = dindex['units'][7]
-        dindices.field_8_name = dindex['name'][8]
-        dindices.field_8_units = dindex['units'][8]
-        dindices.field_9_name = dindex['name'][9]
-        dindices.field_9_units = dindex['units'][9]
+        pwv = fid.createVariable('pwv', 'f4', ('time',))
+        pwv.long_name = 'Precipitable water vapor'
+        pwv.units = dindex['units'][0]
+        pwv.comment1 = 'This field is derived from the retrieved fields'
+        pwv.comment2 = 'A value of -999 indicates that this field could not be computed (typically because the value was aphysical)'
+        
+        pblh = fid.createVariable('pblh', 'f4', ('time',))
+        pblh.long_name = 'Planetary boundary layer height'
+        pblh.units = dindex['units'][1]
+        pblh.comment1 = 'This field is derived from the retrieved fields'
+        pblh.comment2 = 'A value of -999 indicates that this field could not be computed (typically because the value was aphysical)'
+        
+        sbih = fid.createVariable('sbih', 'f4', ('time',))
+        sbih.long_name = 'Surface-based inversion height'
+        sbih.units = dindex['units'][2]
+        sbih.comment1 = 'This field is derived from the retrieved fields'
+        sbih.comment2 = 'A value of -999 indicates that this field could not be computed (typically because the value was aphysical)'
+        
+        sbim = fid.createVariable('sbim', 'f4', ('time',))
+        sbim.long_name = 'Surface-based inversion magnitude'
+        sbih.units = dindex['units'][3]
+        sbih.comment1 = 'This field is derived from the retrieved fields'
+        sbih.comment2 = 'A value of -999 indicates that this field could not be computed (typically because the value was aphysical)'
+        
+        sblcl = fid.createVariable('sbLCL', 'f4', ('time',))
+        sblcl.long_name = 'Lifted condesation level for a surface-based parcel'
+        sblcl.units = dindex['units'][4]
+        sblcl.comment1 = 'This field is derived from the retrieved fields'
+        sblcl.comment2 = 'A value of -999 indicates that this field could not be computed (typically because the value was aphysical)'
+        
+        sbcape = fid.createVariable('sbCAPE', 'f4', ('time',))
+        sbcape.long_name = 'Convective available potential energy for a surface-based parcel'
+        sbcape.units = dindex['units'][5]
+        sbcape.comment1 = 'This field is derived from the retrieved fields'
+        sbcape.comment2 = 'A value of -9999 indicates that this field could not be computed (typically because the value was aphysical)'
+        
+        sbcin = fid.createVariable('sbCIN', 'f4', ('time',))
+        sbcin.long_name = 'Convective inhibition for a surface-based parcel'
+        sbcin.units = dindex['units'][6]
+        sbcin.comment1 = 'This field is derived from the retrieved fields'
+        sbcin.comment2 = 'A value of -9999 indicates that this field could not be computed (typically because the value was aphysical)'
+        
+        mllcl = fid.createVariable('mlLCL', 'f4', ('time',))
+        mllcl.long_name = 'Lifted condesation level for a mixed-layer parcel'
+        mllcl.units = dindex['units'][7]
+        mllcl.comment1 = 'This field is derived from the retrieved fields'
+        mllcl.comment2 = 'A value of -999 indicates that this field could not be computed (typically because the value was aphysical)'
+        
+        mlcape = fid.createVariable('mlCAPE', 'f4', ('time',))
+        mlcape.long_name = 'Convective available potential energy for a mixed-layer parcel'
+        mlcape.units = dindex['units'][8]
+        mlcape.comment1 = 'This field is derived from the retrieved fields'
+        mlcape.comment2 = 'A value of -9999 indicates that this field could not be computed (typically because the value was aphysical)'
+        
+        mlcin = fid.createVariable('mlCIN', 'f4', ('time',))
+        mlcin.long_name = 'Convective inhibition for a mixed-layer parcel'
+        mlcin.units = dindex['units'][9]
+        mlcin.comment1 = 'This field is derived from the retrieved fields'
+        mlcin.comment2 = 'A value of -9999 indicates that this field could not be computed (typically because the value was aphysical)'
 
-        sigma_dindices = fid.createVariable('sigma_dindices', 'f4', ('time','index_dim',))
-        sigma_dindices.long_name = '1-sigma uncertainties in the derived indices'
-        sigma_dindices.units = 'units depend on the index, see the field above '
-        sigma_dindices.comment1 = 'This field is derived from the retrieved fields'
-        sigma_dindices.comment2 = 'The uncertainties were determined using a monte carlo sampling of the posterior covariance matrix'
-        sigma_dindices.comment3 = 'A value of -999 indicates that the uncertainty in this inded could not be computed (typically because the values were all unphysical)'
+        sigma_pwv = fid.createVariable('sigma_pwv', 'f4', ('time',))
+        sigma_pwv.long_name = '1-sigma uncertainties in precipitable water vapor'
+        sigma_pwv.units = dindex['units'][0]
+        sigma_pwv.comment1 = 'This field is derived from the retrieved fields'
+        sigma_pwv.comment2 = 'The uncertainties were determined using a monte carlo sampling of the posterior covariance matrix'
+        sigma_pwv.comment3 = 'A value of -999 indicates that the uncertainty in this inded could not be computed (typically because the values were all unphysical)'
 
+        sigma_pblh = fid.createVariable('sigma_pblh', 'f4', ('time',))
+        sigma_pblh.long_name = '1-sigma uncertainties in the PBL height'
+        sigma_pblh.units = dindex['units'][1]
+        sigma_pblh.comment1 = 'This field is derived from the retrieved fields'
+        sigma_pblh.comment2 = 'The uncertainties were determined using a monte carlo sampling of the posterior covariance matrix'
+        sigma_pblh.comment3 = 'A value of -999 indicates that the uncertainty in this inded could not be computed (typically because the values were all unphysical)'
+        
+        sigma_sbih = fid.createVariable('sigma_sbih', 'f4', ('time',))
+        sigma_sbih.long_name = '1-sigma uncertainties in the surface-based inversion height'
+        sigma_sbih.units = dindex['units'][2]
+        sigma_sbih.comment1 = 'This field is derived from the retrieved fields'
+        sigma_sbih.comment2 = 'The uncertainties were determined using a monte carlo sampling of the posterior covariance matrix'
+        sigma_sbih.comment3 = 'A value of -999 indicates that the uncertainty in this inded could not be computed (typically because the values were all unphysical)'
+        
+        sigma_sbim = fid.createVariable('sigma_sbim', 'f4', ('time',))
+        sigma_sbim.long_name = '1-sigma uncertainties in the surface-based inversion magnitude'
+        sigma_sbim.units = dindex['units'][3]
+        sigma_sbim.comment1 = 'This field is derived from the retrieved fields'
+        sigma_sbim.comment2 = 'The uncertainties were determined using a monte carlo sampling of the posterior covariance matrix'
+        sigma_sbim.comment3 = 'A value of -999 indicates that the uncertainty in this inded could not be computed (typically because the values were all unphysical)'
+        
+        sigma_sblcl = fid.createVariable('sigma_sbLCL', 'f4', ('time',))
+        sigma_sblcl.long_name = '1-sigma uncertainties in the LCL for a surface-based parcel'
+        sigma_sblcl.units = dindex['units'][4]
+        sigma_sblcl.comment1 = 'This field is derived from the retrieved fields'
+        sigma_sblcl.comment2 = 'The uncertainties were determined using a monte carlo sampling of the posterior covariance matrix'
+        sigma_sblcl.comment3 = 'A value of -999 indicates that the uncertainty in this inded could not be computed (typically because the values were all unphysical)'
+        
+        sigma_sbcape = fid.createVariable('sigma_sbCAPE', 'f4', ('time',))
+        sigma_sbcape.long_name = '1-sigma uncertainties in surface-based CAPE'
+        sigma_sbcape.units = dindex['units'][5]
+        sigma_sbcape.comment1 = 'This field is derived from the retrieved fields'
+        sigma_sbcape.comment2 = 'The uncertainties were determined using a monte carlo sampling of the posterior covariance matrix'
+        sigma_sbcape.comment3 = 'A value of -999 indicates that the uncertainty in this inded could not be computed (typically because the values were all unphysical)'
+        
+        sigma_sbcin = fid.createVariable('sigma_sbCIN', 'f4', ('time',))
+        sigma_sbcin.long_name = '1-sigma uncertainties in surface-based CIN'
+        sigma_sbcin.units = dindex['units'][6]
+        sigma_sbcin.comment1 = 'This field is derived from the retrieved fields'
+        sigma_sbcin.comment2 = 'The uncertainties were determined using a monte carlo sampling of the posterior covariance matrix'
+        sigma_sbcin.comment3 = 'A value of -999 indicates that the uncertainty in this inded could not be computed (typically because the values were all unphysical)'
+        
+        sigma_mllcl = fid.createVariable('sigma_mlLCL', 'f4', ('time',))
+        sigma_mllcl.long_name = '1-sigma uncertainties in the LCL for a mixed-layer parcel'
+        sigma_mllcl.units = dindex['units'][7]
+        sigma_mllcl.comment1 = 'This field is derived from the retrieved fields'
+        sigma_mllcl.comment2 = 'The uncertainties were determined using a monte carlo sampling of the posterior covariance matrix'
+        sigma_mllcl.comment3 = 'A value of -999 indicates that the uncertainty in this inded could not be computed (typically because the values were all unphysical)'
+        
+        sigma_mlcape = fid.createVariable('sigma_mlCAPE', 'f4', ('time',))
+        sigma_mlcape.long_name = '1-sigma uncertainties in mixed-layer CAPE'
+        sigma_mlcape.units = dindex['units'][8]
+        sigma_mlcape.comment1 = 'This field is derived from the retrieved fields'
+        sigma_mlcape.comment2 = 'The uncertainties were determined using a monte carlo sampling of the posterior covariance matrix'
+        sigma_mlcape.comment3 = 'A value of -999 indicates that the uncertainty in this inded could not be computed (typically because the values were all unphysical)'
+        
+        sigma_mlcin = fid.createVariable('sigma_mlCIN', 'f4', ('time',))
+        sigma_mlcin.long_name = '1-sigma uncertainties in mixed-layer CIN'
+        sigma_mlcin.units = dindex['units'][9]
+        sigma_mlcin.comment1 = 'This field is derived from the retrieved fields'
+        sigma_mlcin.comment2 = 'The uncertainties were determined using a monte carlo sampling of the posterior covariance matrix'
+        sigma_mlcin.comment3 = 'A value of -999 indicates that the uncertainty in this inded could not be computed (typically because the values were all unphysical)'
+        
         obs_flag = fid.createVariable('obs_flag', 'i2', ('obs_dim',))
         obs_flag.long_name = 'Flag indicating type of observation for each vector element'
-        obs_flag.units = 'mixed units -- see comments below'
 
         # This will make sure that I capture all of the units right in
         # the metadata, but "blotting them out" as I add the comments
@@ -488,73 +567,71 @@ def write_output(vip, ext_prof, mod_prof, ext_tseries, globatt, xret, prior,
             print('Error in write_output: there seems to be a unit that is not handled here properly')
             return success, nfilename
 
-        obs_dim = fid.createVariable('obs_dim', 'f8', ('obs_dim',))
-        obs_dim.long_name = 'Dimension of the observation vector'
-        obs_dim.units = 'mixed units -- see obs_flag field above'
+        obs_dimension = fid.createVariable('obs_dimension', 'f8', ('obs_dim',))
+        obs_dimension.long_name = 'Dimension of the observation vector'
+        obs_dimension.comment1 = 'mixed units -- see obs_flag field above'
 
         obs_vector = fid.createVariable('obs_vector', 'f4', ('time','obs_dim',))
         obs_vector.long_name = 'Observation vector Y'
-        obs_vector.units = 'mixed units -- see obs_flag field above'
+        obs_vector.comment1 = 'mixed units -- see obs_flag field above'
 
         obs_vector_uncertainty = fid.createVariable('obs_vector_uncertainty', 'f4', ('time','obs_dim',))
         obs_vector_uncertainty.long_name = '1-sigma uncertainty in the observation vector (sigY)'
-        obs_vector_uncertainty.units = 'mixed units -- see obs_flag field above'
+        obs_vector_uncertainty.comment1 = 'mixed units -- see obs_flag field above'
 
         forward_calc = fid.createVariable('forward_calc', 'f4', ('time','obs_dim',))
         forward_calc.long_name = 'Forward calculation from state vector (i.e., F(Xn))'
-        forward_calc.units = 'mixed units -- see obs_flag field above'
+        forward_calc.comment1 = 'mixed units -- see obs_flag field above'
 
         # If we are trying to keep the output file small, then do not include
         # these fields in the output file
         if vip['output_file_keep_small'] == 0:
             arb1 = fid.createVariable('arb1', 'i2', ('arb_dim1',))
             arb1.long_name = 'Arbitrary dimension'
-            arb1.units = 'mixed units'
-            arb1.comment = ('contains temeprature profile (1), water vapor profile (2)'
-                       + ' liquid cloud path (3), liquid water Reff (4), '
-                       + 'ice cloud optical depth (5), ice cloud Reff (6), carbon dioxide (7)'
-                       + ' methane (8), nitrous oxide (9)')
+            arb1.comment = ('contains (1) temperature profile, (2) water vapor profile'
+                       + ' (3) liquid water path, (4) liquid water Reff, '
+                       + '(5) ice cloud optical depth, (6) ice cloud Reff, (7) carbon dioxide'
+                       + ' (8) methane, (9) nitrous oxide')
 
             arb2 = fid.createVariable('arb2', 'i2', ('arb_dim2',))
             arb2.long_name = 'Arbitrary dimension'
-            arb2.units = 'mixed units'
-            arb2.comment = ('contains temeprature profile (1), water vapor profile (2)'
-                       + ' liquid cloud path (3), liquid water Reff (4), '
-                       + 'ice cloud optical depth (5), ice cloud Reff (6), carbon dioxide (7)'
-                       + ' methane (8), nitrous oxide (9)')
+            arb2.comment = ('contains (1) temperature profile, (2) water vapor profile'
+                       + ' (3) liquid water path , (4) liquid water Reff, '
+                       + '(5) ice cloud optical depth, (6) ice cloud Reff, (7) carbon dioxide' 
+                       + ' (8) methane, (9) nitrous oxide')
 
             Xop = fid.createVariable('Xop', 'f4', ('time','arb_dim1',))
             Xop.long_name = 'Optimal solution'
-            Xop.units = 'mixed units -- see field arb above'
+            Xop.comment1 = 'mixed units -- see field arb above'
 
             Sop = fid.createVariable('Sop', 'f4', ('time','arb_dim1','arb_dim2',))
             Sop.long_name = 'Covariance matrix of the solution'
-            Sop.units = 'mixed units -- see field arb above'
+            Sop.comment1 = 'mixed units -- see field arb above'
 
             Akernal = fid.createVariable('Akernal', 'f4', ('time','arb_dim1','arb_dim2',))
             Akernal.long_name = 'Averaging kernal'
-            Akernal.units = 'mixed units -- see field arb above'
+            Akernal.comment1 = 'mixed units -- see field arb above'
 
             Xa = fid.createVariable('Xa', 'f4', ('arb_dim1',))
             Xa.long_name = 'Prior mean state'
-            Xa.units = 'mixed units -- see field arb above'
+            Xa.comment1 = 'mixed units -- see field arb above'
 
             Sa = fid.createVariable('Sa', 'f4', ('arb_dim1','arb_dim2',))
             Sa.long_name = 'Prior covariance'
-            Sa.units = 'mixed units -- see field arb above'
+            Sa.comment1 = 'mixed units -- see field arb above'
 
         # These should be the last three variables in the file
         lat = fid.createVariable('lat', 'f4')
         lat.long_name = 'Latitude'
-        lat.units = 'degrees north'
+        lat.units = 'degrees_north'
 
         lon = fid.createVariable('lon', 'f4')
         lon.long_name = 'Longitude'
-        lon.units = 'degrees east'
+        lon.units = 'degrees_east'
 
         alt = fid.createVariable('alt', 'f4')
-        alt.long_name = 'Altitude'
-        alt.units = 'm above MSL'
+        alt.long_name = 'station height above mean sea level'
+        alt.units = 'm'
 
         # Add some global attributes
         for i in range(len(list(globatt.keys()))):
@@ -568,15 +645,16 @@ def write_output(vip, ext_prof, mod_prof, ext_tseries, globatt, xret, prior,
         fid.Total_clock_execution_time_in_s = exectime
         fid.Retrieval_option_flags = '{:0d}, {:0d}, {:0d}, {:0d}, {:0d}, {:0d}, {:0d}, {:0d}, {:0d}'.format(modeflag[0], modeflag[1], modeflag[2], modeflag[3], modeflag[4], modeflag[5], modeflag[6], modeflag[7], modeflag[8])
         fid.vip_tres = (str(vip['tres']) + ' minutes. Note that the sample time corresponds to the '
-                      + 'center of the averaging intervale. A value of 0 implies that no averaging was performed')
+                      + 'center of the averaging interval. A value of 0 implies that no averaging was performed')
         fid.Retrieval_start_hour = shour
+        fid.Conventions = 'CF-1.10'
         add_vip_to_global_atts(fid, vip)
 
         # Add some of the static (non-time-dependent) data
         base_time[:] = xret[0]['secs']
         height[:] = xret[0]['z']
         obs_flag[:] = xret[0]['flagY']
-        obs_dim[:] = xret[0]['dimY']
+        obs_dimension[:] = xret[0]['dimY']
 
         ones = np.ones(nht)
         twos = np.ones(nht)*2
@@ -691,8 +769,27 @@ def write_output(vip, ext_prof, mod_prof, ext_tseries, globatt, xret, prior,
     thetae = fid.variables['thetae']
     rh = fid.variables['rh']
     dewpt = fid.variables['dewpt']
-    dindices = fid.variables['dindices']
-    sigma_dindices = fid.variables['sigma_dindices']
+    pwv = fid.variables['pwv']
+    pblh = fid.variables['pblh']
+    sbih = fid.variables['sbih']
+    sbim = fid.variables['sbim']
+    sblcl = fid.variables['sbLCL']
+    sbcape = fid.variables['sbCAPE']
+    sbcin = fid.variables['sbCIN']
+    mllcl = fid.variables['mlLCL']
+    mlcape = fid.variables['mlCAPE']
+    mlcin = fid.variables['mlCIN']
+    
+    sigma_pwv = fid.variables['sigma_pwv']
+    sigma_pblh = fid.variables['sigma_pblh']
+    sigma_sbih = fid.variables['sigma_sbih']
+    sigma_sbim = fid.variables['sigma_sbim']
+    sigma_sblcl = fid.variables['sigma_sbLCL']
+    sigma_sbcape = fid.variables['sigma_sbCAPE']
+    sigma_sbcin = fid.variables['sigma_sbCIN']
+    sigma_mllcl = fid.variables['sigma_mlLCL']
+    sigma_mlcape = fid.variables['sigma_mlCAPE']
+    sigma_mlcin = fid.variables['sigma_mlCIN']
 
     obs_vector = fid.variables['obs_vector']
     obs_vector_uncertainty = fid.variables['obs_vector_uncertainty']
@@ -764,8 +861,28 @@ def write_output(vip, ext_prof, mod_prof, ext_tseries, globatt, xret, prior,
     thetae[fsample,:] = derived['thetae'][:]
     rh[fsample,:] = derived['rh'][:]
     dewpt[fsample,:] = derived['dewpt'][:]
-    dindices[fsample,:] = dindex['indices'][:]
-    sigma_dindices[fsample,:] = dindex['sigma_indices'][:]
+    
+    pwv[fsample] = dindex['indices'][0]
+    pblh[fsample] = dindex['indices'][1]
+    sbih[fsample] = dindex['indices'][2]
+    sbim[fsample] = dindex['indices'][3]
+    sblcl[fsample] = dindex['indices'][4]
+    sbcape[fsample] = dindex['indices'][5]
+    sbcin[fsample] = dindex['indices'][6]
+    mllcl[fsample] = dindex['indices'][7]
+    mlcape[fsample] = dindex['indices'][8]
+    mlcin[fsample] = dindex['indices'][9]
+    
+    sigma_pwv[fsample] = dindex['sigma_indices'][0]
+    sigma_pblh[fsample] = dindex['sigma_indices'][1]
+    sigma_sbih[fsample] = dindex['sigma_indices'][2]
+    sigma_sbim[fsample] = dindex['sigma_indices'][3]
+    sigma_sblcl[fsample] = dindex['sigma_indices'][4]
+    sigma_sbcape[fsample] = dindex['sigma_indices'][5]
+    sigma_sbcin[fsample] = dindex['sigma_indices'][6]
+    sigma_mllcl[fsample] = dindex['sigma_indices'][7]
+    sigma_mlcape[fsample] = dindex['sigma_indices'][8]
+    sigma_mlcin[fsample] = dindex['sigma_indices'][9]
 
     obs_vector[fsample,:] = xret[fsample]['Y']
     obs_vector_uncertainty[fsample,:] = xret[fsample]['sigY']
