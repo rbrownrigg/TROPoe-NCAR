@@ -4263,13 +4263,13 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
             #Bin the data
             p0 = np.zeros(len(secs))
             for i in range(len(secs)):
-                foo = np.where((secs[i]-tres*60/2. <= tsecs) & (tsecs <= secs[i] + tres*60/2.))[0]
+                foo = np.where((secs[i]-tres*60/2. <= psecs) & (psecs <= secs[i] + tres*60/2.))[0]
                 if len(foo) > 0:
                     p0[i] = np.nanmean(press[foo])
                 else:
                     p0[i] = -999.
         else:
-            p0 = np.interp(secs,tsecs,press)
+            p0 = np.interp(secs,psecs,press)
             foo = np.where(secs < psecs[0]-sfc_time_delta*3600)[0]
             if len(foo) > 0:
                 p0[foo] = -999.
