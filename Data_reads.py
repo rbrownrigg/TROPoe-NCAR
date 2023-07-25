@@ -875,7 +875,7 @@ def read_all_data(date, retz, tres, dostop, verbose, avg_instant, ch1_path,
     # IRS sample time is the middle of its period and the MWR's is the end.
 
     irs = grid_irs(irsch1, irssum, avg_instant, hatchOpenSwitch, missingDataFlagSwitch,
-                    ret_secs, ret_tavg, irs_noise_inflation, verbose)
+                    ret_secs, ret_tavg, irs_noise_inflation, vip, verbose)
 
     if irs['success'] == 0:
         fail = 1
@@ -1779,6 +1779,7 @@ def read_irs_sum(path,date,irs_type,smooth_noise,verbose):
                 return err
         noise = np.copy(snoise)
 
+    # Get some times from the data
     yy = np.array([datetime.utcfromtimestamp(x).year for x in secs])
     mm = np.array([datetime.utcfromtimestamp(x).month for x in secs])
     dd = np.array([datetime.utcfromtimestamp(x).day for x in secs])
@@ -2067,7 +2068,7 @@ def read_vceil(path, date, vceil_type, ret_secs, verbose):
 ################################################################################
 
 def grid_irs(ch1, irssum, avg_instant, hatchOpenSwitch, missingDataFlagSwitch,
-              secs, tavg, irs_noise_inflation, verbose):
+              secs, tavg, irs_noise_inflation, vip, verbose):
 
     if verbose >= 3:
         print('    Temporally gridding the IRS data')
@@ -2209,11 +2210,21 @@ def grid_irs(ch1, irssum, avg_instant, hatchOpenSwitch, missingDataFlagSwitch,
     for i in range(len(secs)):
         noise[:,i] = np.interp(wnum,irssum['wnum'],nrad[:,i])
 
-        # Get the surface temperature from the IRS radiance observations
-        # Use the actual IRS radiances, not the subset that was extracted
+    # Test to ensure that the noise is above the IRS noise floor
+    if vip['irs_min_noise_flag'] != 0: 
+        nmessage = 0
+        floor = np.interp(wnum,vip['irs_min_noise_wnum'],vip['irs_min_noise_spec'])
+        for j in range(len(wnum)):
+            foo = np.where(noise[j,:] < floor[j])[0]
+            if len(foo) > 0:
+                noise[j,foo] = floor[j]
+                if((nmessage == 0) & (verbose >= 1)):
+                    print('    Resetting some of IRS noise spectrum, which was below the noise floor')
+                    nmessage = 1
 
+    # Get the surface temperature from the IRS radiance observations
+    # Use the actual IRS radiances, not the subset that was extracted
     bar = np.where((wnum >= 670) & (wnum <= 675))[0]
-
     if len(bar) >= 8:
         Tsfc = Calcs_Conversions.invplanck(np.nansum(wnum[bar])/np.float(len(bar)),np.nansum(rrad[bar,:],axis = 0)/np.float(len(bar)))
         Tsfc = Tsfc - 273.16
