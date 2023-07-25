@@ -966,7 +966,7 @@ def create_xret(xret, fsample, vip, irs, Xa, Sa, z, bands, obsdim, obsflag,shour
     fid = Dataset(nfilename, 'r')
     bt = fid.variables['base_time'][:]
     to = fid.variables['time_offset'][:]
-    xobsdim = fid.variables['obs_dim'][:]
+    xobsdim = fid.variables['obs_dimension'][:]
     xobsflag = fid.variables['obs_flag'][:]
     xz = fid.variables['height'][:]
     xXa = fid.variables['Xa'][:]
