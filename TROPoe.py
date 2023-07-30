@@ -11,7 +11,7 @@
 #
 # ----------------------------------------------------------------------------
 
-__version__ = '0.6.86'
+__version__ = '0.6.87'
 
 import os
 import sys
@@ -1275,7 +1275,7 @@ for i in range(len(irs['secs'])):                        # { loop_i
                            verbose, debug, doapodize=False)
                     # If we are using the prior for the first guess (FG=1), and we have not already loaded
                     # this structure, then capture the forward calc and jacobian for the first guess
-            if((precompute_prior_jacobian['status'] == 0) & (vip['first_guess'] == 1)):
+            if((precompute_prior_jacobian['status'] == 0) & (vip['first_guess'] == 1) & (flag != 0)):
                 precompute_prior_jacobian = {'status':1, 'X0':np.copy(Xn), 'FX0':np.copy(FXn), 'Kij0':np.copy(Kij),
                     'flag0':np.copy(flag), 'wnumc0':np.copy(wnumc)}
         else:

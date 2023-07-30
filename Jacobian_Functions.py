@@ -53,6 +53,7 @@ def compute_jacobian_irs_interpol(X, p, zz, lblhome, lbldir, lblroot, lbl_std_at
 
     success = 0
     quiet   = 1              # this is for the lbl_read() function
+    append_devnull = True    # Set this to have the LBLRTM output piped to /dev/null, otherwise it will be output
 
     if sfc_alt is None:
         sfcz = 0.
@@ -116,7 +117,9 @@ def compute_jacobian_irs_interpol(X, p, zz, lblhome, lbldir, lblroot, lbl_std_at
                     'mkdir ' + lblroot + '.1 ; ' +
                     'setenv LBL_RUN_ROOT ' + lblroot + '.1 ; '+
                     'rm -rf ' + lbldir + '.1 ; '+
-                    '(' + lblrun + ' ' + tp5 + '.1 ' + lbldir + '.1 ' + tp3 + ') >& /dev/null')
+                    '(' + lblrun + ' ' + tp5 + '.1 ' + lbldir + '.1 ' + tp3 + ')')
+    if append_devnull:
+         command1 = (command1 + ' >& /dev/null')
 
     if fixt != 1:
         tpert = 1.0            # Additive perturbation of 1 K
@@ -131,7 +134,10 @@ def compute_jacobian_irs_interpol(X, p, zz, lblhome, lbldir, lblroot, lbl_std_at
                     'mkdir ' + lblroot + '.2 ; ' +
                     'setenv LBL_RUN_ROOT ' + lblroot + '.2 ; '+
                     'rm -rf ' + lbldir + '.2 ; '+
-                    '(' + lblrun + ' ' + tp5 + '.2 ' + lbldir + '.2 ' + tp3 + ') >& /dev/null')
+                    '(' + lblrun + ' ' + tp5 + '.2 ' + lbldir + '.2 ' + tp3 + ')')
+        if append_devnull:
+            command2 = (command2 + ' >& /dev/null')
+
     else:
         command2 = 'sleep 1'
 
@@ -150,7 +156,9 @@ def compute_jacobian_irs_interpol(X, p, zz, lblhome, lbldir, lblroot, lbl_std_at
                     'mkdir ' + lblroot + '.3 ; ' +
                     'setenv LBL_RUN_ROOT ' + lblroot + '.3 ; '+
                     'rm -rf ' + lbldir + '.3 ; '+
-                    '(' + lblrun + ' ' + tp5 + '.3 ' + lbldir + '.3 ' + tp3 + ') >& /dev/null')
+                    '(' + lblrun + ' ' + tp5 + '.3 ' + lbldir + '.3 ' + tp3 + ')')
+        if append_devnull:
+            command3 = (command3 + ' >& /dev/null')
     else:
         command3 = 'sleep 1'
 
@@ -170,7 +178,9 @@ def compute_jacobian_irs_interpol(X, p, zz, lblhome, lbldir, lblroot, lbl_std_at
                     'mkdir ' + lblroot + '.4 ; ' +
                     'setenv LBL_RUN_ROOT ' + lblroot + '.4 ; '+
                     'rm -rf ' + lbldir + '.4 ; '+
-                    '(' + lblrun + ' ' + tp5 + '.4 ' + lbldir + '.4 ' + tp3 + ') >& /dev/null')
+                    '(' + lblrun + ' ' + tp5 + '.4 ' + lbldir + '.4 ' + tp3 + ')')
+        if append_devnull:
+            command4 = (command4 + ' >& /dev/null')
     else:
         command4 = 'sleep 1'
 
@@ -190,7 +200,9 @@ def compute_jacobian_irs_interpol(X, p, zz, lblhome, lbldir, lblroot, lbl_std_at
                     'mkdir ' + lblroot + '.5 ; ' +
                     'setenv LBL_RUN_ROOT ' + lblroot + '.5 ; '+
                     'rm -rf ' + lbldir + '.5 ; '+
-                    '(' + lblrun + ' ' + tp5 + '.5 ' + lbldir + '.5 ' + tp3 + ') >& /dev/null')
+                    '(' + lblrun + ' ' + tp5 + '.5 ' + lbldir + '.5 ' + tp3 + ')')
+        if append_devnull:
+            command5 = (command5 + ' >& /dev/null')
     else:
         command5 = 'sleep 1'
 
@@ -210,7 +222,9 @@ def compute_jacobian_irs_interpol(X, p, zz, lblhome, lbldir, lblroot, lbl_std_at
                     'mkdir ' + lblroot + '.6 ; ' +
                     'setenv LBL_RUN_ROOT ' + lblroot + '.6 ; '+
                     'rm -rf ' + lbldir + '.6 ; '+
-                    '(' + lblrun + ' ' + tp5 + '.6 ' + lbldir + '.6 ' + tp3 + ') >& /dev/null')
+                    '(' + lblrun + ' ' + tp5 + '.6 ' + lbldir + '.6 ' + tp3 + ')')
+        if append_devnull:
+            command6 = (command6 + ' >& /dev/null')
     else:
         command6 = 'sleep 1'
 
@@ -218,7 +232,8 @@ def compute_jacobian_irs_interpol(X, p, zz, lblhome, lbldir, lblroot, lbl_std_at
     command = ('('+command1+')& ; ('+command2+')& ; ('+command3+')& ; ('+command4 +
   		')& ; ('+command5+')& ; ('+command6+')& ; wait ')
 
-    command = '('+command+')>& /dev/null'
+    if append_devnull:
+        command = (command + ' >& /dev/null')
 
     process = Popen(command, stdout = PIPE, stderr = PIPE, shell=True, executable = '/bin/csh')
     stdout, stderr = process.communicate()
@@ -227,7 +242,7 @@ def compute_jacobian_irs_interpol(X, p, zz, lblhome, lbldir, lblroot, lbl_std_at
     files1 = []
     files1 = files1 + sorted(glob.glob(lbldir+'.1/OD*'))
     if len(files1) != len(mlayerz)-1:
-        print('This should not happen (0) in compute_jacobian_interpol')
+        print('This should not happen (.1/OD*) in compute_jacobian_interpol')
         print(f'DDT -- the number of lbloutput files is {len(files1):d} and the number of layers is {len(mlayerz)-1:d}')
         if verbose >= 3:
             print('The working LBLRTM directory is ' +lbldir+ '.1')
@@ -235,7 +250,7 @@ def compute_jacobian_irs_interpol(X, p, zz, lblhome, lbldir, lblroot, lbl_std_at
         if debug:
             wait = input('Stopping inside compute_jacobian_interpol to debug. Press enter to continue')
         else:
-            return success, -999., -999., -999., -999., -999.
+            return success, -999., -999., -999., -999.
 
     # Use the spectral spacing at x km AGL for the spectral spacing of the
     # layer optical depths.  Note that I did experiment with this value,
@@ -270,13 +285,13 @@ def compute_jacobian_irs_interpol(X, p, zz, lblhome, lbldir, lblroot, lbl_std_at
                 files2 = []
                 files2 = files2 + sorted(glob.glob(lbldir+'.2/OD*'))
                 if len(files2) != len(files1):
-                    print('This should not happen (1) in compute_jacobian_interpol')
+                    print('This should not happen (.2/OD*) in compute_jacobian_interpol')
                     if verbose >= 3:
                         print('The working LBLRTM directory is ' +lbldir+ '.2')
                     if debug:
                         wait = input('Stopping inside compute_jacobian_interpol to debug. Press enter to continue')
                     else:
-                        return success, -999., -999., -999., -999., -999.
+                        return success, -999., -999., -999., -999.
                 od11 = np.zeros((len(files1), len(v)))
                 iod11 = np.zeros((len(files1), len(iv)))
             s0, v0 = LBLRTM_Functions.lbl_read(files2[i], do_load_data=True)
@@ -288,13 +303,13 @@ def compute_jacobian_irs_interpol(X, p, zz, lblhome, lbldir, lblroot, lbl_std_at
                 files3 = []
                 files3 = files3 + sorted(glob.glob(lbldir+'.3/OD*'))
                 if len(files3) != len(files1):
-                    print('This should not happen (2) in compute_jacobian_interpol')
+                    print('This should not happen (.3/OD*) in compute_jacobian_interpol')
                     if verbose >= 3:
                         print('The working LBLRTM directory is ' +lbldir+ '.3')
                     if debug:
                         wait = input('Stopping inside compute_jacobian_interpol to debug. Press enter to continue')
                     else:
-                        return success, -999., -999., -999., -999., -999.
+                        return success, -999., -999., -999., -999.
                 od22 = np.zeros((len(files1),len(v)))
                 iod22 = np.zeros((len(files1),len(iv)))
             s0, v0 = LBLRTM_Functions.lbl_read(files3[i], do_load_data=True)
@@ -306,13 +321,13 @@ def compute_jacobian_irs_interpol(X, p, zz, lblhome, lbldir, lblroot, lbl_std_at
                 files4 = []
                 files4 = files4 + sorted(glob.glob(lbldir+'.4/OD*'))
                 if len(files4) != len(files1):
-                    print('This should not happen (3) in compute_jacobian_interpol')
+                    print('This should not happen (.4/OD*) in compute_jacobian_interpol')
                     if verbose >= 3:
                         print('The working LBLRTM directory is ' +lbldir+ '.4')
                     if debug:
                         wait = input('Stopping inside compute_jacobian_interpol to debug. Press enter to continue')
                     else:
-                        return success, -999., -999., -999., -999., -999.
+                        return success, -999., -999., -999., -999.
                 od33 = np.zeros((len(files1),len(v)))
                 iod33 = np.zeros((len(files1),len(iv)))
             s0, v0 = LBLRTM_Functions.lbl_read(files4[i], do_load_data=True)
@@ -324,13 +339,13 @@ def compute_jacobian_irs_interpol(X, p, zz, lblhome, lbldir, lblroot, lbl_std_at
                 files5 = []
                 files5 = files5 + sorted(glob.glob(lbldir+'.5/OD*'))
                 if len(files5) != len(files1):
-                    print('This should not happen (5) in compute_jacobian_interpol')
+                    print('This should not happen (.5/OD*) in compute_jacobian_interpol')
                     if verbose >= 3:
                         print('The working LBLRTM directory is ' +lbldir+ '.5')
                     if debug:
                         wait = input('Stopping inside compute_jacobian_interpol to debug. Press enter to continue')
                     else:
-                        return success, -999., -999., -999., -999., -999.
+                        return success, -999., -999., -999., -999.
                 od44 = np.zeros((len(files1),len(v)))
                 iod44 = np.zeros((len(files1),len(iv)))
             s0, v0 = LBLRTM_Functions.lbl_read(files5[i], do_load_data=True)
@@ -342,13 +357,13 @@ def compute_jacobian_irs_interpol(X, p, zz, lblhome, lbldir, lblroot, lbl_std_at
                 files6 = []
                 files6 = files6 + sorted(glob.glob(lbldir+'.6/OD*'))
                 if len(files6) != len(files1):
-                    print('This should not happen (6) in compute_jacobian_interpol')
+                    print('This should not happen (.6/OD*) in compute_jacobian_interpol')
                     if verbose >= 3:
                         print('The working LBLRTM directory is ' +lbldir+ '.6')
                     if debug:
                         wait = input('Stopping inside compute_jacobian_interpol to debug. Press enter to continue')
                     else:
-                        return success, -999., -999., -999., -999., -999.
+                        return success, -999., -999., -999., -999.
                 od55 = np.zeros((len(files1),len(v)))
                 iod55 = np.zeros((len(files1),len(iv)))
             s0, v0 = LBLRTM_Functions.lbl_read(files6[i], do_load_data=True)
@@ -880,7 +895,7 @@ def compute_jacobian_irs_interpol(X, p, zz, lblhome, lbldir, lblroot, lbl_std_at
     foo = np.where((np.min(wnumc)-0.1 <= bwnum) & (bwnum <= np.max(wnumc)+0.1))[0]
     if ((len(foo) != len(wnumc)) | (np.abs(np.min(wnumc)-np.min(bwnum[foo])) > 0.1)):
         print('PROBLEM inside compute_jacobian_interpol -- wavenumber do not match')
-        return success, -999., -999., -999., -999., -999.
+        return success, -999., -999., -999., -999.
 
     FXn = np.copy(brad[foo])
 
