@@ -142,9 +142,8 @@ def compute_jacobian_irs_interpol(X, p, zz, lblhome, lbldir, lblroot, lbl_std_at
         command2 = 'sleep 1'
 
     if fixwv != 1:
-        h2opert = 0.99
-	# Set the size of the perturbation as a crude function of the WVMR at the surface
-#        h2opert = np.interp(w[0],[0.01,0.1,2],[0.80,0.90,0.99])
+	    # Set the size of the perturbation as a crude function of the WVMR at the surface
+        h2opert = np.interp(w[0],[0.01,0.1,2],[0.75,0.90,0.99])
 
         LBLRTM_Functions.rundecker(3, lbl_std_atmos, zz+sfcz, p, t, w*h2opert,
              co2_profile=co2prof, ch4_profile=ch4prof, n2o_profile=n2oprof,
