@@ -2213,7 +2213,20 @@ def grid_irs(ch1, irssum, avg_instant, hatchOpenSwitch, missingDataFlagSwitch,
     # Test to ensure that the noise is above the IRS noise floor
     if vip['irs_min_noise_flag'] != 0: 
         nmessage = 0
-        floor = np.interp(wnum,vip['irs_min_noise_wnum'],vip['irs_min_noise_spec'])
+
+        # Convert the input noise floor data from strings to floating point arrays
+        parts = vip['irs_min_noise_wnum'].split(',')
+        fwnum = np.array(parts).astype(np.float)
+        parts = vip['irs_min_noise_spec'].split(',')
+        if len(parts) != len(fwnum):
+            print('Error: The number of entered VIP.irs_min_noise_wnum does not match number of VIP.irs_min_noise_spec')
+            return err
+        else:
+            fnoise = np.array(parts).astype(np.float)
+
+        # Interpolate the input noise floor array to the current spectral grid (no extrapolation)
+        floor = np.interp(wnum,fwnum,fnoise)
+
         for j in range(len(wnum)):
             foo = np.where(noise[j,:] < floor[j])[0]
             if len(foo) > 0:
