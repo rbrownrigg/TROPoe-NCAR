@@ -11,7 +11,7 @@
 #
 # ----------------------------------------------------------------------------
 
-__version__ = '0.6.90'
+__version__ = '0.6.91'
 
 import os
 import sys
@@ -1154,8 +1154,12 @@ for i in range(len(irs['secs'])):                        # { loop_i
 
     # Select nice round numbers to use as the wavenumber limits for
     # the LBLRTM calc, but remember that I need to pad by 50 cm-1 for FSCAN
-    lblwnum1 = int((np.min(wnum)-60)/100) * 100
-    lblwnum2 = (int((np.max(wnum)+60)/100)+1)*100
+    if vip['irs_type'] <= -1:
+        lblwnum1 =  100
+        lblwnum2 = 1000
+    else:
+        lblwnum1 = int((np.min(wnum)-60)/100) * 100
+        lblwnum2 = (int((np.max(wnum)+60)/100)+1)*100
     continue_next_sample = 0          # A flag used to watch for bad jacobian calcs
 
     while ((itern <= vip['max_iterations']) & (converged == 0)):        # { While loop over iter
