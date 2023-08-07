@@ -59,9 +59,9 @@ full_vip = ({
 
     'irs_type': {'value': 0, 'comment': '0- output, options, and stop, 1 - ARM AERI data, 2 - dmv2cdf AERI data (C1_rnc.cdf and _sum.cdf), 3 - dmv2ncdf (C1.RNC.cdf and .SUM.cdf), 5- ASSIST, -1 - MWR data is to be used as MASTER dataset (no IRS data being read in)', 'default': True},
     'irs_pca_nf': {'value': 1, 'comment': '0 - IRS data was NOT PCA noise filtered, 1 - IRS data was PCA noise filtered', 'default': False},
-    'irsch1_path': {'value': "None", 'comment': 'Path to the IRS ch1 radiance files', 'default': True},
-    'irssum_path': {'value': "None", 'comment': 'Path to the IRS summary files', 'default': True},
-    'irseng_path': {'value': "None", 'comment': 'Path to the IRS engineering files', 'default': True},
+    'irsch1_path': {'value': "/data/aerich1", 'comment': 'Path to the IRS ch1 radiance files', 'default': True},
+    'irssum_path': {'value': "/data/aerisum", 'comment': 'Path to the IRS summary files', 'default': True},
+    'irseng_path': {'value': "/data/aerieng", 'comment': 'Path to the IRS engineering files', 'default': True},
     'irs_zenith_scene_mirror_angle': {'value': 180, 'comment': 'SceneMirrorAngle [deg] to use for zenith views (default is 180)', 'default': True},
     'irs_min_noise_flag':{'value': 1, 'comment': 'If non-zero, then the irs_min_noise_spectrum will be used as a floor; otherwise, will use input IRS noise spectrum from instrument', 'default': True},
     'irs_min_noise_wnum':{'value': '500,522,546,575,600,631,747,1439,1770,1884,2217,3000', 'comment': 'Wavenumber array [cm-1] for the minimum noise spectrum', 'default': True},
@@ -87,7 +87,7 @@ full_vip = ({
     'irs_spec_cal_factor': {'value': 1.0, 'comment': 'The multiplicative stretch factor to change the spectral calibration of IRS data', 'default': False},
 
     'mwr_type': {'value': 0, 'comment': '0 - none, 1 - Tb fields are individual time series, 2 - Tb field is 2-d array', 'default': True},
-    'mwr_path': {'value': 'None', 'comment': 'Path to the MWR data', 'default': True},
+    'mwr_path': {'value': '/data/mwr', 'comment': 'Path to the MWR data', 'default': True},
     'mwr_rootname': {'value': 'mwr', 'comment': 'Rootname of the MWR data files', 'default': True},
     'mwr_elev_field': {'value': 'elev', 'comment': 'Name of the scene mirror elevation field; use \'none\' if all data are zenith', 'default': True},
     'mwr_freq_field': {'value': 'freq', 'comment': 'Name of the frequency field needed if mwr_type >= 2', 'default': True},
@@ -124,7 +124,7 @@ full_vip = ({
     'ext_sfc_rh_random_error': {'value': 3.0, 'comment': 'Random error for the surface relative humidity measurement [%], which is used with the ext_sfc_random_temp_error to get the uncertainty in WVMR', 'default': True},
     'ext_sfc_wv_mult_error': {'value': 1.0, 'comment': 'Multiplier for the error in the surface water vapor mixing ratio measurement.  This is applied BEFORE the \'rep_error\' value', 'default': True},
     'ext_sfc_wv_rep_error': {'value': 0.0, 'comment': 'Representativeness error for the surface water vapor measurement [g/kg], which is added to the assumed random uncertainty of 0.5 degC and 3%RH', 'default': True},
-    'ext_sfc_path': {'value': 'None', 'comment': 'Path to the external surface met data', 'default': True},
+    'ext_sfc_path': {'value': '/data/met', 'comment': 'Path to the external surface met data', 'default': True},
     'ext_sfc_time_delta': {'value': 0.2, 'comment': 'Maximum amount of time from endpoints of external surface met dataset to extrapolate [hours]', 'default': True},
     'ext_sfc_relative_height': {'value': 0, 'comment': 'Relative height of the met station to the IRS zenith port [m]; note if met station is below IRS port then the value should be negative', 'default': True},
     'ext_sfc_pres_type': {'value': 0, 'comment': '0 - Use the internal IRS pressure sensor for psfc; 1-ARM met data, 2-NCAR ISFS data, 3-CLAMPS MWR met data\n', 'default': True},
@@ -172,13 +172,13 @@ full_vip = ({
     'co2_sfc_time_delta': {'value': 1.5, 'comment': 'Maximum amount of time from endpoints of external CO2 in-situ dataset to extrapolate [hours] \n', 'default': False},
 
     'cbh_type': {'value': 0, 'comment': '0 - output options and stop, 1 - VCEIL, 2 - Gregs ASOS CBH file, 3 - CLAMPS DLfp data, 4 - ARM dlprofwstats data', 'default': True},
-    'cbh_path': {'value': 'None', 'comment': 'Path to the CBH data', 'default': True},
+    'cbh_path': {'value': '/data/ceil', 'comment': 'Path to the CBH data', 'default': True},
     'cbh_window_in': {'value': 20, 'comment': 'Inner temporal window (full-size) centered upon IRS time to look for cloud', 'default': True},
     'cbh_window_out': {'value': 180, 'comment': 'Outer temporal window (full-size) centered upon IRS time to look for cloud}', 'default': True},
     'cbh_default_ht': {'value': 2.0, 'comment': 'Default CBH height [km AGL], if no CBH data found \n', 'default': True},
 
     'output_rootname': {'value': 'None', 'comment': 'String with the rootname of the output file', 'default': True},
-    'output_path': {'value': 'None', 'comment': 'Path where the output file will be placed', 'default': True},
+    'output_path': {'value': '/data/tropoe', 'comment': 'Path where the output file will be placed', 'default': True},
     'output_file_keep_small': {'value': 0, 'comment': '0 - all fields written; 1 - keep output file small by not including Sop, Akern, others', 'default': False},
     'output_clobber': {'value': 0, 'comment': '0 - do not clobber preexisting output files, 1 - clobber them, 2 - append to the last file of this day\n', 'default': True},
 
