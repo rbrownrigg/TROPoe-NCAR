@@ -521,6 +521,10 @@ if ext_prof['success'] != 1:
     VIP_Databases_functions.abort(lbltmpdir,date)
     sys.exit()
 
+if len(ext_prof['attrs'].keys()) > 0:
+    for key in ext_prof['attrs'].keys():
+        globatt[key] = ext_prof['attrs'][key]
+
 # Read in any model sources of WV and temperature profiles
 mod_prof = Data_reads.read_external_profile_data(date, z, irs['secs'], vip['tres'], vip['avg_instant'],
               vip['mod_wv_prof_type'], vip['mod_wv_prof_path'], vip['mod_wv_noise_mult_hts'],
@@ -1967,7 +1971,7 @@ for i in range(len(irs['secs'])):                        # { loop_i
 
             plt.tight_layout()
             #ax1.plot(xx[])
-            plt.savefig(f'temp_output_{itern}.png')
+            plt.savefig(f'{vip["output_path"]}/sample_{fsample}_temp_output_{itern}.png')
             plt.close()
         # Capture the iteration with the best RMS value
         if rmsa <= old_rmsa:
