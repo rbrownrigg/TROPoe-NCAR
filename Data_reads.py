@@ -1,6 +1,6 @@
 # ----------------------------------------------------------------------------
 #
-#  Copyright (C) 2015,2022,2023 by David D Turner, Joshua Gebauer, and Tyler Bell 
+#  Copyright (C) 2015,2022,2023 by David D Turner, Joshua Gebauer, and Tyler Bell
 #  All Rights Reserved
 #
 #  This file is part of the "TROPoe" retrieval system.
@@ -86,7 +86,7 @@ def findfile(path,pattern,verbose=2):
 
          # Compile the regex expression, and return the files that are found
     prog  = re.compile(pattern)
-    
+
     # Check to see if the file directory exists
     if os.path.exists(path):
         files = [f for f in os.listdir(path) if re.search(prog, f)]
@@ -100,7 +100,7 @@ def findfile(path,pattern,verbose=2):
         print('The directory: ' + path)
         print('    does not exist!')
         return [], 1
-        
+
 
 
 ################################################################################
@@ -109,12 +109,12 @@ def findfile(path,pattern,verbose=2):
 
 def recenter_prior(z0, p0, Xa, Sa, input_value, sfc_or_pwv=0, changeTmethod=0, verbose=1):
     """
-    This code recenters the mean of the prior dataset.  
-    The water vapor profile is recentered first, using a height-independent scale factor determined 
-    from either the surfaceWVMR value or the PWV (selected using the sfc_or_pwv flag).  
-    The temperature profile is then recentered, using either the "conserve-RH" or 
-    "conserve-covariance" methods.  
-    Note that the uncertainty of the water vapor is also recentered, but not the temperature. 
+    This code recenters the mean of the prior dataset.
+    The water vapor profile is recentered first, using a height-independent scale factor determined
+    from either the surfaceWVMR value or the PWV (selected using the sfc_or_pwv flag).
+    The temperature profile is then recentered, using either the "conserve-RH" or
+    "conserve-covariance" methods.
+    Note that the uncertainty of the water vapor is also recentered, but not the temperature.
     :z: The vertical grid of the prior
     :p: The mean pressure profile of the prior
     :Xa: The mean profiles of [temperature,waterVapor] (also called [T,q])
@@ -266,7 +266,7 @@ def read_irs_ch(path,date,irs_type,fv,fa,irs_spec_cal_factor,
     files,status = findfile(path,filename)
     if status == 1:
         return err
-    
+
     if len(files) == 0:
         print('Error: Unable to find any IRS channel data -- aborting')
         return err
@@ -450,14 +450,14 @@ def read_irs_ch(path,date,irs_type,fv,fa,irs_spec_cal_factor,
 
     chsecs = np.copy(secs)
     mrad = mrad.T
-    
+
     # Keep only the zenith pointing data, using the keyword specified in the VIP to control the behavior
     if((zenith_scene_mirror_angle < 3) | (zenith_scene_mirror_angle > 357)):
         foo = np.where((sceneMirrorAngle < 3) | (sceneMirrorAngle > 357))[0]
     else:
         foo = np.where((zenith_scene_mirror_angle-3 < sceneMirrorAngle) &
                        (sceneMirrorAngle < zenith_scene_mirror_angle+3))[0]
-        
+
     if len(foo) == 0:
         # Check to see if all of the data is missing and if using AERI data then
         # set to default value. If not abort. This can happen in ARM data
@@ -551,7 +551,7 @@ def read_irs_ch(path,date,irs_type,fv,fa,irs_spec_cal_factor,
     #both turned on
 
     if ((fv > 0) & (fa > 0)):
-        print('Error in irs_read_ch: both the IRS obscuration (Fv) and ' + 
+        print('Error in irs_read_ch: both the IRS obscuration (Fv) and ' +
 	          'aft-optics (Fa) corrections are turned on in the VIP -- turn one or both off')
         return err
 
@@ -639,86 +639,55 @@ def read_all_data(date, retz, tres, dostop, verbose, avg_instant, ch1_path,
         fail = 1
         return fail, -999, -999, -999
 
-    # Check the irs_type flag. If it is -1, then we will not read any IRS data
-    # in, and instead use MWR data as the master dataset. I will also simulate a
-    # few channels on the IRS because it makes the rest of the code easier
-    # (fewer changes) to make
+    # Check the irs_type flag. If it is < 0, then we will not read any IRS data
+    # in, and instead use tres to create data that acts as the master dataset. I will also simulate a
+    # few channels on the IRS because it makes the rest of the code easier (fewer changes) to make
 
-    if ((irs_type <= -1) & (mwr_type > 0)):
+    if irs_type <= -1:
 
-        #In this example, the "replicate" keyword should be unity. Since we aren't
-        # using IRS data in this case, it should not have any other value
+        if tres <= 0:
+            print("Error: tres must be greater than 0 if irs_type is less than 0")
+            fail = 1
+            return fail, -999, -999, -999
 
-        if mwr_tb_replicate != 1:
+        if (mwr_tb_replicate != 1) & (mwr_type > 0):
             print('Error: The mwr_tb_replicate should be unity in this MWR-only retrieval (no IRS data)')
             fail = 1
             return fail, -999, -999, -999
 
-        # I will read in the MWR data here and again later. I need to read it here
-        # so that I can simulate IRS data (all as MISSING) so that the rest of the code
-        # code can work.  Note that irs_type (which is a negative number) also
-        # defines the "step" used to read in the MWR data, which is pretty useful if
-        # we are reading in HATPRO data which can have >3000 samples per day (i.e., the
-        # irs_type is used to subsample the MWR data)
+        # Create a fake time grid based on tres so we have use some fake IRS observations
+        # to make the rest of the code work properly
+        blah = (datetime.strptime(str(date), "%Y%m%d") - datetime(1970,1,1)).total_seconds()
+        fake_secs = np.array([blah + i for i in np.arange(0, 60*60*24, tres * 60)])
 
-        print('  Attempting to use MWR as the master instrument; no IRS data will be read in')
-        
-        # Check to make sure the directory exists and has files in it 
-        if os.path.isdir(mwr_path):
-            if len(os.listdir(mwr_path)) > 0:
-                mwr_data = read_mwr(mwr_path, mwr_rootname, date, mwr_type, abs(irs_type), 
-                           vip['mwr_freq_field'], mwr_elev_field, mwr_n_tb_fields,
-                           mwr_tb_field_names, mwr_tb_freqs, mwr_tb_noise, mwr_tb_bias, mwr_tb_field1_tbmax,
-                           verbose, single_date=True)
-            else:
-                print('  The directory for the master instrument: ' + mwr_path)
-                print('      has no files in it!')
-                return 1, -999, -999, -999
-        else:
-            print('  The directory for the master instrument: ' + mwr_path)
-            print('      does not exist!')
-            return 1, -999, -999, -999
-            
-        if (mwr_data['success'] != 1) or (mwr_data['type'] == 0):
-            print('Problem reading MWR data -- unable to continue because the MWR is the master instrument')
-            fail = 1
-            return fail, -999, -999, -999
-        else:
-            #Quick check of the surface pressure field. If the values are negative,
-            #then the code is not finding the pressure field and the retrieval won't
-            #be able to run -- abort here.
+        wnum = np.arange(int((905 - 900) / 0.5) + 1) * 0.5 + 900  # Simulated wavenumber array
+        mrad = np.ones((len(wnum), len(fake_secs))) * -999.0  # Radiance is all missing
+        noise = np.ones((len(wnum), len(fake_secs)))  # Set all noise values to 1
+        yy = np.array([datetime.utcfromtimestamp(x).year for x in fake_secs])
+        mm = np.array([datetime.utcfromtimestamp(x).month for x in fake_secs])
+        dd = np.array([datetime.utcfromtimestamp(x).day for x in fake_secs])
+        hour = np.array(
+            [((datetime.utcfromtimestamp(x) - datetime(yy[0], mm[0], dd[0])).total_seconds()) / 3600. for x in fake_secs])
+        ymd = yy * 10000 + mm * 100 + dd
 
-            foo = np.where(mwr_data['psfc'] > 0)
-            if len(foo) == 0:
-                print('    Warning: no surface data found in the MWR files. Default station_pres values will be used')
-                print('        unless an external surface pressure data source is provided.')
+        irseng = ({'success': 1, 'secs': fake_secs, 'ymd': ymd, 'hour': hour,
+                   'bbcavityfactor': np.zeros(len(fake_secs)),
+                   'interferometerSecondPortTemp': np.ones(len(fake_secs)) * 300.0})
 
-            wnum = np.arange(int((905-900)/0.5)+1)*0.5+900            #Simulated wavenumber array
-            mrad = np.ones((len(wnum),len(mwr_data['secs'])))*-999.0   #Radiance is all missing
-            noise = np.ones((len(wnum),len(mwr_data['secs'])))         #Set all noise values to 1
-            yy = np.array([datetime.utcfromtimestamp(x).year for x in mwr_data['secs']])
-            mm = np.array([datetime.utcfromtimestamp(x).month for x in mwr_data['secs']])
-            dd = np.array([datetime.utcfromtimestamp(x).day for x in mwr_data['secs']])
-            hour = np.array([((datetime.utcfromtimestamp(x)-datetime(yy[0],mm[0],dd[0])).total_seconds())/3600. for x in mwr_data['secs']])
-            ymd = yy*10000 + mm*100 + dd
+        irsch1 = ({'success': 1, 'secs': fake_secs, 'ymd': ymd, 'yy': yy, 'mm': mm, 'dd': dd, 'hour': hour,
+                   'wnum': wnum, 'rad': mrad, 'hatchopen': np.ones(len(fake_secs)),
+                   'atmos_pres': np.ones(len(fake_secs)) * 1013, 'missingDataFlag': np.zeros(len(fake_secs)),
+                   'fv': 0.0, 'fa': 0.0})
 
-            irseng = ({'success':1, 'secs':mwr_data['secs'], 'ymd':ymd, 'hour':hour,
-                       'bbcavityfactor': np.zeros(len(mwr_data['secs'])),
-                       'interferometerSecondPortTemp': np.ones(len(mwr_data['secs']))*300.0})
+        irssum = ({'success': 1, 'secs': fake_secs, 'ymd': ymd, 'hour': hour, 'wnum': wnum, 'noise': noise,
+                   'lat': -999, 'lon': -999, 'alt': -999})
 
-            irsch1 = ({'success':1, 'secs':mwr_data['secs'], 'ymd':ymd, 'yy':yy, 'mm':mm, 'dd':dd, 'hour':hour,
-                        'wnum':wnum, 'rad':mrad, 'hatchopen': np.ones(len(mwr_data['secs'])),
-                        'atmos_pres':mwr_data['psfc'], 'missingDataFlag': np.zeros(len(mwr_data['secs'])),
-                        'fv':0.0, 'fa': 0.0})
-
-            irssum = ({'success':1, 'secs':mwr_data['secs'], 'ymd':ymd, 'hour':hour, 'wnum':wnum, 'noise':noise,
-                        'lat':mwr_data['lat'], 'lon':mwr_data['lon'], 'alt':mwr_data['alt']})
 
     else:
 
         # Read in the IRS data. Befoe we do though we are going to check if directories
         # for the engineering, summmary, and ch1 files exist and have files
-        
+
         if not os.path.isdir(eng_path):
             print('  The IRS engineering file directory: ' + eng_path)
             print('    does not exist!')
@@ -728,7 +697,7 @@ def read_all_data(date, retz, tres, dostop, verbose, avg_instant, ch1_path,
                 print('  The IRS engineering file directory: ' + eng_path)
                 print('    has no files in it!')
                 return 1, -999, -999, -999
-        
+
         if not os.path.isdir(ch1_path):
             print('  The IRS channel file directory: ' + ch1_path)
             print('    does not exist!')
@@ -738,7 +707,7 @@ def read_all_data(date, retz, tres, dostop, verbose, avg_instant, ch1_path,
                 print('  The IRS channel file directory: ' + ch1_path)
                 print('    has no files in it!')
                 return 1, -999, -999, -999
-            
+
         if not os.path.isdir(sum_path):
             print('  The IRS summary file directory: ' + sum_path)
             print('    does not exist!')
@@ -748,7 +717,7 @@ def read_all_data(date, retz, tres, dostop, verbose, avg_instant, ch1_path,
                 print('  The IRS summary file directory: ' + sum_path)
                 print('    has no files in it!')
                 return 1, -999, -999, -999
-            
+
         irseng = read_irs_eng(eng_path,date,irs_type,verbose)
         if irseng['success'] == 0:
             print('  Problem reading IRS eng data')
@@ -1647,11 +1616,11 @@ def read_irs_sum(path,date,irs_type,smooth_noise,verbose):
 
     if verbose >= 3:
         print('  Looking for IRS summary data as ' + filename)
-    
+
     files, status = findfile(path,filename)
     if status == 1:
         return err
-    
+
     if len(files) == 0:
         print('Error: Unable to find any IRS summary data - aborting')
 
@@ -2018,8 +1987,8 @@ def read_vceil(path, date, vceil_type, ret_secs, verbose):
                 print('    Reading the file ' + files[i])
             fid = Dataset(files[i],'r')
             to  = fid.variables['time'][:].astype('float')
-	               # Because the E-PROFILE has this field as a 2-d field
-            cbhx = fid.variables['cloud_base_height'][:,0]  
+                # Because the E-PROFILE has this field as a 2-d field
+            cbhx = fid.variables['cloud_base_height'][:,0]
             visx = fid.variables['vertical_visibility'][:]
             fid.close()
 
@@ -2036,7 +2005,7 @@ def read_vceil(path, date, vceil_type, ret_secs, verbose):
         vis = vis/1000.              # Convert m AGL to km AGL
         bt  = secs[0]
 
-		# If the CBH <= and vis > 0, the replace the CBH with visibility
+        # If the CBH <= and vis > 0, the replace the CBH with visibility
         foo = np.where( (cbh <= 0) & (vis > 0) )[0]
         if len(foo) > 1:
             if verbose >= 1:
@@ -2436,7 +2405,11 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
             temp_noise_adder_hts, temp_noise_adder_val, temp_prof_minht, temp_prof_maxht,
             temp_time_delta, dostop, verbose):
 
-    external = {'success':0, 'nTprof':-1, 'nQprof':-1}
+    external = {'success':0, 'nTprof':-1, 'nQprof':-1, 'attrs': {}}
+
+    # Dict to save attributes from the input data. Currently only used for generic_grid obs
+    # TODO - Implement this for the other obs types
+    saved_attributes = {}
 
     model_type = 'None'
     model_lat = -999.
@@ -2861,6 +2834,57 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
             qunit = 'g/m3'
             qtype = 'NCAR MPD data'
 
+
+    # Read in a generic observation grid
+    elif wv_prof_type == 7:
+        if verbose >= 1:
+            print('  Reading in genric observation grid to constrain the WV profile')
+
+        files = []
+        for i in range(len(dates)):
+            tempfiles, status = (findfile(wv_prof_path,'*grid*' + dates[i] + '*.(cdf|nc)'))
+            if status == 1:
+                return external
+            files = files + tempfiles
+        if len(files) == 0:
+            if verbose >= 1:
+                print('    No gridded data found in this directory for this date')
+            external['nQprof'] = 0
+        else:
+            if verbose >= 2:
+                print('    Reading ' + str(len(files))  + ' gridded WV files')
+            for i in range(len(files)):
+                fid = Dataset(files[i], 'r')
+                bt = fid.variables['base_time'][0].astype('float')
+                to = fid.variables['time_offset'][:].astype('float')
+                zzq = fid.variables['height'][:]
+                wwx = fid.variables['waterVapor'][:]
+                ssx = fid.variables['sigma_waterVapor'][:]
+
+                # Keep the attributes from this so we can write them to the output netCDF
+                for key in fid.ncattrs():
+                    saved_attributes[f'extprof_{key}']= fid.getncattr(key)
+
+                fid.close()
+
+                if i == 0:
+                    qsecs = bt+to
+                    wv = np.copy(wwx)
+                    swv = np.copy(ssx)
+                else:
+                    qsecs = np.append(qsecs,bt+to)
+                    wv = np.vstack((wv, wwx))
+                    swv = np.vstack((swv,ssx))
+
+            wv = wv.T
+            swv = swv.T
+            external['nQprof'] = len(qsecs)
+
+            qunit = 'g/kg'
+            qtype = 'Generic observation'
+
+
+
     elif wv_prof_type == 99:
         if verbose >= 1:
             print('  Reading in RHUBC-2 AER GVRP-retrieval radiosonde data to constrain the WV profile')
@@ -3242,6 +3266,58 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
             temp = temp.T
             stemp = stemp.T
 
+
+    elif temp_prof_type == 7:
+        if verbose >= 1:
+            print('  Reading in genric observation grid to constrain the temperature profile')
+
+        files = []
+        for i in range(len(dates)):
+            tempfiles, status = (findfile(temp_prof_path,'*grid*' + dates[i] + '*.(cdf|nc)'))
+            if status == 1:
+                return external
+            files = files + tempfiles
+
+        if len(files) == 0:
+            if verbose >= 1:
+                print('    No gridded data found in this directory for this date')
+            external['nTprof'] = 0
+        else:
+            if verbose >= 2:
+                print('    Reading ' + str(len(files)) + ' NWP output temp files')
+            for i in range(len(files)):
+                fid = Dataset(files[i], 'r')
+                bt = fid.variables['base_time'][0].astype('float')
+                to = fid.variables['time_offset'][:].astype('float')
+                zzt = fid.variables['height'][:]
+                ttx = fid.variables['tdry'][:]
+                ssx = fid.variables['sigma_tdry'][:]
+
+                # Keep the attributes from this so we can write them to the output netCDF
+                for key in fid.ncattrs():
+                    saved_attributes[f'extprof_{key}'] = fid.getncattr(key)
+
+                fid.close()
+
+                if i == 0:
+                    tsecs = bt+to
+                    temp = np.copy(ttx)
+                    stemp = np.copy(ssx)
+                else:
+                    tsecs = np.append(tsecs,bt+to)
+                    temp = np.vstack((temp, ttx))
+                    stemp = np.vstack((stemp,ssx))
+
+            temp = temp.T
+            stemp = stemp.T
+            external['nTprof'] = len(tsecs)
+
+            # Perform a quick chec
+
+            tunit = 'C'
+            ttype = 'Generic observation output'
+
+
     # Read in the RHUBC-2 radiosonde data from AER's files
     elif temp_prof_type == 99:
         if verbose >= 1:
@@ -3386,7 +3462,7 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
             tmp_swater[foo,:] = np.nan
 
 
-        # Now interpolate to the TROPoe temporal grid. 
+        # Now interpolate to the TROPoe temporal grid.
         for j in range(len(ht)):
             new_water[j,:]  = np.interp(secs,qsecs,tmp_water[j,:])
             new_swater[j,:] = np.interp(secs,qsecs,tmp_swater[j,:])
@@ -3425,7 +3501,7 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
         # Now temperature....
     if external['nTprof'] > 0:
         # First interpolate to the correct TROPoe vertical grid. But also
-        # look for bad data in the raw profile. 
+        # look for bad data in the raw profile.
 
         tmp_temp = np.zeros((len(ht),len(tsecs)))
         tmp_stemp = np.zeros((len(ht), len(tsecs)))
@@ -3516,26 +3592,26 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
                     'wvmultiplier':wvmultiplier, 'wv':new_water, 'sig_wv':new_swater, 'temp':new_temp, 'sig_temp':new_stemp,
                     'wvminht':wv_prof_minht, 'wvmaxht':wv_prof_maxht, 'tempminht':temp_prof_minht, 'tempmaxht':temp_prof_maxht,
                     'timeflag':timeflag, 'wv_type':wv_prof_type, 'temp_type':temp_prof_type, 'tunit':tunit, 'qunit':qunit,
-                    'ttype':ttype, 'qtype':qtype})
+                    'ttype':ttype, 'qtype':qtype, 'attrs': saved_attributes})
 
     elif external['nQprof'] > 0:
         external = ({'success':1, 'nTprof':external['nTprof'], 'nQprof':external['nQprof'], 'secs':secs, 'ht':ht,
                     'wvmultiplier':wvmultiplier, 'wv':new_water, 'sig_wv':new_swater,
                     'wvminht':wv_prof_minht, 'wvmaxht':wv_prof_maxht,
                     'timeflag':timeflag, 'wv_type':wv_prof_type, 'qunit':qunit,
-                    'qtype':qtype})
+                    'qtype':qtype, 'attrs': saved_attributes})
 
     elif external['nTprof'] > 0:
          external = ({'success':1, 'nTprof':external['nTprof'], 'nQprof':external['nQprof'], 'secs':secs, 'ht':ht,
                     'temp':new_temp, 'sig_temp':new_stemp,
                     'tempminht':temp_prof_minht, 'tempmaxht':temp_prof_maxht,
                     'timeflag':timeflag, 'temp_type':temp_prof_type, 'tunit':tunit,
-                    'ttype':ttype})
+                    'ttype':ttype, 'attrs': saved_attributes})
 
     else:
          external = ({'success':1, 'nTprof':external['nTprof'], 'nQprof':external['nQprof'],
                     'wv_type':wv_prof_type, 'temp_type':temp_prof_type, 'tunit':tunit, 'qunit':qunit,
-                    'ttype':ttype, 'qtype':qtype})
+                    'ttype':ttype, 'qtype':qtype, 'attrs': saved_attributes})
 
     return external
 
@@ -3546,7 +3622,7 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
 
 def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
             sfc_wv_type, sfc_path, sfc_temp_npts, sfc_wv_npts, sfc_temp_rep_error, sfc_wv_mult_error,
-            sfc_wv_rep_error, sfc_rh_sigma_error, sfc_temp_sigma_error, 
+            sfc_wv_rep_error, sfc_rh_sigma_error, sfc_temp_sigma_error,
             sfc_time_delta, sfc_relative_height, co2_sfc_type,
             co2_sfc_npts, co2_sfc_rep_error, co2_sfc_path, co2_sfc_relative_height,
             co2_sfc_time_delta, sfc_p_type, dostop, verbose):

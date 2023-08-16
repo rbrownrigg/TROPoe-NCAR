@@ -1303,6 +1303,21 @@ def compute_jacobian_external_temp_profiler(Xn, p, z, minht, maxht, temp_type):
             Kij[i,foo[i]+k] = (tmp[foo[i]]-ttv[foo[i]]) / (q1[foo[i]] - q0[foo[i]])
         FXn = ttv[foo]
 
+    elif temp_type == 7:
+        foo = np.where((minht <= z) & (z <= maxht))[0]
+        if len(foo) == 0:
+            print('Error in general temperature profiler forward model -- no vertical levels found')
+            return flag, -999., -999.
+
+        # We have a perfect forward model and the Jacobian has perfect sensitivity
+        # to changes in the temperature (over the range where we have observations)
+        # and no sensitivity anywhere else
+
+        FXn = np.copy(t[foo])
+        Kij = np.zeros((len(foo),len(Xn)))
+        for j in range(len(foo)):
+            Kij[j,foo[j]] = 1.
+
     # AER's GVRP temperature retrievals from RHUBC-2
     elif temp_type == 99:
         # The radiosonde data were read in and are in degC
@@ -1475,6 +1490,20 @@ def compute_jacobian_external_wv_profiler(Xn, p, z, minht, maxht, wv_type, wv_mu
 
         FXn = rho[foo]
 
+    elif wv_type == 7:
+        foo = np.where((minht <= z) & (z <= maxht))[0]
+        if len(foo) == 0:
+            print('Error in general water vapor profiler forward model -- no vertical levels found')
+            return flag, -999., -999.
+
+        # We have a perfect forward model and the Jacobian has perfect sensitivity
+        # to changes in the temperature (over the range where we have observations)
+        # and no sensitivity anywhere else
+
+        FXn = np.copy(w[foo])
+        Kij = np.zeros((len(foo),len(Xn)))
+        for j in range(len(foo)):
+            Kij[j,k+foo[j]] = 1.
 
     # AER's GVRP water vapor retrievals from RHUBC-2
     elif wv_type == 99:
