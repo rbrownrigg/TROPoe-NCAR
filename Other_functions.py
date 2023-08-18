@@ -204,14 +204,6 @@ def trace_gas_prof(types, z, coef):
         # The constant profile, given by the first element of the input vector
         tg_prof = np.ones(len(z))*coef[0]
     elif types == 1:
-        # The exponential profile used by Kobra Khosravain.
-        #       Coef[0] is the value in the free troposhere [ppm]
-        #       Coef[1] is the value at the surface relative to Coef[0] [ppm]
-        #       Coef[2] is the shape parameter. It should be between (approx) -20 to -1. [unitless]
-        tg_prof = coef[0] + coef[1]*np.exp( coef[2]*z)
-        print('Error in trace_gas_prof: profile shape =1 (exponential profile is disabled -- aborting')
-        return -999.
-    elif types == 2:
         # The stair step profile
         #       Coef[0] is the value in the free troposhere [ppm]
         #       Coef[1] is the value in boundary layer relative to Coef[0] [ppm]
@@ -220,6 +212,14 @@ def trace_gas_prof(types, z, coef):
         foo = np.where(z <= coef[2])[0]
         if len(foo) > 0:
             tg_prof[foo] += coef[1]
+    elif types == 2:
+        # The exponential profile used by Kobra Khosravain.
+        #       Coef[0] is the value in the free troposhere [ppm]
+        #       Coef[1] is the value at the surface relative to Coef[0] [ppm]
+        #       Coef[2] is the shape parameter. It should be between (approx) -20 to -1. [unitless]
+        tg_prof = coef[0] + coef[1]*np.exp( coef[2]*z)
+        print('Error in trace_gas_prof: profile shape =1 (exponential profile is disabled -- aborting')
+        return -999.
     else:
         # This option has not been defined. Abort !!
         print('Error in trace_gas_prof: Undefined type specified.')

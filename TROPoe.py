@@ -11,7 +11,7 @@
 #
 # ----------------------------------------------------------------------------
 
-__version__ = '0.6.98'
+__version__ = '0.6.99'
 
 import os
 import sys
@@ -1195,19 +1195,19 @@ for i in range(len(irs['secs'])):                        # { loop_i
                                    minht=vip['min_PBL_height'], maxht=vip['max_PBL_height'], nudge=vip['nudge_PBL_height'])
 
         coef = Other_functions.get_a2_pblh(pblh)           # Get the shape coef for this PBL height
-        if (vip['retrieve_co2'] == 2):
+        if (vip['retrieve_co2'] == 1):
             Xn[nX+4+2] = pblh
-        elif ((vip['retrieve_co2'] == 1) & (vip['fix_co2_shape'] == 1)):
+        elif ((vip['retrieve_co2'] == 2) & (vip['fix_co2_shape'] == 1)):
             Xn[nX+4+2] = coef
 
-        if (vip['retrieve_ch4'] == 2):
+        if (vip['retrieve_ch4'] == 1):
             Xn[nX+4+3+2] = pblh
-        elif ((vip['retrieve_ch4'] == 1) & (vip['fix_ch4_shape'] == 1)):
+        elif ((vip['retrieve_ch4'] == 2) & (vip['fix_ch4_shape'] == 1)):
             Xn[nX+4+3+2] = coef
 
-        if (vip['retrieve_n2o'] == 2):
+        if (vip['retrieve_n2o'] == 1):
             Xn[nX+4+6+2] = pblh
-        elif ((vip['retrieve_n2o'] == 1) & (vip['fix_n2o_shape'] == 1)):
+        elif ((vip['retrieve_n2o'] == 2) & (vip['fix_n2o_shape'] == 1)):
             Xn[nX+4+6+2] = coef
 
         # Decorrelate the levels above the PBLH from the levels below in the prior.
@@ -1722,11 +1722,11 @@ for i in range(len(irs['secs'])):                        # { loop_i
         # as that will impact the "append" option (if we are using that). So we need this
         # stub of code to do the same thing
 
-        if ((vip['retrieve_co2'] == 1) & (vip['fix_co2_shape'] == 1)):
+        if ((vip['retrieve_co2'] == 2) & (vip['fix_co2_shape'] == 1)):
             Xnp1[nX+4+2] = np.copy(Xn[nX+4+2])
-        if ((vip['retrieve_ch4'] == 1) & (vip['fix_ch4_shape'] == 1)):
+        if ((vip['retrieve_ch4'] == 2) & (vip['fix_ch4_shape'] == 1)):
             Xnp1[nX+4+5] = np.copy(Xn[nX+4+5])
-        if ((vip['retrieve_n2o'] == 1) & (vip['fix_n2o_shape'] == 1)):
+        if ((vip['retrieve_n2o'] == 2) & (vip['fix_n2o_shape'] == 1)):
             Xnp1[nX+4+8] = np.copy(Xn[nX+4+8])
 
         # Look for NaN values in this updated state vector. They should not

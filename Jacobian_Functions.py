@@ -546,9 +546,9 @@ def compute_jacobian_irs_interpol(X, p, zz, lblhome, lbldir, lblroot, lbl_std_at
         # Compute the sensitivity to the 3rd coefficient. Do this by
         # weighting the optical depth profile as a function of height
 
-        if (doco2 == 1) & (fix_co2_shape == 1):
+        if (doco2 == 2) & (fix_co2_shape == 1):
             Kij[:,2*k+6] = 0             # By making the Jacobian zero, then retrieval will not change this value
-        elif doco2 == 1:
+        elif doco2 == 2:
 	    # This bit of code should only be executed if we are using the expoential trace gas profile shape; otherwise, this jacobian is zero
             print("Logic error within compute_jacobian_irs_interpol() -- this code section was supposed to be disabled -- aborting")
             sys.exit()
@@ -632,9 +632,9 @@ def compute_jacobian_irs_interpol(X, p, zz, lblhome, lbldir, lblroot, lbl_std_at
 
         # Compute the sensitivity to the 3rd coefficient. Do this by
         # weighting the optical depth profile as a function of height
-        if ((doch4 == 1) & (fix_ch4_shape == 1)):
+        if ((doch4 == 2) & (fix_ch4_shape == 1)):
             Kij[:,2*k+9] = 0         # By making the Jacobian zero, then the retrieval will not change this value
-        elif doch4 == 1:
+        elif doch4 == 2:
             c0 = np.copy(ch4)
             c0[2] -= 2.
             # If the 2nd coefficient is zero, then the Jacobian will not show any sensitivity
@@ -713,9 +713,9 @@ def compute_jacobian_irs_interpol(X, p, zz, lblhome, lbldir, lblroot, lbl_std_at
 
         # Compute the sensitivity to the 3rd coefficient. Do this by weighting
         # the optical depth profile as a function of height
-        if ((don2o == 1) & (fix_n2o_shape == 1)):
+        if ((don2o == 2) & (fix_n2o_shape == 1)):
             Kij[:,2*k+12] = 0                 # By making the Jacobian zero, then retrieval will not change this value
-        elif don2o == 1:
+        elif don2o == 2:
             c0 = np.copy(n2o)
             c0[2] -= 2.
             # If the 2nd coefficient is zero, then the Jacobian will not show any sensitivity
