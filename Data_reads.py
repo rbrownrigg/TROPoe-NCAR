@@ -3670,7 +3670,7 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
 
         files = []
         for i in range(len(dates)):
-            tempfiles, status = (findfile(sfc_path,'*met*' + dates[i] + '*.(cdf|nc)'))
+            tempfiles, status = (findfile(sfc_path,'*(met|thwaps)*' + dates[i] + '*.(cdf|nc)'))
             if status == 1:
                 return external
             files = files + tempfiles
@@ -3682,18 +3682,33 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
                 fid = Dataset(files[i], 'r')
                 bt = fid.variables['base_time'][:].astype('float')
                 to = fid.variables['time_offset'][:].astype('float')
-                p = fid.variables['atmos_pressure'][:]        # kPa
-                t = fid.variables['temp_mean'][:]             # degC
-                u = fid.variables['rh_mean'][:]               # %RH
-                fid.close()
-                p *= 10.                 # Convert kPa to hPa
+                # If the field "atmos_pressure" exists, assume we are reading the "met" datastream
+                if len(np.where(np.array(list(fid.variables.keys())) == 'atmos_pressure')[0]) > 0:
+                    p = fid.variables['atmos_pressure'][:]    # kPa
+                    p *= 10.                                  # Convert kPa to hPa
+                    t = fid.variables['temp_mean'][:]         # degC
+                    u = fid.variables['rh_mean'][:]           # %RH
+                    fid.close()
+                # Else if the field "pres" exists, then assume we are reading the "thwaps" datastream
+                elif len(np.where(np.array(list(fid.variables.keys())) == 'pres')[0]) > 0:
+                    p = fid.variables['pres'][:]              # hPa
+                    t = fid.variables['temp'][:]              # degC
+                    u = fid.variables['rh'][:]                # %RH
+                    fid.close()
+                # Else I don't know what I am reading -- abort here
+                else:
+                    fid.close()
+                    print('    Problem reading the ARM met/thwaps data -- returning missing data')
+                    return external
+
+                # Some simple QC
                 foo = np.where((p > 0) & (p < 1050) & (t < 60) & (u >= 0) & (u < 103))[0]
                 if len(foo) < 2:
                     continue
-                to = to[foo]
-                p = p[foo]
-                t = t[foo]
-                u = u[foo]
+                to = to[foo].squeeze()
+                p = p[foo].squeeze()
+                t = t[foo].squeeze()
+                u = u[foo].squeeze()
                 tunit = 'C'
                 ttype = 'ARM met station'
 
@@ -3875,7 +3890,7 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
 
         files = []
         for i in range(len(dates)):
-            tempfiles, status = (findfile(sfc_path,'*met*' + dates[i] + '*.(cdf|nc)'))
+            tempfiles, status = (findfile(sfc_path,'*(met|thwaps)*' + dates[i] + '*.(cdf|nc)'))
             if status == 1:
                 return external
             files = files + tempfiles
@@ -3888,11 +3903,26 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
                 fid = Dataset(files[i], 'r')
                 bt = fid.variables['base_time'][:].astype('float')
                 to = fid.variables['time_offset'][:].astype('float')
-                p = fid.variables['atmos_pressure'][:]        # kPa
-                t = fid.variables['temp_mean'][:]             # degC
-                u = fid.variables['rh_mean'][:]               # %RH
-                fid.close()
-                p *= 10.                 # Convert kPa to hPa
+                # If the field "atmos_pressure" exists, assume we are reading the "met" datastream
+                if len(np.where(np.array(list(fid.variables.keys())) == 'atmos_pressure')[0]) > 0:
+                    p = fid.variables['atmos_pressure'][:]    # kPa
+                    p *= 10.                                  # Convert kPa to hPa
+                    t = fid.variables['temp_mean'][:]         # degC
+                    u = fid.variables['rh_mean'][:]           # %RH
+                    fid.close()
+                # Else if the field "pres" exists, then assume we are reading the "thwaps" datastream
+                elif len(np.where(np.array(list(fid.variables.keys())) == 'pres')[0]) > 0:
+                    p = fid.variables['pres'][:]              # hPa
+                    t = fid.variables['temp'][:]              # degC
+                    u = fid.variables['rh'][:]                # %RH
+                    fid.close()
+                # Else I don't know what I am reading -- abort here
+                else:
+                    fid.close()
+                    print('    Problem reading the ARM met/thwaps data -- returning missing data')
+                    return external
+
+                # Some simple QC
                 foo = np.where((p > 0) & (p < 1050) & (t < 60) & (u >= 0) & (u < 103))[0]
                 if len(foo) < 2:
                     continue
