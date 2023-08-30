@@ -623,10 +623,13 @@ def read_irs_ch(path,date,irs_type,fv,fa,irs_spec_cal_factor,
         for i in range(len(hour)):
             nearSfcTb[i] = Calcs_Conversions.invplanck(mnwnum,np.mean(mrad[foo,i])) - 273.15
 
+    # Sometimes the data are not in time-ascending order.  So sort the data
+    sidx = np.argsort(chsecs)
+
     # Return the data structure
-    return ({'success':1, 'secs':chsecs, 'ymd':ymd, 'yy':yy, 'mm':mm, 'dd':dd,
-            'hour':hour, 'wnum':wnum, 'rad':mrad, 'nearSfcTb':nearSfcTb, 'hatchopen':hatchOpen,
-            'atmos_pres':ambPres,'missingDataFlag':missingDataFlag, 'fv':fv, 'fa':fa})
+    return ({'success':1, 'secs':chsecs[sidx], 'ymd':ymd[sidx], 'yy':yy[sidx], 'mm':mm[sidx], 'dd':dd[sidx],
+            'hour':hour[sidx], 'wnum':wnum, 'rad':mrad[:,sidx], 'nearSfcTb':nearSfcTb[sidx], 'hatchopen':hatchOpen[sidx],
+            'atmos_pres':ambPres[sidx],'missingDataFlag':missingDataFlag[sidx], 'fv':fv, 'fa':fa})
 
 
 ################################################################################
@@ -1610,9 +1613,12 @@ def read_irs_eng(path, date, irs_type, verbose):
 
     ymd = yy*10000 + mm*100 + dd
 
-    return ({'success':1, 'secs':secs, 'ymd':ymd, 'hour':hour,
-            'bbcavityfactor':bbcavityfactor,
-            'interferometerSecondPortTemp':interferometerSecondPortTemp})
+    # Sometimes the data are not in time-ascending order.  So sort the data
+    sidx = np.argsort(secs)
+
+    return ({'success':1, 'secs':secs[sidx], 'ymd':ymd[sidx], 'hour':hour[sidx],
+            'bbcavityfactor':bbcavityfactor[sidx],
+            'interferometerSecondPortTemp':interferometerSecondPortTemp[sidx]})
 
 
 
@@ -1781,8 +1787,11 @@ def read_irs_sum(path,date,irs_type,smooth_noise,verbose):
     ymd = yy*10000 + mm*100 + dd
     hour = np.array([((datetime.utcfromtimestamp(x)-datetime(yy[0],mm[0],dd[0])).total_seconds())/3600. for x in secs])
 
-    return ({'success':1, 'secs':secs,'ymd':ymd, 'hour':hour, 'wnum':wnum,
-             'noise':noise, 'lat':lat, 'lon':lon, 'alt':alt})
+    # Sometimes the data are not in time-ascending order.  So sort the data
+    sidx = np.argsort(secs)
+
+    return ({'success':1, 'secs':secs[sidx],'ymd':ymd[sidx], 'hour':hour[sidx], 'wnum':wnum,
+             'noise':noise[:,sidx], 'lat':lat, 'lon':lon, 'alt':alt})
 
 ################################################################################
 # This function read in the ceilometer/vertically pointing lidar data.
