@@ -601,6 +601,7 @@ if ((nfooco2 > 0) | (nfooch4 > 0) | (nfoon2o > 0)):
     sys.exit()
 
 # Recenter the prior if desired
+recenter_input_value = -1
 if vip['recenter_prior'] > 0:
     # If the vip.recenter_input is set, this is the override value
     if vip['recenter_input'] > 0:   # Rescale based on the value inputted into the vip
@@ -610,8 +611,26 @@ if vip['recenter_prior'] > 0:
             foo = np.where(ext_tseries['wv'] > 0)  # Need to take out an -999s
             recenter_input_value = np.mean(ext_tseries['wv'][foo])
         else:
-            print('Warning: Trying to recenter the prior using the surface met, but there are no valid WV surface obs')
-            print('            So the prior was not rescaled')
+            print('    Warning: Trying to recenter the prior using the surface met, but there are no valid WV surface obs')
+            foo = np.where(irs['nearSfcTb'] > -990)[0]
+            if len(foo) > 0:
+                meanNearSfcTemp = np.nanmedian(irs['nearSfcTb'][foo])
+                print('            So using the IRS radiometric near-surface air temperature to attempt to recenter')
+            else:
+                foo = np.where(mwr['nearSfcTb'] > -990)[0]
+                if len(foo) > 0:
+                    meanNearSfcTemp = np.nanmedian(mwr['nearSfcTb'][foo])
+                    print('            So using the MWR radiometric near-surface air temperature to attempt to recenter')
+                else:
+                    meanNearSfcTemp = -999.
+            if(meanNearSfcTemp > -990):
+                priorSfcT = Xa[0]
+                priorSfcQ = Xa[len(z)]
+                priorSfcP = Pa[0]
+                priorSfcRH = (Calcs_Conversions.w2rh(priorSfcQ, priorSfcP, priorSfcT))[0]
+                estSfcQ    = (Calcs_Conversions.rh2w(meanNearSfcTemp, priorSfcRH, priorSfcP))[0]
+                recenter_input_value = estSfcQ
+
     elif ((vip['recenter_prior'] == 2) | (vip['recenter_prior'] == 4)):
         print('Warning: Trying to recenter the prior using an external PWV obs, but one does not exist yet -- aborting')
         VIP_Databases_functions.abort(lbltmpdir, date)

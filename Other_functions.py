@@ -590,7 +590,8 @@ def find_cloud(irsch1, vceil, window_in, window_out, default_cbh):
     return ({'success':1, 'secs':irsch1['secs'], 'ymd':irsch1['ymd'], 'hour':irsch1['hour'],
             'yy':irsch1['yy'], 'mm':irsch1['mm'], 'dd':irsch1['dd'], 'cbh':vcbh, 'cbhflag':vflag,
             'hatchopen':irsch1['hatchopen'], 'avg_instant':irsch1['avg_instant'],
-            'wnum':irsch1['wnum'], 'radmn':irsch1['radmn'], 'noise':irsch1['noise'], 'atmos_pres':irsch1['atmos_pres'],
+            'wnum':irsch1['wnum'], 'radmn':irsch1['radmn'], 'noise':irsch1['noise'], 
+            'atmos_pres':irsch1['atmos_pres'], 'nearSfcTb':irsch1['nearSfcTb'], 
             'tsfc':irsch1['tsfc'], 'fv':irsch1['fv'], 'fa':irsch1['fa'], 'missingDataFlag':irsch1['missingDataFlag'],
             'lat':irsch1['lat'],'lon':irsch1['lon'],'alt':irsch1['alt']})
 
