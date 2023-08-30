@@ -611,8 +611,21 @@ def read_irs_ch(path,date,irs_type,fv,fa,irs_spec_cal_factor,
             nrad[:,i] = (mrad[:,i] - fv*Brad) / (1. - fv)
         mrad = np.copy(nrad)
 
+    # Compute the near-air surface temperature (i.e., brightness temperature in a
+    # spectral band sensitive to near-surface air temperature) [degC].  I need to 
+    # test to see if I am using ch1 or ch2 radiance (look for the former first)
+    foo = np.where((675 < wnum) & (wnum < 680))[0]
+    if len(foo) == 0:
+        foo = np.where((2295 < wnum) & (wnum < 2300))[0]
+    nearSfcTb = np.zeros(len(chsecs)) - 999.
+    if len(foo) > 0:
+        mnwnum = np.mean(wnum[foo])
+        for i in range(len(hour)):
+            nearSfcTb[i] = Calcs_Conversions.invplanck(mnwnum,np.mean(mrad[foo,i])) - 273.15
+
+    # Return the data structure
     return ({'success':1, 'secs':chsecs, 'ymd':ymd, 'yy':yy, 'mm':mm, 'dd':dd,
-            'hour':hour, 'wnum':wnum, 'rad':mrad, 'hatchopen':hatchOpen,
+            'hour':hour, 'wnum':wnum, 'rad':mrad, 'nearSfcTb':nearSfcTb, 'hatchopen':hatchOpen,
             'atmos_pres':ambPres,'missingDataFlag':missingDataFlag, 'fv':fv, 'fa':fa})
 
 
@@ -676,7 +689,8 @@ def read_all_data(date, retz, tres, dostop, verbose, avg_instant, ch1_path,
 
         irsch1 = ({'success': 1, 'secs': fake_secs, 'ymd': ymd, 'yy': yy, 'mm': mm, 'dd': dd, 'hour': hour,
                    'wnum': wnum, 'rad': mrad, 'hatchopen': np.ones(len(fake_secs)),
-                   'atmos_pres': np.ones(len(fake_secs)) * 1013, 'missingDataFlag': np.zeros(len(fake_secs)),
+                   'atmos_pres': np.ones(len(fake_secs)) * 1013, 'nearSfcTb': np.zeros(len(fake_secs))-999., 
+                   'missingDataFlag': np.zeros(len(fake_secs)),
                    'fv': 0.0, 'fa': 0.0})
 
         irssum = ({'success': 1, 'secs': fake_secs, 'ymd': ymd, 'hour': hour, 'wnum': wnum, 'noise': noise,
@@ -1147,6 +1161,7 @@ def read_mwr(path, rootname, date, mwr_type, step, mwr_freq_field, mwr_elev_fiel
                     tbsky0 = np.copy(tbsky0[:,foo])
                 psfc = psfc[foo]
 
+    # Build the output data structure
     if mwr_type == 0:
         return {'success':1, 'type':mwr_type}
     else:
@@ -1162,10 +1177,21 @@ def read_mwr(path, rootname, date, mwr_type, step, mwr_freq_field, mwr_elev_fiel
                  'lat':lat, 'lon':lon, 'alt':alt, 'psfc':psfc[idx], 'n_fields':mwr_n_tb_fields,
                  'type':mwr_type, 'rootname':rootname})
         else:
+           # Compute the near-air surface temperature (i.e., brightness temperature in a
+           # spectral channel sensitive to near-surface air temperature) [degC].  I want 
+           # to find the channel closest to 60 GHz (without going over), but it must be 
+           # above 56.5 GHz to be used
+           foo = np.where((56.5 < freq) & (freq <= 60))[0]
+           nearSfcTb = np.zeros(len(secs)) - 999.
+           if len(foo) > 0:
+               bar = np.where(freq[foo] == np.max(freq[foo]))[0]
+               foo = foo[bar[0]]
+               nearSfcTb = np.copy(tbsky[foo,:]) - 273.15  # Convert to degC
+
            return ({'success':1, 'secs':secs[idx], 'ymd':ymd[idx], 'hour':hour[idx],
                  'lat':lat, 'lon':lon, 'alt':alt, 'psfc':psfc[idx], 'n_fields':mwr_n_tb_fields,
                  'type':mwr_type, 'rootname':rootname, 'tbsky_orig':tbsky0[:,idx], 'tbsky_corr':tbsky[:,idx],
-                  'freq':freq, 'noise':noise, 'bias':bias})
+                  'freq':freq, 'noise':noise, 'bias':bias, 'nearSfcTb':nearSfcTb[idx]})
 
 ################################################################################
 # This function reads in the mwr scan data.
@@ -2051,6 +2077,7 @@ def grid_irs(ch1, irssum, avg_instant, hatchOpenSwitch, missingDataFlagSwitch,
     hatflag = np.zeros(len(secs))
     mssflag = np.zeros(len(secs))
     atmos_pres = np.zeros(len(secs))
+    nsfc_temp  = np.zeros(len(secs))
 
     for i in range(len(secs)):
         # Get the channel 1 data on this grid
@@ -2118,12 +2145,14 @@ def grid_irs(ch1, irssum, avg_instant, hatchOpenSwitch, missingDataFlagSwitch,
             hatflag[i] = -9999
             mssflag[i] = 1    #The sample is missing
             atmos_pres[i] = -9999.
+            nsfc_temp[i]  = -9999.
         else:
             if len(foo) == 1:
                 rrad[:,i] = np.squeeze(ch1['rad'][:,foo])
                 hatflag[i] = ch1['hatchopen'][foo]
                 mssflag[i] = ch1['missingDataFlag'][foo]
                 atmos_pres[i] = ch1['atmos_pres'][foo]
+                nsfc_temp[i]  = ch1['nearSfcTb'][foo]
             else:
                 rrad[:,i] = np.nansum(ch1['rad'][:,foo], axis = 1)/np.float(len(foo))
                 mssflag[i] = np.nanmax(ch1['missingDataFlag'][foo])
@@ -2145,6 +2174,7 @@ def grid_irs(ch1, irssum, avg_instant, hatchOpenSwitch, missingDataFlagSwitch,
                     else:
                       hatflag[i] = 3                           # If we are here it is neither
             atmos_pres[i] = np.nanmean(ch1['atmos_pres'][foo])
+            nsfc_temp[i]  = np.nanmean(ch1['nearSfcTb'][foo])
 
         # Get the summary data on this grid
         if ((avg_instant == 0) | (avg_instant == -1)):
@@ -2226,7 +2256,7 @@ def grid_irs(ch1, irssum, avg_instant, hatchOpenSwitch, missingDataFlagSwitch,
 
     return ({'success':1, 'secs':secs, 'ymd':ymd, 'hour':hour, 'yy':yy, 'mm':mm, 'dd':dd,
             'hatchopen':hatflag, 'avg_instant':avg_instant,
-            'wnum':wnum, 'radmn':rrad, 'noise':noise, 'atmos_pres':atmos_pres,
+            'wnum':wnum, 'radmn':rrad, 'noise':noise, 'atmos_pres':atmos_pres, 'nearSfcTb':nsfc_temp, 
             'tsfc':Tsfc, 'fv':ch1['fv'], 'fa':ch1['fa'], 'missingDataFlag':mssflag,
             'lat':irssum['lat'],'lon':irssum['lon'],'alt':irssum['alt']})
 
@@ -2261,6 +2291,7 @@ def grid_mwr(mwr, avg_instant, secs, tavg, time_delta, verbose):
     # Now directly specifying the averaging time for the window
     twin = time_delta*60*2
 
+    nsfc_temp = np.zeros(len(secs)) - 999.0
     if mwr['n_fields'] > 0:
         tbsky = np.ones((mwr['n_fields'],len(secs)))*-999.0
 
@@ -2274,15 +2305,9 @@ def grid_mwr(mwr, avg_instant, secs, tavg, time_delta, verbose):
                 foo = np.where((mwr['secs'] >= secs[i]-twin*60./2.) & (mwr['secs'] < secs[i]+twin*60./2.))[0]
 
                 if len(foo) > 0:
+                    nsfc_temp[i] = np.nanmean(mwr['nearSfcTb'][foo])
                     for j in range(mwr['n_fields']):
-                        if(avg_instant == -1):
-                            if(verbose >= 2):
-                                print('      Computing the average IRS instrument noise, with NO division by sqrt(N)')
-                            tbsky[j,i] = np.nanmean(mwr['tbsky_corr'][j,foo])
-                        else:
-                            if(verbose >= 2):
-                                print('      Computing the average IRS instrument noise, dividing by sqrt(N)')
-                            tbsky[j,i] = np.nanmean(mwr['tbsky_corr'][j,foo]) / np.sqrt(len(foo))
+                        tbsky[j,i] = np.nanmean(mwr['tbsky_corr'][j,foo])
 
     elif avg_instant == 1:
         # We are taking the closest point to the center of the averaging interval,
@@ -2293,6 +2318,7 @@ def grid_mwr(mwr, avg_instant, secs, tavg, time_delta, verbose):
             if len(foo) > 0:
                 dell = np.abs(secs[i] - mwr['secs'][foo])
                 bar = np.where(dell == np.nanmin(dell))[0][0]
+                nsfc_temp[i] = mwr['nearSfcTb'][foo[bar]]
 
             if mwr['n_fields'] > 0:
                 foo = np.where((mwr['secs'] >= secs[i]-twin*60./2.) & (mwr['secs'] < secs[i]+twin*60./2.))[0]
@@ -2307,13 +2333,12 @@ def grid_mwr(mwr, avg_instant, secs, tavg, time_delta, verbose):
         return err
 
     # The structure being returned depends on the number of Tb fields desired
-
     if mwr['n_fields'] == 0:
         return ({'success':1, 'secs':secs, 'ymd':ymd, 'hour':hour,
                 'n_fields':0, 'type': mwr['type'], 'rootname':mwr['rootname']})
     else:
         return ({'success':1, 'secs':secs, 'ymd':ymd, 'hour':hour,
-                'n_fields':mwr['n_fields'], 'tbsky':tbsky, 'freq':mwr['freq'],
+                'n_fields':mwr['n_fields'], 'tbsky':tbsky, 'freq':mwr['freq'], 'nearSfcTb':nsfc_temp, 
                 'noise':mwr['noise'], 'bias':mwr['bias'], 'type': mwr['type'], 'rootname':mwr['rootname']})
 
 ################################################################################
