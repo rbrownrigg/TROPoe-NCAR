@@ -71,13 +71,13 @@ def planck_microwave(v,T):
     
 ################################################################################
 # This function computes the inverse Planck's function (it gives blackbody
-# temperature)
+# temperature).  Wnum in [cm-1], rad in [RU], and returns Tb in [K]
 ################################################################################
     
 def invplanck(wn,rad):
     
     c1 = 1.191042722e-12
-    c2 = 1.4387752          # units are [K cm
+    c2 = 1.4387752          # units are [K cm]
     c1 = c1 * 1e7           # units are now [mW/m2/ster/cm-4]
     temp = c2 * wn / (np.log(1.0 + (c1 * ((wn)**3.0) / rad)))
     
@@ -85,6 +85,7 @@ def invplanck(wn,rad):
     
 ################################################################################
 # This is the inverse planck function designed for microwave wavelengths
+# where v is frequency in [GHz] and I is radiance
 ################################################################################
 
 def inv_planck_microwave(v, I):
