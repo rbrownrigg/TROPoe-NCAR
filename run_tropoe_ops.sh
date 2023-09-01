@@ -32,8 +32,8 @@ echo "                                 Image name : $9"
 
 # If using Docker, then use this command
 echo "Running image Docker"
-docker run -it --userns=host -e "yyyymmdd=$1" -e "vfile=/data/$2" -e "pfile=/data/$3" -e "shour=$4" -e "ehour=$5" -e "verbose=$6" -v $7:/data -v $8:/tmp2 $9 
+docker run -it --userns=host -e "yyyymmdd=$1" -e "vfile=$2" -e "pfile=$3" -e "shour=$4" -e "ehour=$5" -e "verbose=$6" -v $7:/data -v $8:/tmp2 $9 
 
 # Else if you are using Podman, then comment the above command and uncomment this one
 #echo "Running image Podman"
-#podman run -it -u root --rm -e "yyyymmdd=$1" -e "vfile=/data/$2" -e "pfile=/data/$3" -e "shour=$4" -e "ehour=$5" -e "verbose=$6" -v $7:/data -v $8:/tmp2 $9 
+#podman run -it -u root --rm -e "yyyymmdd=$1" -e "vfile=$2" -e "pfile=$3" -e "shour=$4" -e "ehour=$5" -e "verbose=$6" -v $7:/data -v $8:/tmp2 $9 
