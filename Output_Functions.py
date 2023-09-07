@@ -381,9 +381,9 @@ def write_output(vip, ext_prof, mod_prof, ext_tseries, globatt, xret, prior,
         
         sbim = fid.createVariable('sbim', 'f4', ('time',))
         sbim.long_name = 'Surface-based inversion magnitude'
-        sbih.units = dindex['units'][3]
-        sbih.comment1 = 'This field is derived from the retrieved fields'
-        sbih.comment2 = 'A value of -999 indicates that this field could not be computed (typically because the value was aphysical)'
+        sbim.units = dindex['units'][3]
+        sbim.comment1 = 'This field is derived from the retrieved fields'
+        sbim.comment2 = 'A value of -999 indicates that this field could not be computed (typically because the value was aphysical)'
         
         sblcl = fid.createVariable('sbLCL', 'f4', ('time',))
         sblcl.long_name = 'Lifted condesation level for a surface-based parcel'
