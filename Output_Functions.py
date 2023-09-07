@@ -187,6 +187,7 @@ def write_output(vip, ext_prof, mod_prof, ext_tseries, globatt, xret, prior,
 
         qc_flag = fid.createVariable('qc_flag', 'i2', ('time',))
         qc_flag.long_name = 'Manual QC flag'
+        qc_flag.units = 'unitless'
         qc_flag.comment = 'value of 0 implies quality is ok; non-zero values indicate that the sample has suspect quality'
         qc_flag.value_1 = 'Implies hatch was not open for full observing period'
         qc_flag.value_2 = 'Implies retrieval did not converge'
@@ -215,6 +216,7 @@ def write_output(vip, ext_prof, mod_prof, ext_tseries, globatt, xret, prior,
 
         iTau = fid.createVariable('iTau', 'f4', ('time',))
         iTau.long_name = 'Ice cloud optical depth (geometric limit)'
+        iTau.units = 'unitless'
 
         iReff = fid.createVariable('iReff', 'f4', ('time',))
         iReff.long_name = 'Ice effective radius'
@@ -250,6 +252,7 @@ def write_output(vip, ext_prof, mod_prof, ext_tseries, globatt, xret, prior,
 
         sigma_iTau = fid.createVariable('sigma_iTau', 'f4', ('time',))
         sigma_iTau.long_name = '1-sigma uncertainty in ice cloud optical depth (geometric limit)'
+        sigma_iTau.units = 'unitless'
 
         sigma_iReff = fid.createVariable('sigma_iReff', 'f4', ('time',))
         sigma_iReff.long_name = '1-sigma uncertainty in ice effective radius'
@@ -269,6 +272,7 @@ def write_output(vip, ext_prof, mod_prof, ext_tseries, globatt, xret, prior,
 
         converged_flag = fid.createVariable('converged_flag', 'i2', ('time',))
         converged_flag.long_name = 'Convergence flag'
+        converged_flag.units = 'unitless'
         converged_flag.value_0 = '0 indicates no convergence'
         converged_flag.value_1 = '1 indicates convergence in Rodgers sense (i.e., di2m << dimY)'
         converged_flag.value_2 = '2 indicates convergence (best rms after rms increased drastically'
@@ -277,37 +281,46 @@ def write_output(vip, ext_prof, mod_prof, ext_tseries, globatt, xret, prior,
 
         gamma = fid.createVariable('gamma', 'f4', ('time',))
         gamma.long_name = 'Gamma parameter'
+        gamma.units = 'unitless'
 
         n_iter = fid.createVariable('n_iter', 'i2', ('time',))
         n_iter.long_name = 'Number of iterations performed'
+        n_iter.units = 'unitless'
 
         rmsr = fid.createVariable('rmsr', 'f4', ('time',))
         rmsr.long_name = 'Root mean square error between IRS and MWR obs in the observation vector and the forward calculation'
+        rmsr.units = 'unitless'
         rmsr.comment1 = 'Computed as sqrt( sum_over_i[ ((Y_i - F(Xn_i)) / Y_i)^2 ] / sizeY)'
         rmsr.comment2 = 'Only IRS radiance observations in the observation vector are used'
 
         rmsa = fid.createVariable('rmsa', 'f4', ('time',))
         rmsa.long_name = 'Root mean square error between observation vector and the forward calculation'
+        rmsa.units = 'unitless'
         rmsa.comment1 = 'Computed as sqrt( sum_over_i[ ((Y_i - F(Xn_i)) / Y_i)^2 ] / sizeY)'
         rmsa.comment2 = 'Entire observation vector used in this calculation'
 
         rmsp = fid.createVariable('rmsp', 'f4', ('time',))
         rmsp.long_name = 'Root mean square error between prior T/q profile and the retrieved T/q profile'
+        rmsp.units = 'unitless'
         rmsp.comment1 = 'Computed as sqrt( mean[ ((Xa - Xn) / sigma_Xa)^2 ] )'
 
         chi2 = fid.createVariable('chi2', 'f4', ('time',))
         chi2.long_name = 'Chi-square statistic of Y vs. F(Xn)'
+        chi2.units = 'unitless'
         chi2.comment = 'Computed as sqrt( sum_over_i[ ((Y_i - F(Xn_i)) / Y_i)^2 ] / sizeY)'
 
         convergence_criteria = fid.createVariable('convergence_criteria', 'f4', ('time',))
         convergence_criteria.long_name = 'Convergence criteria di^2'
+        convergence_criteria.units = 'unitless'
 
         dfs = fid.createVariable('dfs', 'f4', ('time','dfs_dim',))
         dfs.long_name = 'Degrees of freedom of signal'
+        dfs.units = 'unitless'
         dfs.comment = 'total DFS, then DFS for each of temperature, waterVapor, LWP, L_Reff, I_tau, I_Reff, carbonDioxide, methane, nitrousOxide'
 
         sic = fid.createVariable('sic', 'f4', ('time',))
         sic.long_name = 'Shannon information content'
+        sic.units = 'unitless'
 
         vres_temp = fid.createVariable('vres_temperature', 'f4', ('time','height',))
         vres_temp.long_name = 'Vertical resolution of the temperature profile'
@@ -318,11 +331,14 @@ def write_output(vip, ext_prof, mod_prof, ext_tseries, globatt, xret, prior,
 
         cdfs_temp = fid.createVariable('cdfs_temperature', 'f4', ('time','height',))
         cdfs_temp.long_name = 'Vertical profile of the cumulative degrees of freedom of signal for temperature'
+        cdfs_temp.units = 'unitless'
         cdfs_wv = fid.createVariable('cdfs_waterVapor', 'f4', ('time','height',))
         cdfs_wv.long_name = 'Vertical profile of the cumulative degrees of freedom of signal for water vapor'
+        cdfs_wv.units = 'unitless'
 
         hatchOpen = fid.createVariable('hatchOpen', 'i2', ('time',))
         hatchOpen.long_name = 'Flag indicating if the IRSs hatch was open'
+        hatchOpen.units = 'unitless'
         hatchOpen.comment = '1 - hatch open, 0 - hatch closed, other values indicate hatch is either not working or indeterminant'
 
         cbh = fid.createVariable('cbh', 'f4', ('time',))
@@ -331,6 +347,7 @@ def write_output(vip, ext_prof, mod_prof, ext_tseries, globatt, xret, prior,
 
         cbh_flag = fid.createVariable('cbh_flag', 'i2', ('time',))
         cbh_flag.long_name = 'Flag indicating the source of the cbh'
+        cbh_flag.units = 'unitless'
         cbh_flag.comment1 = 'Value 0 implies Clear Sky radiance'
         cbh_flag.comment2 = 'Value 1 implies Inner Window radiance'
         cbh_flag.comment3 = 'Value 2 implies Outer Window radiance'
@@ -339,7 +356,7 @@ def write_output(vip, ext_prof, mod_prof, ext_tseries, globatt, xret, prior,
         pressure = fid.createVariable('pressure', 'f4', ('time','height',))
         pressure.long_name = 'Derived pressure'
         pressure.units = 'mb'
-        pressure.comment = 'derived from IRS surface pressure observations and the hyposmetric calculation using the thermodynamic profiles'
+        pressure.comment = 'derived from surface pressure observations and the hyposmetric calculation using the thermodynamic profiles'
 
         theta = fid.createVariable('theta', 'f4', ('time','height',))
         theta.long_name = 'Potential temperature'
@@ -493,6 +510,7 @@ def write_output(vip, ext_prof, mod_prof, ext_tseries, globatt, xret, prior,
         
         obs_flag = fid.createVariable('obs_flag', 'i2', ('obs_dim',))
         obs_flag.long_name = 'Flag indicating type of observation for each vector element'
+        obs_flag.units = 'unitless'
 
         # This will make sure that I capture all of the units right in
         # the metadata, but "blotting them out" as I add the comments
@@ -505,7 +523,7 @@ def write_output(vip, ext_prof, mod_prof, ext_tseries, globatt, xret, prior,
 
         foo = np.where(xret[0]['flagY'] == 2)[0]
         if len(foo) > 0:
-            obs_flag.value_02 = 'Brightness temperature in K from a zenith-microwave radiometer'
+            obs_flag.value_02 = 'Brightness temperature in K from a zenith-pointing microwave radiometer'
             marker[foo] = -1
 
         foo = np.where(xret[0]['flagY'] == 3)[0]
@@ -555,7 +573,7 @@ def write_output(vip, ext_prof, mod_prof, ext_tseries, globatt, xret, prior,
 
         foo = np.where(xret[0]['flagY'] == 10)[0]
         if len(foo) > 0:
-            obs_flag.value_10 = 'Brightness temperature in K from a scanning microwave radiometer'
+            obs_flag.value_10 = 'Brightness temperature in K from an elevation scanning microwave radiometer'
             obs_flag.value_10_comment1 = 'Dimension is coded to be (frequency[GHz]*100)+(elevation_angle[deg]/1000)'
             marker[foo] = -1
 
@@ -569,25 +587,27 @@ def write_output(vip, ext_prof, mod_prof, ext_tseries, globatt, xret, prior,
 
         obs_dimension = fid.createVariable('obs_dimension', 'f8', ('obs_dim',))
         obs_dimension.long_name = 'Dimension of the observation vector'
+        obs_dimension.units = 'unitless'
         obs_dimension.comment1 = 'mixed units -- see obs_flag field above'
 
         obs_vector = fid.createVariable('obs_vector', 'f4', ('time','obs_dim',))
         obs_vector.long_name = 'Observation vector Y'
-        obs_vector.comment1 = 'mixed units -- see obs_flag field above'
+        obs_vector.units = 'mixed units -- see obs_flag field above'
 
         obs_vector_uncertainty = fid.createVariable('obs_vector_uncertainty', 'f4', ('time','obs_dim',))
         obs_vector_uncertainty.long_name = '1-sigma uncertainty in the observation vector (sigY)'
-        obs_vector_uncertainty.comment1 = 'mixed units -- see obs_flag field above'
+        obs_vector_uncertainty.units = 'mixed units -- see obs_flag field above'
 
         forward_calc = fid.createVariable('forward_calc', 'f4', ('time','obs_dim',))
         forward_calc.long_name = 'Forward calculation from state vector (i.e., F(Xn))'
-        forward_calc.comment1 = 'mixed units -- see obs_flag field above'
+        forward_calc.units = 'mixed units -- see obs_flag field above'
 
         # If we are trying to keep the output file small, then do not include
         # these fields in the output file
         if vip['output_file_keep_small'] == 0:
             arb1 = fid.createVariable('arb1', 'i2', ('arb_dim1',))
             arb1.long_name = 'Arbitrary dimension'
+            arb1.units = 'mixed units'
             arb1.comment = ('contains (1) temperature profile, (2) water vapor profile'
                        + ' (3) liquid water path, (4) liquid water Reff, '
                        + '(5) ice cloud optical depth, (6) ice cloud Reff, (7) carbon dioxide'
@@ -595,6 +615,7 @@ def write_output(vip, ext_prof, mod_prof, ext_tseries, globatt, xret, prior,
 
             arb2 = fid.createVariable('arb2', 'i2', ('arb_dim2',))
             arb2.long_name = 'Arbitrary dimension'
+            arb2.units = 'mixed units'
             arb2.comment = ('contains (1) temperature profile, (2) water vapor profile'
                        + ' (3) liquid water path , (4) liquid water Reff, '
                        + '(5) ice cloud optical depth, (6) ice cloud Reff, (7) carbon dioxide' 
@@ -602,23 +623,23 @@ def write_output(vip, ext_prof, mod_prof, ext_tseries, globatt, xret, prior,
 
             Xop = fid.createVariable('Xop', 'f4', ('time','arb_dim1',))
             Xop.long_name = 'Optimal solution'
-            Xop.comment1 = 'mixed units -- see field arb above'
+            Xop.units = 'mixed units -- see field arb above'
 
             Sop = fid.createVariable('Sop', 'f4', ('time','arb_dim1','arb_dim2',))
             Sop.long_name = 'Covariance matrix of the solution'
-            Sop.comment1 = 'mixed units -- see field arb above'
+            Sop.units = 'mixed units -- see field arb above'
 
             Akernal = fid.createVariable('Akernal', 'f4', ('time','arb_dim1','arb_dim2',))
             Akernal.long_name = 'Averaging kernal'
-            Akernal.comment1 = 'mixed units -- see field arb above'
+            Akernal.units = 'mixed units -- see field arb above'
 
             Xa = fid.createVariable('Xa', 'f4', ('arb_dim1',))
             Xa.long_name = 'Prior mean state'
-            Xa.comment1 = 'mixed units -- see field arb above'
+            Xa.units = 'mixed units -- see field arb above'
 
             Sa = fid.createVariable('Sa', 'f4', ('arb_dim1','arb_dim2',))
             Sa.long_name = 'Prior covariance'
-            Sa.comment1 = 'mixed units -- see field arb above'
+            Sa.units = 'mixed units -- see field arb above'
 
         # These should be the last three variables in the file
         lat = fid.createVariable('lat', 'f4')
