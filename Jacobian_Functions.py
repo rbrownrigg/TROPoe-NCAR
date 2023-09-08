@@ -88,11 +88,11 @@ def compute_jacobian_irs_interpol(X, p, zz, lblhome, lbldir, lblroot, lbl_std_at
     co2prof = Other_functions.trace_gas_prof(doco2, zz, co2)
     ch4prof = Other_functions.trace_gas_prof(doch4, zz, ch4)
     n2oprof = Other_functions.trace_gas_prof(don2o, zz, n2o)
-    if(doco2 >= 1):
+    if((doco2 >= 1) & (verbose >= 2)):
         print(f'      Inside IRS jacobian routine, CO2 vector is {co2[0]:.2f}, {co2[1]:.2f}, {co2[2]:.3f}')
-    if(doch4 >= 1):
+    if((doch4 >= 1) & (verbose >= 2)):
         print(f'      Inside IRS jacobian routine, CH4 vector is {ch4[0]:.4f}, {ch4[1]:.4f}, {ch4[2]:.3f}')
-    if(don2o >= 1):
+    if((don2o >= 1) & (verbose >= 2)):
         print(f'      Inside IRS jacobian routine, N2O vector is {n2o[0]:.4f}, {n2o[1]:.4f}, {n2o[2]:.3f}')
 
     # Define the model layers
