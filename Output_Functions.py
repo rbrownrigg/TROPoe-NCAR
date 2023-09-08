@@ -225,14 +225,17 @@ def write_output(vip, ext_prof, mod_prof, ext_tseries, globatt, xret, prior,
         co2 = fid.createVariable('co2', 'f4', ('time','gas_dim',))
         co2.long_name = 'Carbon dioxide concentration'
         co2.units = 'ppm'
+        co2.comment = 'Parameterized profile information; see users guide'
 
         ch4 = fid.createVariable('ch4', 'f4', ('time', 'gas_dim',))
         ch4.long_name = 'Methane concentration'
         ch4.units = 'ppm'
+        ch4.comment = 'Parameterized profile information; see users guide'
 
         n2o = fid.createVariable('n2o', 'f4', ('time', 'gas_dim',))
         n2o.long_name = 'Nitrous oxide concentration'
         n2o.units = 'ppm'
+        n2o.comment = 'Parameterized profile information; see users guide'
 
         sigmaT = fid.createVariable('sigma_temperature', 'f4', ('time','height',))
         sigmaT.long_name = '1-sigma uncertainty in temperature'
@@ -261,14 +264,17 @@ def write_output(vip, ext_prof, mod_prof, ext_tseries, globatt, xret, prior,
         sigma_co2 = fid.createVariable('sigma_co2', 'f4', ('time','gas_dim',))
         sigma_co2.long_name = '1-sigma uncertainty in carbon dioxide concentration'
         sigma_co2.units = 'ppm'
+        sigma_co2.comment = 'Parameterized profile information; see users guide'
 
         sigma_ch4 = fid.createVariable('sigma_ch4', 'f4', ('time','gas_dim',))
         sigma_ch4.long_name = '1-sigma uncertainty in methane concentration'
         sigma_ch4.units = 'ppm'
+        sigma_ch4.comment = 'Parameterized profile information; see users guide'
 
         sigma_n2o = fid.createVariable('sigma_n2o', 'f4', ('time','gas_dim',))
         sigma_n2o.long_name = '1-sigma uncertaintiy in nitrous oxide concentration'
         sigma_n2o.units = 'ppm'
+        sigma_n2o.comment = 'Parameterized profile information; see users guide'
 
         converged_flag = fid.createVariable('converged_flag', 'i2', ('time',))
         converged_flag.long_name = 'Convergence flag'
@@ -379,6 +385,21 @@ def write_output(vip, ext_prof, mod_prof, ext_tseries, globatt, xret, prior,
         dewpt.long_name = 'Dew point temperature'
         dewpt.units = 'C'
         dewpt.comment = 'This field is derived from the retrieved fields'
+
+        co2_profile = fid.createVariable('co2_profile', 'f4', ('time','height',))
+        co2_profile.long_name = 'CO2 profile'
+        co2_profile.units = 'ppm'
+        co2_profile.comment = 'This field is derived from the retrieved fields'
+
+        ch4_profile = fid.createVariable('ch4_profile', 'f4', ('time','height',))
+        ch4_profile.long_name = 'CH4 profile'
+        ch4_profile.units = 'ppm'
+        ch4_profile.comment = 'This field is derived from the retrieved fields'
+
+        n2o_profile = fid.createVariable('n2o_profile', 'f4', ('time','height',))
+        n2o_profile.long_name = 'N2O profile'
+        n2o_profile.units = 'ppm'
+        n2o_profile.comment = 'This field is derived from the retrieved fields'
 
         pwv = fid.createVariable('pwv', 'f4', ('time',))
         pwv.long_name = 'Precipitable water vapor'
@@ -791,6 +812,9 @@ def write_output(vip, ext_prof, mod_prof, ext_tseries, globatt, xret, prior,
     thetae = fid.variables['thetae']
     rh = fid.variables['rh']
     dewpt = fid.variables['dewpt']
+    co2profile = fid.variables['co2_profile']
+    ch4profile = fid.variables['ch4_profile']
+    n2oprofile = fid.variables['n2o_profile']
     pwv = fid.variables['pwv']
     pblh = fid.variables['pblh']
     sbih = fid.variables['sbih']
@@ -883,6 +907,9 @@ def write_output(vip, ext_prof, mod_prof, ext_tseries, globatt, xret, prior,
     thetae[fsample,:] = derived['thetae'][:]
     rh[fsample,:] = derived['rh'][:]
     dewpt[fsample,:] = derived['dewpt'][:]
+    co2_profile[fsample,:] = derived['co2_profile'][:]
+    ch4_profile[fsample,:] = derived['ch4_profile'][:]
+    n2o_profile[fsample,:] = derived['n2o_profile'][:]
     
     pwv[fsample] = dindex['indices'][0]
     pblh[fsample] = dindex['indices'][1]

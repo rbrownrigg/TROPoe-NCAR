@@ -11,7 +11,7 @@
 #
 # ----------------------------------------------------------------------------
 
-__version__ = '0.7.3'
+__version__ = '0.7.5'
 
 import os
 import sys
@@ -2191,6 +2191,9 @@ for i in range(len(irs['secs'])):                        # { loop_i
     derived['thetae'] = Calcs_Conversions.t2thetae(xret[-1]['Xn'][0:int(nX/2)], xret[-1]['Xn'][int(nX/2):nX], xret[-1]['p'])
     derived['rh'] = Calcs_Conversions.w2rh(xret[-1]['Xn'][int(nX/2):nX], xret[-1]['p'], xret[-1]['Xn'][0:int(nX/2)],0) * 100
     derived['dewpt'] = Calcs_Conversions.rh2dpt(xret[-1]['Xn'][0:int(nX/2)], derived['rh']/100.)
+    derived['co2_profile'] = Other_functions.trace_gas_prof(doco2, z, Xn[range(nX+4,nX+7)])
+    derived['ch4_profile'] = Other_functions.trace_gas_prof(doch4, z, Xn[range(nX+7,nX+10)])
+    derived['n2o_profile'] = Other_functions.trace_gas_prof(don2o, z, Xn[range(nX+10,nX+13)])
     
     
     dindices = Other_functions.calc_derived_indices(xret[-1],vip,derived,verbose)
