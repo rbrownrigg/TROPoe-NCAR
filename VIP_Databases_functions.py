@@ -55,7 +55,7 @@ full_vip = ({
     'station_alt': {'value': -999., 'comment': 'Station altitude [m MSL]; if negative get value from IRS/MWR data file', 'default': True},
     'station_pres': {'value': 1000., 'comment': 'Station pressure [mb]; will be only be used if there is no other surface pressure input', 'default': True},
     'station_psfc_min': {'value': 800., 'comment': 'Default minimum surface pressure [mb]', 'default': True},
-    'station_psfc_max': {'value': 1030., 'comment': 'Default maximum surface pressure [mb]\n', 'default': True},
+    'station_psfc_max': {'value': 1040., 'comment': 'Default maximum surface pressure [mb]\n', 'default': True},
 
     'irs_type': {'value': 0, 'comment': '0- output, options, and stop, 1 - ARM AERI data, 2 - dmv2cdf AERI data (C1_rnc.cdf and _sum.cdf), 3 - dmv2ncdf (C1.RNC.cdf and .SUM.cdf), 5- ASSIST, -1 - MWR data is to be used as MASTER dataset (no IRS data being read in)', 'default': True},
     'irs_pca_nf': {'value': 1, 'comment': '0 - IRS data was NOT PCA noise filtered, 1 - IRS data was PCA noise filtered', 'default': False},
