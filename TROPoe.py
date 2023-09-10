@@ -11,7 +11,7 @@
 #
 # ----------------------------------------------------------------------------
 
-__version__ = '0.9.1'
+__version__ = '0.9.2'
 
 import os
 import sys
@@ -514,6 +514,7 @@ ext_prof = Data_reads.read_external_profile_data(date, z, irs['secs'], vip['tres
               vip['ext_wv_time_delta'], vip['ext_temp_prof_type'], vip['ext_temp_prof_path'],
               vip['ext_temp_noise_adder_hts'], vip['ext_temp_noise_adder_val'],
               vip['ext_temp_prof_minht'], vip['ext_temp_prof_maxht'], vip['ext_temp_time_delta'],
+              vip['ext_temp_ht_offset'], vip['ext_wv_ht_offset'], 
               dostop, verbose)
 
 if ext_prof['success'] != 1:
@@ -532,6 +533,7 @@ mod_prof = Data_reads.read_external_profile_data(date, z, irs['secs'], vip['tres
               vip['mod_wv_time_delta'], vip['mod_temp_prof_type'], vip['mod_temp_prof_path'],
               vip['mod_temp_noise_adder_hts'], vip['mod_temp_noise_adder_val'],
               vip['mod_temp_prof_minht'], vip['mod_temp_prof_maxht'], vip['mod_temp_time_delta'],
+              vip['mod_temp_ht_offset'], vip['mod_wv_ht_offset'], 
               dostop, verbose)
 
 if mod_prof['success'] != 1:

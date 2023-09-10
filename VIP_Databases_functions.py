@@ -136,6 +136,7 @@ full_vip = ({
     'ext_wv_noise_mult_val': {'value': [1.0, 1, 1.0], 'comment': '3-element comma delimited list with the multipliers to apply the noise profile of the external water vapor profile (must be > 1)', 'default': False},
     'ext_wv_noise_mult_hts': {'value': [0.0, 3, 20], 'comment': '3-element comma delimited list with the corresponding heights for the noise multipliers [km AGL]', 'default': False},
     'ext_wv_add_rel_error': {'value': 0.0, 'comment': 'When using the RLID, I may want to include a relative error contribution to the uncertainty to account for calibration. This is a correlated error component, and thus effects the off-diagonal elements of the observation covariance matrix. Units are [%]', 'default': False},
+    'ext_wv_ht_offset': {'value': 0.0, 'comment': 'Height offset relative to the master instrument [km]; a negative value indicates that this profile starts below the master instrument', 'default': False},
     'ext_wv_time_delta': {'value': 1.0, 'comment': 'Maximum amount of time from endpoints of external WV dataset to extrapolate [hours]\n', 'default': False},
 
     'ext_temp_prof_type': {'value': 0, 'comment': 'External temperature profile source: 0-none; 1-sonde; 2-ARM Raman lidar (rlproftemp); 4-Model sounding, 5-RASS', 'default': False},
@@ -145,6 +146,7 @@ full_vip = ({
     'ext_temp_noise_mult': {'value': 1.0, 'comment': 'Multiplicative value to apply the noise profile of the external temperature profile (must be >= 0)', 'default': False},
     'ext_temp_noise_adder_val': {'value': [0.0, 0, 0], 'comment': '3-element comma delimited list of additive values to apply the noise profile of the external temperature profile (must be >= 0)', 'default': False},
     'ext_temp_noise_adder_hts': {'value': [0.0, 3, 20], 'comment': '3-element comma delimited list with the corresponding heights for the additive value [km AGL]', 'default': False},
+    'ext_temp_ht_offset': {'value': 0.0, 'comment': 'Height offset relative to the master instrument [km]; a negative value indicates that this profile starts below the master instrument', 'default': False},
     'ext_temp_time_delta': {'value': 1.0, 'comment': 'Maximum amount of time from endpoints of external temp dataset to extrapolate [hours]\n', 'default': False},
 
     'mod_wv_prof_type': {'value': 0, 'comment': 'NWP model WV profile source: 0-none; 4-Model sounding', 'default': False},
@@ -153,6 +155,7 @@ full_vip = ({
     'mod_wv_prof_maxht': {'value': 10.0, 'comment': 'Maximum height to use the data from the model WV profiler [km AGL]', 'default': False},
     'mod_wv_noise_mult_val': {'value': [1.0, 1, 1.0], 'comment': '3-element comma delimited list with the multipliers to apply the noise profile of the model water vapor profile (must be > 1)', 'default': False},
     'mod_wv_noise_mult_hts': {'value': [0.0, 3, 20], 'comment': '3-element comma delimited list with the corresponding heights for the noise multipliers [km AGL]', 'default': False},
+    'mod_wv_ht_offset': {'value': 0.0, 'comment': 'Height offset relative to the master instrument [km]; a negative value indicates that this profile starts below the master instrument', 'default': False},
     'mod_wv_time_delta': {'value': 1.0, 'comment': 'Maximum amount of time from endpoints of model WV dataset to extrapolate [hours]\n', 'default': False},
 
     'mod_temp_prof_type': {'value': 0, 'comment': 'NWP model temperature profile source: 0-none; 4-Model sounding', 'default': False},
@@ -162,6 +165,7 @@ full_vip = ({
     'mod_temp_noise_mult': {'value': 1.0, 'comment': 'Multiplicative value to apply the noise profile of the model temperature profile (must be >= 0)', 'default': False},
     'mod_temp_noise_adder_val': {'value': [0.0, 0, 0], 'comment': '3-element comma delimited list of additive values to apply the noise profile of the model temperature profile (must be >= 0)', 'default': False},
     'mod_temp_noise_adder_hts': {'value': [0.0, 3, 20], 'comment': '3-element comma delimited list with the corresponding heights for the additive value [km AGL]', 'default': False},
+    'mod_temp_ht_offset': {'value': 0.0, 'comment': 'Height offset relative to the master instrument [km]; a negative value indicates that this profile starts below the master instrument', 'default': False},
     'mod_temp_time_delta': {'value': 1.0, 'comment': 'Maximum amount of time from endpoints of model WV dataset to extrapolate [hours]\n', 'default': False},
 
     'co2_sfc_type': {'value': 0, 'comment': 'External CO2 surface data type: 0-none, 1-DDT QC PGS data', 'default': False},

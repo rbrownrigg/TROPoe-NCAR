@@ -2437,7 +2437,7 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
             wv_prof_type, wv_prof_path, wv_noise_multiplier_hts, wv_noise_multiplier_val,
             wv_prof_minht, wv_prof_maxht, wv_time_delta, temp_prof_type, temp_prof_path,
             temp_noise_adder_hts, temp_noise_adder_val, temp_prof_minht, temp_prof_maxht,
-            temp_time_delta, dostop, verbose):
+            temp_time_delta, temp_ht_offset, wv_ht_offset, dostop, verbose):
 
     external = {'success':0, 'nTprof':-1, 'nQprof':-1, 'attrs': {}}
 
@@ -3480,8 +3480,8 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
         wv[foo] = np.nan
         swv[foo] = np.nan
         for i in range(external['nQprof']):
-            tmp_water[:,i] = np.interp(ht,zzq,wv[:,i])
-            tmp_swater[:,i] = np.interp(ht,zzq,swv[:,i])
+            tmp_water[:,i] = np.interp(ht,zzq+wv_ht_offset,wv[:,i])
+            tmp_swater[:,i] = np.interp(ht,zzq+wv_ht_offset,swv[:,i])
 
         # Set the data below or above the instrument's min/max heights to missing value
         foo = np.where((ht < min(zzq)) | (max(zzq) < ht))[0]
@@ -3546,8 +3546,8 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
         temp[foo] = np.nan
         stemp[foo] = np.nan
         for i in range(external['nTprof']):
-            tmp_temp[:,i] = np.interp(ht,zzt,temp[:,i])
-            tmp_stemp[:,i] = np.interp(ht,zzt,stemp[:,i])
+            tmp_temp[:,i] = np.interp(ht,zzt+temp_ht_offset,temp[:,i])
+            tmp_stemp[:,i] = np.interp(ht,zzt+temp_ht_offset,stemp[:,i])
 
         # Set the data below or above the instrument's min/max heights to missing value
         foo = np.where((ht < min(zzt)) | (max(zzt) < ht))[0]
