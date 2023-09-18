@@ -1845,7 +1845,7 @@ def read_vceil(path, date, vceil_type, ret_secs, verbose):
         print('                     Time field is weird (starts at 1904)')
         print('   cbh_type=7 --->')
         print('             E-PROFILE style ceilometer input')
-        print('                     Files named "L2*nc" ')
+        print('                     Files named "{alc,L2}*nc" ')
         print('                     Reads field "cbh", which has units m AGL')
         print('-------------------------------------------------------')
         print(' ')
@@ -2009,7 +2009,7 @@ def read_vceil(path, date, vceil_type, ret_secs, verbose):
         if verbose >= 1:
             print('  Reading in E-PROFILE ceilometer data')
         for i in range(len(udate)):
-            tempfiles, status = (findfile(path,'L2*' + udate[i] + '*.nc'))
+            tempfiles, status = (findfile(path,'*(alc|ceil|L2)*' + udate[i] + '*.nc'))
             if status == 1:
                 return err
             files = files + tempfiles
@@ -2035,7 +2035,7 @@ def read_vceil(path, date, vceil_type, ret_secs, verbose):
                 secs = np.append(secs,to)
                 cbh  = np.append(cbh,cbhx)
                 vis  = np.append(vis,visx)
-        secs *= (24.*60*60)	     # Convert unix days into unit time
+        secs *= (24.*60*60)	     # Convert unix days into unix time
         cbh = cbh/1000.              # Convert m AGL to km AGL
         vis = vis/1000.              # Convert m AGL to km AGL
         bt  = secs[0]
@@ -2344,9 +2344,11 @@ def grid_mwr(mwr, avg_instant, secs, tavg, time_delta, verbose):
     # The structure being returned depends on the number of Tb fields desired
     if mwr['n_fields'] == 0:
         return ({'success':1, 'secs':secs, 'ymd':ymd, 'hour':hour,
+                'lat':-999., 'lon':-999., 'alt':-999., 
                 'n_fields':0, 'type': mwr['type'], 'rootname':mwr['rootname']})
     else:
         return ({'success':1, 'secs':secs, 'ymd':ymd, 'hour':hour,
+                'lat':mwr['lat'], 'lon':mwr['lon'], 'alt':mwr['alt'], 
                 'n_fields':mwr['n_fields'], 'tbsky':tbsky, 'freq':mwr['freq'], 'nearSfcTb':nsfc_temp, 
                 'noise':mwr['noise'], 'bias':mwr['bias'], 'type': mwr['type'], 'rootname':mwr['rootname']})
 
@@ -2720,9 +2722,19 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
                 zzq = fid.variables['height'][:]
                 wwx = fid.variables['waterVapor'][:]
                 ssx = fid.variables['sigma_waterVapor'][:]
-                model_type = fid.model
-                model_lat = np.float(fid.gridpoint_lat)
-                model_lon = np.float(fid.gridpoint_lon)
+                if len(np.where(np.array(list(fid.ncattrs())) == 'model')[0]) > 0:
+                    model_type = fid.model
+                else:
+                    model_type = "unknown"
+                    print("    Warning: The mod dataset does not have the global attribute 'model' defined")
+                if len(np.where(np.array(list(fid.ncattrs())) == 'gridpoint_lat')[0]) > 0:
+                    model_lat = np.float(fid.gridpoint_lat)
+                else:
+                    model_lat = -999.
+                if len(np.where(np.array(list(fid.ncattrs())) == 'gridpoint_lon')[0]) > 0:
+                    model_lon = np.float(fid.gridpoint_lon)
+                else:
+                    model_lon = -999.
                 fid.close()
                 if i == 0:
                     qsecs = bt+to
@@ -3209,9 +3221,19 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
                 zzt = fid.variables['height'][:]
                 ttx = fid.variables['temperature'][:]
                 ssx = fid.variables['sigma_temperature'][:]
-                model_type = fid.model
-                model_lat = np.float(fid.gridpoint_lat)
-                model_lon = np.float(fid.gridpoint_lon)
+                if len(np.where(np.array(list(fid.ncattrs())) == 'model')[0]) > 0:
+                    model_type = fid.model
+                else:
+                    model_type = "unknown"
+                    print("    Warning: The mod dataset does not have the global attribute 'model' defined")
+                if len(np.where(np.array(list(fid.ncattrs())) == 'gridpoint_lat')[0]) > 0:
+                    model_lat = np.float(fid.gridpoint_lat)
+                else:
+                    model_lat = -999.
+                if len(np.where(np.array(list(fid.ncattrs())) == 'gridpoint_lon')[0]) > 0:
+                    model_lon = np.float(fid.gridpoint_lon)
+                else:
+                    model_lon = -999.
                 fid.close()
                 if i == 0:
                     tsecs = bt+to
@@ -3902,8 +3924,58 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
                     stemp = np.append(stemp,np.ones(len(t))*sigma_t)
                 external['nTsfc'] = len(tsecs)
 
-        # An undefined external surface met temperature source was specified...
+        # Read in the E-PROFILE MWR met data
+    elif sfc_temp_type == 4:
+        if verbose >= 1:
+            print('  Reading in E-PROFILE MWR met temperature data')
 
+        files = []
+        for i in range(len(dates)):
+            tempfiles, status = (findfile(sfc_path,'*mwr*' + dates[i] + '*.nc'))
+            if status == 1:
+                return external
+            files = files + tempfiles
+
+        if len(files) == 0:
+            if verbose >= 1:
+                print('    No E-PROFILE MWR met found in this directory for this date')
+        else:
+            for i in range(len(files)):
+                fid = Dataset(files[i],'r')
+                bt  = 0
+                to  = fid.variables['time'][:].astype('float')
+
+                p = fid.variables['air_pressure'][:]
+                t = fid.variables['air_temperature'][:]
+                t -= 273.15     # Convert K to C
+                if len(np.where(np.array(list(fid.variables.keys())) == 'relative_humidity')[0]) > 0:
+                    u = fid.variables['relative_humidity'][:]
+                else:
+                    u = np.ones(len(to))*-999.
+                fid.close()
+
+                foo = np.where((p > 0) & (p < 1050) & (t < 60))[0]
+                if len(foo) < 2:
+                    continue
+                to = to[foo]
+                p = p[foo]
+                t = t[foo]
+                tunit = 'C'
+                ttype = 'E-PROFILE microwave radiometer met station'
+
+                # Append the data to the growing structure
+                sigma_t = sfc_temp_sigma_error
+                if external['nTsfc'] <= 0:
+                    tsecs = bt+to
+                    temp = np.copy(t)
+                    stemp = np.ones(len(t))*sigma_t
+                else:
+                    tsecs = np.append(tsecs,bt+to)
+                    temp = np.append(temp,t)
+                    stemp = np.append(stemp,np.ones(len(t))*sigma_t)
+                external['nTsfc'] = len(tsecs)
+
+        # An undefined external surface met temperature source was specified...
     else:
         print('Error in read_external_tseries: Undefined external met temperature source specified')
         return external
@@ -4136,6 +4208,71 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
                 u = u[foo]
                 qunit = 'g/kg'
                 qtype = 'Microwave radiometer met station'
+
+                # Append the data to the growing structure
+                sigma_t = sfc_temp_sigma_error      # degC
+                sigma_u = sfc_rh_sigma_error        # %RH
+                w0 = Calcs_Conversions.rh2w(t, u/100., p)
+                w1 = Calcs_Conversions.rh2w(t+sigma_t, u/100., p)
+                w2 = Calcs_Conversions.rh2w(t-sigma_t, u/100., p)
+                u_plus  = (u+sigma_u)/100.
+                u_minus = (u-sigma_u)/100.
+                u_plus[u_plus > 1] = 1
+                u_minus[u_minus < 0] = 0
+                w3 = Calcs_Conversions.rh2w(t, u_plus, p)
+                w4 = Calcs_Conversions.rh2w(t, u_minus, p)
+
+                # Sum of squared errors, but take two-side average for T and RH uncerts
+                sigma_w = np.sqrt( ((w1-w0)**2 + (w2-w0)**2)/2. + ((w3-w0)**2 + (w4-w0)**2)/2. )
+                if external['nQsfc'] <= 0:
+                    qsecs = bt+to
+                    wv = np.copy(w0)
+                    swv = np.copy(sigma_w)
+                else:
+                    qsecs = np.append(qsecs,bt+to)
+                    wv = np.append(wv,w0)
+                    swv = np.append(swv,sigma_w)
+                external['nQsfc'] = len(qsecs)
+
+        # Read in the E-PROFILE MWR met data
+    elif sfc_wv_type == 4:
+        if verbose >= 1:
+            print('  Reading in E-PROFILE MWR met water vapor data')
+
+        files = []
+        for i in range(len(dates)):
+            tempfiles, status = (findfile(sfc_path,'*mwr*' + dates[i] + '*.nc'))
+            if status == 1:
+                return external
+            files = files + tempfiles
+
+        if len(files) == 0:
+            if verbose >= 1:
+                print('    No E-PROFILE MWR met found in this directory for this date')
+        else:
+            for i in range(len(files)):
+                fid = Dataset(files[i],'r')
+                bt  = 0
+                to  = fid.variables['time'][:].astype('float')
+
+                p = fid.variables['air_pressure'][:]
+                t = fid.variables['air_temperature'][:]
+                t -= 273.15     # Convert K to C
+                if len(np.where(np.array(list(fid.variables.keys())) == 'relative_humidity')[0]) > 0:
+                    u = fid.variables['relative_humidity'][:]
+                else:
+                    u = np.ones(len(to))*-999.
+                fid.close()
+
+                foo = np.where((p > 0) & (p < 1050) & (t < 60) & (u >= 0) & (u < 103))[0]
+                if len(foo) < 2:
+                    continue
+                to = to[foo]
+                p = p[foo]
+                t = t[foo]
+                u = u[foo]
+                qunit = 'g/kg'
+                qtype = 'E-PROFILE microwave radiometer met station'
 
                 # Append the data to the growing structure
                 sigma_t = sfc_temp_sigma_error      # degC

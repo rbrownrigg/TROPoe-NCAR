@@ -11,7 +11,7 @@
 #
 # ----------------------------------------------------------------------------
 
-__version__ = '0.9.2'
+__version__ = '0.9.3'
 
 import os
 import sys
@@ -574,7 +574,11 @@ if ehour < 0:
         print(('Resetting the processing end hour to ' + str(ehour) + ' UTC'))
 
 # Capture the lat/lon/alt data in a structure
-location = {'lat':irs['lat'], 'lon':irs['lon'], 'alt': int(irs['alt'])}
+if irs['alt'] >= 0:
+    location = {'lat':irs['lat'], 'lon':irs['lon'], 'alt': int(irs['alt'])}
+else:
+    location = {'lat':mwr['lat'], 'lon':mwr['lon'], 'alt': int(mwr['alt'])}
+# But if the VIP.station_alt > 0, then override the lat/lon/alt data in the structure
 if vip['station_alt'] >= 0:
     if verbose >= 2:
         print('  Overriding lat/lon/alt with info from VIP file')
