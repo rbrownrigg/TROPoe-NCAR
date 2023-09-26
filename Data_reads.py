@@ -401,6 +401,11 @@ def read_irs_ch(path,date,irs_type,fv,fa,irs_spec_cal_factor,
 
         if len(np.where(np.array(list(fid.variables.keys())) == 'atmosphericPressure')[0]) > 0:
             xambPres = fid.variables['atmosphericPressure'][:]
+            tmp = np.nanmean(xambPres)
+            if((tmp > 0) & (tmp < 150)):
+                if(verbose >= 2):
+                    print('      Converting atmosphericPressure from kPa to hPa')
+                xcalibhbbt *= 10.
         else:
             xambPres = np.full_like(to,-999)
 
