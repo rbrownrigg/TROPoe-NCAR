@@ -405,7 +405,7 @@ def read_irs_ch(path,date,irs_type,fv,fa,irs_spec_cal_factor,
             if((tmp > 0) & (tmp < 150)):
                 if(verbose >= 2):
                     print('      Converting atmosphericPressure from kPa to hPa')
-                xcalibhbbt *= 10.
+                xambPres *= 10.
         else:
             xambPres = np.full_like(to,-999)
 
@@ -801,8 +801,8 @@ def read_all_data(date, retz, tres, dostop, verbose, avg_instant, ch1_path,
 
     #Specify the times of the retrieved output
     if tres <= 0:
-        ret_secs = irsch1['secs']-0.001     # Essentially the same as IRS sample time
-        ret_tavg = 1./60                    # 1-s resolution
+        ret_secs = irsch1['secs']-0.001      # Essentially the same as IRS sample time
+        ret_tavg = 10./60                    # 10-s resolution
     else:
         yy = np.copy(irsch1['yy'])
         mm = np.copy(irsch1['mm'])
@@ -2123,7 +2123,7 @@ def grid_irs(ch1, irssum, avg_instant, hatchOpenSwitch, missingDataFlagSwitch,
                     foo = np.array([foo[0]])
         elif ((hatchOpenSwitch == 1) & (missingDataFlagSwitch == 1)):
             if ((i == 0) & (verbose >= 2)):
-                print('      Only averaging IRS data where hatchOpen is 1 and missingDataFlag is 0')
+                print('      Only averaging IRS data where hatchOpen is 1 and missingDataFlag is not 1')
             if ((avg_instant == 0) | (avg_instant == -1)):
                foo = np.where((secs[i]-tavg*60./2. <= ch1['secs']) & (ch1['secs'] < secs[i]+tavg*60./2.) &
                                (ch1['missingDataFlag'] == 0) & ((ch1['hatchopen'] >= 0.8) & (ch1['hatchopen'] < 1.2)))[0]
