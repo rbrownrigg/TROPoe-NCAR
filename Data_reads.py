@@ -190,7 +190,7 @@ def recenter_prior(z0, p0, Xa, Sa, input_value, sfc_or_pwv=0, changeTmethod=0, v
             # Now iterate to find the best temperature, preserving the RH profile in the original prior
         tmethod_comment = 'converve-RH method'
         t1 = np.full_like(t0, -999.)     # Allocate an empty array
-        off = np.arange(2001)/50. - 20.  # An array of temperature offsets
+        off = np.arange(4001)/50. - 40.  # An array of temperature offsets
 
         for i in range(len(z0)):
             tmp = Calcs_Conversions.w2rh(q1[i], p0[i], t0[i] + off)
@@ -2741,6 +2741,12 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
                 else:
                     model_lon = -999.
                 fid.close()
+                    # Sometimes, the model data are not ascending with height, so sort them
+                sidx = np.argsort(zzq)
+                zzq = zzq[sidx]
+                wwx = wwx[:,sidx]
+                ssx = ssx[:,sidx]
+                    # Now append the data to a growing structure
                 if i == 0:
                     qsecs = bt+to
                     wv = np.copy(wwx)
@@ -2749,7 +2755,6 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
                     qsecs = np.append(qsecs,bt+to)
                     wv = np.vstack((wv, wwx))
                     swv = np.vstack((swv,ssx))
-
             wv = wv.T
             swv = swv.T
             external['nQprof'] = len(qsecs)
@@ -3240,6 +3245,12 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
                 else:
                     model_lon = -999.
                 fid.close()
+                    # Sometimes, the model data are not ascending with height, so sort them
+                sidx = np.argsort(zzt)
+                zzt = zzt[sidx]
+                ttx = ttx[:,sidx]
+                ssx = ssx[:,sidx]
+                    # Now append the data to a growing structure
                 if i == 0:
                     tsecs = bt+to
                     temp = np.copy(ttx)
