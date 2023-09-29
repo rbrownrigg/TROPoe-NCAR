@@ -1721,7 +1721,19 @@ for i in range(len(irs['secs'])):                        # { loop_i
         Sop    = Binv.dot(gfac*gfac*SaInv + Kij.T.dot(SmInv).dot(Kij)).dot(Binv)
         SopInv = scipy.linalg.pinv(Sop)
         Akern  = (Binv.dot(Kij.T).dot(SmInv).dot(Kij)).T
+        
+        # Calculate the Akern without model data included
+        foo = np.where((flagY<7) | (flagY>8))[0]
 
+        tmp_Kij = np.copy(Kij[foo,:])
+        tmp_Sm = np.copy(Sm[foo,:])
+        tmp_Sm = tmp_Sm[:,foo]
+        tmp_SmInv = scipy.linalg.pinv(tmp_Sm)
+        tmp_B = (gfac * SaInv) + tmp_Kij.T.dot(tmp_SmInv).dot(tmp_Kij)
+        tmp_Binv = scipy.linalg.pinv(tmp_B)
+        Akern_nm = (tmp_Binv.dot(tmp_Kij.T).dot(tmp_SmInv).dot(tmp_Kij)).T
+        
+        
         if(vip['max_iterations'] == 0):
             if(vip['irs_type'] > 0):
                 print(f'        DDT - compute_jacobian_xx took {totaltime:.1f} seconds')
@@ -1771,14 +1783,25 @@ for i in range(len(irs['secs'])):                        # { loop_i
                     tmp[nX+1], tmp[nX+2], tmp[nX+3], tmp[nX+4], tmp[nX+5], tmp[nX+6],
                     tmp[nX+7], tmp[nX+8], tmp[nX+9], tmp[nX+10], tmp[nX+11], tmp[nX+12]])
 
+        # Now compute the DFS assuming that there is no model data
+        tmp = np.diag(Akern_nm)
+        dfs_nm = np.array([np.sum(tmp), np.sum(tmp[0:int(nX/2)]), np.sum(tmp[int(nX/2):nX]), tmp[nX],
+                    tmp[nX+1], tmp[nX+2], tmp[nX+3], tmp[nX+4], tmp[nX+5], tmp[nX+6],
+                    tmp[nX+7], tmp[nX+8], tmp[nX+9], tmp[nX+10], tmp[nX+11], tmp[nX+12]])
+        
         # Compute Shannon information content, but trap for non-positive numbers (which occassionally happens)
         dotproduct = scipy.linalg.det(Sa.dot(SopInv))
         if(dotproduct > 0):
             sic = 0.5 * np.log(dotproduct)
         else:
             sic = 0
-
+        
+        # Compute vertical resolution and cumulative degrees of freedom
         vres,cdfs = Other_functions.compute_vres_from_akern(Akern, z, do_cdfs=True)
+        
+        # Now do the same thing for profiles assuming there was no model data
+        vres_nm, cdfs_nm = Other_functions.compute_vres_from_akern(Akern_nm, z, do_cdfs=True)
+        
         # Compute the N-form and M-form convergence criteria (X and Y spaces, resp)
         if itern == 0:
         # Set the initial RMS and di2 values to large numbers
@@ -2021,11 +2044,15 @@ for i in range(len(irs['secs'])):                        # { loop_i
             K = np.copy(xsamp[itern-1]['K'])
             Gain = np.copy(xsamp[itern-1]['Gain'])
             Akern = np.copy(xsamp[itern-1]['Akern'])
+            Akern_nm = np.copy(xsamp[itern-1]['Akern_nm'])
             vres = np.copy(xsamp[itern-1]['vres'])
+            vres_nm = np.copy(xsamp[itern-1]['vres_nm'])
             gfac = xsamp[itern-1]['gamma']
             sic = xsamp[itern-1]['sic']
             dfs = np.copy(xsamp[itern-1]['dfs'])
+            dfs_nm = np.copy(xsamp[itern-1]['dfs_nm'])
             cdfs = np.copy(xsamp[itern-1]['cdfs'])
+            cdfs_nm = np.copy(xsamp[intern-1['cdfs_nm']])
             di2m = xsamp[itern-1]['di2m']
             rmsa = xsamp[itern-1]['rmsa']
             rmsr = xsamp[itern-1]['rmsr']
@@ -2044,11 +2071,15 @@ for i in range(len(irs['secs'])):                        # { loop_i
                 K = np.copy(xsamp[old_iter]['K'])
                 Gain = np.copy(xsamp[old_iter]['Gain'])
                 Akern = np.copy(xsamp[old_iter]['Akern'])
+                Akern_nm = np.copy(xsamp[old_iter]['Akern_nm'])
                 vres = np.copy(xsamp[old_iter]['vres'])
+                vres_nm = np.copy(xsamp[old_iter]['vres_nm'])
                 gfac = xsamp[old_iter]['gamma']
                 sic = xsamp[old_iter]['sic']
                 dfs = np.copy(xsamp[old_iter]['dfs'])
                 cdfs = np.copy(xsamp[old_iter]['cdfs'])
+                dfs_nm = np.copy(xsamp[old_iter]['dfs_nm'])
+                cdfs_nm = np.copy(xsamp[old_iter]['cdfs_nm'])
                 di2m = xsamp[old_iter]['di2m']
                 rmsa = xsamp[old_iter]['rmsa']
                 rmsr = xsamp[old_iter]['rmsr']
@@ -2069,9 +2100,10 @@ for i in range(len(irs['secs'])):                        # { loop_i
                 'niter':itern, 'z':np.copy(z), 'p':np.copy(p), 'hatchopen':irs['hatchopen'][i],
                 'cbh':cbh, 'cbhflag':cbhflag,
                 'X0':np.copy(X0), 'Xn':np.copy(Xn), 'FXn':np.copy(FXn), 'Sop':np.copy(Sop),
-                'K':np.copy(Kij), 'Gain':np.copy(Gain), 'Akern':np.copy(Akern), 'vres':np.copy(vres),
-                'gamma':gfac, 'qcflag':0, 'sic':sic, 'dfs':np.copy(dfs), 'cdfs':np.copy(cdfs), 'di2m':di2m, 'rmsa':rmsa,
-                'rmsr':rmsr, 'rmsp':rmsp, 'chi2':chi2, 'converged':converged}
+                'vres_nm':np.copy(vres_nm), 'K':np.copy(Kij), 'Gain':np.copy(Gain), 'Akern':np.copy(Akern), 'Akern_nm':np.copy(Akern_nm), 'vres':np.copy(vres),
+                'gamma':gfac, 'qcflag':0, 'sic':sic, 'dfs':np.copy(dfs), 'dfs_nm':np.copy(dfs_nm),
+                'cdfs':np.copy(cdfs), 'cdfs_nm':np.copy(cdfs_nm), 'di2m':di2m, 'rmsa':rmsa, 'rmsr':rmsr, 'rmsp':rmsp,
+                'chi2':chi2, 'converged':converged}
 
         # Update the state vector, if we need to do another iteration
         if converged == 0:
@@ -2121,11 +2153,15 @@ for i in range(len(irs['secs'])):                        # { loop_i
         K = np.copy(xsamp[itern]['K'])
         Gain = np.copy(xsamp[itern]['Gain'])
         Akern = np.copy(xsamp[itern]['Akern'])
+        Akern_nm = np.copy(xsamp[itern]['Akern_nm'])
         vres = np.copy(xsamp[itern]['vres'])
+        vres_nm = np.copy(xsamp[itern]['vres_nm'])
         gfac = xsamp[itern]['gamma']
         sic = xsamp[itern]['sic']
         dfs = np.copy(xsamp[itern]['dfs'])
+        dfs_nm = np.copy(xsamp[itern]['dfs_nm'])
         cdfs = np.copy(xsamp[itern]['cdfs'])
+        cdfs_nm = np.copy(xsamp[itern]['cdfs_nm'])
         di2m = xsamp[itern]['di2m']
         rmsa = xsamp[itern]['rmsa']
         rmsr = xsamp[itern]['rmsr']
@@ -2136,9 +2172,10 @@ for i in range(len(irs['secs'])):                        # { loop_i
                 'niter':itern, 'z':np.copy(z), 'p':np.copy(p), 'hatchopen':irs['hatchopen'][i],
                 'cbh':cbh, 'cbhflag':cbhflag,
                 'X0':np.copy(X0), 'Xn':np.copy(Xn), 'FXn':np.copy(FXn), 'Sop':np.copy(Sop),
-                'K':np.copy(Kij), 'Gain':np.copy(Gain), 'Akern':np.copy(Akern), 'vres':np.copy(vres),
-                'gamma':gfac, 'qcflag':0, 'sic':sic, 'dfs':np.copy(dfs), 'cdfs':np.copy(cdfs), 'di2m':di2m, 'rmsa':rmsa,
-                'rmsr':rmsr, 'rmsp':rmsp, 'chi2':chi2, 'converged':converged}
+                'vres_nm':np.copy(vres_nm), 'K':np.copy(Kij), 'Gain':np.copy(Gain), 'Akern':np.copy(Akern), 'Akern_nm':np.copy(Akern_nm), 'vres':np.copy(vres),
+                'gamma':gfac, 'qcflag':0, 'sic':sic, 'dfs':np.copy(dfs), 'dfs_nm':np.copy(dfs_nm),
+                'cdfs':np.copy(cdfs), 'cdfs_nm':np.copy(cdfs_nm), 'di2m':di2m, 'rmsa':rmsa, 'rmsr':rmsr, 'rmsp':rmsp,
+                'chi2':chi2, 'converged':converged}
 
         xsamp.append(xtmp)
         print('    Converged! (best RMS after max_iter)')

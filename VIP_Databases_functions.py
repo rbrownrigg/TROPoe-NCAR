@@ -183,7 +183,7 @@ full_vip = ({
 
     'output_rootname': {'value': 'None', 'comment': 'String with the rootname of the output file', 'default': True},
     'output_path': {'value': '/data/tropoe', 'comment': 'Path where the output file will be placed', 'default': True},
-    'output_file_keep_small': {'value': 0, 'comment': '0 - all fields written; 1 - keep output file small by not including Sop, Akern, others', 'default': False},
+    'output_akernal': {'value': 1, 'comment': '0 - do not output Sop and Akernal; 1 - output normal Sop and normal Akernal; 2 - output normal Sop, normal Akernal, and "no-model" Akernal', 'default': False},
     'output_clobber': {'value': 0, 'comment': '0 - do not clobber preexisting output files, 1 - clobber them, 2 - append to the last file of this day\n', 'default': True},
 
     'lbl_home': {'value': '/home/tropoe/vip/src/lblrtm_v12.1/lblrtm', 'comment': 'String with the LBL_HOME path (environment variable)', 'default': False},
@@ -281,7 +281,7 @@ def read_vip_file(filename,globatt,verbose,debug,dostop):
         return vip
 
     # Look for obsolete tags, and abort if they are found (forcing user to update their VIP file)
-    obsolete_tags = ['AERI_LAT','AERI_LON','AERI_ALT','PSFC_MIN','PSFC_MAX','AERI_TYPE']
+    obsolete_tags = ['AERI_LAT','AERI_LON','AERI_ALT','PSFC_MIN','PSFC_MAX','AERI_TYPE', 'output_file_keep_small']
     obsolete_idx  = np.zeros_like(obsolete_tags, dtype=int)
     vip_keys = np.array([k.upper() for k in inputt[:,0]])
     for i in range(len(obsolete_tags)):
@@ -430,7 +430,11 @@ def check_vip(vip):
     if ((vip['output_clobber'] < 0) | (vip['output_clobber'] > 2)):
         print('Error: The output_clobber flag can only be set to 0, 1, or 2')
         flag = 1
-
+    
+    if ((vip['output_akernal'] < 0) | (vip['output_akernal'] > 2)):
+        print('Error: The output_akernal flag can only be set to 0, 1, or 2')
+        flag = 1
+        
     if ((vip['irs_fv'] < 0.0) | (vip['irs_fv'] > 0.03)):
         print('Error: The IRS fv is too small or too large')
         flag = 1
@@ -468,7 +472,7 @@ def check_vip(vip):
 
     if ((vip['retrieve_icloud'] == 0) & (vip['prior_itau_mn'] > 0)):
         print('WARNING: retrieve_icloud set to 0, but prior_itau_mn is non-zero!')
-        
+    
     return flag
 
 ################################################################################

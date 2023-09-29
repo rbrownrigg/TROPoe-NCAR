@@ -164,7 +164,7 @@ def write_output(vip, ext_prof, mod_prof, ext_tseries, globatt, xret, prior,
         vdim = fid.createDimension('obs_dim', len(xret[0]['dimY']))
         gdim = fid.createDimension('gas_dim', 3)
         ddim = fid.createDimension('dfs_dim', len(xret[0]['dfs']))
-        if vip['output_file_keep_small'] == 0:
+        if vip['output_akernal'] >= 1:
             adim1 = fid.createDimension('arb_dim1', len(xret[0]['Xn']))
             adim2 = fid.createDimension('arb_dim2', len(xret[0]['Xn']))
 
@@ -324,6 +324,12 @@ def write_output(vip, ext_prof, mod_prof, ext_tseries, globatt, xret, prior,
         dfs.comment1 = 'total DFS, then DFS for each of temperature, waterVapor, LWP, L_Reff, I_tau, I_Reff, carbonDioxide, methane, nitrousOxide'
         dfs.comment2 = 'unitless'
         
+        dfs_nm = fid.createVariable('dfs_no_model', 'f4', ('time', 'dfs_dim',))
+        dfs_nm.long_name = 'Degrees of freedom of signal excluding model data'
+        dfs_nm.comment1 = 'total DFS, then DFS for each of temperature, waterVapor, LWP, L_Reff, I_tau, I_Reff, carbonDioxide, methane, nitrousOxide'
+        dfs_nm.comment2 = 'If no model data is used in the obs vector this field will be the same as dfs'
+        dfs_nm.comment3 = 'unitless'
+        
         sic = fid.createVariable('sic', 'f4', ('time',))
         sic.long_name = 'Shannon information content'
         sic.comment1 = 'unitless'
@@ -332,17 +338,37 @@ def write_output(vip, ext_prof, mod_prof, ext_tseries, globatt, xret, prior,
         vres_temp.long_name = 'Vertical resolution of the temperature profile'
         vres_temp.units = 'km'
         
+        vres_temp_nm = fid.createVariable('vres_temperature_no_model', 'f4', ('time','height',))
+        vres_temp_nm.long_name = 'Vertical resolution of the temperature profile exluding model data'
+        vres_temp_nm.units = 'km'
+        vres_temp_nm.comment1 = 'If no model data is used in the obs vector this field will be the same as vres_temperature'
+
         vres_wv = fid.createVariable('vres_waterVapor', 'f4', ('time','height',))
         vres_wv.long_name = 'Vertical resolution of the water vapor profile'
         vres_wv.units = 'km'
-
+        
+        vres_wv_nm = fid.createVariable('vres_waterVapor_no_model', 'f4', ('time','height',))
+        vres_wv_nm.long_name = 'Vertical resolution of the water vapor profile exluding model data'
+        vres_wv_nm.units = 'km'
+        vres_wv_nm.comment1 = 'If no model data is used in the obs vector this field will be the same as vres_waterVapor'
+        
         cdfs_temp = fid.createVariable('cdfs_temperature', 'f4', ('time','height',))
         cdfs_temp.long_name = 'Vertical profile of the cumulative degrees of freedom of signal for temperature'
         cdfs_temp.comment1 = 'unitless'
         
+        cdfs_temp_nm = fid.createVariable('cdfs_temperature_no_model', 'f4', ('time','height',))
+        cdfs_temp_nm.long_name = 'Vertical profile of the cumulative degrees of freedom of signal for temperature excluding model data'
+        cdfs_temp_nm.comment1 = ' If no model data is used in the obs vector this field will be the same as cdfs_temperature'
+        cdfs_temp_nm.comment2 = 'unitless'
+        
         cdfs_wv = fid.createVariable('cdfs_waterVapor', 'f4', ('time','height',))
         cdfs_wv.long_name = 'Vertical profile of the cumulative degrees of freedom of signal for water vapor'
         cdfs_wv.comment1 = 'unitless'
+        
+        cdfs_wv_nm = fid.createVariable('cdfs_waterVapor_no_model', 'f4', ('time','height',))
+        cdfs_wv_nm.long_name = 'Vertical profile of the cumulative degrees of freedom of signal for water vapor excluding model data'
+        cdfs_wv_nm.comment1 = 'If no model data is used in the obs vector this field will be the same as cdfs_waterVapor'
+        cdfs_wv_nm.comment2 = 'unitless'
 
         hatchOpen = fid.createVariable('hatchOpen', 'i2', ('time',))
         hatchOpen.long_name = 'Flag indicating if the IRSs hatch was open'
@@ -626,7 +652,7 @@ def write_output(vip, ext_prof, mod_prof, ext_tseries, globatt, xret, prior,
 
         # If we are trying to keep the output file small, then do not include
         # these fields in the output file
-        if vip['output_file_keep_small'] == 0:
+        if vip['output_akernal'] >= 1:
             arb1 = fid.createVariable('arb1', 'i2', ('arb_dim1',))
             arb1.long_name = 'Arbitrary dimension'
             arb1.comment1 = 'mixed units'
@@ -662,6 +688,14 @@ def write_output(vip, ext_prof, mod_prof, ext_tseries, globatt, xret, prior,
             Sa = fid.createVariable('Sa', 'f4', ('arb_dim1','arb_dim2',))
             Sa.long_name = 'Prior covariance'
             Sa.comment1 = 'mixed units -- see field arb above'
+        
+        # Output the no model data averaging kernal
+        if vip['output_akernal'] == 2:
+            
+            Akernal_nm = fid.createVariable('Akernal_no_model', 'f4', ('time', 'arb_dim1', 'arb_dim2',))
+            Akernal_nm.long_name = 'Averaging kernal with no model data'
+            Akernal_nm.comment1 = 'mixed units -- see field arb above'
+            
 
         # These should be the last three variables in the file
         lat = fid.createVariable('lat', 'f4')
@@ -704,7 +738,7 @@ def write_output(vip, ext_prof, mod_prof, ext_tseries, globatt, xret, prior,
         tmp = np.append(ones,twos)
         tmp = np.append(tmp, np.array([3,4,5,6,7,7,7,8,8,8,9,9,9]))
 
-        if vip['output_file_keep_small'] == 0:
+        if vip['output_akernal'] >= 1:
             arb1[:] = tmp
             arb2[:] = tmp
             Xa[:] = prior['Xa']
@@ -797,11 +831,16 @@ def write_output(vip, ext_prof, mod_prof, ext_tseries, globatt, xret, prior,
     chi2 = fid.variables['chi2']
     convergence_criteria = fid.variables['convergence_criteria']
     dfs = fid.variables['dfs']
+    dfs_nm = fid.variables['dfs_no_model']
     sic = fid.variables['sic']
     vres_temp = fid.variables['vres_temperature']
+    vres_temp_nm = fid.variables['vres_temperature_no_model']
     vres_wv = fid.variables['vres_waterVapor']
+    vres_wv_nm = fid.variables['vres_waterVapor_no_model']
     cdfs_temp = fid.variables['cdfs_temperature']
+    cdfs_temp_nm = fid.variables['cdfs_temperature_no_model']
     cdfs_wv = fid.variables['cdfs_waterVapor']
+    cdfs_wv_nm = fid.variables['cdfs_waterVapor_no_model']
 
     hatchOpen = fid.variables['hatchOpen']
     cbh = fid.variables['cbh']
@@ -841,10 +880,13 @@ def write_output(vip, ext_prof, mod_prof, ext_tseries, globatt, xret, prior,
     obs_vector_uncertainty = fid.variables['obs_vector_uncertainty']
     forward_calc = fid.variables['forward_calc']
 
-    if vip['output_file_keep_small'] == 0:
+    if vip['output_akernal'] >= 1:
         Xop = fid.variables['Xop']
         Sop = fid.variables['Sop']
         Akernal = fid.variables['Akernal']
+    
+    if vip['output_akernal'] == 2:
+        Akernal_nm = fid.variables['Akernal_no_model']
 
     basetime = fid.variables['base_time'][:]
     
@@ -892,11 +934,16 @@ def write_output(vip, ext_prof, mod_prof, ext_tseries, globatt, xret, prior,
     chi2[fsample] = xret[fsample]['chi2']
     convergence_criteria[fsample] = xret[fsample]['di2m']
     dfs[fsample,:] = xret[fsample]['dfs']
+    dfs_nm[fsample,:] = xret[fsample]['dfs_nm']
     sic[fsample] = xret[fsample]['sic']
     vres_temp[fsample,:] = xret[fsample]['vres'][0,:]
+    vres_temp_nm[fsample,:] = xret[fsample]['vres_nm'][0,:]
     vres_wv[fsample,:] = xret[fsample]['vres'][1,:]
+    vres_wv_nm[fsample,:] = xret[fsample]['vres_nm'][1,:]
     cdfs_temp[fsample,:] = xret[fsample]['cdfs'][0,:]
+    cdfs_temp_nm[fsample,:] = xret[fsample]['cdfs_nm'][0,:]
     cdfs_wv[fsample,:] = xret[fsample]['cdfs'][1,:]
+    cdfs_wv_nm[fsample,:] = xret[fsample]['cdfs_nm'][1,:]
     
     hatchOpen[fsample] = xret[fsample]['hatchopen']
     cbh[fsample] = xret[fsample]['cbh']
@@ -937,10 +984,13 @@ def write_output(vip, ext_prof, mod_prof, ext_tseries, globatt, xret, prior,
     obs_vector_uncertainty[fsample,:] = xret[fsample]['sigY']
     forward_calc[fsample,:] = xret[fsample]['FXn']
 
-    if vip['output_file_keep_small'] == 0:
+    if vip['output_akernal'] >= 1:
         Xop[fsample,:] = xret[fsample]['Xn']
         Sop[fsample,:,:] = xret[fsample]['Sop']
         Akernal[fsample,:,:] = xret[fsample]['Akern']
+    
+    if vip['output_akernal'] == 2:
+        Akernal_nm[fsample,:,:] = xret[fsample]['Akern_nm']
 
     fid.close()
     success = 1
