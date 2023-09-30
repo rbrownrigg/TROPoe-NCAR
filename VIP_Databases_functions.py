@@ -194,7 +194,7 @@ full_vip = ({
     'lbl_tape3': {'value': 'tape3.data', 'comment': 'The TAPE3 file to use in the lblrtm calculation.  Needs to be in the directory lbl_home/hitran/', 'default': False},
     'monortm_version': {'value': 'v5.0', 'comment': 'String with the version information on MonoRTM', 'default': False},
     'monortm_wrapper': {'value': '/home/tropoe/vip/src/monortm_v5.0/wrapper/monortm_v5', 'comment': 'Turner wrapper to run MonoRTM', 'default': False},
-    'monortm_exec': {'value': '/home/tropoe/vip/src/monortm_v5.0/monortm/monortm_v5.0_linux_gnu_sgl', 'comment': 'AERs MonoRTM executable', 'default': False},
+    'monortm_exec': {'value': '/home/tropoe/vip/src/monortm_v5.0/monortm/monortm_v5.0_linux_intel_sgl', 'comment': 'AERs MonoRTM executable', 'default': False},
     'monortm_spec': {'value': '/home/tropoe/vip/src/monortm_v5.0/monolnfl_v1.0/TAPE3.spectral_lines.dat.0_55.v5.0_veryfast', 'comment': 'MonoRTM spectral database\n', 'default': False},
 
     'lblrtm_jac_option': {'value': 4, 'comment': '1 - LBLRTM Finite Diffs, 2 - 3calc method (deprecated), 3 - deltaOD method (deprecated), 4 - interpol method', 'default': False},
