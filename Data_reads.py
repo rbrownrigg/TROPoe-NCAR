@@ -412,6 +412,8 @@ def read_irs_ch(path,date,irs_type,fv,fa,irs_spec_cal_factor,
         if (len(np.where(np.array(list(fid.variables.keys())) == 'sceneMirrorAngle')[0])> 0):
             xscenemirrorangle = fid.variables['sceneMirrorAngle'][:]
         else:
+            print('WARNING: File does not contain variable "sceneMirrorAngle".')
+            print('         Setting sceneMirrorAngle to ' + str(zenith_scene_mirror_angle))
             xscenemirrorangle = np.full_like(to, zenith_scene_mirror_angle)
 
         #Read in the field "missingDataFlag". If it does not exist, then abort
@@ -471,7 +473,7 @@ def read_irs_ch(path,date,irs_type,fv,fa,irs_spec_cal_factor,
             sceneMirrorAngle[:] = zenith_scene_mirror_angle
             foo = np.arange(len(sceneMirrorAngle))
         else:
-            print('Error in read_irs_ch: Unable to find any zenith pointing AERI/ASSIST data')
+            print('Error in read_irs_ch: Unable to find any zenith pointing IRS data')
             return err
 
     chsecs           = np.copy(chsecs[foo])
@@ -792,6 +794,8 @@ def read_all_data(date, retz, tres, dostop, verbose, avg_instant, ch1_path,
             print('  Error: The calibration information for the IRS pressure sensor is ill-formed')
             fail = 1
         else:
+            if ((cal_irs_pres[0] != 0) | (cal_irs_pres[1] != 1)):
+                print(' Calibrating IRS pressure with intercept ' + str(cal_irs_pres[0]) + ' and  slope ' + str(cal_irs_pres[1]))
             irsch1['atmos_pres'] = cal_irs_pres[0] + irsch1['atmos_pres'] *cal_irs_pres[1]
 
         if ((fail == 1) & (dostop != 0)):
@@ -1081,6 +1085,7 @@ def read_mwr(path, rootname, date, mwr_type, step, mwr_freq_field, mwr_elev_fiel
                         foo = np.where(np.array(list(fid.variables.keys())) == fields[j])[0]
                         if len(foo) == 0:
                             print('Error: Unable to find the Tb field ' + fields[j] + ' in the MWR input file')
+                            return err
                         tmp = fid.variables[fields[j]][:]
                         if j == 0:
                             tbskyx = np.copy(tmp)
@@ -1160,7 +1165,7 @@ def read_mwr(path, rootname, date, mwr_type, step, mwr_freq_field, mwr_elev_fiel
                 foo = np.where(((elev >= 89) & (elev < 91)))[0]
 
             if len(foo) == 0:
-                print('  Warning: All MWR data are at elevations other than 90 degrees (zenith)')
+                print('  Warning: All MWR data are at elevations other than 90 degrees (zenith) or of bad quality')
                 mwr_type = 0
             else:
                 secs = secs[foo]

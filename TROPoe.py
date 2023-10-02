@@ -360,6 +360,23 @@ if not os.path.exists(vip['lbl_home'] + '/hitran/' + vip['lbl_tape3']):
     VIP_Databases_functions.abort(lbltmpdir,date)
     sys.exit()
 
+# Make sure that path to the MonoRTM files are set properly. We will only
+# stop the code if MWR data is used and the files don't exist
+if not os.path.exists(vip['monortm_wrapper']) and ((vip['mwr_type'] > 0) or (vip['mwrscan_type'] > 0)):
+    print('Error: unable to find the the specified MonoRTM wrapper')
+    VIP_Databases_functions.abort(lbltmpdir,date)
+    sys.exit()
+    
+if not os.path.exists(vip['monortm_exec']) and ((vip['mwr_type'] > 0) or (vip['mwrscan_type'] > 0)):
+    print('Error: unable to find the the specified MonoRTM executable')
+    VIP_Databases_functions.abort(lbltmpdir,date)
+    sys.exit()
+
+if not os.path.exists(vip['monortm_spec']) and ((vip['mwr_type'] > 0) or (vip['mwrscan_type'] > 0)):
+    print('Error: unable to find the the specified MonoRTM spectral line file')
+    VIP_Databases_functions.abort(lbltmpdir,date)
+    sys.exit()
+    
 # Define some paths and constants
 lbldir = lbltmpdir + '/lblout'       # Name of the lbl output directory
 lbltp5 = lbltmpdir + '/lbltp5'       # Name of the tape5 file
@@ -1001,7 +1018,7 @@ for i in range(len(irs['secs'])):                        # { loop_i
             sys.exit()
         if len(feh6) > 0:
             if np.mean(Y[feh6]) <= 0:
-                print('      Warning: the wurface WVMR value was not positive')
+                print('      Warning: the surface WVMR value was not positive')
             else:
                 bar = np.where((irs_band_noise_inflation['wnum1'] <= dimY[feh1]) &
                         (dimY[feh1] <= irs_band_noise_inflation['wnum2']))[0]
@@ -1901,9 +1918,9 @@ for i in range(len(irs['secs'])):                        # { loop_i
             if Xnp1[nX+4] + Xnp1[nX+5]  < 0:
                 Xnp1[nX+5] = -Xnp1[nX+4]
 
-            if doco2 == 1:
+            if doco2 == 2:
                 Xnp1[nX+6,0] = np.nanmax([Xnp1[nX+6], vip['prior_co2_mn'][2] - multiplier*vip['prior_co2_sd'][2], -20])
-                Xnp1[nX+6,0] = np.nanmax([Xnp1[nX+6], vip['prior_co2_mn'][2] + multiplier*vip['prior_co2_sd'][2], -1])
+                Xnp1[nX+6,0] = np.nanmin([Xnp1[nX+6], vip['prior_co2_mn'][2] + multiplier*vip['prior_co2_sd'][2], -1])
             else:
                 if Xnp1[nX+6] < vip['min_PBL_height']:
                     Xnp1[nX+6,0] = vip['min_PBL_height']
@@ -1920,9 +1937,9 @@ for i in range(len(irs['secs'])):                        # { loop_i
             if Xnp1[nX+7] + Xnp1[nX+8]  < 0:
                 Xnp1[nX+8,0] = -Xnp1[nX+7]
 
-            if doch4 == 1:
+            if doch4 == 2:
                 Xnp1[nX+9,0] = np.nanmax([Xnp1[nX+9], vip['prior_ch4_mn'][2] - multiplier*vip['prior_ch4_sd'][2], -20])
-                Xnp1[nX+9,0] = np.nanmax([Xnp1[nX+9], vip['prior_ch4_mn'][2] + multiplier*vip['prior_ch4_sd'][2], -1])
+                Xnp1[nX+9,0] = np.nanmin([Xnp1[nX+9], vip['prior_ch4_mn'][2] + multiplier*vip['prior_ch4_sd'][2], -1])
 
             else:
                 if Xnp1[nX+9] < vip['min_PBL_height']:
@@ -1940,9 +1957,9 @@ for i in range(len(irs['secs'])):                        # { loop_i
             if Xnp1[nX+10] + Xnp1[nX+11]  < 0:
                 Xnp1[nX+11,0] = -Xnp1[nX+10]
 
-            if don2o == 1:
+            if don2o == 2:
                 Xnp1[nX+12,0] = np.nanmax([Xnp1[nX+12], vip['prior_n2o_mn'][2] - multiplier*vip['prior_n2o_sd'][2], -20])
-                Xnp1[nX+12,0] = np.nanmax([Xnp1[nX+12], vip['prior_n2o_mn'][2] + multiplier*vip['prior_n2o_sd'][2], -1])
+                Xnp1[nX+12,0] = np.nanmin([Xnp1[nX+12], vip['prior_n2o_mn'][2] + multiplier*vip['prior_n2o_sd'][2], -1])
 
             else:
                 if Xnp1[nX+12] < vip['min_PBL_height']:

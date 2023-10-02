@@ -1632,7 +1632,7 @@ def compute_jacobian_external_sfc_co2(Xn, p, z, sfc_relative_height, retrieve_co
     Kij[:,2*k+5] = (tmp - FXn) / (pcoef[1] - coef[1])
 
     # Perturb third coefficient
-    if ((retrieve_co2 == 1) & (fix_co2_shape == 1)):
+    if ((retrieve_co2 == 1) | (fix_co2_shape == 1)):
         Kij[:,2*k+6] = 0.            # Don't let the Jacobian have any sensitivity to the shape parameter here.
     else:
         pcoef = np.copy(coef)

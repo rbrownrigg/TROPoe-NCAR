@@ -218,7 +218,7 @@ def trace_gas_prof(types, z, coef):
         #       Coef[1] is the value at the surface relative to Coef[0] [ppm]
         #       Coef[2] is the shape parameter. It should be between (approx) -20 to -1. [unitless]
         tg_prof = coef[0] + coef[1]*np.exp( coef[2]*z)
-        print('Error in trace_gas_prof: profile shape =1 (exponential profile is disabled -- aborting')
+        print('Error in trace_gas_prof: profile shape =2 (exponential profile is disabled -- aborting')
         return -999.
     else:
         # This option has not been defined. Abort !!

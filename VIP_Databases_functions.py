@@ -143,7 +143,6 @@ full_vip = ({
     'ext_temp_prof_path': {'value': 'None', 'comment': 'Path to external profile of temp data', 'default': False},
     'ext_temp_prof_minht': {'value': 0.0, 'comment': 'Minimum height to use the data from the external temp profiler [km AGL]', 'default': False},
     'ext_temp_prof_maxht': {'value': 10.0, 'comment': 'Maximum height to use the data from the external temp profiler [km AGL]', 'default': False},
-    'ext_temp_noise_mult': {'value': 1.0, 'comment': 'Multiplicative value to apply the noise profile of the external temperature profile (must be >= 0)', 'default': False},
     'ext_temp_noise_adder_val': {'value': [0.0, 0, 0], 'comment': '3-element comma delimited list of additive values to apply the noise profile of the external temperature profile (must be >= 0)', 'default': False},
     'ext_temp_noise_adder_hts': {'value': [0.0, 3, 20], 'comment': '3-element comma delimited list with the corresponding heights for the additive value [km AGL]', 'default': False},
     'ext_temp_ht_offset': {'value': 0.0, 'comment': 'Height offset relative to the master instrument [km]; a negative value indicates that this profile starts below the master instrument', 'default': False},
@@ -162,7 +161,6 @@ full_vip = ({
     'mod_temp_prof_path': {'value': 'None', 'comment': 'Path to the model profile of temp data', 'default': False},
     'mod_temp_prof_minht': {'value': 0.0, 'comment': 'Minimum height to use the data from the model temp profiler [km AGL]', 'default': False},
     'mod_temp_prof_maxht': {'value': 10.0, 'comment': 'Maximum height to use the data from the model temp profiler [km AGL]', 'default': False},
-    'mod_temp_noise_mult': {'value': 1.0, 'comment': 'Multiplicative value to apply the noise profile of the model temperature profile (must be >= 0)', 'default': False},
     'mod_temp_noise_adder_val': {'value': [0.0, 0, 0], 'comment': '3-element comma delimited list of additive values to apply the noise profile of the model temperature profile (must be >= 0)', 'default': False},
     'mod_temp_noise_adder_hts': {'value': [0.0, 3, 20], 'comment': '3-element comma delimited list with the corresponding heights for the additive value [km AGL]', 'default': False},
     'mod_temp_ht_offset': {'value': 0.0, 'comment': 'Height offset relative to the master instrument [km]; a negative value indicates that this profile starts below the master instrument', 'default': False},
@@ -234,7 +232,7 @@ full_vip = ({
     'prior_ch4_mn': {'value': [1.793, 0, -5], 'comment': 'Mean ch4 concentration [ppm] (se}e \'retrieve_ch4\' above)', 'default': False},
     'prior_ch4_sd': {'value': [0.0538, 0.0015, 3], 'comment': '1-sigma uncertainty in ch4 [ppm]', 'default': False},
     'prior_n2o_mn': {'value': [0.310, 0, -5], 'comment': 'Mean n2o concentration [ppm] (see \'retrieve_n2o\' above)', 'default': False},
-    'prior_n2o_sd': {'value': [0.0093, 0, 3], 'comment': '1-sigma uncertainty in n2o [ppm]', 'default': False},
+    'prior_n2o_sd': {'value': [0.0093, 0.00001, 3], 'comment': '1-sigma uncertainty in n2o [ppm]', 'default': False},
     'prior_lwp_mn': {'value':  0.0, 'comment': 'Mean LWP [g/m2]', 'default': True},
     'prior_lwp_sd': {'value': 200.0, 'comment': '1-sigma uncertainty in LWP [g/m2]', 'default': True},
     'prior_lReff_mn': {'value': 8.0, 'comment': 'Mean liquid Reff [microns]', 'default': True},
@@ -426,51 +424,267 @@ def read_vip_file(filename,globatt,verbose,debug,dostop):
 
 def check_vip(vip):
     flag = 0           # Default is that everything is ok
+    
+    if ((vip['avg_instant'] < -1) or (vip['avg_instant'] > 1)):
+        print('Error: avg_instant can only be set to -1, 0, or 1')
+        flag = 1
 
-    if ((vip['output_clobber'] < 0) | (vip['output_clobber'] > 2)):
+    if ((vip['output_clobber'] < 0) or (vip['output_clobber'] > 2)):
         print('Error: The output_clobber flag can only be set to 0, 1, or 2')
         flag = 1
     
-    if ((vip['output_akernal'] < 0) | (vip['output_akernal'] > 2)):
+    if ((vip['output_akernal'] < 0) or (vip['output_akernal'] > 2)):
         print('Error: The output_akernal flag can only be set to 0, 1, or 2')
         flag = 1
         
-    if ((vip['irs_fv'] < 0.0) | (vip['irs_fv'] > 0.03)):
+    if ((vip['irs_zenith_scene_mirror_angle'] < 0) or (vip['irs_zenith_scene_mirror_angle'] > 360)):
+        print('Error: irs_zenith_scene_mirror_angle must be between 0-360, inclusive.')
+        flag = 1
+    
+    if ((vip['irs_min_noise_flag'] < 0) or (vip['irs_min_noise_flag'] > 1)):
+        print('Error: irs_min_noise_flag must be 0 or 1')
+        flag = 1
+    
+    if vip['irs_noise_inflation'] < 1:
+        print('Error: irs_noise_inflation must be >= 1')
+        flag = 1
+        
+    if ((vip['irs_smooth_noise'] < 0) or (vip['irs_smooth_noise'] > 1)):
+        print('Error: irs_smooth_noise must be 0 or 1')
+        flag = 1
+    
+    if ((vip['irs_band_noise_inflation'] < 0) or (vip['irs_band_noise_inflation'] > 1)):
+        print('Error: irs_band_noise_inflation must be 0 or 1')
+        flag = 1
+    
+    if ((vip['irs_use_missingDataFlag'] < 0) or (vip['irs_use_missingDataFlag'] > 1)):
+        print('Error: The irs_use_missingDataFlag must be either 0 or 1')
+        flag = 1
+
+    if ((vip['irs_hatch_switch'] < 0) or (vip['irs_hatch_switch'] > 1)):
+        print('Error: The irs_hatch_switch must be either 0 or 1')
+        flag = 1
+    
+    if ((vip['irs_ignore_status_missingDataFlag'] < 0) or (vip['irs_ignore_status_missingDataFlag'] > 1)):
+        print('Error: irs_ignore_status_missingDataFlag must be either 0 or 1')
+        flag = 1
+
+    if ((vip['irs_ignore_status_hatch'] < 0) or (vip['irs_ignore_status_hatch'] > 1)):
+        print('Error: irs_ignore_status_hatch must be either 0 or 1')
+        flag = 1
+        
+    if ((vip['irs_fv'] < 0.0) or (vip['irs_fv'] > 0.03)):
         print('Error: The IRS fv is too small or too large')
         flag = 1
 
-    if ((vip['irs_fa'] < 0.0) | (vip['irs_fa'] > 0.03)):
+    if ((vip['irs_fa'] < 0.0) or (vip['irs_fa'] > 0.03)):
         print('Error: The IRS fa is too small or too large')
         flag = 1
 
+    if vip['mwr_time_delta'] <= 0:
+        print('Error: mwr_time_delta must be positive')
+        flag = 1
+    
+    if vip['mwrscan_time_delta'] <= 0:
+        print('Error: mwr_time_delta must be positive')
+        flag = 1
+    
+    if vip['ext_sfc_temp_random_error'] <= 0:
+        print('Error: ext_sfc_temp_random_error must be positive')
+        flag = 1
+    
+    if vip['ext_sfc_temp_rep_error'] < 0:
+        print('Error: ext_sfc_temp_rep_error must be >= 0')
+        flag = 1
+    
+    if vip['ext_sfc_rh_random_error'] <= 0:
+        print('Error: ext_sfc_rh_random_error must be positive')
+        flag = 1
+    
+    if vip['ext_sfc_wv_mult_error'] <= 0:
+        print('Error: ext_sfc_wv_mult_error must be positive')
+        flag = 1
+        
+    if vip['ext_sfc_wv_rep_error'] < 0:
+        print('Error: ext_sfc_wv_rep_error must be >= 0')
+        flag = 1
+    
+    if vip['ext_sfc_time_delta'] <= 0:
+        print('Error: ext_sfc_time_delta must be positive')
+        flag = 1
+    
+    if vip['ext_wv_add_rel_error'] < 0:
+        print('Error: ext_wv_add_rel_error must be >= 0')
+        flag = 1
+    
+    if vip['ext_wv_time_delta'] <= 0:
+        print('Error: ext_wv_time_delta must be positive')
+        flag = 1
+    
+    if vip['ext_temp_time_delta'] <= 0:
+        print('Error: ext_temp_time_delta must be positive')
+        flag = 1
+    
+    if vip['mod_wv_time_delta'] <= 0:
+        print('Error: ext_wv_time_delta must be positive')
+        flag = 1
+    
+    if vip['mod_temp_time_delta'] <= 0:
+        print('Error: ext_temp_time_delta must be positive')
+        flag = 1
+    
+    if vip['co2_sfc_rep_error'] < 0:
+        print('Error: co2_sfc_rep_error must be >= 0')
+        flag = 1
+    
+    if vip['co2_sfc_time_delta'] <= 0:
+        print('Error: co2_sfc_time_delta must be positive')
+        flag = 1
+    
+    if vip['cbh_window_in'] <= 0:
+        print('Error: cbh_window_in must be positive')
+        flag = 1
+    
+    if vip['cbh_window_out'] <= 0:
+        print('Error: cbh_window_out must be positive')
+        flag = 1
+    
+    if vip['cbh_window_in'] > vip['cbh_window_out']:
+        print('Error: cbh_window_in must be less than cbh_window_out')
+        flag = 1
+    
+    if vip['cbh_default_ht'] <= 0:
+        print('Error: cbh_default_ht must be positive')
+        flag = 1
+    
+    if vip['lblrtm_jac_interpol_npts_wnum'] <= 0:
+        print('Error: lblrtm_jac_interpol_npts_wnum must be positive')
+        flag = 1
+    
     if vip['jac_max_ht'] <= 1.0:
         print('Error: The maximum height to compute the Jacobian is too small; please increase')
         flag = 1
 
-    if ((vip['max_iterations'] < 0) | (vip['max_iterations'] > 25)):
+    if ((vip['max_iterations'] < 0) or (vip['max_iterations'] > 25)):
         print('Error: The maximum number of iterations must be between 0 and 25')
         flag = 1
-
-    if ((vip['lbl_std_atmos'] < 1) | (vip['lbl_std_atmos'] > 6)):
+    
+    if vip['superadiabatic_maxht'] < 0:
+        print('Error: superadiabatic_maxht must be >= 0')
+        flag = 1
+    
+    if (vip['retrieve_temp'] < 0) or (vip['retrieve_temp'] > 1):
+        print('Error: retrieve_temp must be 0 or 1')
+        flag = 1
+    
+    if (vip['retrieve_wvmr'] < 0) or (vip['retrieve_wvmr'] > 1):
+        print('Error: retrieve_wvmr must be 0 or 1')
+        flag = 1
+    
+    if (vip['retrieve_co2'] < 0) or (vip['retrieve_co2'] > 2):
+        print('Error: retrieve_co2 must be 0, 1, or 2')
+        flag = 1
+    
+    if (vip['retrieve_ch4'] < 0) or (vip['retrieve_ch4'] > 2):
+        print('Error: retrieve_ch4 must be 0, 1, or 2')
+        flag = 1
+    
+    if (vip['retrieve_n2o'] < 0) or (vip['retrieve_n2o'] > 2):
+        print('Error: retrieve_n2o must be 0, 1, or 2')
+        flag = 1
+    
+    if (vip['retrieve_lcloud'] < 0) or (vip['retrieve_lcloud'] > 1):
+        print('Error: retrieve_lcloud must be 0 or 1')
+        flag = 1
+    
+    if (vip['retrieve_icloud'] < 0) or (vip['retrieve_icloud'] > 2):
+        print('Error: retrieve_icloud must be 0 or 1')
+        flag = 1
+    
+    if vip['qc_rms_value'] <= 0:
+        print('Error: qc_rms_value must be positive')
+        flag = 1
+    
+    if vip['recenter_prior'] < 0:
+        print('Error: recenter_prior must be 0, 1, 2, 3, or 4')
+        flag = 1
+    
+    if vip['recenter_input'] < 0:
+        print('Error recenter_input must be >= 0')
+        flag = 1
+    
+    if vip['prior_chimney_ht'] < 0:
+        print('Error prior_chimney_ht must be >= 0')
+        flag = 1
+    
+    if vip['prior_co2_sd'][0] <= 0 or vip['prior_co2_sd'][1] <= 0 or vip['prior_co2_sd'][2] <= 0:
+        print('Error: the values of prior_co2_sd must be positive')
+        flag = 1
+    
+    if vip['prior_ch4_sd'][0] <= 0 or vip['prior_ch4_sd'][1] <= 0 or vip['prior_ch4_sd'][2] <= 0:
+        print('Error: the values of prior_ch4_sd must be positive')
+        flag = 1
+    
+    if vip['prior_n2o_sd'][0] <= 0 or vip['prior_n2o_sd'][1] <= 0 or vip['prior_n2o_sd'][2] <= 0:
+        print('Error: the values of prior_n2o_sd must be positive')
+        flag = 1
+        
+    if ((vip['lbl_std_atmos'] < 1) or (vip['lbl_std_atmos'] > 6)):
         print('Error: The LBLRTM standard atmosphere must be an integer between 1 and 6')
         flag = 1
-
-    if ((vip['irs_use_missingDataFlag'] < 0) | (vip['irs_use_missingDataFlag'] > 1)):
-        print('Error: The irs_use_missingDataFlag must be either 0 or 1')
-        flag = 1
-
-    if ((vip['irs_hatch_switch'] < 0) | (vip['irs_hatch_switch'] > 1)):
-        print('Error: The irs_hatch_switch must be either 0 or 1')
+    
+    if vip['prior_lwp_mn'] < 0:
+        print('Error: The prior_lwp_mn must be >= 0')
         flag = 1
     
-    if (vip['irs_noise_inflation'] < 1):
-        print('Error: The irs_noise_inflation must be >= 1')
+    if vip['prior_lwp_sd'] <= 0:
+        print('Error: The prior_lwp_sd must be positive')
         flag = 1
     
-    if ((vip['retrieve_lcloud'] == 0) & (vip['prior_lwp_mn'] > 0)):
+    if vip['prior_lReff_mn'] <= 0:
+        print('Error: The prior_lReff_mn must be positive')
+        flag = 1
+    
+    if vip['prior_lReff_sd'] <= 0:
+        print('Error: The prior_lReff_sd must be positive')
+        flag = 1
+    
+    if vip['prior_itau_mn'] < 0:
+        print('Error: The prior_itau_mn must be >= 0')
+        flag = 1
+    
+    if vip['prior_lwp_sd'] <= 0:
+        print('Error: The prior_itau_sd must be positive')
+        flag = 1
+    
+    if vip['prior_iReff_mn'] <= 0:
+        print('Error: The prior_iReff_mn must be positive')
+        flag = 1
+    
+    if vip['prior_iReff_sd'] <= 0:
+        print('Error: The prior_iReff_sd must be positive')
+        flag = 1
+    
+    if vip['min_PBL_height'] <= 0:
+        print('Error: min_PBL_height must be positive')
+        flag = 1
+    
+    if vip['max_PBL_height'] <= 0:
+        print('Error: max_PBL_height must be positive')
+        flag = 1
+    
+    if vip['min_PBL_height'] > vip['max_PBL_height']:
+        print('Error: min_PBL_height must be less than max_PBL_height')
+        flag = 1
+    
+    if vip['nudge_PBL_height'] <= 0:
+        print('Error: nudge_PBL_height must be positive')
+        flag =1
+        
+    if ((vip['retrieve_lcloud'] == 0) and (vip['prior_lwp_mn'] > 0)):
         print('WARNING: retrieve_lcloud set to 0, but prior_lwp_mn is non-zero!')
 
-    if ((vip['retrieve_icloud'] == 0) & (vip['prior_itau_mn'] > 0)):
+    if ((vip['retrieve_icloud'] == 0) and (vip['prior_itau_mn'] > 0)):
         print('WARNING: retrieve_icloud set to 0, but prior_itau_mn is non-zero!')
     
     return flag
