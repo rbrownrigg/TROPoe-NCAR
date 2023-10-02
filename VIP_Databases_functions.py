@@ -410,7 +410,7 @@ def read_vip_file(filename,globatt,verbose,debug,dostop):
     if len(foo) > 0:
         print('  There were undefined entries in the VIP file:')
         for i in range(len(foo)):
-            print('    ' + inputt[foo,0][0])
+            print('    ' + inputt[foo,0][i])
         return vip
     else:
         vip['success'] = 1
