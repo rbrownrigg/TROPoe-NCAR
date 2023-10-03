@@ -217,7 +217,8 @@ full_vip = ({
     'retrieve_icloud': {'value': 0, 'comment': '0 - do not retrieve   ice  clouds, 1 - retrieve   ice  cloud properties', 'default': True},
     'lcloud_ssp': {'value': '/home/tropoe/vip/src/input/ssp_db_files/ssp_db.mie_wat.gamma_sigma_0p100', 'comment': 'SSP file for liquid cloud properties', 'default': False},
     'icloud_ssp': {'value': '/home/tropoe/vip/src/input/ssp_db_files/ssp_db.mie_ice.gamma_sigma_0p100', 'comment': 'SSP file for   ice  cloud properties', 'default': False},
-    'qc_rms_value': {'value': 10.0, 'comment': 'The RMS value between ((obs minus calc)/obs_uncert) spectra, with values less than this being \'good\' \n', 'default': True},
+    'qc_rms_value': {'value': 10.0, 'comment': 'The RMSa value between ((obs minus calc)/obs_uncert), with values less than this being \'good\' \n', 'default': True},
+    'qc_gamma_value': {'value': 5.0, 'comment': 'The gamma value, with values less than this being \'good\' \n', 'default': True},
 
     'recenter_prior': {'value': 1, 'comment': '0 - do not recenter, 1 - Recenter WVMR based on sfc wv field and using conserve-RH for temp, 2 - Recenter WVMR based on PWV and conserve-RH for temp, 3 - Recenter WVMR based on sfc wv field and using conserve-covariance for temp, 4 - Recenter WVMR based on PWV and conserve-covariance for temp', 'default': True},
     'recenter_input': {'value': 0.0, 'comment': 'Sfc WVMR or PWV value to use in the recentering process. Set to zero for the value to be determined from other input data (i.e. sfc met)', 'default': False},

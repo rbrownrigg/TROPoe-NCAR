@@ -2236,14 +2236,17 @@ for i in range(len(irs['secs'])):                        # { loop_i
 
     # Determine the QC of the sample
     # First look for a hatch that is isn't fully open
-    if ((0.8 > xret[fsample]['hatchopen']) & (xret[fsample]['hatchopen'] > 1.2)):
-        xret[fsample]['qcflag'] = 1
+    # if ((0.8 > xret[fsample]['hatchopen']) & (xret[fsample]['hatchopen'] > 1.2)):
+    #     xret[fsample]['qcflag'] = 1
     # Then look for a retrieval that didn't converge
-    if xret[fsample]['converged'] != 1:
+    if (xret[fsample]['converged'] != 1) | (xret[fsample]['converged'] != 2):
         xret[fsample]['qcflag'] = 2
     # Then look for a retrieval where the RMS is too large
     if xret[fsample]['rmsa'] > vip['qc_rms_value']:
         xret[fsample]['qcflag'] = 3
+    # Then look for a retrieval where gamma is too large
+    if xret[fsample]['gamma'] > vip['qc_gamma_value']:
+        xret[fsample]['qcflag'] = 4
 
     # Compute the various convective indices and other useful data.
     derived = {}
