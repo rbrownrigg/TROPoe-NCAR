@@ -22,6 +22,7 @@ import copy
 import warnings
 from netCDF4 import Dataset
 from datetime import datetime, timezone
+from glob import glob
 from time import gmtime, strftime
 from subprocess import Popen, PIPE
 from argparse import ArgumentParser
@@ -32,6 +33,7 @@ import Calcs_Conversions
 import Data_reads
 import Jacobian_Functions
 import Output_Functions
+import plot_tropoe
 
 # Check to see if we are just writing out a blank vip
 if '--vip' in sys.argv:
@@ -173,6 +175,25 @@ if vip['success'] != 1:
     print('---------------------------------------------------------------------')
     print(' ')
     sys.exit()
+
+if vip['plot_output'] == 2:
+    print("plot_output = 2, so plotting previously retrieved output and aborting")
+
+    files = glob(os.path.join(vip['output_path'], f"{vip['output_rootname']}*{date}*.nc"))
+
+    if len(files) == 0:
+        print("     No files found to plot. Aborting...")
+        sys.exit()
+
+    for fn in files:
+        print(f"    Plotting {fn}")
+        plot_tropoe.doplot(fn, vip['plot_xlim'], vip['plot_ylim'], vip['plot_temp_lim'], vip['plot_wvmr_lim'],
+                           vip['plot_tuncert_lim'], vip['plot_wvuncert_lim'], vip['plot_theta_lim'], vip['plot_rh_lim'],
+                           vip['plot_thetae_lim'], vip['plot_dewpt_lim'], vip['plot_lwp_cbh_threshold'],
+                           vip['plot_tres_min_gap'], vip['plot_comment'], vip['plot_rootname'], vip['plot_path'])
+
+    sys.exit()
+
 
 # Disabling prior_chimney_ht for now. Leaving the code availabe in case we want
 # to incorporate it again.
@@ -2269,6 +2290,13 @@ for i in range(len(irs['secs'])):                        # { loop_i
     if success == 0:
         VIP_Databases_functions.abort(lbltmpdir,date)
         sys.exit()
+
+    if vip['plot_output'] == 1:
+        print("     Plotting sample...")
+        plot_tropoe.doplot(noutfilename, vip['plot_xlim'], vip['plot_ylim'], vip['plot_temp_lim'], vip['plot_wvmr_lim'],
+                           vip['plot_tuncert_lim'], vip['plot_wvuncert_lim'], vip['plot_theta_lim'], vip['plot_rh_lim'],
+                           vip['plot_thetae_lim'], vip['plot_dewpt_lim'], vip['plot_lwp_cbh_threshold'],
+                           vip['plot_tres_min_gap'], vip['plot_comment'], vip['plot_rootname'], vip['plot_path'])
 
     already_saved = 1
     fsample += 1

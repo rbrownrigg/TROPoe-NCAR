@@ -241,10 +241,28 @@ full_vip = ({
     'prior_itau_mn': {'value': 0.0, 'comment': 'Mean ice cloud optical depth (geometric limit)', 'default': True},
     'prior_itau_sd': {'value': 50.0, 'comment': '1-sigma uncertainty in ice cloud optical depth', 'default': True},
     'prior_iReff_mn': {'value': 25.0, 'comment': 'Mean ice cloud Reff [microns]', 'default': True},
-    'prior_iReff_sd': {'value': 8.0, 'comment': '1-sigma uncertainty in ice cloud} Reff [Reff]', 'default': True},
+    'prior_iReff_sd': {'value': 8.0, 'comment': '1-sigma uncertainty in ice cloud} Reff [Reff] \n', 'default': True},
     'min_PBL_height': {'value': 0.3, 'comment': 'The minimum height of the planetary boundary layer (used for trace gases) [km AGL]', 'default': False},
     'max_PBL_height': {'value': 5.0, 'comment': 'The maximum height of the planetary boundary layer (used for trace gases) [km AGL]', 'default': False},
-    'nudge_PBL_height': {'value': 0.5, 'comment': 'The temperature offset (nudge) added to the surface temp to find PBL height [C]', 'default': False},
+    'nudge_PBL_height': {'value': 0.5, 'comment': 'The temperature offset (nudge) added to the surface temp to find PBL height [C] \n', 'default': False},
+
+    'plot_output': {'value': 0, 'comment': '0 - do not generate quicklooks of the output; 1 - generate quicklooks of the output after every iterations; 2 - plot from pre-existing file and abort', 'default': True},
+    'plot_path'  : {'value': 'None', 'comment': 'Path to store outputted quicklooks. Defaults to output path', 'default': True},
+    'plot_rootname': {'value': 'None', 'comment': 'Sets a prefix to the quicklooks. Defaults to the output_rootname vip entry', 'default': True},
+    'plot_xlim'  : {'value': [0., 24.], 'comment': 'Hours of day', 'default': True},
+    'plot_ylim'  : {'value': [0., 2.], 'comment': 'Height AGL in km', 'default': True},
+    'plot_temp_lim'    : {'value': [-10., 20.], 'comment': 'Temperature limit (C)', 'default': True},
+    'plot_wvmr_lim'    : {'value': [0., 20.], 'comment': 'WVMR limit (in g/kg)', 'default': True},
+    'plot_tuncert_lim' : {'value': [0., 3.], 'comment': 'Temperature uncertainty limit (C)', 'default': True},
+    'plot_wvuncert_lim': {'value': [0., 3.], 'comment': 'WVMR uncertainty limit (g/kg)', 'default': True},
+    'plot_theta_lim'   : {'value': [290., 320.], 'comment': 'Potential Temperature limit (K)', 'default': True},
+    'plot_rh_lim'      : {'value': [0., 100.], 'comment': "Relative humidity limit (%)", 'default': True},
+    'plot_thetae_lim'  : {'value': [290., 320.], 'comment': 'equivalent potential temperature limit (K)', 'default': True},
+    'plot_dewpt_lim'   : {'value': [-15., 25.], 'comment': 'Dewpoint limit (C)', 'default': True},
+    'plot_comment'     : {'value': 'None', 'comment': 'String to put in the lower left of the quicklook figures', 'default': True},
+    'plot_tres_min_gap': {'value': 'None', 'comment': 'In minutes. Defaults to 3 x tres', 'default': True},
+    'plot_lwp_cbh_threshold': {'value': 8.0, 'comment': 'Min LWP to show CBH dots', 'default': True}
+
 }
 )
 
@@ -348,31 +366,25 @@ def read_vip_file(filename,globatt,verbose,debug,dostop):
                                 wait = input('Stopping inside to debug this bad boy. Press enter to continue')
                             return vip
 
-                    elif ((key == 'ext_wv_noise_mult_val') |
-                          (key == 'ext_wv_noise_mult_hts') |
-                          (key == 'ext_temp_noise_adder_val') |
-                          (key == 'ext_temp_noise_adder_hts') |
-                          (key == 'mod_wv_noise_mult_val') |
-                          (key == 'mod_wv_noise_mult_hts') |
-                          (key == 'mod_temp_noise_adder_val') |
-                          (key == 'mod_temp_noise_adder_hts') |
-                          (key == 'prior_co2_mn') |
-                          (key == 'prior_co2_sd') |
-                          (key == 'prior_ch4_mn') |
-                          (key == 'prior_ch4_sd') |
-                          (key == 'prior_n2o_mn') |
-                          (key == 'prior_n2o_sd') ):
+                    elif key in [
+                        'ext_wv_noise_mult_val', 'ext_wv_noise_mult_hts', 'ext_temp_noise_adder_val',
+                        'ext_temp_noise_adder_hts', 'mod_wv_noise_mult_val', 'mod_wv_noise_mult_hts',
+                        'mod_temp_noise_adder_val', 'mod_temp_noise_adder_hts', 'prior_co2_mn', 'prior_co2_sd',
+                        'prior_ch4_mn', 'prior_ch4_sd', 'prior_n2o_mn', 'prior_n2o_s','plot_xlim', 'plot_ylim',
+                        'plot_temp_lim', 'plot_wvmr_lim', 'plot_tuncert_lim', 'plot_wvuncert_lim',
+                        'plot_theta_lim', 'plot_rh_lim', 'plot_thetae_lim', 'plot_dewpt_lim'
+                    ]:
 
                         feh = inputt[foo,1][0].split(',')
-                        if len(feh) != len(vip[key]):
-                            print('Error: The key ' + key + ' in VIP file must be a ' + str(len(vip[key])) + ' element array')
+                        needed_length = len(vip[key])
+                        if len(feh) != needed_length:
+                            print('Error: The key ' + key + ' in VIP file must be a ' + str(needed_length) + ' element array')
                             if dostop:
                                 wait = input('Stopping inside to debug this bad boy. Press enter to continue')
                             return vip
 
-                        vip[key][0] = float(feh[0])
-                        vip[key][1] = float(feh[1])
-                        vip[key][2] = float(feh[2])
+                        for m in range(needed_length):
+                            vip[key][m] = float(feh[m])
 
                     else:
                         vip[key] = type(vip[key])(inputt[foo,1][0])
@@ -404,6 +416,21 @@ def read_vip_file(filename,globatt,verbose,debug,dostop):
         blo = [612., 624, 674, 713, 538, 860.1, 872.2, 898.2]
         bhi = [618., 660, 713, 722, 588, 864.0, 877.5, 905.4]
         vip['spectral_bands'] = np.array([blo,bhi])
+
+    # Now that we've read everything in, go back and reset anything that could be dependent
+    # on another VIP entry
+    if vip['plot_path'] == 'None':
+        vip['plot_path'] = vip['output_path']
+
+    if vip['plot_rootname'] == 'None':
+        vip['plot_rootname'] = vip['output_rootname']
+
+    if vip['plot_tres_min_gap'] == 'None':
+        if vip['tres'] != 0:
+            vip['plot_tres_min_gap'] = vip['tres'] * 3
+
+    if vip['plot_comment'] == 'None':
+        vip['plot_comment'] = ''
 
     foo = np.nonzero(track)[0]
     if len(foo) > 0:
