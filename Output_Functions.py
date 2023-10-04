@@ -189,9 +189,9 @@ def write_output(vip, ext_prof, mod_prof, ext_tseries, globatt, xret, prior,
         qc_flag.long_name = 'Manual QC flag'
         qc_flag.comment1 = 'value of 0 implies quality is ok; non-zero values indicate that the sample has suspect quality'
         qc_flag.comment2 = 'unitless'
-        qc_flag.value_1 = 'Implies hatch was not open for full observing period'
         qc_flag.value_2 = 'Implies retrieval did not converge'
         qc_flag.value_3 = 'Implies retrieval converged but RMS between the observed and computed spectrum is too large'
+        qc_flag.value_4 = 'Implies the gamma value of the retrieval was too large'
         qc_flag.RMS_threshold_used_for_QC = str(vip['qc_rms_value']) + ' [unitless]'
 
         height = fid.createVariable('height', 'f4', ('height',))
