@@ -190,9 +190,10 @@ def write_output(vip, ext_prof, mod_prof, ext_tseries, globatt, xret, prior,
         qc_flag.comment1 = 'value of 0 implies quality is ok; non-zero values indicate that the sample has suspect quality'
         qc_flag.comment2 = 'unitless'
         qc_flag.value_2 = 'Implies retrieval did not converge'
-        qc_flag.value_3 = 'Implies retrieval converged but RMS between the observed and computed spectrum is too large'
+        qc_flag.value_3 = 'Implies retrieval converged but RMS between the observed_vector and forward_calc is too large'
         qc_flag.value_4 = 'Implies the gamma value of the retrieval was too large'
-        qc_flag.RMS_threshold_used_for_QC = str(vip['qc_rms_value']) + ' [unitless]'
+        qc_flag.RMSa_threshold_used_for_QC = str(vip['qc_rms_value']) + ' [unitless]'
+        qc_flag.gamma_threshold_used_for_QC = str(vip['qc_gamma_value']) + ' [unitless]'
 
         height = fid.createVariable('height', 'f4', ('height',))
         height.long_name = 'Height above ground level'
@@ -288,6 +289,7 @@ def write_output(vip, ext_prof, mod_prof, ext_tseries, globatt, xret, prior,
         gamma = fid.createVariable('gamma', 'f4', ('time',))
         gamma.long_name = 'Gamma parameter'
         gamma.comment1 = 'unitless'
+        gamma.comment2 = 'See Turner and Loehnert JAMC 2014 for details'
 
         n_iter = fid.createVariable('n_iter', 'i2', ('time',))
         n_iter.long_name = 'Number of iterations performed'
