@@ -3991,6 +3991,64 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
                     stemp = np.append(stemp,np.ones(len(t))*sigma_t)
                 external['nTsfc'] = len(tsecs)
 
+        # Read in the ASSIST Summary data
+    elif sfc_temp_type == 5:
+        if verbose >= 1:
+            print('  Reading in ASSIST summary met temperature data')
+
+        files = []
+        for i in range(len(dates)):
+            tempfiles, status = (findfile(sfc_path,'*sum*' + dates[i] + '*.(cdf|nc)'))
+            if status == 1:
+                return external
+            files = files + tempfiles
+
+        if len(files) == 0:
+            if verbose >= 1:
+                print('    No ASSIST summary met found in this directory for this date')
+        else:
+            for i in range(len(files)):
+                fid = Dataset(files[i],'r')
+                bt  = fid.variables['base_time'][:].astype('float')
+                bt  = bt / 1000.
+                to  = fid.variables['time'][:].astype('float')
+
+                if len(np.where(np.array(list(fid.variables.keys())) == 'atmosphericPressure')[0]) > 0:
+                    p = fid.variables['atmosphericPressure'][:]
+                    p = p * 10.     # Convert kPa to hPa
+                else:
+                    p = np.ones(len(to))*-999.
+                if len(np.where(np.array(list(fid.variables.keys())) == 'externalTemperature')[0]) > 0:
+                    t = fid.variables['externalTemperature'][:]
+                else:
+                    t = np.ones(len(to))*-999.
+                if len(np.where(np.array(list(fid.variables.keys())) == 'externalHumidity')[0]) > 0:
+                    u = fid.variables['externalHumidity'][:]
+                else:
+                    u = np.ones(len(to))*-999.
+                fid.close()
+
+                foo = np.where((p > 0) & (p < 1050) & (t < 60))[0]
+                if len(foo) < 2:
+                    continue
+                to = to[foo]
+                p = p[foo]
+                t = t[foo]
+                tunit = 'C'
+                ttype = 'ASSIST summary met station'
+
+                # Append the data to the growing structure
+                sigma_t = sfc_temp_sigma_error
+                if external['nTsfc'] <= 0:
+                    tsecs = bt+to
+                    temp = np.copy(t)
+                    stemp = np.ones(len(t))*sigma_t
+                else:
+                    tsecs = np.append(tsecs,bt+to)
+                    temp = np.append(temp,t)
+                    stemp = np.append(stemp,np.ones(len(t))*sigma_t)
+                external['nTsfc'] = len(tsecs)
+
         # An undefined external surface met temperature source was specified...
     else:
         print('Error in read_external_tseries: Undefined external met temperature source specified')
@@ -4289,6 +4347,78 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
                 u = u[foo]
                 qunit = 'g/kg'
                 qtype = 'E-PROFILE microwave radiometer met station'
+
+                # Append the data to the growing structure
+                sigma_t = sfc_temp_sigma_error      # degC
+                sigma_u = sfc_rh_sigma_error        # %RH
+                w0 = Calcs_Conversions.rh2w(t, u/100., p)
+                w1 = Calcs_Conversions.rh2w(t+sigma_t, u/100., p)
+                w2 = Calcs_Conversions.rh2w(t-sigma_t, u/100., p)
+                u_plus  = (u+sigma_u)/100.
+                u_minus = (u-sigma_u)/100.
+                u_plus[u_plus > 1] = 1
+                u_minus[u_minus < 0] = 0
+                w3 = Calcs_Conversions.rh2w(t, u_plus, p)
+                w4 = Calcs_Conversions.rh2w(t, u_minus, p)
+
+                # Sum of squared errors, but take two-side average for T and RH uncerts
+                sigma_w = np.sqrt( ((w1-w0)**2 + (w2-w0)**2)/2. + ((w3-w0)**2 + (w4-w0)**2)/2. )
+                if external['nQsfc'] <= 0:
+                    qsecs = bt+to
+                    wv = np.copy(w0)
+                    swv = np.copy(sigma_w)
+                else:
+                    qsecs = np.append(qsecs,bt+to)
+                    wv = np.append(wv,w0)
+                    swv = np.append(swv,sigma_w)
+                external['nQsfc'] = len(qsecs)
+
+        # Read in the ASSIST summary met data
+    elif sfc_wv_type == 5:
+        if verbose >= 1:
+            print('  Reading in ASSIST summary met water vapor data')
+
+        files = []
+        for i in range(len(dates)):
+            tempfiles, status = (findfile(sfc_path,'*sum*' + dates[i] + '*.(cdf|nc)'))
+            if status == 1:
+                return external
+            files = files + tempfiles
+
+        if len(files) == 0:
+            if verbose >= 1:
+                print('    No ASSIST summary met found in this directory for this date')
+        else:
+            for i in range(len(files)):
+                fid = Dataset(files[i],'r')
+                bt  = fid.variables['base_time'][:].astype('float')
+                bt  = bt / 1000.
+                to  = fid.variables['time'][:].astype('float')
+
+                if len(np.where(np.array(list(fid.variables.keys())) == 'atmosphericPressure')[0]) > 0:
+                    p = fid.variables['atmosphericPressure'][:]
+                    p = p * 10.     # Convert kPa to hPa
+                else:
+                    p = np.ones(len(to))*-999.
+                if len(np.where(np.array(list(fid.variables.keys())) == 'externalTemperature')[0]) > 0:
+                    t = fid.variables['externalTemperature'][:]
+                else:
+                    t = np.ones(len(to))*-999.
+                if len(np.where(np.array(list(fid.variables.keys())) == 'externalHumidity')[0]) > 0:
+                    u = fid.variables['externalHumidity'][:]
+                else:
+                    u = np.ones(len(to))*-999.
+                fid.close()
+
+                foo = np.where((p > 0) & (p < 1050) & (t < 60) & (u >= 0) & (u < 103))[0]
+                if len(foo) < 2:
+                    continue
+                to = to[foo]
+                p = p[foo]
+                t = t[foo]
+                u = u[foo]
+                qunit = 'g/kg'
+                qtype = 'ASSIST summary met station'
 
                 # Append the data to the growing structure
                 sigma_t = sfc_temp_sigma_error      # degC
