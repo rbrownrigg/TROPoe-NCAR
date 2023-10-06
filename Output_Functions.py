@@ -164,9 +164,8 @@ def write_output(vip, ext_prof, mod_prof, ext_tseries, globatt, xret, prior,
         vdim = fid.createDimension('obs_dim', len(xret[0]['dimY']))
         gdim = fid.createDimension('gas_dim', 3)
         ddim = fid.createDimension('dfs_dim', len(xret[0]['dfs']))
-        if vip['output_akernal'] >= 1:
-            adim1 = fid.createDimension('arb_dim1', len(xret[0]['Xn']))
-            adim2 = fid.createDimension('arb_dim2', len(xret[0]['Xn']))
+        adim1 = fid.createDimension('arb_dim1', len(xret[0]['Xn']))
+        adim2 = fid.createDimension('arb_dim2', len(xret[0]['Xn']))
 
         base_time = fid.createVariable('base_time','i4')
         base_time.long_name = 'Epoch time'
@@ -652,25 +651,34 @@ def write_output(vip, ext_prof, mod_prof, ext_tseries, globatt, xret, prior,
         forward_calc.long_name = 'Forward calculation from state vector (i.e., F(Xn))'
         forward_calc.comment1 = 'mixed units -- see obs_flag field above'
 
-        # If we are trying to keep the output file small, then do not include
-        # these fields in the output file
-        if vip['output_akernal'] >= 1:
-            arb1 = fid.createVariable('arb1', 'i2', ('arb_dim1',))
-            arb1.long_name = 'Arbitrary dimension'
-            arb1.comment1 = 'mixed units'
-            arb1.comment2 = ('contains (1) temperature profile, (2) water vapor profile'
+        arb1 = fid.createVariable('arb1', 'i2', ('arb_dim1',))
+        arb1.long_name = 'Arbitrary dimension'
+        arb1.comment1 = 'mixed units'
+        arb1.comment2 = ('contains (1) temperature profile, (2) water vapor profile'
                        + ' (3) liquid water path, (4) liquid water Reff, '
                        + '(5) ice cloud optical depth, (6) ice cloud Reff, (7) carbon dioxide'
                        + ' (8) methane, (9) nitrous oxide')
 
-            arb2 = fid.createVariable('arb2', 'i2', ('arb_dim2',))
-            arb2.long_name = 'Arbitrary dimension'
-            arb2.comment1 = 'mixed units'
-            arb2.comment2 = ('contains (1) temperature profile, (2) water vapor profile'
+        arb2 = fid.createVariable('arb2', 'i2', ('arb_dim2',))
+        arb2.long_name = 'Arbitrary dimension'
+        arb2.comment1 = 'mixed units'
+        arb2.comment2 = ('contains (1) temperature profile, (2) water vapor profile'
                        + ' (3) liquid water path , (4) liquid water Reff, '
                        + '(5) ice cloud optical depth, (6) ice cloud Reff, (7) carbon dioxide' 
                        + ' (8) methane, (9) nitrous oxide')
 
+        Xa = fid.createVariable('Xa', 'f4', ('arb_dim1',))
+        Xa.long_name = 'Prior mean state'
+        Xa.comment1 = 'mixed units -- see field arb above'
+
+        Sa = fid.createVariable('Sa', 'f4', ('arb_dim1','arb_dim2',))
+        Sa.long_name = 'Prior covariance'
+        Sa.comment1 = 'mixed units -- see field arb above'
+        
+        # If we are trying to keep the output file small, then do not include
+        # these fields in the output file
+        if vip['output_akernal'] >= 1:
+            
             Xop = fid.createVariable('Xop', 'f4', ('time','arb_dim1',))
             Xop.long_name = 'Optimal solution'
             Xop.comment1 = 'mixed units -- see field arb above'
@@ -682,14 +690,6 @@ def write_output(vip, ext_prof, mod_prof, ext_tseries, globatt, xret, prior,
             Akernal = fid.createVariable('Akernal', 'f4', ('time','arb_dim1','arb_dim2',))
             Akernal.long_name = 'Averaging kernal'
             Akernal.comment1 = 'mixed units -- see field arb above'
-
-            Xa = fid.createVariable('Xa', 'f4', ('arb_dim1',))
-            Xa.long_name = 'Prior mean state'
-            Xa.comment1 = 'mixed units -- see field arb above'
-
-            Sa = fid.createVariable('Sa', 'f4', ('arb_dim1','arb_dim2',))
-            Sa.long_name = 'Prior covariance'
-            Sa.comment1 = 'mixed units -- see field arb above'
         
         # Output the no model data averaging kernal
         if vip['output_akernal'] == 2:
@@ -740,11 +740,10 @@ def write_output(vip, ext_prof, mod_prof, ext_tseries, globatt, xret, prior,
         tmp = np.append(ones,twos)
         tmp = np.append(tmp, np.array([3,4,5,6,7,7,7,8,8,8,9,9,9]))
 
-        if vip['output_akernal'] >= 1:
-            arb1[:] = tmp
-            arb2[:] = tmp
-            Xa[:] = prior['Xa']
-            Sa[:,:] = prior['Sa']
+        arb1[:] = tmp
+        arb2[:] = tmp
+        Xa[:] = prior['Xa']
+        Sa[:,:] = prior['Sa']
 
         # Fill these in, if available
         if type(location) is dict:
