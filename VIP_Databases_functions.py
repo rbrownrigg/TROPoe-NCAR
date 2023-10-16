@@ -125,6 +125,7 @@ full_vip = ({
     'ext_sfc_wv_mult_error': {'value': 1.0, 'comment': 'Multiplier for the error in the surface water vapor mixing ratio measurement.  This is applied BEFORE the \'rep_error\' value', 'default': True},
     'ext_sfc_wv_rep_error': {'value': 0.0, 'comment': 'Representativeness error for the surface water vapor measurement [g/kg], which is added to the assumed random uncertainty of 0.5 degC and 3%RH', 'default': True},
     'ext_sfc_path': {'value': '/data/met', 'comment': 'Path to the external surface met data', 'default': True},
+    'ext_sfc_rootname': {'value': 'met', 'comment': 'Rootname of the external surface met datastream', 'default': True},
     'ext_sfc_time_delta': {'value': 0.2, 'comment': 'Maximum amount of time from endpoints of external surface met dataset to extrapolate [hours]', 'default': True},
     'ext_sfc_relative_height': {'value': 0, 'comment': 'Relative height of the met station to the IRS zenith port [m]; note if met station is below IRS port then the value should be negative', 'default': True},
     'ext_sfc_pres_type': {'value': 0, 'comment': '0 - Use the internal IRS pressure sensor for psfc; 1-ARM met data, 2-NCAR ISFS data, 3-CLAMPS MWR met data\n', 'default': True},

@@ -11,7 +11,7 @@
 #
 # ----------------------------------------------------------------------------
 
-__version__ = '0.9.15'
+__version__ = '0.9.18'
 
 import os
 import sys
@@ -581,7 +581,7 @@ if mod_prof['success'] != 1:
 
 # Read in any external time series data that would be used
 ext_tseries = Data_reads.read_external_timeseries(date, irs['secs'], vip['tres'], vip['avg_instant'],
-              vip['ext_sfc_temp_type'], vip['ext_sfc_wv_type'], vip['ext_sfc_path'],
+              vip['ext_sfc_temp_type'], vip['ext_sfc_wv_type'], vip['ext_sfc_path'], vip['ext_sfc_rootname'], 
               vip['ext_sfc_temp_npts'], vip['ext_sfc_wv_npts'], vip['ext_sfc_temp_rep_error'],
               vip['ext_sfc_wv_mult_error'], vip['ext_sfc_wv_rep_error'], 
               vip['ext_sfc_rh_random_error'], vip['ext_sfc_temp_random_error'], 

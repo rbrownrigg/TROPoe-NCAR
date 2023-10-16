@@ -1857,6 +1857,10 @@ def read_vceil(path, date, vceil_type, ret_secs, verbose):
         print('             E-PROFILE style ceilometer input')
         print('                     Files named "{alc,L2}*nc" ')
         print('                     Reads field "cbh", which has units m AGL')
+        print('   cbh_type=8 --->')
+        print('             DWD CHM15k style ceilometer input')
+        print('                     Files named "*ceil*nc" ')
+        print('                     Reads field "cbh(3,time)", which has units m AGL')
         print('-------------------------------------------------------')
         print(' ')
         err = {'success':-1}
@@ -2057,6 +2061,37 @@ def read_vceil(path, date, vceil_type, ret_secs, verbose):
                 print('      Replacing some non-positive CBH values with visibility ' +
                               'in the E-PROFILE ceilometer reader')
             cbh[foo] = vis[foo]
+
+    elif vceil_type == 8:
+        if verbose >= 1:
+            print('  Reading in DWD CHM15k ceilometer data')
+        for i in range(len(udate)):
+            tempfiles, status = (findfile(path,'*ceil*' + udate[i] + '*.(cdf|nc)'))
+            if status == 1:
+                return err
+            files = files + tempfiles
+        if len(files) == 0:
+            print('    No CBH files found for this date')
+            return err
+
+        for i in range(len(files)):
+            if verbose == 3:
+                print('    Reading the file ' + files[i])
+            fid = Dataset(files[i],'r')
+            to  = fid.variables['time'][:]
+            cbhx = fid.variables['cbh'][:]
+            fid.close()
+            cbhx = cbhx[:,0]        # Keep only the first dimension (i.e., the lowest cloud base)
+
+            if i == 0:
+                secs = to
+                cbh = np.copy(cbhx)
+            else:
+                secs = np.append(secs,to)
+                cbh = np.append(cbh,cbhx)
+        cbh = cbh/1000.              # Convert m AGL to km AGL
+        bt  = secs[0]
+
     else:
         print('Error in read_vceil: Undefined ceilometer type')
         return err
@@ -3698,7 +3733,7 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
 ################################################################################
 
 def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
-            sfc_wv_type, sfc_path, sfc_temp_npts, sfc_wv_npts, sfc_temp_rep_error, sfc_wv_mult_error,
+            sfc_wv_type, sfc_path, sfc_rootname, sfc_temp_npts, sfc_wv_npts, sfc_temp_rep_error, sfc_wv_mult_error,
             sfc_wv_rep_error, sfc_rh_sigma_error, sfc_temp_sigma_error,
             sfc_time_delta, sfc_relative_height, co2_sfc_type,
             co2_sfc_npts, co2_sfc_rep_error, co2_sfc_path, co2_sfc_relative_height,
@@ -3747,7 +3782,7 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
 
         files = []
         for i in range(len(dates)):
-            tempfiles, status = (findfile(sfc_path,'*(met|thwaps)*' + dates[i] + '*.(cdf|nc)'))
+            tempfiles, status = (findfile(sfc_path,'*'+sfc_rootname+'*' + dates[i] + '*.(cdf|nc)'))
             if status == 1:
                 return external
             files = files + tempfiles
@@ -3809,21 +3844,10 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
 
         files = []
         for i in range(len(dates)):
-            tempfiles, status = (findfile(sfc_path,'*isfs*' + dates[i] + '*.(cdf|nc)'))
+            tempfiles, status = (findfile(sfc_path,'*'+sfc_rootname+'*' + dates[i] + '*.(cdf|nc)'))
             if status == 1:
                 return external
             files = files + tempfiles
-
-        # Some folks are creating surface met data with the same data format
-        # as the EOL ISFS dataset, but using "met" as the rootname. So if there
-        # are no ISFS files found,then try looking for met instead before aborting.
-
-        if len(files) == 0:
-           for i in range(len(dates)):
-                tempfiles, status = (findfile(sfc_path,'*met*' + dates[i] + '*.(cdf|nc)'))
-                if status == 1:
-                    return external
-                files = files + tempfiles
 
         if len(files) == 0:
             if verbose >= 1:
@@ -3874,7 +3898,7 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
 
         files = []
         for i in range(len(dates)):
-            tempfiles, status = (findfile(sfc_path,'*(mwr|met)*' + dates[i] + '*.(cdf|nc)'))
+            tempfiles, status = (findfile(sfc_path,'*'+sfc_rootname+'*' + dates[i] + '*.(cdf|nc)'))
             if status == 1:
                 return external
             files = files + tempfiles
@@ -3885,8 +3909,18 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
         else:
             for i in range(len(files)):
                 fid = Dataset(files[i],'r')
-                bt = fid.variables['base_time'][:].astype('float')
-                to = fid.variables['time_offset'][:].astype('float')
+                if len(np.where(np.array(list(fid.variables.keys())) == 'base_time')[0]) > 0:
+                    bt = fid.variables['base_time'][:].astype('float')
+                else:
+                    bt = 0
+                if len(np.where(np.array(list(fid.variables.keys())) == 'time_offset')[0]) > 0:
+                    to = fid.variables['time_offset'][:].astype('float')
+                elif len(np.where(np.array(list(fid.variables.keys())) == 'time')[0]) > 0:
+                    to = fid.variables['time'][:].astype('float')
+                else:
+                    fid.close()
+                    print('    Problem reading the MWR met data -- returning missing data')
+                    return external
 
                 #This field could be sfc_pres or p_sfc
 
@@ -3894,6 +3928,9 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
                     p = fid.variables['sfc_pres'][:]
                 elif len(np.where(np.array(list(fid.variables.keys())) == 'p_sfc')[0]) > 0:
                     p = fid.variables['p_sfc'][:]
+                elif len(np.where(np.array(list(fid.variables.keys())) == 'pa')[0]) > 0:    # This is the Cologne option
+                    p = fid.variables['pa'][:]
+                    p = p / 100.        # Convert Pa to hPa
                 else:
                     p = np.ones(len(to))*-999.
 
@@ -3910,6 +3947,9 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
                     ttunit = fid.variables['t_sfc'].units
                     if ((ttunit == 'K') | (ttunit == 'k') | (ttunit == 'Kelvin')):
                         t -= 273.15
+                elif len(np.where(np.array(list(fid.variables.keys())) == 'ta')[0]) > 0:    # This is the Cologne option
+                    t = fid.variables['ta'][:]
+                    t -= 273.15      # Convert K to C
                 else:
                     t = np.ones(len(to))*-999.
 
@@ -3919,6 +3959,9 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
                     u = fid.variables['sfc_rh'][:]
                 elif len(np.where(np.array(list(fid.variables.keys())) == 'rh_sfc')[0]) > 0:
                     u = fid.variables['rh_sfc'][:]
+                elif len(np.where(np.array(list(fid.variables.keys())) == 'hur')[0]) > 0:    # This is the Cologne option
+                    u = fid.variables['hur'][:]
+                    u = u * 100.        # Convert fraction to %
                 else:
                     u = np.ones(len(to))*-999.
                 fid.close()
@@ -3952,7 +3995,7 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
 
         files = []
         for i in range(len(dates)):
-            tempfiles, status = (findfile(sfc_path,'*mwr*' + dates[i] + '*.nc'))
+            tempfiles, status = (findfile(sfc_path,'*'+sfc_rootname+'*' + dates[i] + '*.(cdf|nc)'))
             if status == 1:
                 return external
             files = files + tempfiles
@@ -4003,7 +4046,7 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
 
         files = []
         for i in range(len(dates)):
-            tempfiles, status = (findfile(sfc_path,'*sum*' + dates[i] + '*.(cdf|nc)'))
+            tempfiles, status = (findfile(sfc_path,'*'+sfc_rootname+'*' + dates[i] + '*.(cdf|nc)'))
             if status == 1:
                 return external
             files = files + tempfiles
@@ -4075,7 +4118,7 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
 
         files = []
         for i in range(len(dates)):
-            tempfiles, status = (findfile(sfc_path,'*(met|thwaps)*' + dates[i] + '*.(cdf|nc)'))
+            tempfiles, status = (findfile(sfc_path,'*'+sfc_rootname+'*' + dates[i] + '*.(cdf|nc)'))
             if status == 1:
                 return external
             files = files + tempfiles
@@ -4151,21 +4194,10 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
 
         files = []
         for i in range(len(dates)):
-            tempfiles, status = (findfile(sfc_path,'*isfs*' + dates[i] + '*.(cdf|nc)'))
+            tempfiles, status = (findfile(sfc_path,'*'+sfc_rootname+'*' + dates[i] + '*.(cdf|nc)'))
             if status == 1:
                 return external
             files = files + tempfiles
-
-        # Some folks are creating surface met data with the same data format
-        # as the EOL ISFS dataset, but using "met" as the rootname. So if there
-        # are no ISFS files found,then try looking for met instead before aborting.
-
-        if len(files) == 0:
-           for i in range(len(dates)):
-                tempfiles, status = (findfile(sfc_path,'*met*' + dates[i] + '*.(cdf|nc)'))
-                if status == 1:
-                    return external
-                files = files + tempfiles
 
         if len(files) == 0:
             if verbose >= 1:
@@ -4229,7 +4261,7 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
 
         files = []
         for i in range(len(dates)):
-            tempfiles, status = (findfile(sfc_path,'*(mwr|met)*' + dates[i] + '*.(cdf|nc)'))
+            tempfiles, status = (findfile(sfc_path,'*'+sfc_rootname+'*' + dates[i] + '*.(cdf|nc)'))
             if status == 1:
                 return external
             files = files + tempfiles
@@ -4240,8 +4272,18 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
         else:
             for i in range(len(files)):
                 fid = Dataset(files[i],'r')
-                bt = fid.variables['base_time'][:].astype('float')
-                to = fid.variables['time_offset'][:].astype('float')
+                if len(np.where(np.array(list(fid.variables.keys())) == 'base_time')[0]) > 0:
+                    bt = fid.variables['base_time'][:].astype('float')
+                else:
+                    bt = 0
+                if len(np.where(np.array(list(fid.variables.keys())) == 'time_offset')[0]) > 0:
+                    to = fid.variables['time_offset'][:].astype('float')
+                elif len(np.where(np.array(list(fid.variables.keys())) == 'time')[0]) > 0:
+                    to = fid.variables['time'][:].astype('float')
+                else:
+                    fid.close()
+                    print('    Problem reading the MWR met data -- returning missing data')
+                    return external
 
                 #This field could be sfc_pres or p_sfc
 
@@ -4249,6 +4291,9 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
                     p = fid.variables['sfc_pres'][:]
                 elif len(np.where(np.array(list(fid.variables.keys())) == 'p_sfc')[0]) > 0:
                     p = fid.variables['p_sfc'][:]
+                elif len(np.where(np.array(list(fid.variables.keys())) == 'pa')[0]) > 0:    # This is the Cologne option
+                    p = fid.variables['pa'][:]
+                    p = p / 100.        # Convert Pa to hPa
                 else:
                     p = np.ones(len(to))*-999.
 
@@ -4265,6 +4310,9 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
                     ttunit = fid.variables['t_sfc'].units
                     if ((ttunit == 'K') | (ttunit == 'k') | (ttunit == 'Kelvin')):
                         t -= 273.15
+                elif len(np.where(np.array(list(fid.variables.keys())) == 'ta')[0]) > 0:    # This is the Cologne option
+                    t = fid.variables['ta'][:]
+                    t -= 273.15      # Convert K to C
                 else:
                     t = np.ones(len(to))*-999.
 
@@ -4274,6 +4322,9 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
                     u = fid.variables['sfc_rh'][:]
                 elif len(np.where(np.array(list(fid.variables.keys())) == 'rh_sfc')[0]) > 0:
                     u = fid.variables['rh_sfc'][:]
+                elif len(np.where(np.array(list(fid.variables.keys())) == 'hur')[0]) > 0:    # This is the Cologne option
+                    u = fid.variables['hur'][:]
+                    u = u * 100.        # Convert fraction to %
                 else:
                     u = np.ones(len(to))*-999.
                 fid.close()
@@ -4320,7 +4371,7 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
 
         files = []
         for i in range(len(dates)):
-            tempfiles, status = (findfile(sfc_path,'*mwr*' + dates[i] + '*.nc'))
+            tempfiles, status = (findfile(sfc_path,'*'+sfc_rootname+'*' + dates[i] + '*.(cdf|nc)'))
             if status == 1:
                 return external
             files = files + tempfiles
@@ -4385,7 +4436,7 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
 
         files = []
         for i in range(len(dates)):
-            tempfiles, status = (findfile(sfc_path,'*sum*' + dates[i] + '*.(cdf|nc)'))
+            tempfiles, status = (findfile(sfc_path,'*'+sfc_rootname+'*' + dates[i] + '*.(cdf|nc)'))
             if status == 1:
                 return external
             files = files + tempfiles
@@ -4470,7 +4521,7 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
 
         files = []
         for i in range(len(dates)):
-            tempfiles, status = (findfile(sfc_path,'*met*' + dates[i] + '*.(cdf|nc)'))
+            tempfiles, status = (findfile(sfc_path,'*'+sfc_rootname+'*' + dates[i] + '*.(cdf|nc)'))
             if status == 1:
                 return external
             files = files + tempfiles
@@ -4510,21 +4561,10 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
 
         files = []
         for i in range(len(dates)):
-            tempfiles, status = (findfile(sfc_path,'*isfs*' + dates[i] + '*.(cdf|nc)'))
+            tempfiles, status = (findfile(sfc_path,'*'+sfc_rootname+'*' + dates[i] + '*.(cdf|nc)'))
             if status == 1:
                 return external
             files = files + tempfiles
-
-        # Some folks are creating surface met data with the same data format
-        # as the EOL ISFS dataset, but using "met" as the rootname. So if there
-        # are no ISFS files found,then try looking for met instead before aborting.
-
-        if len(files) == 0:
-           for i in range(len(dates)):
-                tempfiles, status = (findfile(sfc_path,'*met*' + dates[i] + '*.(cdf|nc)'))
-                if status == 1:
-                    return external
-                files = files + tempfiles
 
         if len(files) == 0:
             if verbose >= 1:
@@ -4566,7 +4606,7 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
 
         files = []
         for i in range(len(dates)):
-            tempfiles, status = (findfile(sfc_path,'*(mwr|met)*' + dates[i] + '*.(cdf|nc)'))
+            tempfiles, status = (findfile(sfc_path,'*'+sfc_rootname+'*' + dates[i] + '*.(cdf|nc)'))
             if status == 1:
                 return external
             files = files + tempfiles
@@ -4577,8 +4617,18 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
         else:
             for i in range(len(files)):
                 fid = Dataset(files[i],'r')
-                bt = fid.variables['base_time'][:].astype('float')
-                to = fid.variables['time_offset'][:].astype('float')
+                if len(np.where(np.array(list(fid.variables.keys())) == 'base_time')[0]) > 0:
+                    bt = fid.variables['base_time'][:].astype('float')
+                else:
+                    bt = 0
+                if len(np.where(np.array(list(fid.variables.keys())) == 'time_offset')[0]) > 0:
+                    to = fid.variables['time_offset'][:].astype('float')
+                elif len(np.where(np.array(list(fid.variables.keys())) == 'time')[0]) > 0:
+                    to = fid.variables['time'][:].astype('float')
+                else:
+                    fid.close()
+                    print('    Problem reading the MWR met data -- returning missing data')
+                    return external
 
                 #This field could be sfc_pres or p_sfc
 
@@ -4586,6 +4636,9 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
                     p = fid.variables['sfc_pres'][:]
                 elif len(np.where(np.array(list(fid.variables.keys())) == 'p_sfc')[0]) > 0:
                     p = fid.variables['p_sfc'][:]
+                elif len(np.where(np.array(list(fid.variables.keys())) == 'pa')[0]) > 0:    # This is the Cologne option
+                    p = fid.variables['pa'][:]
+                    p = p / 100.        # Convert Pa to hPa
                 else:
                     p = np.ones(len(to))*-999.
 
