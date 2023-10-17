@@ -3815,12 +3815,12 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
 
                 # Some simple QC
                 foo = np.where((p > 0) & (p < 1050) & (t < 60) & (u >= 0) & (u < 103))[0]
-                if len(foo) < 2:
+                if len(foo) < 1:
                     continue
-                to = to[foo].squeeze()
-                p = p[foo].squeeze()
-                t = t[foo].squeeze()
-                u = u[foo].squeeze()
+                to = to[foo] #.squeeze()
+                p = p[foo] #.squeeze()
+                t = t[foo] #.squeeze()
+                u = u[foo] #.squeeze()
                 tunit = 'C'
                 ttype = 'ARM met station'
 
@@ -3869,7 +3869,7 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
                 u = fid.variables['rh'][:]              # %RH
 
                 foo = np.where((p > 0) & (p < 1050) & (t < 60) & (u >= 0) & (u < 103))[0]
-                if len(foo) < 2:
+                if len(foo) < 1:
                     continue
                 to = to[foo]
                 p = p[foo]
@@ -3967,7 +3967,7 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
                 fid.close()
 
                 foo = np.where((p > 0) & (p < 1050) & (t < 60) & (u >= 0) & (u < 103))[0]
-                if len(foo) < 2:
+                if len(foo) < 1:
                     continue
                 to = to[foo]
                 p = p[foo]
@@ -4019,7 +4019,7 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
                 fid.close()
 
                 foo = np.where((p > 0) & (p < 1050) & (t < 60))[0]
-                if len(foo) < 2:
+                if len(foo) < 1:
                     continue
                 to = to[foo]
                 p = p[foo]
@@ -4077,7 +4077,7 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
                 fid.close()
 
                 foo = np.where((p > 0) & (p < 1050) & (t < 60))[0]
-                if len(foo) < 2:
+                if len(foo) < 1:
                     continue
                 to = to[foo]
                 p = p[foo]
@@ -4152,12 +4152,12 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
 
                 # Some simple QC
                 foo = np.where((p > 0) & (p < 1050) & (t < 60) & (u >= 0) & (u < 103))[0]
-                if len(foo) < 2:
+                if len(foo) < 1:
                     continue
-                to = to[foo].squeeze()
-                p = p[foo].squeeze()
-                t = t[foo].squeeze()
-                u = u[foo].squeeze()
+                to = to[foo] #.squeeze()
+                p = p[foo] #.squeeze()
+                t = t[foo] #.squeeze()
+                u = u[foo] #.squeeze()
                 qunit = 'g/kg'
                 qtype = 'ARM met station'
 
@@ -4220,7 +4220,7 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
                 u = fid.variables['rh'][:]              # %RH
 
                 foo = np.where((p > 0) & (p < 1050) & (t < 60) & (u >= 0) & (u < 103))[0]
-                if len(foo) < 2:
+                if len(foo) < 1:
                     continue
                 to = to[foo]
                 p = p[foo]
@@ -4330,7 +4330,7 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
                 fid.close()
 
                 foo = np.where((p > 0) & (p < 1050) & (t < 60) & (u >= 0) & (u < 103))[0]
-                if len(foo) < 2:
+                if len(foo) < 1:
                     continue
                 to = to[foo]
                 p = p[foo]
@@ -4395,7 +4395,7 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
                 fid.close()
 
                 foo = np.where((p > 0) & (p < 1050) & (t < 60) & (u >= 0) & (u < 103))[0]
-                if len(foo) < 2:
+                if len(foo) < 1:
                     continue
                 to = to[foo]
                 p = p[foo]
@@ -4467,7 +4467,7 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
                 fid.close()
 
                 foo = np.where((p > 0) & (p < 1050) & (t < 60) & (u >= 0) & (u < 103))[0]
-                if len(foo) < 2:
+                if len(foo) < 1:
                     continue
                 to = to[foo]
                 p = p[foo]
@@ -4538,9 +4538,9 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
                 fid.close()
                 p *= 10.                 # Convert kPa to hPa
                 foo = np.where((p > 0) & (p < 1050))[0]
-                if len(foo) < 2:
+                if len(foo) < 1:
                     continue
-                p = p[foo].squeeze()
+                p = p[foo] #.squeeze()
                 ptype = 'ARM met station'
 
                 # Append the data to the growing structure
@@ -4585,7 +4585,7 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
                 p = fid.variables['pres'][:]            # hPa
 
                 foo = np.where((p > 0) & (p < 1050))[0]
-                if len(foo) < 2:
+                if len(foo) < 1:
                     continue
                 to = to[foo]
                 p = p[foo]
@@ -4643,7 +4643,7 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
                     p = np.ones(len(to))*-999.
 
                 foo = np.where((p > 0) & (p < 1050))[0]
-                if len(foo) < 2:
+                if len(foo) < 1:
                     continue
                 to = to[foo]
                 p = p[foo]
