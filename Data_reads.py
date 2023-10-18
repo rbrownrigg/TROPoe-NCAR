@@ -828,16 +828,18 @@ def read_all_data(date, retz, tres, dostop, verbose, avg_instant, ch1_path,
         ret_tavg = tres
 
     #Read in the MWR zenith data
+    if mwr_data['type'] > 0:
+        print('  Reading in MWR-zenith data')
     mwr_data = read_mwr(mwr_path, mwr_rootname, date, mwr_type, 1, vip['mwr_freq_field'], mwr_elev_field, mwr_n_tb_fields,
                         mwr_tb_field_names, mwr_tb_freqs, mwr_tb_noise, mwr_tb_bias, mwr_tb_field1_tbmax,
                         verbose)
 
     if mwr_data['success'] != 1:
         print('Problem reading in MWR-zenith data')
-    elif mwr_data['type'] > 0:
-        print('  Reading in MWR-zenith data')
 
     #Read in the MWR scan data
+    if mwrscan_data['type'] > 0:
+        print('  Reading in MWR-scan data')
     mwrscan_data = read_mwrscan(vip['mwrscan_path'], vip['mwrscan_rootname'], date, vip['mwrscan_type'],
                    vip['mwrscan_freq_field'], vip['mwrscan_elev_field'], vip['mwrscan_n_tb_fields'], vip['mwrscan_tb_field_names'],
                    vip['mwrscan_tb_freqs'], vip['mwrscan_tb_noise'], vip['mwrscan_tb_bias'],
@@ -847,8 +849,6 @@ def read_all_data(date, retz, tres, dostop, verbose, avg_instant, ch1_path,
         print('Problem reading MWR-scan data')
         fail = 1
         return fail, -999, -999, -999
-    elif mwrscan_data['type'] > 0:
-        print('  Reading in MWR-scan data')
 
     #Read in the ceilometer data
     vceil = read_vceil(vceil_path, date, vceil_type, ret_secs, verbose)
@@ -2533,64 +2533,70 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
             if maxht < wv_prof_maxht:
                 maxht += 1
             zzq = np.arange(maxht*100+1)*0.01  #Define a default 10-m grid for these sondes [km AGL]
+            if verbose >= 1:
+                print(f'      Attempting to read in {len(files):d} radiosonde files')
 
             for i in range(len(files)):
-                 fid = Dataset(files[i],'r')
-                 bt = fid.variables['base_time'][0].astype('float')
-                 to = fid.variables['time_offset'][:].astype('float')
-                 p = fid.variables['pres'][:]
-                 t = fid.variables['tdry'][:]
-                 u = fid.variables['rh'][:]
-                 z = fid.variables['alt'][:]
+                fid = Dataset(files[i],'r')
+                bt = fid.variables['base_time'][0].astype('float')
+                to = fid.variables['time_offset'][:].astype('float')
+                p = fid.variables['pres'][:]
+                t = fid.variables['tdry'][:]
+                u = fid.variables['rh'][:]
+                z = fid.variables['alt'][:]
 
-                 fid.close()
-                 z = (z-z[0])/1000.
-                 foo = np.where((p > 0) & (p < 1050) & (t > -150) & (t < 60) & (u >= 0) & (u < 103) & (z >= 0))[0]
+                fid.close()
+                z = (z-z[0])/1000.
+                foo = np.where((p > 0) & (p < 1050) & (t > -150) & (t < 60) & (u >= 0) & (u < 103) & (z >= 0))[0]
 
-                 if len(foo) < 2:
-                     continue
-                 z = z[foo]
-                 p = p[foo]
-                 t = t[foo]
-                 u = u[foo]
+                if len(foo) < 2:
+                    if verbose >= 1:
+                        print(f'        Radiosonde {files[i]:s} did not pass the QC for WVMR')
+                    continue
+                z = z[foo]
+                p = p[foo]
+                t = t[foo]
+                u = u[foo]
 
-                 # Make sure sonde is monotonically increasing, not a simple sort
-                 # we will remove heights that decrease since they are most likely
-                 # bad data
-                 foo = Other_functions.make_monotonic(z)
-                 if len(foo) < 2:
-                     continue
+                # Make sure sonde is monotonically increasing, not a simple sort
+                # we will remove heights that decrease since they are most likely
+                # bad data
+                foo = Other_functions.make_monotonic(z)
+                if len(foo) < 2:
+                    continue
 
-                 z = z[foo]
-                 p = p[foo]
-                 t = t[foo]
-                 u = u[foo]
+                z = z[foo]
+                p = p[foo]
+                t = t[foo]
+                u = u[foo]
 
-                 if np.nanmax(z) < maxht:
-                     continue            # The sonde must be above this altitude to be used here
+                if np.nanmax(z) < maxht:
+                    if verbose >= 1:
+                        print(f'        Sonde {files[i]:s} did not go above the required height ({np.nanmax(z):.3f} < {maxht:.3f}) for WVMR')
+                    continue            # The sonde must be above this altitude to be used here
 
-                 # Compute WVMR and its uncertainty (using RMS and typical sonde uncertainties
-                 # of 3% in Rh and 0.5 degC in temperature)
+                # Compute WVMR and its uncertainty (using RMS and typical sonde uncertainties
+                # of 3% in Rh and 0.5 degC in temperature)
 
-                 w = Calcs_Conversions.rh2w(t, u/100., p)
-                 w1 = Calcs_Conversions.rh2w(t, u/100.-0.03, p)
-                 w2 = Calcs_Conversions.rh2w(t+0.5, u/100., p)
-                 we = np.sqrt((w - w1)**2. + (w-w2)**2)            # Sum of squared errors
+                w = Calcs_Conversions.rh2w(t, u/100., p)
+                w1 = Calcs_Conversions.rh2w(t, u/100.-0.03, p)
+                w2 = Calcs_Conversions.rh2w(t+0.5, u/100., p)
+                we = np.sqrt((w - w1)**2. + (w-w2)**2)            # Sum of squared errors
 
-                 qunit = 'g/kg'
-                 qtype = 'ARM radiosonde'
+                qunit = 'g/kg'
+                qtype = 'ARM radiosonde'
 
-                 # Append the data to the growing structure
+                # Append the data to the growing structure
 
-                 if external['nQprof'] <= 0:
-                     qsecs = np.array([bt + to[0]])
-                     wv = np.array([np.interp(zzq,z,w,left=-999,right=-999)])
-                     swv = np.array([np.interp(zzq,z,we,left=-999,right=-999)])
-                 else:
-                     qsecs = np.append(qsecs,bt+to[0])
-                     wv = np.vstack((wv, np.interp(zzq,z,w,left=-999,right=-999)))
-                     swv = np.vstack((swv, np.interp(zzq,z,we,left=-999,right=-999)))
-                 external['nQprof'] += 1
+                if external['nQprof'] <= 0:
+                    qsecs = np.array([bt + to[0]])
+                    wv = np.array([np.interp(zzq,z,w,left=-999,right=-999)])
+                    swv = np.array([np.interp(zzq,z,we,left=-999,right=-999)])
+                else:
+                    qsecs = np.append(qsecs,bt+to[0])
+                    wv = np.vstack((wv, np.interp(zzq,z,w,left=-999,right=-999)))
+                    swv = np.vstack((swv, np.interp(zzq,z,we,left=-999,right=-999)))
+                external['nQprof'] += 1
 
             if external['nQprof'] > 0:
                 wv = wv.T
@@ -3100,6 +3106,8 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
                 maxht += 1
             zzt = np.arange(maxht*100+1)*0.01  #Define a default 10-m grid for these sondes [km AGL]
 
+            if verbose >= 1:
+                print(f'      Attempting to read in {len(files):d} radiosonde files')
             external['nTprof'] = 0
             for i in range(len(files)):
                 fid = Dataset(files[i], 'r')
@@ -3116,6 +3124,8 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
                 foo = np.where((p > 0) & (p < 1050) & (t > -150) & (t < 60) & (u >= 0) & (u < 103) & (z >= 0))[0]
 
                 if len(foo) < 2:
+                    if verbose >= 1:
+                        print(f'        Radiosonde {files[i]:s} did not pass the QC for temp')
                     continue
                 z = z[foo]
                 p = p[foo]
@@ -3135,6 +3145,8 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
                 u = u[foo]
 
                 if np.nanmax(z) < maxht:
+                    if verbose >= 1:
+                        print(f'        Sonde {files[i]:s} did not go above the required height ({np.nanmax(z):.3f} < {maxht:.3f}) for temp')
                     continue # The sonde must be above this altitude to be used here
 
                 sigma_t = 0.5     # The assumed uncertainty of the radiosonde temperature measurement
