@@ -11,7 +11,7 @@
 #
 # ----------------------------------------------------------------------------
 
-__version__ = '0.10.2'
+__version__ = '0.10.3'
 
 import os
 import sys
@@ -2260,7 +2260,7 @@ for i in range(len(irs['secs'])):                        # { loop_i
     # if ((0.8 > xret[fsample]['hatchopen']) & (xret[fsample]['hatchopen'] > 1.2)):
     #     xret[fsample]['qcflag'] = 1
     # Then look for a retrieval that didn't converge
-    if (xret[fsample]['converged'] != 1) | (xret[fsample]['converged'] != 2):
+    if (xret[fsample]['converged'] != 1) & (xret[fsample]['converged'] != 2):
         xret[fsample]['qcflag'] = 2
     # Then look for a retrieval where the RMS is too large
     if xret[fsample]['rmsa'] > vip['qc_rms_value']:
