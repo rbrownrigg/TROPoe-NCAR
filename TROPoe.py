@@ -11,7 +11,7 @@
 #
 # ----------------------------------------------------------------------------
 
-__version__ = '0.10.4'
+__version__ = '0.10.5'
 
 import os
 import sys
@@ -650,16 +650,17 @@ if vip['recenter_prior'] > 0:
     # If the vip.recenter_input is set, this is the override value
     if vip['recenter_input'] > 0:   # Rescale based on the value inputted into the vip
         recenter_input_value = vip['recenter_input']
-    elif ((vip['recenter_prior'] == 1) | (vip['recenter_prior'] == 3)):
-        if ((vip['ext_sfc_wv_type'] > 0) & (ext_tseries['nQsfc'] > 0)):  # Rescale based on the ext_sfc data
+    elif ((vip['recenter_prior'] == 1) | (vip['recenter_prior'] == 3) | (vip['recenter_prior'] == 5)):
+        if ((vip['ext_sfc_wv_type'] > 0) & (ext_tseries['nQsfc'] > 0) & (vip['recenter_prior'] != 5)):  # Rescale based on the ext_sfc data
             foo = np.where(ext_tseries['wv'] > 0)  # Need to take out an -999s
             recenter_input_value = np.mean(ext_tseries['wv'][foo])
         else:
-            print('    Warning: Trying to recenter the prior using the surface met, but there are no valid WV surface obs')
+            if vip['recenter_prior'] != 5:
+                print('    Warning: Trying to recenter the prior using the surface met, but there are no valid WV surface obs')
             foo = np.where(irs['nearSfcTb'] > -990)[0]
             if len(foo) > 0:
                 meanNearSfcTemp = np.nanmedian(irs['nearSfcTb'][foo])
-                print('            So using the IRS radiometric near-surface air temperature to attempt to recenter')
+                print('            Using the IRS radiometric near-surface air temperature to attempt to recenter')
             else:
                 foo = np.where(mwr['nearSfcTb'] > -990)[0]
                 if len(foo) > 0:
@@ -685,9 +686,9 @@ if vip['recenter_prior'] > 0:
         sys.exit()
 
     # Determine which method to scale the temperature
-    if ((vip['recenter_prior'] == 1) | (vip['recenter_prior'] == 3)):
+    if ((vip['recenter_prior'] == 1) | (vip['recenter_prior'] == 3) | (vip['recenter_prior'] == 5)):
         changeTmethod = 0
-        if vip['recenter_prior'] == 1:
+        if ((vip['recenter_prior'] == 1) | (vip['recenter_prior'] == 5)):
             changeTmethod = 1
         elif vip['recenter_prior'] == 3:
             changeTmethod = 2

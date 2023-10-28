@@ -221,7 +221,7 @@ full_vip = ({
     'qc_rms_value': {'value': 10.0, 'comment': 'The RMSa value between ((obs minus calc)/obs_uncert), with values less than this being \'good\' ', 'default': True},
     'qc_gamma_value': {'value': 5.0, 'comment': 'The gamma value, with values less than this being \'good\' \n', 'default': True},
 
-    'recenter_prior': {'value': 1, 'comment': '0 - do not recenter, 1 - Recenter WVMR based on sfc wv field and using conserve-RH for temp, 2 - Recenter WVMR based on PWV and conserve-RH for temp, 3 - Recenter WVMR based on sfc wv field and using conserve-covariance for temp, 4 - Recenter WVMR based on PWV and conserve-covariance for temp', 'default': True},
+    'recenter_prior': {'value': 1, 'comment': '0 - do not recenter, 1 - Recenter WVMR based on sfc wv field and using conserve-RH for temp, 2 - Recenter WVMR based on PWV and conserve-RH for temp, 3 - Recenter WVMR based on sfc wv field and using conserve-covariance for temp, 4 - Recenter WVMR based on PWV and conserve-covariance for temp, 5 - Recenter based on near-sfc radiometric air temperature', 'default': True},
     'recenter_input': {'value': 0.0, 'comment': 'Sfc WVMR or PWV value to use in the recentering process. Set to zero for the value to be determined from other input data (i.e. sfc met)', 'default': False},
     'prior_t_ival': {'value': 1.0, 'comment': 'The prior inflation factor (>= 1) to apply at the surface for temperature', 'default': False},
     'prior_t_iht': {'value': 1.0, 'comment': 'The height [km AGL] where the inflation factor goes to 1 (linear) for temperature', 'default': False},
@@ -634,8 +634,8 @@ def check_vip(vip):
         print('Error: qc_rms_value must be positive')
         flag = 1
     
-    if vip['recenter_prior'] < 0:
-        print('Error: recenter_prior must be 0, 1, 2, 3, or 4')
+    if ((vip['recenter_prior'] < 0) or (vip['recenter_prior'] > 5)):
+        print('Error: recenter_prior must be 0, 1, 2, 3, 4, or 5')
         flag = 1
     
     if vip['recenter_input'] < 0:
