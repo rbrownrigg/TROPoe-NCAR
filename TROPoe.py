@@ -11,7 +11,7 @@
 #
 # ----------------------------------------------------------------------------
 
-__version__ = '0.10.5'
+__version__ = '0.10.6'
 
 import os
 import sys
@@ -652,7 +652,7 @@ if vip['recenter_prior'] > 0:
         recenter_input_value = vip['recenter_input']
     elif ((vip['recenter_prior'] == 1) | (vip['recenter_prior'] == 3) | (vip['recenter_prior'] == 5)):
         if ((vip['ext_sfc_wv_type'] > 0) & (ext_tseries['nQsfc'] > 0) & (vip['recenter_prior'] != 5)):  # Rescale based on the ext_sfc data
-            foo = np.where(ext_tseries['wv'] > 0)  # Need to take out an -999s
+            foo = np.where(ext_tseries['wv'] > 0)[0]  # Need to take out an -999s
             recenter_input_value = np.mean(ext_tseries['wv'][foo])
         else:
             if vip['recenter_prior'] != 5:
@@ -1167,7 +1167,7 @@ for i in range(len(irs['secs'])):                        # { loop_i
     # If we are to append to the file, then I need to find the last valid
     # sample in the file, so I only process after that point...
     if ((vip['output_clobber'] == 2) & (check_clobber == 1)):
-        xret, fsample, noutfilename = Output_Functions.create_xret(xret, fsample, vip, irs, Xa, Sa, z, bands, dimY, flagY, shour)
+        xret, fsample, noutfilename, origXa, origSa, opres = Output_Functions.create_xret(xret, fsample, vip, irs, Xa, Sa, z, bands, dimY, flagY, shour)
         check_clobber = 0
         if fsample < 0:
             VIP_Databases_functions.abort(lbltmpdir,date)
@@ -1177,12 +1177,14 @@ for i in range(len(irs['secs'])):                        # { loop_i
             xret = []
         if ((verbose >= 1) & (fsample > 0)):
             print(('  Will append output to the file ' + noutfilename))
-            print(f'    Starting with sample {fsample:4d}')
-    
+            print(f'    Starting with sample {fsample:4d} and using the original prior data')
+            Xa = origXa
+            Sa = origSa
+
     # If we are not in append mode, but do not have clobber set to 1 then
     # check to see if a conflicting file exists and if so abort
     elif ((vip['output_clobber'] == 0) & (check_clobber == 1)):
-        xret, fsample, noutfilename = Output_Functions.create_xret(xret, fsample, vip, irs, Xa, Sa, z, bands, dimY, flagY, shour)
+        xret, fsample, noutfilename, origXa, origSa, opres = Output_Functions.create_xret(xret, fsample, vip, irs, Xa, Sa, z, bands, dimY, flagY, shour)
         check_clobber = 0
         if fsample < 0:
            VIP_Databases_functions.abort(lbltmpdir,date)
@@ -1244,8 +1246,19 @@ for i in range(len(irs['secs'])):                        # { loop_i
         if os.path.exists(lbllog):
             shutil.rmtree(lbllog)
 
-        # Update the pressure profile using the current estimate of temperature
-        p = Calcs_Conversions.inv_hypsometric(z, Xn[0:int(nX/2)]+273.16, irs['atmos_pres'][i])
+        # Update the pressure profile using the current estimate of temperature.  However, if this is
+        # the first iteration, we need to know what is being used for the first guess; if we are using 
+        # the prior, then we are going to use a canned Jacobian for that first iteration, which means
+        # we have to use the same pressure profile (which means the same surface pressure value)
+        if((itern == 0) and (vip['first_guess'] == 1) & (opres > 0)):
+            sfcp = opres
+        else:
+            sfcp = irs['atmos_pres'][i]
+        if sfcp <= 0:
+            print(f'  Error: the surface pressure is not positive (sfcP = {sfcp:f}); aborting')
+            VIP_Databases_functions.abort(lbltmpdir,date)
+            sys.exit()
+        p = Calcs_Conversions.inv_hypsometric(z, Xn[0:int(nX/2)]+273.16, sfcp)
 
         # If the trace gas profile shape is mandated to be a function of the PBL height,
         # then set that here. First, compute the current estimate of the PBL height,
@@ -1763,15 +1776,16 @@ for i in range(len(irs['secs'])):                        # { loop_i
         
         # Calculate the Akern without model data included
         foo = np.where((flagY<7) | (flagY>8))[0]
-
-        tmp_Kij = np.copy(Kij[foo,:])
-        tmp_Sm = np.copy(Sm[foo,:])
-        tmp_Sm = tmp_Sm[:,foo]
-        tmp_SmInv = scipy.linalg.pinv(tmp_Sm)
-        tmp_B = (gfac * SaInv) + tmp_Kij.T.dot(tmp_SmInv).dot(tmp_Kij)
-        tmp_Binv = scipy.linalg.pinv(tmp_B)
-        Akern_nm = (tmp_Binv.dot(tmp_Kij.T).dot(tmp_SmInv).dot(tmp_Kij)).T
-        
+        if len(foo) > 0:
+            tmp_Kij = np.copy(Kij[foo,:])
+            tmp_Sm = np.copy(Sm[foo,:])
+            tmp_Sm = tmp_Sm[:,foo]
+            tmp_SmInv = scipy.linalg.pinv(tmp_Sm)
+            tmp_B = (gfac * SaInv) + tmp_Kij.T.dot(tmp_SmInv).dot(tmp_Kij)
+            tmp_Binv = scipy.linalg.pinv(tmp_B)
+            Akern_nm = (tmp_Binv.dot(tmp_Kij.T).dot(tmp_SmInv).dot(tmp_Kij)).T
+        else:
+            Akern_nm = np.copy(Akern) * 0 - 999.
         
         if(vip['max_iterations'] == 0):
             if(vip['irs_type'] > 0):

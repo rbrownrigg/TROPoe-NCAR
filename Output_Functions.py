@@ -667,11 +667,11 @@ def write_output(vip, ext_prof, mod_prof, ext_tseries, globatt, xret, prior,
                        + '(5) ice cloud optical depth, (6) ice cloud Reff, (7) carbon dioxide' 
                        + ' (8) methane, (9) nitrous oxide')
 
-        Xa = fid.createVariable('Xa', 'f4', ('arb_dim1',))
+        Xa = fid.createVariable('Xa', 'f8', ('arb_dim1',))
         Xa.long_name = 'Prior mean state'
         Xa.comment1 = 'mixed units -- see field arb above'
 
-        Sa = fid.createVariable('Sa', 'f4', ('arb_dim1','arb_dim2',))
+        Sa = fid.createVariable('Sa', 'f8', ('arb_dim1','arb_dim2',))
         Sa.long_name = 'Prior covariance'
         Sa.comment1 = 'mixed units -- see field arb above'
         
@@ -1005,7 +1005,10 @@ def write_output(vip, ext_prof, mod_prof, ext_tseries, globatt, xret, prior,
 # "secs" field needs to have the proper values though...
 ################################################################################
 
-def create_xret(xret, fsample, vip, irs, Xa, Sa, z, bands, obsdim, obsflag,shour):
+def create_xret(xret, fsample, vip, irs, Xa, Sa, z, bands, obsdim, obsflag, shour):
+
+    # Set a default value
+    opres = -8888.  # Special flag, to help with the debugging if the pressure is negative
 
     # Find all of the output files with this date
     yy = np.array([datetime.utcfromtimestamp(x).year for x in irs['secs']])
@@ -1023,10 +1026,10 @@ def create_xret(xret, fsample, vip, irs, Xa, Sa, z, bands, obsdim, obsflag,shour
             print('The flag output_clobber was set to 2 for append, but no prior file was found')
             print('    so code will run as normal')
             nfilename = ' '
-            return xret, fsample, nfilename
+            return xret, fsample, nfilename, Xa, Sa, opres
         else:
             nfilename = ' '
-            return xret, fsample, nfilename
+            return xret, fsample, nfilename, Xa, Sa, opres
     
     # Check to see if a file with the same shour exists
     found = False
@@ -1043,19 +1046,19 @@ def create_xret(xret, fsample, vip, irs, Xa, Sa, z, bands, obsdim, obsflag,shour
         print('     to prevent clobbering.')
         print('     Existing file name: ' + files[i])
         nfilename = files[i]
-        return xret, -1, nfilename
+        return xret, -1, nfilename, Xa, Sa, opres
     
     # There was a file for this day, but there were different shours
     if not found and vip['output_clobber'] == 0:
         nfilename = ' '
-        return xret, fsample, nfilename
+        return xret, fsample, nfilename, Xa, Sa, opres
     
     if not found and vip['output_clobber'] == 2:
         print('The flag output_clobber was set to 2 for append, but no prior file')
         print('      with the same shour was found so code will run as normal')
         print('      and create a new file.')
         nfilename = ' '
-        return xret, fsample, nfilename
+        return xret, fsample, nfilename, Xa, Sa, opres
         
     if not found:
         print('Error: There seems to be some condition that was unanticipated -- aborting')
@@ -1068,12 +1071,29 @@ def create_xret(xret, fsample, vip, irs, Xa, Sa, z, bands, obsdim, obsflag,shour
     to = fid.variables['time_offset'][:]
     xobsdim = fid.variables['obs_dimension'][:]
     xobsflag = fid.variables['obs_flag'][:]
+    pressure = fid.variables['pressure'][:]
     xz = fid.variables['height'][:]
     xXa = fid.variables['Xa'][:]
     xSa = fid.variables['Sa'][:]
     fid.close()
 
     secs = bt+to
+
+    # Convert the masked arrays to ndarrays
+    #   Note that setting the mask values to zero should not do anything, as there shouldn't
+    # be any NaNs in the prior....
+    fooXa = np.where(xXa.mask != 0)[0]
+    fooSa = np.where(xSa.mask != 0)[0]
+    if((len(fooXa) > 0) or (len(fooSa) > 0)):
+        print('The mean prior or its covariance, which is coming from a preexisting output file, has NaNs. Aborting retrieval')
+        nfilename = files[i]
+        return xret, -1, nfilename, Xa, Sa, opres
+    oXa = xXa.filled(fill_value=np.double(-9999))
+    oSa = xSa.filled(fill_value=np.double(-9999))
+
+    # We want to extract out the surface pressure for the first sample also, as this
+    # is needed to build the pressure profile if VIP.first_guess=1 in append mode
+    opres = pressure[0,0]
 
     # Set up some default values
     w0idx, nY = Other_functions.find_wnum_idx(irs['wnum'],bands)
@@ -1096,29 +1116,21 @@ def create_xret(xret, fsample, vip, irs, Xa, Sa, z, bands, obsdim, obsflag,shour
     if ((len(xz) != len(z)) | (len(foo) > 0)):
         print('Error: output_clobber is set to 2 (append), but there is a mismatch in heights')
         fsample = -1
-        return xret, fsample, nfilename
-
-    diff = np.abs(Xa-xXa)
-
-    foo = np.where(diff > 0.001)[0]
-    if ((len(Xa) != len(xXa)) | (len(foo) > 0)):
-        print('Error: output_clobber is set to 2 (append), but there is a mismatch in Xa')
-        fsample = -1
-        return xret, fsample, nfilename
+        return xret, fsample, nfilename, Xa, Sa, opres
 
     diff = np.abs(obsdim - xobsdim)
     foo = np.where(diff > 0.001)[0]
     if ((len(obsdim) != len(xobsdim)) | (len(foo) > 0)):
         print('Error: output_clobber is set to 2 (append), but there is a mismatch in obs_dim')
         fsample = -1
-        return xret, fsample, nfilename
+        return xret, fsample, nfilename, Xa, Sa, opres
 
     diff = np.abs(obsflag - xobsflag)
     foo = np.where(diff > 0.001)[0]
     if ((len(obsflag) != len(xobsflag)) | (len(foo) > 0)):
         print('Error: output_clobber is set to 2 (append), but there is a mismatch in obs_flag')
         fsample = -1
-        return xret, fsample, nfilename
+        return xret, fsample, nfilename, Xa, Sa, opres
 
     # This structure must match that at the end of the main iteration loop
     # where the retrieval is performed. The values can be anything, with
@@ -1144,4 +1156,76 @@ def create_xret(xret, fsample, vip, irs, Xa, Sa, z, bands, obsdim, obsflag,shour
         xret[i]['secs'] = secs[i]
     fsample = len(secs)
 
-    return xret, fsample, nfilename
+    return xret, fsample, nfilename, oXa, oSa, opres
+
+################################################################################
+# This function writes out the prior data into a temporary netCDF file (used for debugging)
+################################################################################
+
+def write_XaSa(filename, nht, X0, Xa, Sa):
+    print(f'  DEBUG -- Creating the file {filename:s}')
+
+    fid = Dataset(filename, 'w')
+
+    adim1 = fid.createDimension('arb_dim1', len(X0))
+    adim2 = fid.createDimension('arb_dim2', len(X0))
+
+    arb1 = fid.createVariable('arb1', 'i2', ('arb_dim1',))
+    arb1.long_name = 'Arbitrary dimension'
+    arb1.comment1 = 'mixed units'
+    arb1.comment2 = ('contains (1) temperature profile, (2) water vapor profile'
+                       + ' (3) liquid water path, (4) liquid water Reff, '
+                       + '(5) ice cloud optical depth, (6) ice cloud Reff, (7) carbon dioxide'
+                       + ' (8) methane, (9) nitrous oxide')
+
+    arb2 = fid.createVariable('arb2', 'i2', ('arb_dim2',))
+    arb2.long_name = 'Arbitrary dimension'
+    arb2.comment1 = 'mixed units'
+    arb2.comment2 = ('contains (1) temperature profile, (2) water vapor profile,'
+                       + ' (3) liquid water path, (4) liquid water Reff, '
+                       + '(5) ice cloud optical depth, (6) ice cloud Reff, (7) carbon dioxide,'
+                       + ' (8) methane, (9) nitrous oxide')
+
+    xXa = fid.createVariable('Xa', 'f8', ('arb_dim1',))
+    xXa.long_name = 'Prior mean state'
+    xXa.comment1 = 'mixed units -- see field arb above'
+
+    xSa = fid.createVariable('Sa', 'f8', ('arb_dim1','arb_dim2',))
+    xSa.long_name = 'Prior covariance'
+    xSa.comment1 = 'mixed units -- see field arb above'
+        
+    fid.dataset_comment = 'File containing the prior information'
+
+    ones = np.ones(nht)
+    twos = np.ones(nht)*2
+    tmp  = np.append(ones,twos)
+    tmp  = np.append(tmp, np.array([3,4,5,6,7,7,7,8,8,8,9,9,9]))
+
+    arb1[:]  = tmp
+    arb2[:]  = tmp
+    xXa[:]   = Xa
+    xSa[:,:] = Sa
+
+    fid.close()
+    return
+
+################################################################################
+# This function reads in the prior data into a temporary netCDF file (used for debugging)
+################################################################################
+
+def read_XaSa(filename):
+    print(f'  DEBUG -- Reading the file {filename:s}')
+
+    fid = Dataset(filename, 'r')
+    xXa = fid.variables['Xa'][:]
+    xSa = fid.variables['Sa'][:]
+    fid.close()
+
+    xXa.mask = xXa.mask * 0
+    xSa.mask = xSa.mask * 0
+    oXa = xXa.filled(fill_value=np.double(-9999)).astype('float64')
+    oSa = xSa.filled(fill_value=np.double(-9999)).astype('float64')
+    oXa = xXa.filled(fill_value=np.double(-9999))
+    oSa = xSa.filled(fill_value=np.double(-9999))
+
+    return oXa, oSa
