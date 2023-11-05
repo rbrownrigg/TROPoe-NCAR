@@ -4975,12 +4975,12 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
 ################################################################################
 
 def get_tropoe_version():
-    tropoe_tar_file = Data_reads.findfile(".","TROPoe*tar.gz",verbose=1)[0]
+    tropoe_tar_file = findfile(".","TROPoe*tar.gz",verbose=1)[0]
     if(len(tropoe_tar_file) > 0):
         tropoe_tar_file = tropoe_tar_file[0]
         version = tropoe_tar_file[2:-7]
     else:
-        tropoe_tar_file = Data_reads.findfile(".","TROPoe*tar",verbose=1)[0]
+        tropoe_tar_file = findfile(".","TROPoe*tar",verbose=1)[0]
         if(len(tropoe_tar_file) > 0):
             tropoe_tar_file = tropoe_tar_file[0]
             version = tropoe_tar_file[2:-4]
