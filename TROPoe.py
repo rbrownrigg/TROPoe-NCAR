@@ -11,7 +11,7 @@
 #
 # ----------------------------------------------------------------------------
 
-__version__ = '0.11.1'
+__version__ = '0.11.2'
 
 import os
 import sys
@@ -1191,6 +1191,9 @@ for i in range(len(irs['secs'])):                        # { loop_i
            sys.exit()
         else:
             xret = []
+    elif vip['output_clobber'] == 1:
+        opres = -999
+
         
     # If we are in 'append' mode, then skip any IRS samples that are
     # before the last time in the xret structure. Generally, the current
