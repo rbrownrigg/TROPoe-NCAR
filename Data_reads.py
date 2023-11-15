@@ -4546,9 +4546,19 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
                 fid = Dataset(files[i], 'r')
                 bt = fid.variables['base_time'][:].astype('float')
                 to = fid.variables['time_offset'][:].astype('float')
-                p = fid.variables['atmos_pressure'][:]        # kPa
-                fid.close()
-                p *= 10.                 # Convert kPa to hPa
+                if len(np.where(np.array(list(fid.variables.keys())) == 'atmos_pressure')[0]) > 0:
+                    p = fid.variables['atmos_pressure'][:]    # kPa
+                    p *= 10.                                  # Convert kPa to hPa
+                    fid.close()
+                # Else if the field "pres" exists, then assume we are reading the "thwaps" datastream
+                elif len(np.where(np.array(list(fid.variables.keys())) == 'pres')[0]) > 0:
+                    p = fid.variables['pres'][:]              # hPa
+                    fid.close()
+                # Else I don't know what I am reading -- abort here
+                else:
+                    fid.close()
+                    print('    Problem reading the ARM met/thwaps data -- returning missing data')
+                    return external
                 foo = np.where((p > 0) & (p < 1050))[0]
                 if len(foo) < 1:
                     continue
