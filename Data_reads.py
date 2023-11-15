@@ -911,7 +911,7 @@ def read_mwr(path, rootname, date, mwr_type, step, mwr_freq_field, mwr_elev_fiel
 
     if verbose >= 2:
         print('  Reading MWR data in ' + path)
-    err = {'success':0, 'type':-1}
+    err = {'success':0, 'type':-1, 'alt':-1}
 
     # Check to make sure "step" is an integer greater than 0
     if(type(step) != int):
@@ -947,7 +947,7 @@ def read_mwr(path, rootname, date, mwr_type, step, mwr_freq_field, mwr_elev_fiel
         print('             MWR tb data are in a single 2-d variable in the input file, using the "E-PROFILE" format')
         print('-----------------------------------------------------------------')
         print(' ')
-        err = {'success':-1}
+        err = {'success':-1, 'alt':-1}
         return err
 
     # Let's get the Tb frequencies, noise levels, and bias from the VIP file into arrays
@@ -1176,7 +1176,7 @@ def read_mwr(path, rootname, date, mwr_type, step, mwr_freq_field, mwr_elev_fiel
 
     # Build the output data structure
     if mwr_type == 0:
-        return {'success':1, 'type':mwr_type}
+        return {'success':1, 'type':mwr_type, 'alt':-1}
     else:
         yy = np.array([datetime.utcfromtimestamp(x).year for x in secs])
         mm = np.array([datetime.utcfromtimestamp(x).month for x in secs])
@@ -2333,7 +2333,7 @@ def grid_mwr(mwr, avg_instant, secs, tavg, time_delta, verbose):
     if mwr['type'] <= 0:
         missing = np.ones(len(secs))*-999.
         return {'success':1, 'secs':secs, 'ymd':ymd, 'hour':hour, 'n_fields':0,
-                'type':mwr['type'], 'rootname':'none found'}
+                'type':mwr['type'], 'rootname':'none found', 'alt':-1}
 
     # If the Tavg is too low (or zero), then inflate it somewhat. Units are minutes
 

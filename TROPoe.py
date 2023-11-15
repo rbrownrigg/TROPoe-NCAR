@@ -11,7 +11,7 @@
 #
 # ----------------------------------------------------------------------------
 
-__version__ = '0.11.3'
+__version__ = '0.11.4'
 
 import os
 import sys
@@ -611,16 +611,16 @@ if ehour < 0:
     if verbose >= 2:
         print(('Resetting the processing end hour to ' + str(ehour) + ' UTC'))
 
-# Capture the lat/lon/alt data in a structure
-if irs['alt'] >= 0:
+# Capture the lat/lon/alt data in a structure.  Use the VIP supplied entry first,
+# but overwride it if the vip supplied altitude is negative
+print(f"DDT has the mwr.alt as {mwr['alt']:f}")
+location = {'lat':vip['station_lat'], 'lon':vip['station_lon'], 'alt':int(vip['station_alt'])}
+if((irs['alt'] >= 0) and (location['alt'] < 0)):
+    print('  Overriding lat/lon/alt in VIP.station with the IRS instrument location')
     location = {'lat':irs['lat'], 'lon':irs['lon'], 'alt': int(irs['alt'])}
-else:
+elif((mwr['alt'] >= 0) and (location['alt'] < 0)):
+    print('  Overriding lat/lon/alt in VIP.station with the MWR instrument location')
     location = {'lat':mwr['lat'], 'lon':mwr['lon'], 'alt': int(mwr['alt'])}
-# But if the VIP.station_alt > 0, then override the lat/lon/alt data in the structure
-if vip['station_alt'] >= 0:
-    if verbose >= 2:
-        print('  Overriding lat/lon/alt with info from VIP file')
-    location = {'lat':vip['station_lat'], 'lon':vip['station_lon'], 'alt':int(vip['station_alt'])}
 
 # Very simple check to make sure station altitude makes sense [m MSL]
 if(location['alt'] <= 0):
