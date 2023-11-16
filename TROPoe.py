@@ -11,7 +11,7 @@
 #
 # ----------------------------------------------------------------------------
 
-__version__ = '0.11.4'
+__version__ = '0.11.5'
 
 import os
 import sys
@@ -613,7 +613,6 @@ if ehour < 0:
 
 # Capture the lat/lon/alt data in a structure.  Use the VIP supplied entry first,
 # but overwride it if the vip supplied altitude is negative
-print(f"DDT has the mwr.alt as {mwr['alt']:f}")
 location = {'lat':vip['station_lat'], 'lon':vip['station_lon'], 'alt':int(vip['station_alt'])}
 if((irs['alt'] >= 0) and (location['alt'] < 0)):
     print('  Overriding lat/lon/alt in VIP.station with the IRS instrument location')
@@ -2108,7 +2107,7 @@ for i in range(len(irs['secs'])):                        # { loop_i
             dfs = np.copy(xsamp[itern-1]['dfs'])
             dfs_nm = np.copy(xsamp[itern-1]['dfs_nm'])
             cdfs = np.copy(xsamp[itern-1]['cdfs'])
-            cdfs_nm = np.copy(xsamp[intern-1['cdfs_nm']])
+            cdfs_nm = np.copy(xsamp[itern-1]['cdfs_nm'])
             di2m = xsamp[itern-1]['di2m']
             rmsa = xsamp[itern-1]['rmsa']
             rmsr = xsamp[itern-1]['rmsr']
