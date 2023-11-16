@@ -187,6 +187,14 @@ def esat(temp,ice):
     tk = temp + tzero
     es = np.zeros(len(temp))
   
+        # Some QC; let's not allow any temperatures below some minimum threshold, 
+        # as it causes numerical issues below (which was causing NaNs).  
+        # Temps below 150 K should not exist in the troposphere...
+    min_tk = 150. # Do not allow any temperatures below this threshold in the esat calc
+    foo = np.where(tk < min_tk)[0]
+    if len(foo) > 0:
+        tk[foo] = min_tk
+
     if ice == 0:
         wdx = np.arange(len(temp))
         nw = len(temp)
