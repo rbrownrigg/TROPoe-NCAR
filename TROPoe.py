@@ -11,7 +11,7 @@
 #
 # ----------------------------------------------------------------------------
 
-__version__ = '0.11.6'
+__version__ = '0.11.7'
 
 import os
 import sys
@@ -651,8 +651,9 @@ if vip['recenter_prior'] > 0:
         recenter_input_value = vip['recenter_input']
     elif ((vip['recenter_prior'] == 1) | (vip['recenter_prior'] == 3) | (vip['recenter_prior'] == 5)):
         if ((vip['ext_sfc_wv_type'] > 0) & (ext_tseries['nQsfc'] > 0) & (vip['recenter_prior'] != 5)):  # Rescale based on the ext_sfc data
-            foo = np.where(ext_tseries['wv'] > 0)[0]  # Need to take out an -999s
-            recenter_input_value = np.mean(ext_tseries['wv'][foo])
+            foo = np.where(ext_tseries['wv'][0,:] > 0)[0]  # Need to take out any -999s
+            if len(foo) > 0:
+                recenter_input_value = np.mean(ext_tseries['wv'][0,foo])
         else:
             if vip['recenter_prior'] != 5:
                 print('    Warning: Trying to recenter the prior using the surface met, but there are no valid WV surface obs')
