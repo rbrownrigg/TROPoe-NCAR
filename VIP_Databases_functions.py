@@ -234,7 +234,7 @@ full_vip = ({
     'prior_ch4_mn': {'value': [1.793, 0, -5], 'comment': 'Mean ch4 concentration [ppm] (se}e \'retrieve_ch4\' above)', 'default': False},
     'prior_ch4_sd': {'value': [0.0538, 0.0015, 3], 'comment': '1-sigma uncertainty in ch4 [ppm]', 'default': False},
     'prior_n2o_mn': {'value': [0.310, 0, -5], 'comment': 'Mean n2o concentration [ppm] (see \'retrieve_n2o\' above)', 'default': False},
-    'prior_n2o_sd': {'value': [0.0093, 0.00001, 3], 'comment': '1-sigma uncertainty in n2o [ppm]', 'default': False},
+    'prior_n2o_sd': {'value': [0.0093, 0.0002, 3], 'comment': '1-sigma uncertainty in n2o [ppm]', 'default': False},
     'prior_lwp_mn': {'value':  0.0, 'comment': 'Mean LWP [g/m2]', 'default': True},
     'prior_lwp_sd': {'value': 200.0, 'comment': '1-sigma uncertainty in LWP [g/m2]', 'default': True},
     'prior_lReff_mn': {'value': 8.0, 'comment': 'Mean liquid Reff [microns]', 'default': True},
