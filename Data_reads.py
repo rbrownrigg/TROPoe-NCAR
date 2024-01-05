@@ -273,6 +273,7 @@ def read_irs_ch(path,date,irs_type,fv,fa,irs_spec_cal_factor,
 
     for jj in range(len(files)):
         fid = Dataset(files[jj])
+        fid.set_auto_mask(False)
         bt = fid['base_time'][:].astype('float')
             # If this is an ASSIST, then convert the base_time from milliseconds to seconds
         if(irs_type == 5):
@@ -996,6 +997,7 @@ def read_mwr(path, rootname, date, mwr_type, step, mwr_freq_field, mwr_elev_fiel
             if verbose >= 2:
                 print("    Reading: " + files[i])
             fid = Dataset(files[i],'r')
+            fid.set_auto_mask(False)
             if(mwr_type <= 2):
                 bt = fid.variables['base_time'][:].astype('float')
                 to = fid.variables['time_offset'][:].astype('float')
@@ -1295,6 +1297,7 @@ def read_mwrscan(path, rootname, date, mwrscan_type, mwrscan_freq_field, mwrscan
     if mwrscan_type > 0:
         for i in range(len(files)):
             fid = Dataset(files[i],'r')
+            fid.set_auto_mask(False)
             if(mwrscan_type <= 2):
                 bt = fid.variables['base_time'][:].astype('float')
                 to = fid.variables['time_offset'][:].astype('float')
@@ -1559,6 +1562,7 @@ def read_irs_eng(path, date, irs_type, verbose):
 
     for jj in range(len(files)):
         fid = Dataset(files[jj],'r')
+        fid.set_auto_mask(False)
         bt = fid['base_time'][:].astype('float')
             # If this is an ASSIST, then convert the base_time from milliseconds to seconds
         if(irs_type == 5):
@@ -1668,6 +1672,7 @@ def read_irs_sum(path,date,irs_type,smooth_noise,verbose):
 
     for jj in range(len(files)):
         fid = Dataset(files[jj],'r')
+        fid.set_auto_mask(False)
         bt = fid['base_time'][:].astype('float')
             # If this is an ASSIST, then convert the base_time from milliseconds to seconds
         if(irs_type == 5):
@@ -1883,6 +1888,7 @@ def read_vceil(path, date, vceil_type, ret_secs, verbose):
 
         for i in range(len(files)):
             fid = Dataset(files[i],'r')
+            fid.set_auto_mask(False)
             bt = fid.variables['base_time'][:].astype('float')
             if len(np.where(np.array(list(fid.variables.keys())) == 'time_offset')[0]) > 0:
                 to = fid.variables['time_offset'][:].astype('float')
@@ -1921,6 +1927,7 @@ def read_vceil(path, date, vceil_type, ret_secs, verbose):
                 print('    Reading in file ' + files[i])
 
             fid = Dataset(files[i],'r')
+            fid.set_auto_mask(False)
             bt = fid.variables['base_time'][:].astype('float')
             to = fid.variables['time_offset'][:].astype('float')
             cbhx = fid.variables['cloudHeight'][:]
@@ -1949,6 +1956,7 @@ def read_vceil(path, date, vceil_type, ret_secs, verbose):
                 print('    Reading the file ' + files[i])
 
             fid = Dataset(files[i],'r')
+            fid.set_auto_mask(False)
             bt = fid.variables['base_time'][:].astype('float')
             to = fid.variables['time_offset'][:].astype('float')
             cbhx = fid.variables['cbh'][:]
@@ -1977,6 +1985,7 @@ def read_vceil(path, date, vceil_type, ret_secs, verbose):
             if verbose == 3:
                 print('    Reading the file ' + files[i])
             fid = Dataset(files[i],'r')
+            fid.set_auto_mask(False)
             bt = fid.variables['base_time'][:].astype('float')
             to = fid.variables['time_offset'][:].astype('float')
             cbhx = fid.variables['dl_cbh'][:]
@@ -2006,6 +2015,7 @@ def read_vceil(path, date, vceil_type, ret_secs, verbose):
             if verbose == 3:
                 print('    Reading the file ' + files[i])
             fid = Dataset(files[i],'r')
+            fid.set_auto_mask(False)
             to  = fid.variables['time'][:]
             cbhx = fid.variables['cbh'][:]
             fid.close()
@@ -2035,6 +2045,7 @@ def read_vceil(path, date, vceil_type, ret_secs, verbose):
             if verbose == 3:
                 print('    Reading the file ' + files[i])
             fid = Dataset(files[i],'r')
+            fid.set_auto_mask(False)
             to  = fid.variables['time'][:].astype('float')
                 # Because the E-PROFILE has this field as a 2-d field
             cbhx = fid.variables['cloud_base_height'][:,0]
@@ -2078,6 +2089,7 @@ def read_vceil(path, date, vceil_type, ret_secs, verbose):
             if verbose == 3:
                 print('    Reading the file ' + files[i])
             fid = Dataset(files[i],'r')
+            fid.set_auto_mask(False)
             to  = fid.variables['time'][:]
             cbhx = fid.variables['cbh'][:]
             fid.close()
@@ -2538,6 +2550,7 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
 
             for i in range(len(files)):
                 fid = Dataset(files[i],'r')
+                fid.set_auto_mask(False)
                 bt = fid.variables['base_time'][0].astype('float')
                 to = fid.variables['time_offset'][:].astype('float')
                 p = fid.variables['pres'][:]
@@ -2625,6 +2638,7 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
             nprof = 0.
             for i in range(len(files)):
                 fid = Dataset(files[i],'r')
+                fid.set_auto_mask(False)
                 bt = fid.variables['base_time'][0].astype('float')
                 to = fid.variables['time_offset'][:].astype('float')
 
@@ -2719,6 +2733,7 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
                 print('    Reading ' + str(len(files)) + ' NCAR WV DIAL data files')
             for i in range(len(files)):
                 fid = Dataset(files[i],'r')
+                fid.set_auto_mask(False)
                 secsx = fid.variables['time_unix'][:]
                 zzq = fid.variables['range'][:]
                 wvx = fid.variables['N_avg'][:]
@@ -2768,6 +2783,7 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
                 print('    Reading ' + str(len(files))  + ' NWP output WV files')
             for i in range(len(files)):
                 fid = Dataset(files[i], 'r')
+                fid.set_auto_mask(False)
                 bt = fid.variables['base_time'][0].astype('float')
                 to = fid.variables['time_offset'][:].astype('float')
                 zzq = fid.variables['height'][:]
@@ -2844,6 +2860,7 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
 
             for i in range(len(files)):
                 fid = Dataset(files[i], 'r')
+                fid.set_auto_mask(False)
                 bt = fid.variables['base_time'][0].astype('float')
                 to = fid.variables['time_offset'][:].astype('float')
                 zzq = fid.variables['height'][:]
@@ -2900,6 +2917,7 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
                 print('    Reading ' + str(len(files)) + ' NCAR MPD data files')
             for i in range(len(files)):
                 fid = Dataset(files[i],'r')
+                fid.set_auto_mask(False)
                 bt = (datetime.strptime(files[i][-18:-10],'%Y%m%d') - datetime(1970,1,1)).total_seconds()
                 to = fid.variables['time'][:].astype('float')
                 zzq = fid.variables['range'][:]
@@ -2957,6 +2975,7 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
                 print('    Reading ' + str(len(files))  + ' gridded WV files')
             for i in range(len(files)):
                 fid = Dataset(files[i], 'r')
+                fid.set_auto_mask(False)
                 bt = fid.variables['base_time'][0].astype('float')
                 to = fid.variables['time_offset'][:].astype('float')
                 zzq = fid.variables['height'][:]
@@ -3011,6 +3030,7 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
             external['nQprof'] = 0
             for i in range(len(files)):
                 fid = Dataset(files[i], 'r')
+                fid.set_auto_mask(False)
                 bt = fid.variables['base_time'][0].astype('float')
                 to = fid.variables['time_offset'][:].astype('float')
                 p = fid.variables['pres'][:]
@@ -3111,6 +3131,7 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
             external['nTprof'] = 0
             for i in range(len(files)):
                 fid = Dataset(files[i], 'r')
+                fid.set_auto_mask(False)
                 bt = fid.variables['base_time'][0].astype('float')
                 to = fid.variables['time_offset'][:].astype('float')
                 p = fid.variables['pres'][:]
@@ -3195,6 +3216,7 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
             nprof = 0
             for i in range(len(files)):
                 fid = Dataset(files[i], 'r')
+                fid.set_auto_mask(False)
                 bt = fid.variables['base_time'][0].astype('float')
                 to = fid.variables['time_offset'][:].astype('float')
 
@@ -3278,6 +3300,7 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
                 print('    Reading ' + str(len(files)) + ' NWP output temp files')
             for i in range(len(files)):
                 fid = Dataset(files[i], 'r')
+                fid.set_auto_mask(False)
                 bt = fid.variables['base_time'][0].astype('float')
                 to = fid.variables['time_offset'][:].astype('float')
                 zzt = fid.variables['height'][:]
@@ -3359,6 +3382,7 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
             nprof = 0
             for i in range(len(files)):
                 fid = Dataset(files[i], 'r')
+                fid.set_auto_mask(False)
                 bt = fid.variables['base_time'][0].astype('float')
                 to = fid.variables['time_offset'][:].astype('float')
                 htx    = fid.variables['height'][:]
@@ -3411,6 +3435,7 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
                 print('    Reading ' + str(len(files)) + ' NWP output temp files')
             for i in range(len(files)):
                 fid = Dataset(files[i], 'r')
+                fid.set_auto_mask(False)
                 bt = fid.variables['base_time'][0].astype('float')
                 to = fid.variables['time_offset'][:].astype('float')
                 zzt = fid.variables['height'][:]
@@ -3467,6 +3492,7 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
             external['nTprof'] = 0
             for i in range(len(files)):
                 fid = Dataset(files[i], 'r')
+                fid.set_auto_mask(False)
                 bt = fid.variables['base_time'][0].astype('float')
                 to = fid.variables['time_offset'][:].astype('float')
                 p = fid.variables['pres'][:]
@@ -3804,6 +3830,7 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
         else:
             for i in range(len(files)):
                 fid = Dataset(files[i], 'r')
+                fid.set_auto_mask(False)
                 bt = fid.variables['base_time'][:].astype('float')
                 to = fid.variables['time_offset'][:].astype('float')
                 # If the field "atmos_pressure" exists, assume we are reading the "met" datastream
@@ -3867,6 +3894,7 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
         else:
             for i in range(len(files)):
                 fid = Dataset(files[i],'r')
+                fid.set_auto_mask(False)
                 bt = fid.variables['base_time'][:].astype('float')
                 if len(np.where(np.array(list(fid.variables.keys())) == 'time')[0]) > 0:
                     to = fid.variables['time'][:].astype('float')
@@ -3921,6 +3949,7 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
         else:
             for i in range(len(files)):
                 fid = Dataset(files[i],'r')
+                fid.set_auto_mask(False)
                 if len(np.where(np.array(list(fid.variables.keys())) == 'base_time')[0]) > 0:
                     bt = fid.variables['base_time'][:].astype('float')
                 else:
@@ -4018,6 +4047,7 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
         else:
             for i in range(len(files)):
                 fid = Dataset(files[i],'r')
+                fid.set_auto_mask(False)
                 bt  = 0
                 to  = fid.variables['time'][:].astype('float')
 
@@ -4069,6 +4099,7 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
         else:
             for i in range(len(files)):
                 fid = Dataset(files[i],'r')
+                fid.set_auto_mask(False)
                 bt  = fid.variables['base_time'][:].astype('float')
                 bt  = bt / 1000.
                 to  = fid.variables['time'][:].astype('float')
@@ -4141,6 +4172,7 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
         else:
             for i in range(len(files)):
                 fid = Dataset(files[i], 'r')
+                fid.set_auto_mask(False)
                 bt = fid.variables['base_time'][:].astype('float')
                 to = fid.variables['time_offset'][:].astype('float')
                 # If the field "atmos_pressure" exists, assume we are reading the "met" datastream
@@ -4218,6 +4250,7 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
         else:
             for i in range(len(files)):
                 fid = Dataset(files[i],'r')
+                fid.set_auto_mask(False)
                 bt = fid.variables['base_time'][:].astype('float')
                 if len(np.where(np.array(list(fid.variables.keys())) == 'time')[0]) > 0:
                     to = fid.variables['time'][:].astype('float')
@@ -4284,6 +4317,7 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
         else:
             for i in range(len(files)):
                 fid = Dataset(files[i],'r')
+                fid.set_auto_mask(False)
                 if len(np.where(np.array(list(fid.variables.keys())) == 'base_time')[0]) > 0:
                     bt = fid.variables['base_time'][:].astype('float')
                 else:
@@ -4394,6 +4428,7 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
         else:
             for i in range(len(files)):
                 fid = Dataset(files[i],'r')
+                fid.set_auto_mask(False)
                 bt  = 0
                 to  = fid.variables['time'][:].astype('float')
 
@@ -4459,6 +4494,7 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
         else:
             for i in range(len(files)):
                 fid = Dataset(files[i],'r')
+                fid.set_auto_mask(False)
                 bt  = fid.variables['base_time'][:].astype('float')
                 bt  = bt / 1000.
                 to  = fid.variables['time'][:].astype('float')
@@ -4544,6 +4580,7 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
         else:
             for i in range(len(files)):
                 fid = Dataset(files[i], 'r')
+                fid.set_auto_mask(False)
                 bt = fid.variables['base_time'][:].astype('float')
                 to = fid.variables['time_offset'][:].astype('float')
                 if len(np.where(np.array(list(fid.variables.keys())) == 'atmos_pressure')[0]) > 0:
@@ -4595,6 +4632,7 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
         else:
             for i in range(len(files)):
                 fid = Dataset(files[i],'r')
+                fid.set_auto_mask(False)
                 bt = fid.variables['base_time'][:].astype('float')
                 if len(np.where(np.array(list(fid.variables.keys())) == 'time')[0]) > 0:
                     to = fid.variables['time'][:].astype('float')
@@ -4639,6 +4677,7 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
         else:
             for i in range(len(files)):
                 fid = Dataset(files[i],'r')
+                fid.set_auto_mask(False)
                 if len(np.where(np.array(list(fid.variables.keys())) == 'base_time')[0]) > 0:
                     bt = fid.variables['base_time'][:].astype('float')
                 else:
@@ -4841,6 +4880,7 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
         else:
             for i in range(len(files)):
                 fid = Dataset(files[i],'r')
+                fid.set_auto_mask(False)
                 bt = fid.variables['base_time'][:].astype('float')
                 to = fid.variables['time_offset'][:].astype('float')
                 xco2 = fid.variables['c02_02m'][:]                  # ppm
