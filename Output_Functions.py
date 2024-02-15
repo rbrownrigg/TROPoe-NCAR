@@ -296,13 +296,13 @@ def write_output(vip, ext_prof, mod_prof, ext_tseries, globatt, xret, prior,
 
         rmsr = fid.createVariable('rmsr', 'f4', ('time',))
         rmsr.long_name = 'Root mean square error between IRS and MWR obs in the observation vector and the forward calculation'
-        rmsr.comment1 = 'Computed as sqrt( sum_over_i[ ((Y_i - F(Xn_i)) / Y_i)^2 ] / sizeY)'
+        rmsr.comment1 = 'Computed as sqrt( sum_over_i[ ((Y_i - F(Xn_i)) / sigma_Y_i)^2 ] / sizeY)'
         rmsr.comment2 = 'Only IRS radiance observations in the observation vector are used'
         rmsr.comment3 = 'unitless'
         
         rmsa = fid.createVariable('rmsa', 'f4', ('time',))
         rmsa.long_name = 'Root mean square error between observation vector and the forward calculation'
-        rmsa.comment1 = 'Computed as sqrt( sum_over_i[ ((Y_i - F(Xn_i)) / Y_i)^2 ] / sizeY)'
+        rmsa.comment1 = 'Computed as sqrt( sum_over_i[ ((Y_i - F(Xn_i)) / sigma_Y_i)^2 ] / sizeY)'
         rmsa.comment2 = 'Entire observation vector used in this calculation'
         rmsa.comment3 = 'unitless'
         
