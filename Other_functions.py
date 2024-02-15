@@ -713,6 +713,10 @@ def aeri_recal(wn,rad1,th1,th2,ta1,ta2,tr1,tr2,eh1,eh2,ea1,ea2):
         print('Error: the various temperatures must all be scalars')
         return 0
     
+    if ((th1 <= 0) or (th2 <= 0) or (ta1 <= 0) or (ta2 <= 0) or (tr1 <= 0) or (tr2 <= 0)):
+        print('Warning: the various IRS calibration temperatures must all be positive -- recal function is not being used')
+        return rad1
+
     #Compute the radiances for the various temperatures
     
     b_th1 = Calcs_Conversions.planck(wn, th1)
