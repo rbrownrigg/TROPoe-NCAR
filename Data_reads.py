@@ -667,17 +667,85 @@ def read_all_data(date, retz, tres, dostop, verbose, avg_instant, ch1_path,
     # in, and instead use tres to create data that acts as the master dataset. I will also simulate a
     # few channels on the IRS because it makes the rest of the code easier (fewer changes) to make
 
-    if irs_type <= -1:
+    if ((irs_type <= -1) & (mwr_type > 0)):
 
-        if tres <= 0:
-            print("Error: tres must be greater than 0 if irs_type is less than 0")
-            fail = 1
-            return fail, -999, -999, -999
+        #In this example, the "replicate" keyword should be unity. Since we aren't
+        # using IRS data in this case, it should not have any other value
 
-        if (mwr_tb_replicate != 1) & (mwr_type > 0):
+        if mwr_tb_replicate != 1:
             print('Error: The mwr_tb_replicate should be unity in this MWR-only retrieval (no IRS data)')
             fail = 1
             return fail, -999, -999, -999
+
+        # I will read in the MWR data here and again later. I need to read it here
+        # so that I can simulate IRS data (all as MISSING) so that the rest of the code
+        # code can work.  Note that irs_type (which is a negative number) also
+        # defines the "step" used to read in the MWR data, which is pretty useful if
+        # we are reading in HATPRO data which can have >3000 samples per day (i.e., the
+        # irs_type is used to subsample the MWR data)
+
+        print('  Attempting to use MWR as the master instrument')
+
+        # Check to make sure the directory exists and has files in it
+        if os.path.isdir(mwr_path):
+            if len(os.listdir(mwr_path)) > 0:
+                mwr_data = read_mwr(mwr_path, mwr_rootname, date, mwr_type, abs(irs_type),
+                           vip['mwr_freq_field'], mwr_elev_field, mwr_n_tb_fields,
+                           mwr_tb_field_names, mwr_tb_freqs, mwr_tb_noise, mwr_tb_bias, mwr_tb_field1_tbmax,
+                           verbose, single_date=True)
+            else:
+                print('  The directory for the master instrument: ' + mwr_path)
+                print('      has no files in it!')
+                return 1, -999, -999, -999
+        else:
+            print('  The directory for the master instrument: ' + mwr_path)
+            print('      does not exist!')
+            return 1, -999, -999, -999
+
+        if (mwr_data['success'] != 1) or (mwr_data['type'] == 0):
+            print('Problem reading MWR data -- unable to continue because the MWR is the master instrument')
+            fail = 1
+            return fail, -999, -999, -999
+        else:
+            #Quick check of the surface pressure field. If the values are negative,
+            #then the code is not finding the pressure field and the retrieval won't
+            #be able to run -- abort here.
+
+            foo = np.where(mwr_data['psfc'] > 0)
+            if len(foo) == 0:
+                print('    Warning: no surface data found in the MWR files. Default station_pres values will be used')
+                print('        unless an external surface pressure data source is provided.')
+
+            wnum = np.arange(int((905-900)/0.5)+1)*0.5+900            #Simulated wavenumber array
+            mrad = np.ones((len(wnum),len(mwr_data['secs'])))*-999.0   #Radiance is all missing
+            noise = np.ones((len(wnum),len(mwr_data['secs'])))         #Set all noise values to 1
+            yy = np.array([datetime.utcfromtimestamp(x).year for x in mwr_data['secs']])
+            mm = np.array([datetime.utcfromtimestamp(x).month for x in mwr_data['secs']])
+            dd = np.array([datetime.utcfromtimestamp(x).day for x in mwr_data['secs']])
+            hour = np.array([((datetime.utcfromtimestamp(x)-datetime(yy[0],mm[0],dd[0])).total_seconds())/3600. for x in mwr_data['secs']])
+            ymd = yy*10000 + mm*100 + dd
+
+            irseng = ({'success':1, 'secs':mwr_data['secs'], 'ymd':ymd, 'hour':hour,
+                       'bbcavityfactor': np.zeros(len(mwr_data['secs'])),
+                       'interferometerSecondPortTemp': np.ones(len(mwr_data['secs']))*300.0})
+
+            irsch1 = ({'success':1, 'secs':mwr_data['secs'], 'ymd':ymd, 'yy':yy, 'mm':mm, 'dd':dd, 'hour':hour,
+                        'wnum':wnum, 'rad':mrad, 'hatchopen': np.ones(len(mwr_data['secs'])),
+                        'atmos_pres':mwr_data['psfc'], 'nearSfcTb': np.zeros(len(mwr_data['secs']))-999.,
+                        'missingDataFlag': np.zeros(len(mwr_data['secs'])),
+                        'fv':0.0, 'fa': 0.0})
+
+            irssum = ({'success':1, 'secs':mwr_data['secs'], 'ymd':ymd, 'hour':hour, 'wnum':wnum, 'noise':noise,
+                        'lat':mwr_data['lat'], 'lon':mwr_data['lon'], 'alt':mwr_data['alt']})
+
+    elif (irs_type <= -1) & (mwr_type == 0):
+
+        if tres <= 0:
+            print("Error: tres must be greater than 0 if irs_type is < 0 and mwr_type are less than 0")
+            fail = 1
+            return fail, -999, -999, -999
+
+        print('  No IRS or MWR data specified. Creating time grid based on date and tres from VIP...')
 
         # Create a fake time grid based on tres so we have use some fake IRS observations
         # to make the rest of the code work properly
@@ -837,6 +905,8 @@ def read_all_data(date, retz, tres, dostop, verbose, avg_instant, ch1_path,
 
     if mwr_data['success'] != 1:
         print('Problem reading in MWR-zenith data')
+        fail = 1
+        return fail, -999, -999, -999
 
     #Read in the MWR scan data
     if vip['mwrscan_type'] > 0:

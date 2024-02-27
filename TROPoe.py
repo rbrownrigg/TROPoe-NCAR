@@ -1097,7 +1097,13 @@ for i in range(len(irs['secs'])):                        # { loop_i
        else:
            print('There are NaNs in the obs_vector or 1-sigma uncertainties for obs: ' + str(feh) + ' Skipping sample')
            continue
-        
+
+    # Check if the Y vector is completely -999, if so, skip this sample
+    foo = np.where(Y > -900)[0]
+    if len(foo) == 0:
+        print('There are no observations in the observation vector. Skipping sample...')
+        continue
+
     # Compute Sy, assuming this is a diagonal matrix.  
     # Note that I have some logic above that needs to be deleted (marked with DDT-delete, if we are sure this matrix is always diagonal)
     Sy = np.diag(sigY**2)
