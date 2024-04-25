@@ -11,7 +11,7 @@
 #
 # ----------------------------------------------------------------------------
 
-__version__ = '0.12.5'
+__version__ = '0.13.2'
 
 import os
 import sys
@@ -945,15 +945,20 @@ for i in range(len(irs['secs'])):                        # { loop_i
             VIP_Databases_functions.abort(lbltmpdir,date)
             sys.exit()
         Y = np.append(Y,ext_prof['wv'][foo,i])
+                # Make sure that the noise values are all above the floor
+        uncertY = ext_prof['sig_wv'][foo,i]
+        bar = np.where(uncertY < vip['ext_wv_prof_min_error'])[0]
+        if len(bar) > 0:
+            uncertY[bar] = vip['ext_wv_prof_min_error']
         if vip['ext_wv_add_rel_error'] > 0:
             if verbose >= 2:
                 print('Adding systematic error to the external WV profile')
-            nSy = Other_functions.add_sys_error(ext_prof['wv'][foo,i], ext_prof['sig_wv'][foo,i], vip['ext_wv_add_rel_error'])
+            nSy = Other_functions.add_sys_error(ext_prof['wv'][foo,i], uncertY, vip['ext_wv_add_rel_error'])
         else:
-            nSy = np.diag(ext_prof['sig_wv'][foo,i]**2)
+            nSy = np.diag(uncertY**2)
         zero = np.zeros((len(foo),len(sigY)))
         Sy = np.append(np.append(Sy,zero,axis=0),np.append(zero.T,nSy,axis=0),axis=1) # DDT-delete
-        sigY = np.append(sigY, ext_prof['sig_wv'][foo,i])
+        sigY = np.append(sigY, uncertY)
         flagY = np.append(flagY, np.ones(len(foo))*4)
         dimY = np.append(dimY, z[foo])
 
@@ -996,10 +1001,15 @@ for i in range(len(irs['secs'])):                        # { loop_i
             VIP_Databases_functions.abort(lbltmpdir,date)
             sys.exit()
         Y = np.append(Y,mod_prof['wv'][foo,i])
-        nSy = np.diag(mod_prof['sig_wv'][foo,i]**2)
+                # Make sure that the noise values are all above the floor
+        uncertY = mod_prof['sig_wv'][foo,i]
+        bar = np.where(uncertY < vip['mod_wv_prof_min_error'])[0]
+        if len(bar) > 0:
+            uncertY[bar] = vip['mod_wv_prof_min_error']
+        nSy = np.diag(uncertY**2)
         zero = np.zeros((len(foo),len(sigY)))
         Sy = np.append(np.append(Sy,zero,axis=0),np.append(zero.T,nSy,axis=0),axis=1) # DDT-delete
-        sigY = np.append(sigY, mod_prof['sig_wv'][foo,i])
+        sigY = np.append(sigY, uncertY)
         flagY = np.append(flagY, np.ones(len(foo))*8)
         dimY = np.append(dimY, z[foo])
 
