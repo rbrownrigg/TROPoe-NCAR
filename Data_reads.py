@@ -1029,8 +1029,8 @@ def read_mwr(path, rootname, date, mwr_type, step, mwr_freq_field, mwr_elev_fiel
             return err
         else:
             freq = np.array(parts).astype(np.float)
-        foo = np.where(((freq >= 15) & (freq < 240)))
-        if len(parts) != mwr_n_tb_fields:
+        foo = np.where(((freq >= 15) & (freq < 240)))[0]
+        if len(foo) != mwr_n_tb_fields:
             print('Error: The entered frequencies are not between 15 and 240 GHz -- probably an error')
             return err
         parts = mwr_tb_bias.split(',')
@@ -1321,8 +1321,8 @@ def read_mwrscan(path, rootname, date, mwrscan_type, mwrscan_freq_field, mwrscan
             return err
         else:
             freq = np.array(parts).astype(np.float)
-        foo = np.where(((freq >= 15) & (freq < 240)))
-        if len(parts) != mwrscan_n_tb_fields:
+        foo = np.where(((freq >= 15) & (freq < 240)))[0]
+        if len(foo) != mwrscan_n_tb_fields:
             print('Error: The entered MWR-scan frequencies are not between 15 and 240 GHz -- probably an error')
             return err
         parts = mwrscan_tb_bias.split(',')
