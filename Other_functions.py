@@ -50,6 +50,8 @@ import Output_Functions
 # apodize_kaiser_bessel()
 # apodizer()
 # convolve_to_aeri()
+# convolve_to_refir()
+# convolve_to_irs()
 # write_arm_sonde_file()
 # radxfer_microwave()
 # compute_cgamma()
@@ -1188,16 +1190,30 @@ def apodizer(spectrum, aflag):
     return new_spectrum
 
 ################################################################################
-# This routine takes the input spectrum, and convolves it with the AERI filter
-# function to get data at the AERI resolution.  Actually, instead of performing
+# This function convolves the spectrum to the AERI / ASSIST spectral resolution
+def convolve_to_aeri(wnum, radiance):
+    vlaser = 15799.
+    tmp = convolve_to_irs(wnum, radiance, vlaser)
+    return tmp
+
+################################################################################
+# This function convolves the spectrum to the REFIR-PAD spectral resolution
+def convolve_to_refir(wnum, radiance):
+    vlaser = 13107.2
+    tmp = convolve_to_irs(wnum, radiance, vlaser)
+    return tmp
+
+
+################################################################################
+# This routine takes the input spectrum, and convolves it with the IRS filter
+# function to get data at the IRS resolution.  Actually, instead of performing
 # a convolution, it does this by multiplying the interferogram by the boxcar
-# that is associated with the AERI's Max OPD.  To do this, the input spectrum
+# that is associated with the IRS's Max OPD.  To do this, the input spectrum
 # is tapered and zeropadded to create a smooth spectrum, which is then interpolated
 # to a multiple of the AERI's spectral resolution, which is then transformed back
 # into interferogram space for chopping. 
 ################################################################################
-
-def convolve_to_aeri(wnum, radiance):
+def convolve_to_irs(wnum, radiance, vlaser):
     
     # These will be needed later
     minv = np.min(wnum)
@@ -1212,7 +1228,7 @@ def convolve_to_aeri(wnum, radiance):
         return 0
     
     # The AERI's delta nu
-    aeri_dv = 15799./(2**15)
+    aeri_dv = vlaser/(2**15)
     # And the AERI's maximum optical path delay
     aeri_opd = 1./(2*aeri_dv)
     

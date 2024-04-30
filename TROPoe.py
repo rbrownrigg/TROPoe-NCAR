@@ -11,7 +11,7 @@
 #
 # ----------------------------------------------------------------------------
 
-__version__ = '0.13.2'
+__version__ = '0.13.4'
 
 import os
 import sys
@@ -1376,7 +1376,7 @@ for i in range(len(irs['secs'])):                        # { loop_i
                            vip['fix_co2_shape'], vip['fix_ch4_shape'], vip['fix_n2o_shape'],
                            vip['jac_max_ht'], irs['wnum'], vip['lblrtm_forward_threshold'],
                            location['alt'], rt_extra_layers, stdatmos, vip['lblrtm_jac_interpol_npts_wnum'],
-                           verbose, debug, doapodize=False)
+                           vip['irs_type'], verbose, debug, doapodize=False) 
                     # If we are using the prior for the first guess (FG=1), and we have not already loaded
                     # this structure, then capture the forward calc and jacobian for the first guess
             if((precompute_prior_jacobian['status'] == 0) & (vip['first_guess'] == 1) & (flag != 0)):

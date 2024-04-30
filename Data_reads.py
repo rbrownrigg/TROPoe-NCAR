@@ -167,7 +167,13 @@ def recenter_prior(z0, p0, Xa, Sa, input_value, sfc_or_pwv=0, changeTmethod=0, v
         sf = input_value / q0[0]
         sfact_comment = f'The WVMR profile was scaled by a factor of {sf:5.2f}'
         q1    = q0 * sf
-        sigQ1 = sigQ0 * sf
+        if(sf < 0.6):
+          sigQ1 = sigQ0 * 0.6
+        elif(sf > 1.6):
+          sigQ1 = sigQ0 * 1.6
+        else:
+          sigQ1 = sigQ0 * sf
+        sigQ1 = sigQ0 * np.sqrt(sf)
 
     elif sfc_or_pwv == 2:
         if(verbose >= 2):
@@ -176,7 +182,13 @@ def recenter_prior(z0, p0, Xa, Sa, input_value, sfc_or_pwv=0, changeTmethod=0, v
         sf = input_value / pwv0
         sfact_comment = f'The WVMR profile was scaled by a factor of {sf:5.2f}'
         q1    = q0 * sf
-        sigQ1 = sigQ0 * sf
+        if(sf < 0.6):
+          sigQ1 = sigQ0 * 0.6
+        elif(sf > 1.6):
+          sigQ1 = sigQ0 * 1.6
+        else:
+          sigQ1 = sigQ0 * sf
+        sigQ1 = sigQ0 * np.sqrt(sf)
 
     else:
         print("Error with sfc_or_pwv: This should not happen within recenter_prior")
@@ -256,6 +268,8 @@ def read_irs_ch(path,date,irs_type,fv,fa,irs_spec_cal_factor,
         filename = '*' + str(date % 2000000) + 'C1.RNC.(cdf|nc)'
     elif irs_type == 5:
         filename = '*assist*(Ch|ch)*' + str(date) + '*(cdf|nc)'
+    elif irs_type == 6:
+        filename = '*refir*(Ch|ch)*' + str(date) + '*(cdf|nc)'
     else:
         print('Error in read_irs_ch: unable to decode irs_type')
         return err
@@ -1599,6 +1613,9 @@ def read_irs_eng(path, date, irs_type, verbose):
         print('   irs_type=5 --->')
         print('             ARM-style ch1/ch2/sum ASSIST datastream names, but all of the')
         print('                     engineering data is found in the summary file')
+        print('   irs_type=6 --->')
+        print('             ARM-style ch1/ch2/sum REFIR-PAD datastream names, but all of the')
+        print('                     engineering data is found in the summary file')
         print('-----------------------------------------------------------------')
         print(' ')
         err = {'success':0}
@@ -1614,6 +1631,8 @@ def read_irs_eng(path, date, irs_type, verbose):
         filename = '*aeri*sum*' + str(date) + '*(cdf|nc)'
     elif irs_type == 5:
         filename = '*assist*sum*' + str(date) + '*(cdf|nc)'
+    elif irs_type == 6:
+        filename = '*refir*sum*' + str(date) + '*(cdf|nc)'
     else:
         print('Error in read_irs_eng: unable to decode irs_type')
         return err
@@ -1726,6 +1745,8 @@ def read_irs_sum(path,date,irs_type,smooth_noise,verbose):
         filename = '*' + str(date % 2000000) + '.SUM.(cdf|nc)'
     elif irs_type == 5:
         filename = '*assist*sum*' + str(date) + '*(cdf|nc)'
+    elif irs_type == 6:
+        filename = '*refir*sum*' + str(date) + '*(cdf|nc)'
     else:
         print('Error in read_irs_sum: unable to decode irs_type')
         return err
