@@ -468,10 +468,6 @@ def check_vip(vip):
         print('Error: The output_akernal flag can only be set to 0, 1, or 2')
         flag = 1
         
-    if ((vip['irs_zenith_scene_mirror_angle'] < 0) or (vip['irs_zenith_scene_mirror_angle'] > 360)):
-        print('Error: irs_zenith_scene_mirror_angle must be between 0-360, inclusive.')
-        flag = 1
-    
     if ((vip['irs_min_noise_flag'] < 0) or (vip['irs_min_noise_flag'] > 1)):
         print('Error: irs_min_noise_flag must be 0 or 1')
         flag = 1
