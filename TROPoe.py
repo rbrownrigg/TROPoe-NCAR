@@ -1822,7 +1822,6 @@ for i in range(len(irs['secs'])):                        # { loop_i
             Output_Functions.write_variable(  Kij,vip['lbl_temp_dir']+'/tropoe_python_output.Kij.cdf')
             Output_Functions.write_variable(    Y,vip['lbl_temp_dir']+'/tropoe_python_output.Y.cdf')
             Output_Functions.write_variable(  FXn,vip['lbl_temp_dir']+'/tropoe_python_output.FXn.cdf')
-            sys.exit()
 
         # If we are trying to fix the shape of the TG profiles as a function of the
         # PBLH, then we need to make a special tweak here. The gain matrix for the
