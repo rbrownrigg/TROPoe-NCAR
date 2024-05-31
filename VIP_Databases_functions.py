@@ -40,7 +40,7 @@ import scipy.io
 # Note that not all of them have to be in the VIP file; if a key in this
 # structure is not found in the VIP file then it maintains it default value
 
-maxbands = 200  # The maximum number of bands to enable for the retrieval
+maxbands = 205  # The maximum number of bands to enable for the retrieval
 
 full_vip = ({
     'success': {'value': 0, 'comment': 'Interal success flag. Not for outside use', 'default': False},
