@@ -11,7 +11,7 @@
 #
 # ----------------------------------------------------------------------------
 
-__version__ = '0.14.3'
+__version__ = '0.14.4'
 
 import os
 import sys
@@ -1046,15 +1046,23 @@ for i in range(len(irs['secs'])):                        # { loop_i
         feh6 = np.where(flagY == 6)[0]
         feh1 = np.where(flagY == 1)[0]
         if len(feh1) <= 0:
-            print('Error: Unable to find any IRS wavenumbers in this test (inflate noise band)')
+            if verbose >= 2:
+                print('Error: Unable to find any IRS wavenumbers in this test (inflate noise band)')
             sys.exit()
-        if len(feh6) > 0:
-            if np.mean(Y[feh6]) <= 0:
-                print('      Warning: the surface WVMR value was not positive')
-            else:
-                bar = np.where((irs_band_noise_inflation['wnum1'] <= dimY[feh1]) &
-                        (dimY[feh1] <= irs_band_noise_inflation['wnum2']))[0]
-                if len(bar) > 0:
+
+            # See if the spectral band to inflate the noise is actually included in the desired observations
+            # but if there are no spectral elements, then obviously we won't be inflating the noise in the band
+        bar = np.where((irs_band_noise_inflation['wnum1'] <= dimY[feh1]) &
+                       (dimY[feh1] <= irs_band_noise_inflation['wnum2']))[0]
+        if len(bar) > 0:
+                # If there is no surface met (or sfc met has negative WVMR) and the 
+                #     irs_band_noise_inflation is on, then inflate the noise to its maximum by default
+            tmpyval = max(irs_band_noise_inflation['multiplier'])
+            if len(feh6) > 0:
+                if np.mean(Y[feh6]) <= 0:
+                    if verbose >= 2:
+                        print('      Warning: the surface WVMR value was not positive; will use max(irs_band_noise_inflation)')
+                else:
                     tmpxval = np.mean(Y[feh6])
                     if(tmpxval < np.min(irs_band_noise_inflation['wvmr'])):
                         tmpxval = np.min(irs_band_noise_inflation['wvmr'])
@@ -1063,10 +1071,15 @@ for i in range(len(irs['secs'])):                        # { loop_i
                     tmpyval = np.interp(tmpxval, 
                               irs_band_noise_inflation['wvmr'],
                               irs_band_noise_inflation['multiplier'])
-                    if(verbose >= 1):
-                        print(f'      Scaling the IRS band noise by a factor of {tmpyval:.2f}')
-                        print(f'      {len(bar):d} spectral elements had their noise changed')
-                    sigY[feh1[bar]] = sigY[feh1[bar]] * tmpyval
+            else:
+                if verbose >= 2:
+                    print('      Warning: no surface WVMR value found; will use max(irs_band_noise_inflation)')
+                # Now scale the noise in this spectral band
+            if(verbose >= 2):
+                print(f'      Scaling the IRS band noise by a factor of {tmpyval:.2f}')
+                print(f'      {len(bar):d} spectral elements had their noise changed')
+            sigY[feh1[bar]] = sigY[feh1[bar]] * tmpyval
+
 
     # Quick check: All of the 1-sigma uncertainties from the observations
     # should have been positive. If not then abort as extra logic needs
