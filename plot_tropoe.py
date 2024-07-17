@@ -202,7 +202,7 @@ def timeheight(time, height, data, field, ax, xlim, ylim, zlim, cmap=None,
     ax.set_xlim(xlim)
 
     # Set the labels
-    ax.set_ylabel('Height [m]')
+    ax.set_ylabel('Height [km]')
     ax.set_xlabel('Hour [UTC]')
     cb.set_label(cb_label)
 
