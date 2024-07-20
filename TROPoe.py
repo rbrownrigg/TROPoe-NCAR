@@ -11,7 +11,7 @@
 #
 # ----------------------------------------------------------------------------
 
-__version__ = '0.14.5'
+__version__ = '0.14.6'
 
 import os
 import sys
@@ -814,8 +814,11 @@ else:
 # the infrared and microwave radiative transfer calculations
 rt_extra_layers = Other_functions.compute_extra_layers(np.max(z))
 
+# Set these few variables; they will be reset below
 noutfilename = ''
 version = ''
+tape3_info = {'success':-2}
+
 ################################################################################
 # This is the main loop for the retrieval!
 ################################################################################
@@ -1381,7 +1384,7 @@ for i in range(len(irs['secs'])):                        # { loop_i
                     wnumc = np.copy(precompute_prior_jacobian['wnumc0'])
                 else:
                         # Otherwise, run the forward model and compute the Jacobian
-                    flag, Kij, FXn, wnumc, totaltime  = \
+                    flag, Kij, FXn, wnumc, totaltime, tape3_info  = \
                            Jacobian_Functions.compute_jacobian_irs_interpol(Xn, p, z,
                            vip['lbl_home'], lbldir, lbltmp, vip['lbl_std_atmos'], lbltp5, lbltp3,
                            cbh, sspl, sspi, lblwnum1, lblwnum2,
@@ -1389,7 +1392,15 @@ for i in range(len(irs['secs'])):                        # { loop_i
                            vip['fix_co2_shape'], vip['fix_ch4_shape'], vip['fix_n2o_shape'],
                            vip['jac_max_ht'], irs['wnum'], vip['lblrtm_forward_threshold'],
                            location['alt'], rt_extra_layers, stdatmos, vip['lblrtm_jac_interpol_npts_wnum'],
-                           vip['irs_type'], verbose, debug, doapodize=False) 
+                           vip['irs_type'], tape3_info, verbose, debug, doapodize=False) 
+                        # Confirm that the TAPE3 is appropriate for this calculation
+                    if tape3_info['success'] > 0:
+                        if((lblwnum1 < tape3_info['minw']) or (tape3_info['maxw'] < lblwnum2)):
+                            print('Error: The tape3 selected in the VIP does not span the desired IRS calculation range')
+                            print(f"            TAPE3 spans from {tape3_info['minw']:.3f} to {tape3_info['maxw']:.3f} cm-1")
+                            print(f"            Needed LBLRTM range is {lblwnum1:.3f} to {lblwnum2:.3f} cm-1")
+                            sys.exit()
+
                     # If we are using the prior for the first guess (FG=1), and we have not already loaded
                     # this structure, then capture the forward calc and jacobian for the first guess
             if((precompute_prior_jacobian['status'] == 0) & (vip['first_guess'] == 1) & (flag != 0)):

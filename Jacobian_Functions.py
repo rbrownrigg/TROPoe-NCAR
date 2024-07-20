@@ -17,6 +17,7 @@ import scipy
 from datetime import datetime
 from subprocess import Popen, PIPE
 
+import Data_reads
 import Other_functions
 import Output_Functions
 import Calcs_Conversions
@@ -48,7 +49,7 @@ def compute_jacobian_irs_interpol(X, p, zz, lblhome, lbldir, lblroot, lbl_std_at
                     cbh, sspl, sspi, lblwnum1, lblwnum2, fixt, fixwv, doco2, doch4, don2o,
                     fixlcld, fixicld, fix_co2_shape, fix_ch4_shape, fix_n2o_shape,
                     jac_maxht, awnum, forward_threshold, sfc_alt, extra_layers,
-                    stdatmos, npts_per_wnum, irs_type, 
+                    stdatmos, npts_per_wnum, irs_type, tape3_info, 
                     verbose, debug, doapodize):
 
     success = 0
@@ -249,7 +250,11 @@ def compute_jacobian_irs_interpol(X, p, zz, lblhome, lbldir, lblroot, lbl_std_at
         if debug:
             wait = input('Stopping inside compute_jacobian_interpol to debug. Press enter to continue')
         else:
-            return success, -999., -999., -999., -999.
+            return success, -999., -999., -999., -999., tape3_info
+
+    # Read in the spectral limits used in the TAPE3 file
+    if(tape3_info['success'] == -2):
+        tape3_info = Data_reads.tape6_min_max_wnum(lbldir+'.1',verbose=verbose)
 
     # Use the spectral spacing at x km AGL for the spectral spacing of the
     # layer optical depths.  Note that I did experiment with this value,
@@ -290,7 +295,7 @@ def compute_jacobian_irs_interpol(X, p, zz, lblhome, lbldir, lblroot, lbl_std_at
                     if debug:
                         wait = input('Stopping inside compute_jacobian_interpol to debug. Press enter to continue')
                     else:
-                        return success, -999., -999., -999., -999.
+                        return success, -999., -999., -999., -999., tape3_info
                 od11 = np.zeros((len(files1), len(v)))
                 iod11 = np.zeros((len(files1), len(iv)))
             s0, v0 = LBLRTM_Functions.lbl_read(files2[i], do_load_data=True)
@@ -308,7 +313,7 @@ def compute_jacobian_irs_interpol(X, p, zz, lblhome, lbldir, lblroot, lbl_std_at
                     if debug:
                         wait = input('Stopping inside compute_jacobian_interpol to debug. Press enter to continue')
                     else:
-                        return success, -999., -999., -999., -999.
+                        return success, -999., -999., -999., -999., tape3_info
                 od22 = np.zeros((len(files1),len(v)))
                 iod22 = np.zeros((len(files1),len(iv)))
             s0, v0 = LBLRTM_Functions.lbl_read(files3[i], do_load_data=True)
@@ -326,7 +331,7 @@ def compute_jacobian_irs_interpol(X, p, zz, lblhome, lbldir, lblroot, lbl_std_at
                     if debug:
                         wait = input('Stopping inside compute_jacobian_interpol to debug. Press enter to continue')
                     else:
-                        return success, -999., -999., -999., -999.
+                        return success, -999., -999., -999., -999., tape3_info
                 od33 = np.zeros((len(files1),len(v)))
                 iod33 = np.zeros((len(files1),len(iv)))
             s0, v0 = LBLRTM_Functions.lbl_read(files4[i], do_load_data=True)
@@ -344,7 +349,7 @@ def compute_jacobian_irs_interpol(X, p, zz, lblhome, lbldir, lblroot, lbl_std_at
                     if debug:
                         wait = input('Stopping inside compute_jacobian_interpol to debug. Press enter to continue')
                     else:
-                        return success, -999., -999., -999., -999.
+                        return success, -999., -999., -999., -999., tape3_info
                 od44 = np.zeros((len(files1),len(v)))
                 iod44 = np.zeros((len(files1),len(iv)))
             s0, v0 = LBLRTM_Functions.lbl_read(files5[i], do_load_data=True)
@@ -362,7 +367,7 @@ def compute_jacobian_irs_interpol(X, p, zz, lblhome, lbldir, lblroot, lbl_std_at
                     if debug:
                         wait = input('Stopping inside compute_jacobian_interpol to debug. Press enter to continue')
                     else:
-                        return success, -999., -999., -999., -999.
+                        return success, -999., -999., -999., -999., tape3_info
                 od55 = np.zeros((len(files1),len(v)))
                 iod55 = np.zeros((len(files1),len(iv)))
             s0, v0 = LBLRTM_Functions.lbl_read(files6[i], do_load_data=True)
@@ -945,7 +950,7 @@ def compute_jacobian_irs_interpol(X, p, zz, lblhome, lbldir, lblroot, lbl_std_at
     foo = np.where((np.min(wnumc)-0.1 <= bwnum) & (bwnum <= np.max(wnumc)+0.1))[0]
     if ((len(foo) != len(wnumc)) | (np.abs(np.min(wnumc)-np.min(bwnum[foo])) > 0.1)):
         print('PROBLEM inside compute_jacobian_interpol -- wavenumber do not match')
-        return success, -999., -999., -999., -999.
+        return success, -999., -999., -999., -999., tape3_info
 
     FXn = np.copy(brad[foo])
 
@@ -956,7 +961,7 @@ def compute_jacobian_irs_interpol(X, p, zz, lblhome, lbldir, lblroot, lbl_std_at
         print(' It took ' + str(totaltime) + ' s to compute Jacobian (interpol)')
     success = 1
 
-    return success, Kij, FXn, wnumc, totaltime
+    return success, Kij, FXn, wnumc, totaltime, tape3_info
 ################################################################################
 # This function performs the forward model calculation and computes the jacobian
 # for the microwave radiometer. It is designed very similarly to
