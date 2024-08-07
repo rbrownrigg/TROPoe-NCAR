@@ -166,37 +166,42 @@ def recenter_prior(z0, p0, Xa, Sa, input_value, sfc_or_pwv=0, changeTmethod=0, v
             print('    Recenter_prior is using the scale-by-surface method')
         input_comment = f"surface WVMR value of {input_value:5.2f} g/kg"
         sf = input_value / q0[0]
-        sfact_comment = f'The WVMR profile was scaled by a factor of {sf:5.2f}'
-        q1    = q0 * sf
+        sfact1_comment = f'The WVMR mean profile was scaled by a factor of {sf:5.2f}'
+          # Scale the new mean prior with the proper scale factor
+        q1 = q0 * sf
+          # Now adjust the scale factor somewhat, so that we don't overly scale the prior covariance
+        sf = np.sqrt(sf)
         if(sf < 0.6):
-          sigQ1 = sigQ0 * 0.6
+            sf = 0.6
         elif(sf > 1.6):
-          sigQ1 = sigQ0 * 1.6
-        else:
-          sigQ1 = sigQ0 * sf
-        sigQ1 = sigQ0 * np.sqrt(sf)
+            sf = 1.6
+        sigQ1 = sigQ0 * sf
+        sfact2_comment = f'The WVMR covariance was scaled by a factor of {sf:5.2f}'
 
     elif sfc_or_pwv == 2:
         if(verbose >= 2):
             print('    Recenter_prior is using the scale-by-PWV method')
         input_comment = f"column PWV value of {input_value:5.2f} cm"
         sf = input_value / pwv0
-        sfact_comment = f'The WVMR profile was scaled by a factor of {sf:5.2f}'
-        q1    = q0 * sf
+        sfact1_comment = f'The WVMR mean profile was scaled by a factor of {sf:5.2f}'
+          # Scale the new mean prior with the proper scale factor
+        q1 = q0 * sf
+          # Now adjust the scale factor somewhat, so that we don't overly scale the prior covariance
+        sf = np.sqrt(sf)
         if(sf < 0.6):
-          sigQ1 = sigQ0 * 0.6
+            sf = 0.6
         elif(sf > 1.6):
-          sigQ1 = sigQ0 * 1.6
-        else:
-          sigQ1 = sigQ0 * sf
-        sigQ1 = sigQ0 * np.sqrt(sf)
+            sf = 1.6
+        sigQ1 = sigQ0 * sf
+        sfact2_comment = f'The WVMR covariance was scaled by a factor of {sf:5.2f}'
 
     else:
         print("Error with sfc_or_pwv: This should not happen within recenter_prior")
         return 0
 
     if(verbose >= 2):
-        print(f'    {sfact_comment}')
+        print(f'    {sfact1_comment}')
+        print(f'    {sfact2_comment}')
 
     # Adjust the temperature depending on the method selected
     if changeTmethod == 1:
@@ -233,8 +238,9 @@ def recenter_prior(z0, p0, Xa, Sa, input_value, sfc_or_pwv=0, changeTmethod=0, v
             newSa[i,j] = corM[i,j] * (newSig[i] * newSig[j])
 
     comments = {'Comment_on_recentering1': 'The WVMR profile prior recentered using a '+input_comment,
-                'Comment_on_recentering2': sfact_comment,
-                'Comment_on_recentering3': 'The temperature prior was recentered using the '+tmethod_comment
+                'Comment_on_recentering2': sfact1_comment,
+                'Comment_on_recentering3': sfact2_comment,
+                'Comment_on_recentering4': 'The temperature prior was recentered using the '+tmethod_comment
     }
 
     # Echo some output, indicating how the prior was rescaled
