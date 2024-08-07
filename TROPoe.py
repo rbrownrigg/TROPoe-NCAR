@@ -11,7 +11,7 @@
 #
 # ----------------------------------------------------------------------------
 
-__version__ = '0.14.6'
+__version__ = '0.15.1'
 
 import os
 import sys
@@ -1960,7 +1960,7 @@ for i in range(len(irs['secs'])):                        # { loop_i
             
             # A nonphysical water vapor value exists so we are going interpolate across those values
             # by calling this function
-            Xnp1[feh,0] = Other_functions.fix_nonphysical_wv(Xnp1[feh,0],z,foo)
+            Xnp1[feh,0] = Other_functions.fix_nonphysical_wv(Xnp1[feh,0],z,Xa[feh],foo)
         
         # Check for values that are too high
         foo = np.where((Xnp1[feh,0] > maxQ) | (Xnp1[feh,0] > Xa[feh] + multiplier*np.sqrt((np.diag(Sa)[feh]))))[0]
@@ -1974,8 +1974,9 @@ for i in range(len(irs['secs'])):                        # { loop_i
             
             # A nonphysical water vapor value exists so we are going interpolate across those values
             # by calling this function
-            Xnp1[feh,0] = Other_functions.fix_nonphysical_wv(Xnp1[feh,0],z,foo)
+            Xnp1[feh,0] = Other_functions.fix_nonphysical_wv(Xnp1[feh,0],z,Xa[feh],foo)
 
+        # Now test other variables in the retrieved state vector
         if dolcloud == 1:
             Xnp1[nX,0] = np.nanmax([Xnp1[nX],0])
             Xnp1[nX+1,0] = np.nanmax([Xnp1[nX+1], vip['prior_lReff_mn']-multiplier*vip['prior_lReff_sd'], minLReff])

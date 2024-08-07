@@ -1932,11 +1932,19 @@ def make_monotonic(heights):
 # value.
 ###############################################################################
 
-def fix_nonphysical_wv(wv, z, foo):
+def fix_nonphysical_wv(wv, z, Xa, foo):
     
     old_wv = np.copy(wv)
     old_wv[foo] = np.nan
-    
+
+        # Create a scaled version of the prior, using the
+        # good values in the current profile to do the scaling
+    sf = np.nanmean(old_wv / Xa)
+    if np.isnan(sf):
+        print('DDT -- this should not happen within fix_nonphysical_wv -- aborting to allow for debugging')
+        sys.exit()
+    newXa = Xa * sf
+
     new_wv = []
     for i, value in enumerate(old_wv):
         if np.isnan(value):
@@ -1952,10 +1960,10 @@ def fix_nonphysical_wv(wv, z, foo):
         
             if np.isnan(old_wv[j]):
                 # The first value is nonphysical so set to nearest good value after
-                new_wv.append(old_wv[k])
+                new_wv.append(newXa[i])
             elif np.isnan(old_wv[k]):
                 # The last value is nonphysical so set to nearest good value before
-                new_wv.append(old_wv[j])
+                new_wv.append(newXa[i])
             else:
                 # Interpolate across the good values
                 new_wv.append(old_wv[j] + (old_wv[k] - old_wv[j]) * (z[i]-z[j])/(z[k]-z[j]))
