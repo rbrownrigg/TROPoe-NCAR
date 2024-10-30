@@ -11,7 +11,7 @@
 #
 # ----------------------------------------------------------------------------
 
-__version__ = '0.16.1'
+__version__ = '0.16.2'
 
 import os
 import sys
@@ -1396,7 +1396,7 @@ for i in range(len(irs['secs'])):                        # { loop_i
                            vip['fix_co2_shape'], vip['fix_ch4_shape'], vip['fix_n2o_shape'],
                            vip['jac_max_ht'], irs['wnum'], vip['lblrtm_forward_threshold'],
                            location['alt'], rt_extra_layers, stdatmos, vip['lblrtm_jac_interpol_npts_wnum'],
-                           vip['irs_type'], tape3_info, verbose, debug, doapodize=False) 
+                           vip['irs_type'], tape3_info, vip, verbose, debug, doapodize=False) 
                         # Confirm that the TAPE3 is appropriate for this calculation
                     if tape3_info['success'] > 0:
                         if((lblwnum1 < tape3_info['minw']) or (tape3_info['maxw'] < lblwnum2)):

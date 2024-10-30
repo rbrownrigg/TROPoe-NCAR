@@ -49,7 +49,7 @@ def compute_jacobian_irs_interpol(X, p, zz, lblhome, lbldir, lblroot, lbl_std_at
                     cbh, sspl, sspi, lblwnum1, lblwnum2, fixt, fixwv, doco2, doch4, don2o,
                     fixlcld, fixicld, fix_co2_shape, fix_ch4_shape, fix_n2o_shape,
                     jac_maxht, awnum, forward_threshold, sfc_alt, extra_layers,
-                    stdatmos, npts_per_wnum, irs_type, tape3_info, 
+                    stdatmos, npts_per_wnum, irs_type, tape3_info, vip, 
                     verbose, debug, doapodize):
 
     success = 0
@@ -414,17 +414,30 @@ def compute_jacobian_irs_interpol(X, p, zz, lblhome, lbldir, lblroot, lbl_std_at
     sfcrad = Calcs_Conversions.planck(wnum,t[0])
     cldrefrad = sfcrad*reflection*trans1[cldidx,:]*trans1[cldidx,:]
 
-    # Compute the baseline radiance
+    # Compute the baseline radiance and optical depth of the lowest 1-m layer
     radc0 = Other_functions.radxfer(wnum, mlayert, gasod)
     radc0 += cldrefrad              # Add the cloud reflected radiance to this value
+    o1mc0 = gasod[0,:] / ((mlayerz[1]-mlayerz[0])*1000) # The spectral optical depth for a 1-m layer
+    t1mc0 = np.exp(-1*o1mc0)    # Convert this 1m optical depth to transmission
+    bar   = np.where(np.isnan(t1mc0))[0]    # Really large ODs may have NaN transmission; set these to zero
+    if len(bar) > 0:
+        t1mc0[bar] = 0
     if(irs_type == 6):
         tmp = Other_functions.convolve_to_refir(wnum, radc0)
+        feh = Other_functions.convolve_to_refir(wnum, t1mc0)
     else:
         tmp = Other_functions.convolve_to_aeri(wnum, radc0)
+        feh = Other_functions.convolve_to_aeri(wnum, t1mc0)
     Kwnum = np.copy(tmp['wnum'])
     radc0 = np.copy(tmp['spec'])
+    t1mc0 = np.copy(feh['spec'])    # This is the convolved transmission
+    bar   = np.where(t1mc0 <= 0)[0]
+    if len(bar) > 0:
+        t1mc0[bar] = 1e-20
+    o1mc0 = -1*np.log(t1mc0)        # This is the convolved optical depth
     if doapoJac:
         radc0 = np.real(Other_functions.apodizer(radc0,0))
+        t1mc0 = np.real(Other_functions.apodizer(t1mc0,0))
 
     if verbose >= 2:
         print('Computing the Jacobian using the interpol method')
@@ -953,6 +966,17 @@ def compute_jacobian_irs_interpol(X, p, zz, lblhome, lbldir, lblroot, lbl_std_at
         return success, -999., -999., -999., -999., tape3_info
 
     FXn = np.copy(brad[foo])
+
+    # We don't want spectral elements in very opaque channels have any influence
+    # on the retrieval, as these may be representing absorption within the instrument
+    # Find these channels, and set the Jacobian for them to zero
+    od1mthres = vip['irs_1m_od_thres']
+    foo = np.where(o1mc0 > od1mthres)[0]
+    if verbose >= 2:
+        print(f"      Within IRS forward calc: {len(t1mc0):d} total spectral points of which {len(foo):d} were flagged with having high 1m optical depth above {od1mthres:f}")
+    if len(foo) > 0:
+        Kij[foo,:] = 0
+        FXn[foo] = -777     # Just a random flag value for the output netCDF file
 
     # Capture the total time and return
     etime = datetime.now()
