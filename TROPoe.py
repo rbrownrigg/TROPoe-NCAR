@@ -11,7 +11,7 @@
 #
 # ----------------------------------------------------------------------------
 
-__version__ = '0.15.2'
+__version__ = '0.16.1'
 
 import os
 import sys
@@ -698,11 +698,15 @@ if vip['recenter_prior'] > 0:
 
         # Recenter the prior, using the inputs determined above
         successflag, newXa, newSa, comments = Data_reads.recenter_prior(z, Pa, Xa, Sa, 
-                    recenter_input_value, sfc_or_pwv=1, changeTmethod=changeTmethod)
+                        recenter_input_value, vip, sfc_or_pwv=1, changeTmethod=changeTmethod)
 
         # Now replace the variables, if successful
         #   and update the global attributes to note that prior recentering was performed
-        if successflag == 1:
+        if successflag == 0:
+            print('Error: Unable to recenter the prior -- aborting')
+            VIP_Databases_functions.abort(lbltmpdir, date)
+            sys.exit()
+        elif successflag == 1:
             Xa = newXa
             Sa = newSa
             globatt.update(comments)

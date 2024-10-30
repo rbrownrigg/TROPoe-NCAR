@@ -225,6 +225,7 @@ full_vip = ({
 
     'recenter_prior': {'value': 1, 'comment': '0 - do not recenter, 1 - Recenter WVMR based on sfc wv field and using conserve-RH for temp, 2 - Recenter WVMR based on PWV and conserve-RH for temp, 3 - Recenter WVMR based on sfc wv field and using conserve-covariance for temp, 4 - Recenter WVMR based on PWV and conserve-covariance for temp, 5 - Recenter based on near-sfc radiometric air temperature', 'default': True},
     'recenter_input': {'value': 0.0, 'comment': 'Sfc WVMR or PWV value to use in the recentering process. Set to zero for the value to be determined from other input data (i.e. sfc met)', 'default': False},
+    'recenter_covar_min_sfactor': {'value': 0.6, 'comment': 'Minimum scale factor that will be used to rescale the prior covariance matrix.  The max threshold is 1/thisValue', 'default': False},
     'prior_t_ival': {'value': 1.0, 'comment': 'The prior inflation factor (>= 1) to apply at the surface for temperature', 'default': False},
     'prior_t_iht': {'value': 1.0, 'comment': 'The height [km AGL] where the inflation factor goes to 1 (linear) for temperature', 'default': False},
     'prior_q_ival': {'value': 1.0, 'comment': 'The prior inflation factor (>= 1) to apply at the surface for water vapor mixing ratio', 'default': False},

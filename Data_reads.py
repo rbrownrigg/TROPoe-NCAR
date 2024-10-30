@@ -108,7 +108,7 @@ def findfile(path,pattern,verbose=2):
 # This function recenters the prior information
 ################################################################################
 
-def recenter_prior(z0, p0, Xa, Sa, input_value, sfc_or_pwv=0, changeTmethod=0, verbose=1):
+def recenter_prior(z0, p0, Xa, Sa, input_value, vip, sfc_or_pwv=0, changeTmethod=0, verbose=1):
     """
     This code recenters the mean of the prior dataset.
     The water vapor profile is recentered first, using a height-independent scale factor determined
@@ -120,6 +120,7 @@ def recenter_prior(z0, p0, Xa, Sa, input_value, sfc_or_pwv=0, changeTmethod=0, v
     :p: The mean pressure profile of the prior
     :Xa: The mean profiles of [temperature,waterVapor] (also called [T,q])
     :Sa: The covariance matrix of [[TT,Tq],[qT,qq]]
+    :vip: The VIP key/values dictionary
     :param sfc_or_pwv: This keyword indicates the what the input_value represents:
                             0-> the default value, which forces the user to actually think!
                             1-> implies that the input_value is the surface WVMR [g/kg]
@@ -129,18 +130,22 @@ def recenter_prior(z0, p0, Xa, Sa, input_value, sfc_or_pwv=0, changeTmethod=0, v
                             1-> indicates that the conserve-RH method should be used
                             2-> indicates that the conserve-covariance method should be used
     :param verbose: This keyword indicates how noisy the routine should be
-    :return: successFlag, newXa, newSa
+    :return: successFlag, newXa, newSa, comments
             SuccessFlag is 1 if the prior was successfully scaled, 0 if the function failed.
             newXa is the new mean prior
             newSa is the new prior covariance matrix
+            comments is some strings
     """
+
+    comments = {'Comment_on_recentering1': 'There was an error in the call of recenter_prior()', 
+                'Comment_on_recentering2': 'So the code aborted'}
 
     if ((sfc_or_pwv < 1) | (sfc_or_pwv > 2)):
         print('Error: the sfc_or_pwv keyword has an undefined value (must be 1 or 2) -- see usage')
-        return 0
+        return 0, Xa, Sa, comments
     if ((changeTmethod < 1) | (changeTmethod > 2)):
         print('Error: the changeTmethod keyword has an undefined value (must be 1 or 2) -- see usage')
-        return 0
+        return 0, Xa, Sa, comments
 
     # Extract out the mean temperature and humidity profiles
     k    = len(z0)
@@ -160,6 +165,13 @@ def recenter_prior(z0, p0, Xa, Sa, input_value, sfc_or_pwv=0, changeTmethod=0, v
     u0   = Calcs_Conversions.w2rh(q0, p0, t0, 0)
     pwv0 = Calcs_Conversions.w2pwv(q0, p0)
 
+    # Get the min and max scale factor for the prior
+    pmin = vip['recenter_covar_min_sfactor']
+    if((pmin <= 0.001) | (pmin >= 1)):
+        print('Error: VIP.recenter_covariance_sfactor_min keyword must have a value in [0.001, 1) ')
+        return 0, Xa, Sa, comments
+    pmax = 1.0/pmin
+
     # Scale the WV profile
     if sfc_or_pwv == 1:
         if(verbose >= 2):
@@ -171,10 +183,10 @@ def recenter_prior(z0, p0, Xa, Sa, input_value, sfc_or_pwv=0, changeTmethod=0, v
         q1 = q0 * sf
           # Now adjust the scale factor somewhat, so that we don't overly scale the prior covariance
         sf = np.sqrt(sf)
-        if(sf < 0.6):
-            sf = 0.6
-        elif(sf > 1.6):
-            sf = 1.6
+        if(sf < pmin):
+            sf = pmin
+        elif(sf > pmax):
+            sf = pmax
         sigQ1 = sigQ0 * sf
         sfact2_comment = f'The WVMR covariance was scaled by a factor of {sf:5.2f}'
 
@@ -188,16 +200,16 @@ def recenter_prior(z0, p0, Xa, Sa, input_value, sfc_or_pwv=0, changeTmethod=0, v
         q1 = q0 * sf
           # Now adjust the scale factor somewhat, so that we don't overly scale the prior covariance
         sf = np.sqrt(sf)
-        if(sf < 0.6):
-            sf = 0.6
-        elif(sf > 1.6):
-            sf = 1.6
+        if(sf < pmin):
+            sf = pmin
+        elif(sf > pmax):
+            sf = pmax
         sigQ1 = sigQ0 * sf
         sfact2_comment = f'The WVMR covariance was scaled by a factor of {sf:5.2f}'
 
     else:
         print("Error with sfc_or_pwv: This should not happen within recenter_prior")
-        return 0
+        return 0, Xa, Sa, comments
 
     if(verbose >= 2):
         print(f'    {sfact1_comment}')
@@ -227,7 +239,7 @@ def recenter_prior(z0, p0, Xa, Sa, input_value, sfc_or_pwv=0, changeTmethod=0, v
         t1 = t0 + slope.dot(q1-q0)
     else:
         print("Error with changeTmethod: This should not happen within recenter_prior")
-        return 0
+        return 0, Xa, Sa, comments
 
     # Now create the new mean prior and its covariance matrix
     newXa  = np.append(t1, q1)
