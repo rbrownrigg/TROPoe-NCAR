@@ -296,7 +296,7 @@ def inflate_prior_covariance(Sa, z, prior_t_ival, prior_t_iht, prior_q_ival,
     
     foo = np.where(z < prior_chimney_ht)[0]
     if ((len(foo) > 0) & (verbose >= 1)):
-        print('Modifying Sa to account for a chimney effect')
+        print(f'  Modifying Sa to account for a {prior_chimney_ht*1000.:.1f} m chimney effect')
     k = len(z)
     for i in range(len(foo)):
         for j in range(len(z)):

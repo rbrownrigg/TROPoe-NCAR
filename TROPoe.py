@@ -11,7 +11,7 @@
 #
 # ----------------------------------------------------------------------------
 
-__version__ = '0.16.2'
+__version__ = '0.16.3'
 
 import os
 import sys
@@ -194,18 +194,6 @@ if vip['plot_output'] == 2:
 
     sys.exit()
 
-
-# Disabling prior_chimney_ht for now. Leaving the code availabe in case we want
-# to incorporate it again.
-
-if vip['prior_chimney_ht'] > 0:
-    print('The vip parameter prior_chimney_ht is not operational.')
-    print('If you feel you need this parameter contact the program authors.')
-    print(('>>> TROPoe retrieval on ' + str(date) + ' FAILED and ABORTED <<<'))
-    print('---------------------------------------------------------------------')
-    print(' ')
-    sys.exit()
-    
 uniquekey = vip['tag'] + '.' + str(np.random.randint(0,999999))
 
 if debug:
