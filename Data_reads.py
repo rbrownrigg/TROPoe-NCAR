@@ -103,6 +103,50 @@ def findfile(path,pattern,verbose=2):
         return [], 1
 
 
+################################################################################
+# This function reads in the input file for an O-B calculation
+# It is able to read netCDF files of two formats:
+#    1) ARM radiosondes, with fields pres [mb], tdry [C], rh [%], and alt [m MSL]
+#    2) Custom, with fields pressure [mb], temperature [C], rh [%], and height [km AGL]
+# If the function finds the field "tdry", it assumes this is an ARM radiosonde
+################################################################################
+def read_omb_file(path, filename, verbose=1):
+    ombfile = path+'/'+filename
+
+    if os.path.exists(ombfile) == False:
+        print('    Unable to find the input file for the O-B calculation')
+        return ({'sucess':0})
+    else:
+        print('    Reading this file for the O-B calculation: '+ombfile)
+        fid = Dataset(ombfile)
+        if len(np.where(np.array(list(fid.variables.keys())) == 'tdry')[0]) > 0:
+            z  = fid.variables['alt'][:]
+            p  = fid.variables['pres'][:]
+            rh = fid.variables['rh'][:]
+            t  = fid.variables['tdry'][:]
+            z  = (z - z[0])/1000.           # Convert m MSL to km AGL
+        else:
+            z  = fid.variables['height'][:]
+            p  = fid.variables['pressure'][:]
+            rh = fid.variables['rh'][:]
+            t  = fid.variables['temperature'][:]
+        fid.close()
+        q  = Calcs_Conversions.rh2w(t, rh/100., p)
+        err = 0
+        if len(z) < 3:
+            err = 1
+            errmess = 'Too few height elements -- needs to be at least 3 heights'
+        elif np.max(z) < 10:
+            err = 1
+            errmess = 'Maximum height in the OMB input file must exceed 10 km AGL'
+        elif ((len(z) != len(t)) | (len(z) != len(p)) | (len(z) != len(rh))):
+            err = 1
+            errmess = 'All profiles in OMB input file must be of the same length'
+        if err == 1:
+            print('Error in read_omb_file: '+errmess)
+            return ({'status':0})
+    return ({'success':1, 'z':z, 't':t, 'p':p, 'q':q, 'rh':rh, 'filename':path+'/'+filename})
+
 
 ################################################################################
 # This function recenters the prior information

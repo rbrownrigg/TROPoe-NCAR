@@ -11,7 +11,7 @@
 #
 # ----------------------------------------------------------------------------
 
-__version__ = '0.16.3'
+__version__ = '0.16.4'
 
 import os
 import sys
@@ -1162,7 +1162,7 @@ for i in range(len(irs['secs'])):                        # { loop_i
         t = irs['tsfc'][i] + z*lapserate
         p = Calcs_Conversions.inv_hypsometric(z, t+273.16, irs['atmos_pres'][i])  # [mb]
         q = Calcs_Conversions.rh2w(t, np.ones(len(z))*constRH/100., p)
-        X0 = np.concatenate([t, q, Xa[nX:nX+12]])    # T, Q, LWP, ReL, TauI, ReI, co2(3), ch4(3), n2o(3)
+        X0 = np.concatenate([t, q, Xa[nX:nX+13]])    # T, Q, LWP, ReL, TauI, ReI, co2(3), ch4(3), n2o(3)
     elif vip['first_guess'] == 3:
         # Get first guess from the previous retrieval, if there is one
         # If there isn't a valid prior retrieval, use prior
@@ -1181,6 +1181,20 @@ for i in range(len(irs['secs'])):                        # { loop_i
         print('Error: Undefined first guess option')
         VIP_Databases_functions.abort(lbltmpdir,date)
         sys.exit()
+
+    # If this is an observation-minus-background calculation, then override multiple VIP entries and 
+    # populate the first-guess vector with the input profile
+    if vip['omb_flag'] == 1:
+        print('  Performing an observation-minus-background (O-B) calculation')
+        omb_input = Data_reads.read_omb_file(vip['omb_path'],vip['omb_file'])
+        if omb_input['success'] == 0:
+            print(f,"Error: Unable to find the O-B input file {vip['omb_path']:s}/{vip['omb_file']:s} -- so aborting")
+            VIP_Databases_functions.abort(lbltmpdir,date)
+            sys.exit()
+        vip['max_iterations'] = 0
+        X0t = np.interp(z, omb_input['z'], omb_input['t'])
+        X0q = np.interp(z, omb_input['z'], omb_input['q'])
+        X0  = np.concatenate([X0t, X0q, Xa[nX:nX+13]])    # T, Q, LWP, ReL, TauI, ReI, co2(3), ch4(3), n2o(3)
 
     # Build the first guess vector
     itern = 0
@@ -1822,7 +1836,7 @@ for i in range(len(irs['secs'])):                        # { loop_i
         else:
             Akern_nm = np.copy(Akern) * 0 - 999.
         
-        if(vip['max_iterations'] == 0):
+        if((vip['max_iterations'] == 0) & (vip['omb_flag'] == 0)):
             if(vip['irs_type'] > 0):
                 print(f'        DDT - compute_jacobian_xx took {totaltime:.1f} seconds')
             print('Special debug mode -- writing variables from retrieval calcs in the directory '+vip['lbl_temp_dir'])
