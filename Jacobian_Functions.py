@@ -964,8 +964,8 @@ def compute_jacobian_irs_interpol(X, p, zz, lblhome, lbldir, lblroot, lbl_std_at
     if ((len(foo) != len(wnumc)) | (np.abs(np.min(wnumc)-np.min(bwnum[foo])) > 0.1)):
         print('PROBLEM inside compute_jacobian_interpol -- wavenumber do not match')
         return success, -999., -999., -999., -999., tape3_info
-
-    FXn = np.copy(brad[foo])
+    FXn   = np.copy(brad[foo])
+    o1mc0 = o1mc0[foo]
 
     # We don't want spectral elements in very opaque channels have any influence
     # on the retrieval, as these may be representing absorption within the instrument
