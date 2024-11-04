@@ -67,6 +67,7 @@ import Output_Functions
 # fix_nonphysical_wv()
 # decompose_irs_band_noise_inflation()
 # calc_derived_indices()
+# inflate_in_tropoe_uncertainty()
 ################################################################################
 
 
@@ -2525,4 +2526,75 @@ def decompose_irs_band_noise_inflation(vip, verbose=2):
          print('        wvmr',out['wvmr'])
          print('        multiplier',out['multiplier'])
      return out
+
+###############################################################################
+# This function inflates the noise from the "TROPoe_in" profile, using the logic
+# from Adler et al. AMT 2024
+###############################################################################
+
+def inflate_in_tropoe_uncertainty(flag, sampleTime, in_tropoe, zSa, Sa, vip, verbose=2):
+        # Quick check, but this should always be the case
+    if len(zSa) != len(in_tropoe['height']):
+        print('ERROR in inflate_in_tropoe_uncertainty: the height arrays from prior and retrieval are not the same -- aborting')
+        sys.exit()
+
+        # Extract out the 1-sigma uncertainties from the prior
+    Sa_sigT = sig_t = np.sqrt(np.diag(Sa))[0:len(zSa)]
+    Sa_sigq = sig_t = np.sqrt(np.diag(Sa))[len(zSa):2*len(zSa)]
+
+        # Only apply logic if there is a valid profile in the in_tropoe structure (i.e., secs > 0)
+    if in_tropoe['secs'] > 0:
+                # Compute the time delta
+        delt = sampleTime - in_tropoe['secs']
+                # Make sure this time delta makes sense
+        if delt <= 0:
+            print('ERROR in inflate_in_tropoe_uncertainty: the time delta must be strictly positive -- aborting')
+            sys.exit()
+                # Noise inflation factor
+        tres = vip['tres']*60       # get the temporal resolution of the retrievals in seconds
+        inflateFactor  = np.sqrt(1 + (delt - tres)/tres)
+        if verbose > 1:
+            print(f"      Inflating in_tropoe {flag:s} profile by a factor of {inflateFactor:.2f} using delt = {delt:.1f} and tres = {tres:.1f}")
+                # Determine what profile to scale
+        if flag == 'T':
+            eprofile = in_tropoe['sigma_temperature']
+            scaleht  = vip['add_tropoe_T_noise_adder_hts']
+            scaleval = vip['add_tropoe_T_noise_adder_val']
+        elif flag == 'q':
+            eprofile = in_tropoe['sigma_waterVapor']
+            scaleht  = vip['add_tropoe_q_noise_mult_hts']
+            scaleval = vip['add_tropoe_q_noise_mult_val']
+        else:
+            print('Error in inflate_in_tropoe_uncertainty: the flag selecting temp or WVMR was not set properly -- aborting')
+            sys.exit()
+                # The scaleht profiles are all 3-pt arrays.  If the VIP.add_tropoe_use_pblh_flag is set, then replace the middle
+                # then replace the center value with the max{in_tropoe.pblh,scaleht(1)}
+        if((vip['add_tropoe_use_pblh_flag'] == 1) & (scaleht[1] < in_tropoe['pblh'])):
+                scaleht[1] = in_tropoe['pblh']
+        if verbose > 1:
+            print(f"        Using {scaleht[1]:3f} km as the pivot point in the inflation of {flag:s} from previous TROPoe input profile")
+                # Interpolate the scale factor profile to the current height grid
+        sf = np.interp(in_tropoe['height'],scaleht,scaleval)
+                # Now inflate this noise profile by the inflation factor
+        sf = sf * inflateFactor
+                # Add or multiply the error profile with this new scale factor profile
+        if flag == 'T':
+            eprofile  = eprofile + sf
+            mxerrprof = Sa_sigT
+        elif flag == 'q':
+            eprofile = eprofile * sf
+            mxerrprof = Sa_sigq
+        else:
+            print('Error in inflate_in_tropoe_uncertainty: the flag selecting temp or WVMR was not set properly -- aborting')
+            sys.exit()
+
+                # If this test is on, then the maximum uncertainty allowed is the prior uncertainty
+        if vip['add_tropoe_use_prior_as_max'] == 1:
+            for i in range(len(in_tropoe['height'])):
+                if eprofile[i] > mxerrprof[i]:
+                    eprofile[i] = mxerrprof[i]
+
+        return eprofile
+    else:
+        return np.zeros(len(in_tropoe['height'])).astype('float')+999.
 

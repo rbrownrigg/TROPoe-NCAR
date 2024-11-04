@@ -11,7 +11,7 @@
 #
 # ----------------------------------------------------------------------------
 
-__version__ = '0.16.5'
+__version__ = '0.16.6'
 
 import os
 import sys
@@ -802,6 +802,14 @@ if(vip['irs_type'] <= -1):
 else:
     itype = 'IRS'
 
+# Define the structure for the "TROPoe_in" -- which will use the logic from Adler et al. AMT 2024
+# It is entirely empty right now, but the space needs to be allocated
+missing = np.zeros(len(z))-999.
+in_tropoe = {'secs':0, 'height':z, 'pblh':-1., 'lwp':-999., 
+             'temperature':missing, 'waterVapor':missing, 'sigma_temperature':np.abs(missing), 'sigma_waterVapor':np.abs(missing)}
+if((vip['add_tropoe_T_input_flag'] == 1) | (vip['add_tropoe_q_input_flag'] == 1)):
+    print('  The option to use previous good TROPoe profiles as input is turned on')
+
 # This defines the extra vertical layers that will be added to both
 # the infrared and microwave radiative transfer calculations
 rt_extra_layers = Other_functions.compute_extra_layers(np.max(z))
@@ -875,7 +883,9 @@ for i in range(len(irs['secs'])):                        # { loop_i
     #                8 -- external NWP model water vapor profile (*)
     #                9 -- in-situ surface CO2 obs
     #               10 -- MWR non-zenith data
-    #               11, ... -- IASI, CrIS, S-HIS, others...
+    #               11 -- TROPoe T input following Adler et al. AMT
+    #               12 -- TROPoe q input following Adler et al. AMT
+    #               13, ... future obs, such as IASI, CrIS, S-HIS, others...
     #     (*) Note that the NWP input could come in two ways, but I wanted a way
     #         to bring in lidar and NWP data, while retaining backwards compatibility
 
@@ -1030,6 +1040,26 @@ for i in range(len(irs['secs'])):                        # { loop_i
         sigY = np.append(sigY, noise)
         flagY = np.append(flagY, np.ones(len(mwrscan['dim']))*10)
         dimY = np.append(dimY, mwrscan['dim'])
+
+    if vip['add_tropoe_T_input_flag'] == 1:
+        Y = np.append(Y, in_tropoe['temperature'])
+        inflated_sigma = Other_functions.inflate_in_tropoe_uncertainty('T',irs['secs'][i],in_tropoe,z,Sa,vip,verbose=verbose)
+        nSy = np.diag(inflated_sigma**2)
+        zero = np.zeros((len(inflated_sigma),len(sigY)))
+        Sy = np.append(np.append(Sy,zero,axis=0),np.append(zero.T,nSy,axis=0),axis=1) # DDT-delete
+        sigY = np.append(sigY, inflated_sigma)
+        flagY = np.append(flagY, np.ones(len(inflated_sigma))*11)
+        dimY = np.append(dimY, in_tropoe['height'])
+
+    if vip['add_tropoe_q_input_flag'] == 1:
+        Y = np.append(Y, in_tropoe['waterVapor'])
+        inflated_sigma = Other_functions.inflate_in_tropoe_uncertainty('q',irs['secs'][i],in_tropoe,z,Sa,vip,verbose=verbose)
+        nSy = np.diag(inflated_sigma**2)
+        zero = np.zeros((len(inflated_sigma),len(sigY)))
+        Sy = np.append(np.append(Sy,zero,axis=0),np.append(zero.T,nSy,axis=0),axis=1) # DDT-delete
+        sigY = np.append(sigY, inflated_sigma)
+        flagY = np.append(flagY, np.ones(len(inflated_sigma))*12)
+        dimY = np.append(dimY, in_tropoe['height'])
 
     nY = len(Y)
 
@@ -1797,6 +1827,31 @@ for i in range(len(irs['secs'])):                        # { loop_i
             Kij = np.append(Kij, KK, axis = 0)
             FXn = np.append(FXn,FF)
 
+        # Perform the forward model calculation and compute the Jacobian for the temp "in_tropoe" portion of the observation vector
+        # The forward model is trivial, as the data are on the same height grid
+        foo = np.where(flagY == 11)[0]
+        if len(foo) > 0:
+            FF  = Xn[0:int(nX/2)]
+            KK  = np.zeros((len(in_tropoe['temperature']),len(Xn)))
+            foo = np.where(in_tropoe['temperature'] > -900)[0]
+            for ii in range(len(foo)):
+                KK[foo[ii]:foo[ii]] = 1
+            Kij = np.append(Kij, KK, axis = 0)
+            FXn = np.append(FXn,FF)
+
+        # Perform the forward model calculation and compute the Jacobian for the WVMR "in_tropoe" portion of the observation vector
+        # The forward model is trivial, as the data are on the same height grid
+        foo = np.where(flagY == 12)[0]
+        if len(foo) > 0:
+            FF  = Xn[int(nX/2):nX]
+            KK  = np.zeros((len(in_tropoe['waterVapor']),len(Xn)))
+            foo = np.where(in_tropoe['waterVapor'] > -900)[0]
+            for ii in range(len(foo)):
+                KK[foo[ii]:foo[ii]] = 1
+            Kij = np.append(Kij, KK, axis = 0)
+            FXn = np.append(FXn,FF)
+
+
         ########
         # Done computing forward calculation and Jacobians. Now the retrieval math
         ########
@@ -2206,6 +2261,16 @@ for i in range(len(irs['secs'])):                        # { loop_i
                 'gamma':gfac, 'qcflag':0, 'sic':sic, 'dfs':np.copy(dfs), 'dfs_nm':np.copy(dfs_nm),
                 'cdfs':np.copy(cdfs), 'cdfs_nm':np.copy(cdfs_nm), 'di2m':di2m, 'rmsa':rmsa, 'rmsr':rmsr, 'rmsp':rmsp,
                 'chi2':chi2, 'converged':converged}
+
+        # Update the in_tropoe structure, if conditions warrant
+        if((gfac < vip['add_tropoe_gamma_threshold']) & ((cbh > vip['add_tropoe_input_cbh_thres']) | (Xn[nX] < vip['add_tropoe_input_lwp_thres']))):
+            if((vip['add_tropoe_T_input_flag'] == 1) | (vip['add_tropoe_q_input_flag'] == 1)):
+                sig_ret   = np.zeros(nX)
+                for ii in range(nX):
+                    sig_ret[ii] = np.sqrt(Sop[ii,ii])
+                in_tropoe = {'secs':irs['secs'][i], 'height':z, 'pblh':pblh, 'lwp':Xn[nX], 
+                               'temperature':np.copy(Xn[0:int(nX/2)]), 'waterVapor':np.copy(Xn[int(nX/2):nX]), 
+                               'sigma_temperature':np.copy(sig_ret[0:int(nX/2)]), 'sigma_waterVapor':np.copy(sig_ret[int(nX/2):nX])}
 
         # Update the state vector, if we need to do another iteration
         if converged == 0:

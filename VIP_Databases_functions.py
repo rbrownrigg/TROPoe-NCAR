@@ -174,6 +174,18 @@ full_vip = ({
     'mod_temp_ht_offset': {'value': 0.0, 'comment': 'Height offset relative to the master instrument [km]; a negative value indicates that this profile starts below the master instrument', 'default': False},
     'mod_temp_time_delta': {'value': 1.0, 'comment': 'Maximum amount of time from endpoints of model WV dataset to extrapolate [hours]\n', 'default': False},
 
+    'add_tropoe_T_input_flag':      {'value': 0, 'comment': 'Flag to add previous good TROPoe temperature retrieval as input to current retrieval (1-yes, 0-no)', 'default': True},
+    'add_tropoe_q_input_flag':      {'value': 0, 'comment': 'Flag to add previous good TROPoe water vapor retrieval as input to current retrieval (1-yes, 0-no)', 'default': True},
+    'add_tropoe_input_lwp_thres':   {'value': 10., 'comment': 'Only will consider using previous TROPoe profile if LWP is below this threshold [g/m2] or CBH is above threshold below', 'default': True},
+    'add_tropoe_input_cbh_thres':   {'value': 5.0, 'comment': 'Only will consider using previous TROPoe profile if CBH is above this threshold [km AGL] or LWP is below threshold above', 'default': True},
+    'add_tropoe_T_noise_adder_val': {'value': [3.0, 1, 1], 'comment': '3-element comma delimited list of additive values to apply the noise profile of the previous TROPoe input temperature profile (must be >= 0)', 'default': False},
+    'add_tropoe_T_noise_adder_hts': {'value': [0.0, 1, 20], 'comment': '3-element comma delimited list with the corresponding heights for the additive value [km AGL]', 'default': False},
+    'add_tropoe_q_noise_mult_val':  {'value': [5.0, 2, 2], 'comment': '3-element comma delimited list with the multipliers to apply the noise profile of the model water vapor profile (must be > 1)', 'default': False},
+    'add_tropoe_q_noise_mult_hts':  {'value': [0.0, 1, 20], 'comment': '3-element comma delimited list with the corresponding heights for the noise multipliers [km AGL]', 'default': False},
+    'add_tropoe_gamma_threshold':   {'value': 5, 'comment': 'Only samples with gamma values less than this threshold will be considered for use in future retrieval', 'default': False},
+    'add_tropoe_use_prior_as_max':  {'value': 1, 'comment': 'If set, then the maximum amount of uncertainty is the uncertainty of the prior', 'default': False},
+    'add_tropoe_use_pblh_flag':     {'value': 1, 'comment': 'If set, then the middle height point in the adder and multiplier profiles becomes maximum of that value or the PBLH [km AGL]\n', 'default': True},
+
     'co2_sfc_type': {'value': 0, 'comment': 'External CO2 surface data type: 0-none, 1-DDT QC PGS data', 'default': False},
     'co2_sfc_npts': {'value': 1, 'comment': 'Number of surface CO2 in-situ points to use in the retrieval.  Minimum=1, maximum=1000.  Larger number increases the weight of the observation', 'default': False},
     'co2_sfc_rep_error': {'value': 0.0, 'comment': 'Representativeness error for the CO2 surface measurement [ppm], which is added to the uncertainty of the obs in the input file', 'default': False},

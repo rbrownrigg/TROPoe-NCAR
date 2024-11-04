@@ -627,6 +627,16 @@ def write_output(vip, ext_prof, mod_prof, ext_tseries, globatt, xret, prior,
             obs_flag.value_10_comment1 = 'Dimension is coded to be (frequency[GHz]*100)+(elevation_angle[deg]/1000)'
             marker[foo] = -1
 
+        foo = np.where(xret[0]['flagY'] == 11)[0]
+        if len(foo) > 0:
+            obs_flag.value_11 = 'Retrieved temperature [C] from a previous good TROPoe retrieval on this day'
+            marker[foo] = -1
+
+        foo = np.where(xret[0]['flagY'] == 12)[0]
+        if len(foo) > 0:
+            obs_flag.value_12 = 'Retrieved water vapor [g/kg] from a previous good TROPoe retrieval on this day'
+            marker[foo] = -1
+
         # If there were any values for marker that were not treated above,
         # then the code must assume that I've screwed up and should abort.
 
