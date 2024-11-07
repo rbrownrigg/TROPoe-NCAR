@@ -211,10 +211,13 @@ def recenter_prior(z0, p0, Xa, Sa, input_value, vip, sfc_or_pwv=0, changeTmethod
 
     # Get the min and max scale factor for the prior
     pmin = vip['recenter_covar_min_sfactor']
-    if((pmin <= 0.001) | (pmin >= 1)):
-        print('Error: VIP.recenter_covariance_sfactor_min keyword must have a value in [0.001, 1) ')
+    if((pmin <= 0.001) | (pmin > 1)):
+        print('Error: VIP.recenter_covariance_sfactor_min keyword must have a value in [0.001, 1] ')
         return 0, Xa, Sa, comments
-    pmax = 1.0/pmin
+    pmax = vip['recenter_covar_max_sfactor']
+    if((pmax < 1) | (pmax > 5)):
+        print('Error: VIP.recenter_covariance_sfactor_max keyword must have a value in [1, 5] ')
+        return 0, Xa, Sa, comments
 
     # Scale the WV profile
     if sfc_or_pwv == 1:
