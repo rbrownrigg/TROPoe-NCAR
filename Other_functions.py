@@ -2560,10 +2560,12 @@ def inflate_in_tropoe_uncertainty(flag, sampleTime, in_tropoe, zSa, Sa, vip, ver
             eprofile = in_tropoe['sigma_temperature']
             scaleht  = vip['add_tropoe_T_noise_adder_hts']
             scaleval = vip['add_tropoe_T_noise_adder_val']
+            minvalue = 0.0      # Will require that the adder always be positive
         elif flag == 'q':
             eprofile = in_tropoe['sigma_waterVapor']
             scaleht  = vip['add_tropoe_q_noise_mult_hts']
             scaleval = vip['add_tropoe_q_noise_mult_val']
+            minvalue = 1.0      # Will require that the multiplier always be above 1
         else:
             print('Error in inflate_in_tropoe_uncertainty: the flag selecting temp or WVMR was not set properly -- aborting')
             sys.exit()
@@ -2573,9 +2575,13 @@ def inflate_in_tropoe_uncertainty(flag, sampleTime, in_tropoe, zSa, Sa, vip, ver
                 scaleht[1] = in_tropoe['pblh']
         if verbose > 1:
             print(f"        Using {scaleht[1]:3f} km as the pivot point in the inflation of {flag:s} from previous TROPoe input profile")
-                # Interpolate the scale factor profile to the current height grid
+                # Interpolate the scale factor profile to the current height grid,
+                # but trap any points that go below the minimum value and reset them
         sf = np.interp(in_tropoe['height'],scaleht,scaleval)
-                # Now inflate this noise profile by the inflation factor
+        foo = np.where(sf < minvalue) [0]
+        if len(foo) > 0:
+            sf[foo] = minvalue
+                # Now inflate this noise profile by the inflation factor, which is govered by the time difference
         sf = sf * inflateFactor
                 # Add or multiply the error profile with this new scale factor profile
         if flag == 'T':
