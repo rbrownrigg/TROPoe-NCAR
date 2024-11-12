@@ -11,7 +11,7 @@
 #
 # ----------------------------------------------------------------------------
 
-__version__ = '0.16.8'
+__version__ = '0.17.1'
 
 import os
 import sys
@@ -1835,7 +1835,7 @@ for i in range(len(irs['secs'])):                        # { loop_i
             KK  = np.zeros((len(in_tropoe['temperature']),len(Xn)))
             foo = np.where(in_tropoe['temperature'] > -900)[0]
             for ii in range(len(foo)):
-                KK[foo[ii]:foo[ii]] = 1
+                KK[foo[ii],foo[ii]] = 1
             Kij = np.append(Kij, KK, axis = 0)
             FXn = np.append(FXn,FF)
 
@@ -1847,7 +1847,7 @@ for i in range(len(irs['secs'])):                        # { loop_i
             KK  = np.zeros((len(in_tropoe['waterVapor']),len(Xn)))
             foo = np.where(in_tropoe['waterVapor'] > -900)[0]
             for ii in range(len(foo)):
-                KK[foo[ii]:foo[ii]] = 1
+                KK[foo[ii],foo[ii]+int(nX/2)] = 1
             Kij = np.append(Kij, KK, axis = 0)
             FXn = np.append(FXn,FF)
 
@@ -2262,16 +2262,6 @@ for i in range(len(irs['secs'])):                        # { loop_i
                 'cdfs':np.copy(cdfs), 'cdfs_nm':np.copy(cdfs_nm), 'di2m':di2m, 'rmsa':rmsa, 'rmsr':rmsr, 'rmsp':rmsp,
                 'chi2':chi2, 'converged':converged}
 
-        # Update the in_tropoe structure, if conditions warrant
-        if((gfac < vip['add_tropoe_gamma_threshold']) & ((cbh > vip['add_tropoe_input_cbh_thres']) | (Xn[nX] < vip['add_tropoe_input_lwp_thres']))):
-            if((vip['add_tropoe_T_input_flag'] == 1) | (vip['add_tropoe_q_input_flag'] == 1)):
-                sig_ret   = np.zeros(nX)
-                for ii in range(nX):
-                    sig_ret[ii] = np.sqrt(Sop[ii,ii])
-                in_tropoe = {'secs':irs['secs'][i], 'height':z, 'pblh':pblh, 'lwp':Xn[nX], 
-                               'temperature':np.copy(Xn[0:int(nX/2)]), 'waterVapor':np.copy(Xn[int(nX/2):nX]), 
-                               'sigma_temperature':np.copy(sig_ret[0:int(nX/2)]), 'sigma_waterVapor':np.copy(sig_ret[int(nX/2):nX])}
-
         # Update the state vector, if we need to do another iteration
         if converged == 0:
             if verbose >= 1:
@@ -2352,6 +2342,18 @@ for i in range(len(irs['secs'])):                        # { loop_i
         xret = [copy.deepcopy(xsamp[len(xsamp)-1])]
     else:
         xret.append(copy.deepcopy(xsamp[len(xsamp)-1]))
+
+    # Update the in_tropoe structure, if conditions warrant
+    if((gfac < vip['add_tropoe_gamma_threshold']) & ((cbh > vip['add_tropoe_input_cbh_thres']) | (Xn[nX] < vip['add_tropoe_input_lwp_thres']))):
+        if((vip['add_tropoe_T_input_flag'] == 1) | (vip['add_tropoe_q_input_flag'] == 1)):
+            if verbose >= 1:
+                print('    Adding retrieved profile to the "in_tropoe" structure, to be used as input later')
+            sig_ret   = np.zeros(nX)
+            for ii in range(nX):
+                sig_ret[ii] = np.sqrt(Sop[ii,ii])
+            in_tropoe = {'secs':irs['secs'][i], 'height':z, 'pblh':pblh, 'lwp':Xn[nX], 
+                           'temperature':np.copy(Xn[0:int(nX/2)]), 'waterVapor':np.copy(Xn[int(nX/2):nX]), 
+                           'sigma_temperature':np.copy(sig_ret[0:int(nX/2)]), 'sigma_waterVapor':np.copy(sig_ret[int(nX/2):nX])}
 
     # Note that I will also save all of the iterations for the
     # last time sample that was processed (i.e., "xsamp")

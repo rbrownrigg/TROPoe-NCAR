@@ -224,7 +224,7 @@ full_vip = ({
     'cvgmult': {'value': 0.25, 'comment':'The multiplier used for the convergence criteria (e.g., di2m < cvgmult*dim[Y])', 'default': False}, 
     'first_guess': {'value': 1, 'comment': '1 - use prior as FG, 2 - use lapse rate and 60% RH profile as FG, 3 - use previous sample as FG', 'default': False},
     'superadiabatic_maxht': {'value': 0.300, 'comment': 'The maximum height a superadiabatic layer at the surface can have [km AGL]', 'default': False},
-    'spectral_bands': {'value': "None", 'comment': 'An array of spectral bands to use (e.g. 612-618,624-660,674-713,713-722,538-588,793-804,860.1-864.0,872.2-877.5,898.2-905.4)', 'default': False},
+    'spectral_bands': {'value': 'None', 'comment': 'An array of spectral bands to use (e.g. 612-618,624-660,674-713,713-722,538-588,793-804,860.1-864.0,872.2-877.5,898.2-905.4)', 'default': False},
     'retrieve_temp': {'value': 1, 'comment': '0 - do not retrieve temp, 1 - do retrieve temp (default)', 'default': True},
     'retrieve_wvmr': {'value': 1, 'comment': '0 - do not retrieve wvmr, 1 - do retrieve wvmr (default)', 'default': True},
     'retrieve_co2': {'value': 0, 'comment': '0 - do not retrieve co2, 1 - do retrieve co2 (step model), 2 - do retrieve co2 (exponential model -- disabled)', 'default': False},
@@ -394,7 +394,9 @@ def read_vip_file(filename,globatt,verbose,debug,dostop):
                         'mod_temp_noise_adder_val', 'mod_temp_noise_adder_hts', 'prior_co2_mn', 'prior_co2_sd',
                         'prior_ch4_mn', 'prior_ch4_sd', 'prior_n2o_mn', 'prior_n2o_s','plot_xlim', 'plot_ylim',
                         'plot_temp_lim', 'plot_wvmr_lim', 'plot_tuncert_lim', 'plot_wvuncert_lim',
-                        'plot_theta_lim', 'plot_rh_lim', 'plot_thetae_lim', 'plot_dewpt_lim'
+                        'plot_theta_lim', 'plot_rh_lim', 'plot_thetae_lim', 'plot_dewpt_lim',
+                        'add_tropoe_T_noise_adder_val', 'add_tropoe_T_noise_adder_hts',
+                        'add_tropoe_q_noise_mult_val', 'add_tropoe_q_noise_mult_hts'
                     ]:
 
                         feh = inputt[foo,1][0].split(',')
