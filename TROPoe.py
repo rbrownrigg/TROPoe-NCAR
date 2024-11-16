@@ -11,7 +11,7 @@
 #
 # ----------------------------------------------------------------------------
 
-__version__ = '0.17.1'
+__version__ = '0.17.2'
 
 import os
 import sys
@@ -1891,22 +1891,24 @@ for i in range(len(irs['secs'])):                        # { loop_i
         else:
             Akern_nm = np.copy(Akern) * 0 - 999.
         
-        if((vip['max_iterations'] == 0) & (vip['omb_flag'] == 0)):
-            if(vip['irs_type'] > 0):
-                print(f'        DDT - compute_jacobian_xx took {totaltime:.1f} seconds')
+        if debug:
             print('Special debug mode -- writing variables from retrieval calcs in the directory '+vip['lbl_temp_dir'])
-            #Output_Functions.write_variable(    B,vip['lbl_temp_dir']+'/tropoe_python_output.B.cdf')
-            #Output_Functions.write_variable(SaInv,vip['lbl_temp_dir']+'/tropoe_python_output.SaInv.cdf')
-            #Output_Functions.write_variable( gfac,vip['lbl_temp_dir']+'/tropoe_python_output.gfac.cdf')
-            #Output_Functions.write_variable(   Xa,vip['lbl_temp_dir']+'/tropoe_python_output.Xa.cdf')
-            #Output_Functions.write_variable( Gain,vip['lbl_temp_dir']+'/tropoe_python_output.Gain.cdf')
-            #Output_Functions.write_variable(  Sop,vip['lbl_temp_dir']+'/tropoe_python_output.Sop.cdf')
-            #Output_Functions.write_variable( Xnp1,vip['lbl_temp_dir']+'/tropoe_python_output.Xnp1.cdf')
-            #Output_Functions.write_variable(Akern,vip['lbl_temp_dir']+'/tropoe_python_output.Akern.cdf')
-            Output_Functions.write_variable(SmInv,vip['lbl_temp_dir']+'/tropoe_python_output.SmInv.cdf')
-            Output_Functions.write_variable(  Kij,vip['lbl_temp_dir']+'/tropoe_python_output.Kij.cdf')
-            Output_Functions.write_variable(    Y,vip['lbl_temp_dir']+'/tropoe_python_output.Y.cdf')
-            Output_Functions.write_variable(  FXn,vip['lbl_temp_dir']+'/tropoe_python_output.FXn.cdf')
+                    # Only write out some variables once (i.e., not needed for every iteration as they don't change)
+            if itern == 0:
+                Output_Functions.write_variable(    Y,vip['lbl_temp_dir']+'/debug_output.Y.iter_'+str(itern)+'.cdf',verbose=verbose)
+                Output_Functions.write_variable(SaInv,vip['lbl_temp_dir']+'/debug_output.SaInv.iter_'+str(itern)+'.cdf',verbose=verbose)
+                Output_Functions.write_variable(   Xa,vip['lbl_temp_dir']+'/debug_output.Xa.iter_'+str(itern)+'.cdf',verbose=verbose)
+                Output_Functions.write_variable(SmInv,vip['lbl_temp_dir']+'/debug_output.SmInv.iter_'+str(itern)+'.cdf',verbose=verbose)
+                     # Write out these variables for each iteration
+            Output_Functions.write_variable(   Xn,vip['lbl_temp_dir']+'/debug_output.Xn.iter_'+str(itern)+'.cdf',verbose=verbose)
+            Output_Functions.write_variable( Xnp1,vip['lbl_temp_dir']+'/debug_output.Xnp1.iter_'+str(itern)+'.cdf',verbose=verbose)
+            Output_Functions.write_variable(    B,vip['lbl_temp_dir']+'/debug_output.B.iter_'+str(itern)+'.cdf',verbose=verbose)
+            Output_Functions.write_variable( gfac,vip['lbl_temp_dir']+'/debug_output.gfac.iter_'+str(itern)+'.cdf',verbose=verbose)
+            Output_Functions.write_variable( Gain,vip['lbl_temp_dir']+'/debug_output.Gain.iter_'+str(itern)+'.cdf',verbose=verbose)
+            Output_Functions.write_variable(  Sop,vip['lbl_temp_dir']+'/debug_output.Sop.iter_'+str(itern)+'.cdf',verbose=verbose)
+            Output_Functions.write_variable(Akern,vip['lbl_temp_dir']+'/debug_output.Akern.iter_'+str(itern)+'.cdf',verbose=verbose)
+            Output_Functions.write_variable(  Kij,vip['lbl_temp_dir']+'/debug_output.Kij.iter_'+str(itern)+'.cdf',verbose=verbose)
+            Output_Functions.write_variable(  FXn,vip['lbl_temp_dir']+'/debug_output.FXn.iter_'+str(itern)+'.cdf',verbose=verbose)
 
         # If we are trying to fix the shape of the TG profiles as a function of the
         # PBLH, then we need to make a special tweak here. The gain matrix for the
