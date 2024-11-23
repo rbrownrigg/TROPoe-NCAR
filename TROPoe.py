@@ -11,7 +11,7 @@
 #
 # ----------------------------------------------------------------------------
 
-__version__ = '0.17.2'
+__version__ = '0.17.3'
 
 import os
 import sys
@@ -348,7 +348,7 @@ else:
     dowvmr = 0
     fixwvmr = 1
 
-modeflag = [dotemp, dowvmr, dolcloud, dolcloud, doicloud, doicloud, doco2, doch4, don2o]
+modeflag = [dotemp, dowvmr, dolcloud, doicloud, doco2, doch4, don2o]
 
 # Select the LBLRTM version to use
 print(' ')

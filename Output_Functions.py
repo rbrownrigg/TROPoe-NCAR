@@ -144,6 +144,15 @@ def write_output(vip, ext_prof, mod_prof, ext_tseries, globatt, xret, prior,
     # define them here in order to build the netcdf file correctly
     nht = len(xret[0]['z'])
     
+    # The strings that will be added to the various fields, depending on what their use is
+    varType_observation    = 'Observation used within retrieval'
+    varType_retrievalOn    = 'Retrieved'
+    varType_retrievalOff   = 'Retrieved but disabled -- will default to the a priori'
+    varType_uncertainty    = 'Uncertainty of associated variable'
+    varType_derived        = 'Derived from retrieved variables'
+    varType_qualityControl = 'Quality control'
+    varType_diagnostic     = 'Diagnostic variable'
+
     # If fsample is zero, then we will create the netCDF file
     if fsample == 0:
         dt = datetime.utcfromtimestamp(xret[0]['secs'])
@@ -172,7 +181,7 @@ def write_output(vip, ext_prof, mod_prof, ext_tseries, globatt, xret, prior,
 
         base_time = fid.createVariable('base_time','i4')
         base_time.long_name = 'Epoch time'
-        base_time.units = 'seconds since 1970-1-1 00:00:00 0:00'
+        base_time.units = 'seconds since 1970-01-01 00:00:00 0:00'
 
         time_offset = fid.createVariable('time_offset', 'f8', ('time',))
         time_offset.long_name = 'Time offset from base_time'
@@ -180,7 +189,7 @@ def write_output(vip, ext_prof, mod_prof, ext_tseries, globatt, xret, prior,
 
         time = fid.createVariable('time', 'f8', ('time',))
         time.long_name = 'Time'
-        time.units = 'seconds since ' + dt.strftime('%Y-%m-%d') +' 00:00:00 0:00 UTC'
+        time.units = 'seconds since ' + dt.strftime('%Y-%m-%d') +' 00:00:00 0:00'
         time.calendar = 'standard'
 
         hour = fid.createVariable('hour', 'f8', ('time',))
@@ -189,8 +198,11 @@ def write_output(vip, ext_prof, mod_prof, ext_tseries, globatt, xret, prior,
 
         qc_flag = fid.createVariable('qc_flag', 'i2', ('time',))
         qc_flag.long_name = 'Manual QC flag'
-        qc_flag.comment1 = 'value of 0 implies quality is ok; non-zero values indicate that the sample has suspect quality'
-        qc_flag.comment2 = 'unitless'
+        qc_flag.variable_type = varType_qualityControl
+        qc_flag.comment1 = 'unitless'
+        qc_flag.comment2 = 'Value of 0 implies quality of the retrieved fields is ok; non-zero values indicate that the sample has suspect quality'
+        qc_flag.comment3 = 'See the global attribute Retrieval_option_flags to determine which variables were being retrieved for this data file'
+        qc_flag.value_0 = 'Quality of retrieval is ok'
         qc_flag.value_2 = 'Implies retrieval did not converge'
         qc_flag.value_3 = 'Implies retrieval converged but RMS between the observed_vector and forward_calc is too large'
         qc_flag.value_4 = 'Implies the gamma value of the retrieval was too large'
@@ -203,84 +215,130 @@ def write_output(vip, ext_prof, mod_prof, ext_tseries, globatt, xret, prior,
 
         temperature = fid.createVariable('temperature', 'f4', ('time','height',))
         temperature.long_name = 'Temperature'
-        temperature.units = 'C'
+        temperature.units = 'degC'
+        if(modeflag[0] == 1):
+            temperature.variable_type = varType_retrievalOn
+        else:
+            temperature.variable_type = varType_retrievalOff
 
         waterVapor = fid.createVariable('waterVapor', 'f4', ('time', 'height',))
         waterVapor.long_name = 'Water vapor mixing ratio'
         waterVapor.units = 'g/kg'
+        if(modeflag[1] == 1):
+            waterVapor.variable_type = varType_retrievalOn
+        else:
+            waterVapor.variable_type = varType_retrievalOff
 
         lwp = fid.createVariable('lwp', 'f4', ('time',))
         lwp.long_name = 'Liquid water path'
         lwp.units = 'g/m2'
+        if(modeflag[2] == 1):
+            lwp.variable_type = varType_retrievalOn
+        else:
+            lwp.variable_type = varType_retrievalOff
 
         lReff = fid.createVariable('lReff', 'f4', ('time',))
         lReff.long_name = 'Liquid water effective radius'
         lReff.units = 'microns'
+        if(modeflag[2] == 1):
+            lReff.variable_type = varType_retrievalOn
+        else:
+            lReff.variable_type = varType_retrievalOff
 
         iTau = fid.createVariable('iTau', 'f4', ('time',))
         iTau.long_name = 'Ice cloud optical depth (geometric limit)'
+        if(modeflag[3] == 1):
+            iTau.variable_type = varType_retrievalOn
+        else:
+            iTau.variable_type = varType_retrievalOff
         iTau.comment1 = 'unitless'
 
         iReff = fid.createVariable('iReff', 'f4', ('time',))
         iReff.long_name = 'Ice effective radius'
         iReff.units = 'microns'
+        if(modeflag[3] == 1):
+            iReff.variable_type = varType_retrievalOn
+        else:
+            iReff.variable_type = varType_retrievalOff
 
         co2 = fid.createVariable('co2', 'f4', ('time','gas_dim',))
         co2.long_name = 'Carbon dioxide concentration'
         co2.units = 'ppm'
+        if(modeflag[4] == 1):
+            co2.variable_type = varType_retrievalOn
+        else:
+            co2.variable_type = varType_retrievalOff
         co2.comment = 'Parameterized profile information; see users guide'
 
         ch4 = fid.createVariable('ch4', 'f4', ('time', 'gas_dim',))
         ch4.long_name = 'Methane concentration'
         ch4.units = 'ppm'
+        if(modeflag[5] == 1):
+            ch4.variable_type = varType_retrievalOn
+        else:
+            ch4.variable_type = varType_retrievalOff
         ch4.comment = 'Parameterized profile information; see users guide'
 
         n2o = fid.createVariable('n2o', 'f4', ('time', 'gas_dim',))
         n2o.long_name = 'Nitrous oxide concentration'
         n2o.units = 'ppm'
+        if(modeflag[6] == 1):
+            n2o.variable_type = varType_retrievalOn
+        else:
+            n2o.variable_type = varType_retrievalOff
         n2o.comment = 'Parameterized profile information; see users guide'
 
         sigmaT = fid.createVariable('sigma_temperature', 'f4', ('time','height',))
         sigmaT.long_name = '1-sigma uncertainty in temperature'
-        sigmaT.units = 'C'
+        sigmaT.units = 'degC'
+        sigmaT.variable_type = varType_uncertainty
 
         sigmaWV = fid.createVariable('sigma_waterVapor', 'f4', ('time','height',))
         sigmaWV.long_name = '1-sigma uncertainty in water vapor mixing vapor'
         sigmaWV.units = 'g/kg'
+        sigmaWV.variable_type = varType_uncertainty
 
         sigma_lwp = fid.createVariable('sigma_lwp', 'f4', ('time',))
         sigma_lwp.long_name = '1-sigma uncertainty in liquid water path'
         sigma_lwp.units = 'g/m2'
+        sigma_lwp.variable_type = varType_uncertainty
 
         sigma_lReff = fid.createVariable('sigma_lReff', 'f4', ('time',))
         sigma_lReff.long_name = '1-sigma uncertainty in liquid water effective radius'
         sigma_lReff.units = 'microns'
+        sigma_lReff.variable_type = varType_uncertainty
 
         sigma_iTau = fid.createVariable('sigma_iTau', 'f4', ('time',))
         sigma_iTau.long_name = '1-sigma uncertainty in ice cloud optical depth (geometric limit)'
+        sigma_iTau.variable_type = varType_uncertainty
         sigma_iTau.comment1 = 'unitless'
 
         sigma_iReff = fid.createVariable('sigma_iReff', 'f4', ('time',))
         sigma_iReff.long_name = '1-sigma uncertainty in ice effective radius'
         sigma_iReff.comment1 = 'microns'
+        sigma_iReff.variable_type = varType_uncertainty
 
         sigma_co2 = fid.createVariable('sigma_co2', 'f4', ('time','gas_dim',))
         sigma_co2.long_name = '1-sigma uncertainty in carbon dioxide concentration'
         sigma_co2.units = 'ppm'
+        sigma_co2.variable_type = varType_uncertainty
         sigma_co2.comment = 'Parameterized profile information; see users guide'
 
         sigma_ch4 = fid.createVariable('sigma_ch4', 'f4', ('time','gas_dim',))
         sigma_ch4.long_name = '1-sigma uncertainty in methane concentration'
         sigma_ch4.units = 'ppm'
+        sigma_ch4.variable_type = varType_uncertainty
         sigma_ch4.comment = 'Parameterized profile information; see users guide'
 
         sigma_n2o = fid.createVariable('sigma_n2o', 'f4', ('time','gas_dim',))
         sigma_n2o.long_name = '1-sigma uncertaintiy in nitrous oxide concentration'
         sigma_n2o.units = 'ppm'
+        sigma_n2o.variable_type = varType_uncertainty
         sigma_n2o.comment = 'Parameterized profile information; see users guide'
 
         converged_flag = fid.createVariable('converged_flag', 'i2', ('time',))
         converged_flag.long_name = 'Convergence flag'
+        converged_flag.variable_type = varType_qualityControl
         converged_flag.comment1 = 'unitless'
         converged_flag.value_0 = '0 indicates no convergence'
         converged_flag.value_1 = '1 indicates convergence in Rodgers sense (i.e., di2m << dimY)'
@@ -290,210 +348,245 @@ def write_output(vip, ext_prof, mod_prof, ext_tseries, globatt, xret, prior,
 
         gamma = fid.createVariable('gamma', 'f4', ('time',))
         gamma.long_name = 'Gamma parameter'
+        gamma.variable_type = varType_diagnostic
         gamma.comment1 = 'unitless'
         gamma.comment2 = 'See Turner and Loehnert JAMC 2014 for details'
 
         n_iter = fid.createVariable('n_iter', 'i2', ('time',))
         n_iter.long_name = 'Number of iterations performed'
+        n_iter.variable_type = varType_diagnostic
         n_iter.comment1 = 'unitless'
 
         rmsr = fid.createVariable('rmsr', 'f4', ('time',))
         rmsr.long_name = 'Root mean square error between IRS and MWR obs in the observation vector and the forward calculation'
-        rmsr.comment1 = 'Computed as sqrt( sum_over_i[ ((Y_i - F(Xn_i)) / sigma_Y_i)^2 ] / sizeY)'
-        rmsr.comment2 = 'Only IRS radiance observations in the observation vector are used'
-        rmsr.comment3 = 'unitless'
+        rmsr.variable_type = varType_qualityControl
+        rmsr.comment1 = 'unitless'
+        rmsr.comment2 = 'Computed as sqrt( sum_over_i[ ((Y_i - F(Xn_i)) / sigma_Y_i)^2 ] / sizeY)'
+        rmsr.comment3 = 'Only IRS radiance observations in the observation vector are used'
         
         rmsa = fid.createVariable('rmsa', 'f4', ('time',))
         rmsa.long_name = 'Root mean square error between observation vector and the forward calculation'
-        rmsa.comment1 = 'Computed as sqrt( sum_over_i[ ((Y_i - F(Xn_i)) / sigma_Y_i)^2 ] / sizeY)'
-        rmsa.comment2 = 'Entire observation vector used in this calculation'
-        rmsa.comment3 = 'unitless'
+        rmsa.variable_type = varType_qualityControl
+        rmsa.comment1 = 'unitless'
+        rmsa.comment2 = 'Computed as sqrt( sum_over_i[ ((Y_i - F(Xn_i)) / sigma_Y_i)^2 ] / sizeY)'
+        rmsa.comment3 = 'Entire observation vector used in this calculation'
         
         rmsp = fid.createVariable('rmsp', 'f4', ('time',))
         rmsp.long_name = 'Root mean square error between prior T/q profile and the retrieved T/q profile'
-        rmsp.comment1 = 'Computed as sqrt( mean[ ((Xa - Xn) / sigma_Xa)^2 ] )'
-        rmsp.comment2 = 'unitless'
+        rmsp.variable_type = varType_diagnostic
+        rmsp.comment1 = 'unitless'
+        rmsp.comment2 = 'Computed as sqrt( mean[ ((Xa - Xn) / sigma_Xa)^2 ] )'
         
         chi2 = fid.createVariable('chi2', 'f4', ('time',))
         chi2.long_name = 'Chi-square statistic of Y vs. F(Xn)'
-        chi2.comment1 = 'Computed as sqrt( sum_over_i[ ((Y_i - F(Xn_i)) / Y_i)^2 ] / sizeY)'
-        chi2.comment2 = 'unitless'
+        chi2.variable_type = varType_diagnostic
+        chi2.comment1 = 'unitless'
+        chi2.comment2 = 'Computed as sqrt( sum_over_i[ ((Y_i - F(Xn_i)) / Y_i)^2 ] / sizeY)'
         
         convergence_criteria = fid.createVariable('convergence_criteria', 'f4', ('time',))
         convergence_criteria.long_name = 'Convergence criteria di^2'
+        convergence_criteria.variable_type = varType_diagnostic
         convergence_criteria.comment1 = 'unitless'
 
         dfs = fid.createVariable('dfs', 'f4', ('time','dfs_dim',))
         dfs.long_name = 'Degrees of freedom of signal'
-        dfs.comment1 = 'total DFS, then DFS for each of temperature, waterVapor, LWP, L_Reff, I_tau, I_Reff, carbonDioxide, methane, nitrousOxide'
-        dfs.comment2 = 'unitless'
+        dfs.variable_type = varType_diagnostic
+        dfs.comment1 = 'unitless'
+        dfs.comment2 = 'total DFS, then DFS for each of temperature, waterVapor, LWP, L_Reff, I_tau, I_Reff, carbonDioxide, methane, nitrousOxide'
         
         dfs_nm = fid.createVariable('dfs_no_model', 'f4', ('time', 'dfs_dim',))
         dfs_nm.long_name = 'Degrees of freedom of signal excluding model data'
-        dfs_nm.comment1 = 'total DFS, then DFS for each of temperature, waterVapor, LWP, L_Reff, I_tau, I_Reff, carbonDioxide, methane, nitrousOxide'
-        dfs_nm.comment2 = 'If no model data is used in the obs vector this field will be the same as dfs'
-        dfs_nm.comment3 = 'unitless'
+        dfs_nm.variable_type = varType_diagnostic
+        dfs_nm.comment1 = 'unitless'
+        dfs_nm.comment2 = 'total DFS, then DFS for each of temperature, waterVapor, LWP, L_Reff, I_tau, I_Reff, carbonDioxide, methane, nitrousOxide'
+        dfs_nm.comment3 = 'If no model data is used in the obs vector this field will be the same as dfs'
         
         sic = fid.createVariable('sic', 'f4', ('time',))
         sic.long_name = 'Shannon information content'
+        sic.variable_type = varType_diagnostic
         sic.comment1 = 'unitless'
 
         vres_temp = fid.createVariable('vres_temperature', 'f4', ('time','height',))
         vres_temp.long_name = 'Vertical resolution of the temperature profile'
         vres_temp.units = 'km'
+        vres_temp.variable_type = varType_diagnostic
         
         vres_temp_nm = fid.createVariable('vres_temperature_no_model', 'f4', ('time','height',))
         vres_temp_nm.long_name = 'Vertical resolution of the temperature profile exluding model data'
         vres_temp_nm.units = 'km'
+        vres_temp_nm.variable_type = varType_diagnostic
         vres_temp_nm.comment1 = 'If no model data is used in the obs vector this field will be the same as vres_temperature'
 
         vres_wv = fid.createVariable('vres_waterVapor', 'f4', ('time','height',))
         vres_wv.long_name = 'Vertical resolution of the water vapor profile'
         vres_wv.units = 'km'
+        vres_wv.variable_type = varType_diagnostic
         
         vres_wv_nm = fid.createVariable('vres_waterVapor_no_model', 'f4', ('time','height',))
         vres_wv_nm.long_name = 'Vertical resolution of the water vapor profile exluding model data'
         vres_wv_nm.units = 'km'
+        vres_wv_nm.variable_type = varType_diagnostic
         vres_wv_nm.comment1 = 'If no model data is used in the obs vector this field will be the same as vres_waterVapor'
         
         cdfs_temp = fid.createVariable('cdfs_temperature', 'f4', ('time','height',))
         cdfs_temp.long_name = 'Vertical profile of the cumulative degrees of freedom of signal for temperature'
+        cdfs_temp.variable_type = varType_diagnostic
         cdfs_temp.comment1 = 'unitless'
         
         cdfs_temp_nm = fid.createVariable('cdfs_temperature_no_model', 'f4', ('time','height',))
         cdfs_temp_nm.long_name = 'Vertical profile of the cumulative degrees of freedom of signal for temperature excluding model data'
-        cdfs_temp_nm.comment1 = ' If no model data is used in the obs vector this field will be the same as cdfs_temperature'
-        cdfs_temp_nm.comment2 = 'unitless'
+        cdfs_temp_nm.variable_type = varType_diagnostic
+        cdfs_temp_nm.comment1 = 'unitless'
+        cdfs_temp_nm.comment2 = ' If no model data is used in the obs vector this field will be the same as cdfs_temperature'
         
         cdfs_wv = fid.createVariable('cdfs_waterVapor', 'f4', ('time','height',))
         cdfs_wv.long_name = 'Vertical profile of the cumulative degrees of freedom of signal for water vapor'
+        cdfs_wv.variable_type = varType_diagnostic
         cdfs_wv.comment1 = 'unitless'
         
         cdfs_wv_nm = fid.createVariable('cdfs_waterVapor_no_model', 'f4', ('time','height',))
         cdfs_wv_nm.long_name = 'Vertical profile of the cumulative degrees of freedom of signal for water vapor excluding model data'
-        cdfs_wv_nm.comment1 = 'If no model data is used in the obs vector this field will be the same as cdfs_waterVapor'
-        cdfs_wv_nm.comment2 = 'unitless'
+        cdfs_wv_nm.variable_type = varType_diagnostic
+        cdfs_wv_nm.comment1 = 'unitless'
+        cdfs_wv_nm.comment2 = 'If no model data is used in the obs vector this field will be the same as cdfs_waterVapor'
 
-        hatchOpen = fid.createVariable('hatchOpen', 'i2', ('time',))
-        hatchOpen.long_name = 'Flag indicating if the IRSs hatch was open'
-        hatchOpen.comment1 = 'unitless'
-        hatchOpen.comment2 = '1 - hatch open, 0 - hatch closed, other values indicate hatch is either not working or indeterminant'
-        
         cbh = fid.createVariable('cbh', 'f4', ('time',))
         cbh.long_name = 'Cloud base height above ground level'
         cbh.units = 'km'
+        cbh.variable_type = varType_observation
 
         cbh_flag = fid.createVariable('cbh_flag', 'i2', ('time',))
         cbh_flag.long_name = 'Flag indicating the source of the cbh'
+        cbh_flag.variable_type = varType_diagnostic
         cbh_flag.comment1 = 'unitless'
-        cbh_flag.comment2 = 'Value 0 implies Clear Sky radiance'
-        cbh_flag.comment3 = 'Value 1 implies Inner Window radiance'
-        cbh_flag.comment4 = 'Value 2 implies Outer Window radiance'
-        cbh_flag.comment5 = 'Value 3 implies Default CBH radiance'
+        cbh_flag.comment2 = 'See users guide for explanation of the values'
+        cbh_flag.value0 = 'Value 0 implies Clear Sky'
+        cbh_flag.value1 = 'Value 1 implies Inner Window'
+        cbh_flag.value2 = 'Value 2 implies Outer Window'
+        cbh_flag.value3 = 'Value 3 implies Default CBH'
 
         pressure = fid.createVariable('pressure', 'f4', ('time','height',))
         pressure.long_name = 'Derived pressure'
         pressure.units = 'mb'
+        pressure.variable_type = varType_derived
         pressure.comment = 'derived from surface pressure observations and the hyposmetric calculation using the thermodynamic profiles'
 
         theta = fid.createVariable('theta', 'f4', ('time','height',))
         theta.long_name = 'Potential temperature'
-        theta.units = 'K'
+        theta.units = 'degK'
+        theta.variable_type = varType_derived
         theta.comment = 'This field is derived from the retrieved fields'
 
         thetae = fid.createVariable('thetae', 'f4', ('time','height',))
         thetae.long_name = 'Equivalent potential temperature'
-        thetae.units = 'K'
+        thetae.units = 'degK'
+        thetae.variable_type = varType_derived
         thetae.comment = 'This field is derived from the retrieved fields'
 
         rh = fid.createVariable('rh', 'f4', ('time','height',))
         rh.long_name = 'Relative humidity'
         rh.units = '%'
+        rh.variable_type = varType_derived
         rh.comment = 'This field is derived from the retrieved field'
 
         dewpt = fid.createVariable('dewpt', 'f4', ('time','height',))
         dewpt.long_name = 'Dew point temperature'
-        dewpt.units = 'C'
+        dewpt.units = 'degC'
+        dewpt.variable_type = varType_derived
         dewpt.comment = 'This field is derived from the retrieved fields'
 
         co2_profile = fid.createVariable('co2_profile', 'f4', ('time','height',))
         co2_profile.long_name = 'CO2 profile'
         co2_profile.units = 'ppm'
+        co2_profile.variable_type = varType_derived
         co2_profile.comment = 'This field is derived from the retrieved fields'
 
         ch4_profile = fid.createVariable('ch4_profile', 'f4', ('time','height',))
         ch4_profile.long_name = 'CH4 profile'
         ch4_profile.units = 'ppm'
+        ch4_profile.variable_type = varType_derived
         ch4_profile.comment = 'This field is derived from the retrieved fields'
 
         n2o_profile = fid.createVariable('n2o_profile', 'f4', ('time','height',))
         n2o_profile.long_name = 'N2O profile'
         n2o_profile.units = 'ppm'
+        n2o_profile.variable_type = varType_derived
         n2o_profile.comment = 'This field is derived from the retrieved fields'
 
         pwv = fid.createVariable('pwv', 'f4', ('time',))
         pwv.long_name = 'Precipitable water vapor'
         pwv.units = dindex['units'][0]
+        pwv.variable_type = varType_derived
         pwv.comment1 = 'This field is derived from the retrieved fields'
         pwv.comment2 = 'A value of -999 indicates that this field could not be computed (typically because the value was aphysical)'
         
         pblh = fid.createVariable('pblh', 'f4', ('time',))
         pblh.long_name = 'Planetary boundary layer height'
         pblh.units = dindex['units'][1]
+        pblh.variable_type = varType_derived
         pblh.comment1 = 'This field is derived from the retrieved fields'
         pblh.comment2 = 'A value of -999 indicates that this field could not be computed (typically because the value was aphysical)'
         
         sbih = fid.createVariable('sbih', 'f4', ('time',))
         sbih.long_name = 'Surface-based inversion height'
         sbih.units = dindex['units'][2]
+        sbih.variable_type = varType_derived
         sbih.comment1 = 'This field is derived from the retrieved fields'
         sbih.comment2 = 'A value of -999 indicates that this field could not be computed (typically because the value was aphysical)'
         
         sbim = fid.createVariable('sbim', 'f4', ('time',))
         sbim.long_name = 'Surface-based inversion magnitude'
         sbim.units = dindex['units'][3]
+        sbim.variable_type = varType_derived
         sbim.comment1 = 'This field is derived from the retrieved fields'
         sbim.comment2 = 'A value of -999 indicates that this field could not be computed (typically because the value was aphysical)'
         
         sblcl = fid.createVariable('sbLCL', 'f4', ('time',))
         sblcl.long_name = 'Lifted condesation level for a surface-based parcel'
         sblcl.units = dindex['units'][4]
+        sblcl.variable_type = varType_derived
         sblcl.comment1 = 'This field is derived from the retrieved fields'
         sblcl.comment2 = 'A value of -999 indicates that this field could not be computed (typically because the value was aphysical)'
         
         sbcape = fid.createVariable('sbCAPE', 'f4', ('time',))
         sbcape.long_name = 'Convective available potential energy for a surface-based parcel'
         sbcape.units = dindex['units'][5]
+        sbcape.variable_type = varType_derived
         sbcape.comment1 = 'This field is derived from the retrieved fields'
         sbcape.comment2 = 'A value of -9999 indicates that this field could not be computed (typically because the value was aphysical)'
         
         sbcin = fid.createVariable('sbCIN', 'f4', ('time',))
         sbcin.long_name = 'Convective inhibition for a surface-based parcel'
         sbcin.units = dindex['units'][6]
+        sbcin.variable_type = varType_derived
         sbcin.comment1 = 'This field is derived from the retrieved fields'
         sbcin.comment2 = 'A value of -9999 indicates that this field could not be computed (typically because the value was aphysical)'
         
         mllcl = fid.createVariable('mlLCL', 'f4', ('time',))
         mllcl.long_name = 'Lifted condesation level for a mixed-layer parcel'
         mllcl.units = dindex['units'][7]
+        mllcl.variable_type = varType_derived
         mllcl.comment1 = 'This field is derived from the retrieved fields'
         mllcl.comment2 = 'A value of -999 indicates that this field could not be computed (typically because the value was aphysical)'
         
         mlcape = fid.createVariable('mlCAPE', 'f4', ('time',))
         mlcape.long_name = 'Convective available potential energy for a mixed-layer parcel'
         mlcape.units = dindex['units'][8]
+        mlcape.variable_type = varType_derived
         mlcape.comment1 = 'This field is derived from the retrieved fields'
         mlcape.comment2 = 'A value of -9999 indicates that this field could not be computed (typically because the value was aphysical)'
         
         mlcin = fid.createVariable('mlCIN', 'f4', ('time',))
         mlcin.long_name = 'Convective inhibition for a mixed-layer parcel'
         mlcin.units = dindex['units'][9]
+        mlcin.variable_type = varType_derived
         mlcin.comment1 = 'This field is derived from the retrieved fields'
         mlcin.comment2 = 'A value of -9999 indicates that this field could not be computed (typically because the value was aphysical)'
 
         sigma_pwv = fid.createVariable('sigma_pwv', 'f4', ('time',))
         sigma_pwv.long_name = '1-sigma uncertainties in precipitable water vapor'
         sigma_pwv.units = dindex['units'][0]
+        sigma_pwv.variable_type = varType_uncertainty
         sigma_pwv.comment1 = 'This field is derived from the retrieved fields'
         sigma_pwv.comment2 = 'The uncertainties were determined using a monte carlo sampling of the posterior covariance matrix'
         sigma_pwv.comment3 = 'A value of -999 indicates that the uncertainty in this inded could not be computed (typically because the values were all unphysical)'
@@ -501,6 +594,7 @@ def write_output(vip, ext_prof, mod_prof, ext_tseries, globatt, xret, prior,
         sigma_pblh = fid.createVariable('sigma_pblh', 'f4', ('time',))
         sigma_pblh.long_name = '1-sigma uncertainties in the PBL height'
         sigma_pblh.units = dindex['units'][1]
+        sigma_pblh.variable_type = varType_uncertainty
         sigma_pblh.comment1 = 'This field is derived from the retrieved fields'
         sigma_pblh.comment2 = 'The uncertainties were determined using a monte carlo sampling of the posterior covariance matrix'
         sigma_pblh.comment3 = 'A value of -999 indicates that the uncertainty in this inded could not be computed (typically because the values were all unphysical)'
@@ -508,6 +602,7 @@ def write_output(vip, ext_prof, mod_prof, ext_tseries, globatt, xret, prior,
         sigma_sbih = fid.createVariable('sigma_sbih', 'f4', ('time',))
         sigma_sbih.long_name = '1-sigma uncertainties in the surface-based inversion height'
         sigma_sbih.units = dindex['units'][2]
+        sigma_sbih.variable_type = varType_uncertainty
         sigma_sbih.comment1 = 'This field is derived from the retrieved fields'
         sigma_sbih.comment2 = 'The uncertainties were determined using a monte carlo sampling of the posterior covariance matrix'
         sigma_sbih.comment3 = 'A value of -999 indicates that the uncertainty in this inded could not be computed (typically because the values were all unphysical)'
@@ -515,6 +610,7 @@ def write_output(vip, ext_prof, mod_prof, ext_tseries, globatt, xret, prior,
         sigma_sbim = fid.createVariable('sigma_sbim', 'f4', ('time',))
         sigma_sbim.long_name = '1-sigma uncertainties in the surface-based inversion magnitude'
         sigma_sbim.units = dindex['units'][3]
+        sigma_sbim.variable_type = varType_uncertainty
         sigma_sbim.comment1 = 'This field is derived from the retrieved fields'
         sigma_sbim.comment2 = 'The uncertainties were determined using a monte carlo sampling of the posterior covariance matrix'
         sigma_sbim.comment3 = 'A value of -999 indicates that the uncertainty in this inded could not be computed (typically because the values were all unphysical)'
@@ -522,6 +618,7 @@ def write_output(vip, ext_prof, mod_prof, ext_tseries, globatt, xret, prior,
         sigma_sblcl = fid.createVariable('sigma_sbLCL', 'f4', ('time',))
         sigma_sblcl.long_name = '1-sigma uncertainties in the LCL for a surface-based parcel'
         sigma_sblcl.units = dindex['units'][4]
+        sigma_sblcl.variable_type = varType_uncertainty
         sigma_sblcl.comment1 = 'This field is derived from the retrieved fields'
         sigma_sblcl.comment2 = 'The uncertainties were determined using a monte carlo sampling of the posterior covariance matrix'
         sigma_sblcl.comment3 = 'A value of -999 indicates that the uncertainty in this inded could not be computed (typically because the values were all unphysical)'
@@ -529,6 +626,7 @@ def write_output(vip, ext_prof, mod_prof, ext_tseries, globatt, xret, prior,
         sigma_sbcape = fid.createVariable('sigma_sbCAPE', 'f4', ('time',))
         sigma_sbcape.long_name = '1-sigma uncertainties in surface-based CAPE'
         sigma_sbcape.units = dindex['units'][5]
+        sigma_sbcape.variable_type = varType_uncertainty
         sigma_sbcape.comment1 = 'This field is derived from the retrieved fields'
         sigma_sbcape.comment2 = 'The uncertainties were determined using a monte carlo sampling of the posterior covariance matrix'
         sigma_sbcape.comment3 = 'A value of -999 indicates that the uncertainty in this inded could not be computed (typically because the values were all unphysical)'
@@ -536,6 +634,7 @@ def write_output(vip, ext_prof, mod_prof, ext_tseries, globatt, xret, prior,
         sigma_sbcin = fid.createVariable('sigma_sbCIN', 'f4', ('time',))
         sigma_sbcin.long_name = '1-sigma uncertainties in surface-based CIN'
         sigma_sbcin.units = dindex['units'][6]
+        sigma_sbcin.variable_type = varType_uncertainty
         sigma_sbcin.comment1 = 'This field is derived from the retrieved fields'
         sigma_sbcin.comment2 = 'The uncertainties were determined using a monte carlo sampling of the posterior covariance matrix'
         sigma_sbcin.comment3 = 'A value of -999 indicates that the uncertainty in this inded could not be computed (typically because the values were all unphysical)'
@@ -543,6 +642,7 @@ def write_output(vip, ext_prof, mod_prof, ext_tseries, globatt, xret, prior,
         sigma_mllcl = fid.createVariable('sigma_mlLCL', 'f4', ('time',))
         sigma_mllcl.long_name = '1-sigma uncertainties in the LCL for a mixed-layer parcel'
         sigma_mllcl.units = dindex['units'][7]
+        sigma_mllcl.variable_type = varType_uncertainty
         sigma_mllcl.comment1 = 'This field is derived from the retrieved fields'
         sigma_mllcl.comment2 = 'The uncertainties were determined using a monte carlo sampling of the posterior covariance matrix'
         sigma_mllcl.comment3 = 'A value of -999 indicates that the uncertainty in this inded could not be computed (typically because the values were all unphysical)'
@@ -550,6 +650,7 @@ def write_output(vip, ext_prof, mod_prof, ext_tseries, globatt, xret, prior,
         sigma_mlcape = fid.createVariable('sigma_mlCAPE', 'f4', ('time',))
         sigma_mlcape.long_name = '1-sigma uncertainties in mixed-layer CAPE'
         sigma_mlcape.units = dindex['units'][8]
+        sigma_mlcape.variable_type = varType_uncertainty
         sigma_mlcape.comment1 = 'This field is derived from the retrieved fields'
         sigma_mlcape.comment2 = 'The uncertainties were determined using a monte carlo sampling of the posterior covariance matrix'
         sigma_mlcape.comment3 = 'A value of -999 indicates that the uncertainty in this inded could not be computed (typically because the values were all unphysical)'
@@ -557,12 +658,14 @@ def write_output(vip, ext_prof, mod_prof, ext_tseries, globatt, xret, prior,
         sigma_mlcin = fid.createVariable('sigma_mlCIN', 'f4', ('time',))
         sigma_mlcin.long_name = '1-sigma uncertainties in mixed-layer CIN'
         sigma_mlcin.units = dindex['units'][9]
+        sigma_mlcin.variable_type = varType_uncertainty
         sigma_mlcin.comment1 = 'This field is derived from the retrieved fields'
         sigma_mlcin.comment2 = 'The uncertainties were determined using a monte carlo sampling of the posterior covariance matrix'
         sigma_mlcin.comment3 = 'A value of -999 indicates that the uncertainty in this inded could not be computed (typically because the values were all unphysical)'
         
         obs_flag = fid.createVariable('obs_flag', 'i2', ('obs_dim',))
         obs_flag.long_name = 'Flag indicating type of observation for each vector element'
+        obs_flag.variable_type = varType_observation
         obs_flag.comment1 = 'unitless'
 
         # This will make sure that I capture all of the units right in
@@ -571,12 +674,12 @@ def write_output(vip, ext_prof, mod_prof, ext_tseries, globatt, xret, prior,
         marker = np.copy(xret[0]['flagY'])
         foo = np.where(xret[0]['flagY'] == 1)[0]
         if len(foo) > 0:
-            obs_flag.value_01 = 'Radiance in wavenumber -- i.e., cm^(-1)'
+            obs_flag.value_01 = 'IRS spectral radiance in wavenumber -- i.e., cm^(-1)'
             marker[foo] = -1
 
         foo = np.where(xret[0]['flagY'] == 2)[0]
         if len(foo) > 0:
-            obs_flag.value_02 = 'Brightness temperature in K from a zenith-pointing microwave radiometer'
+            obs_flag.value_02 = 'MWR spectral brightness temperature [degK] from a zenith-pointing microwave radiometer'
             marker[foo] = -1
 
         foo = np.where(xret[0]['flagY'] == 3)[0]
@@ -626,13 +729,13 @@ def write_output(vip, ext_prof, mod_prof, ext_tseries, globatt, xret, prior,
 
         foo = np.where(xret[0]['flagY'] == 10)[0]
         if len(foo) > 0:
-            obs_flag.value_10 = 'Brightness temperature in K from an elevation scanning microwave radiometer'
+            obs_flag.value_10 = 'MWR spectral brightness temperature [degK] from an elevation scanning microwave radiometer'
             obs_flag.value_10_comment1 = 'Dimension is coded to be (frequency[GHz]*100)+(elevation_angle[deg]/1000)'
             marker[foo] = -1
 
         foo = np.where(xret[0]['flagY'] == 11)[0]
         if len(foo) > 0:
-            obs_flag.value_11 = 'Retrieved temperature [C] from a previous good TROPoe retrieval on this day'
+            obs_flag.value_11 = 'Retrieved temperature [degC] from a previous good TROPoe retrieval on this day'
             marker[foo] = -1
 
         foo = np.where(xret[0]['flagY'] == 12)[0]
@@ -651,18 +754,22 @@ def write_output(vip, ext_prof, mod_prof, ext_tseries, globatt, xret, prior,
         obs_dimension = fid.createVariable('obs_dimension', 'f8', ('obs_dim',))
         obs_dimension.long_name = 'Dimension of the observation vector'
         obs_dimension.comment1 = 'mixed units -- see obs_flag field above'
+        obs_dimension.variable_type = varType_observation
 
         obs_vector = fid.createVariable('obs_vector', 'f4', ('time','obs_dim',))
         obs_vector.long_name = 'Observation vector Y'
         obs_vector.comment1 = 'mixed units -- see obs_flag field above'
+        obs_vector.variable_type = varType_observation
 
         obs_vector_uncertainty = fid.createVariable('obs_vector_uncertainty', 'f4', ('time','obs_dim',))
         obs_vector_uncertainty.long_name = '1-sigma uncertainty in the observation vector (sigY)'
         obs_vector_uncertainty.comment1 = 'mixed units -- see obs_flag field above'
+        obs_vector_uncertainty.variable_type = varType_uncertainty
 
         forward_calc = fid.createVariable('forward_calc', 'f4', ('time','obs_dim',))
         forward_calc.long_name = 'Forward calculation from state vector (i.e., F(Xn))'
         forward_calc.comment1 = 'mixed units -- see obs_flag field above'
+        forward_calc.variable_type = varType_diagnostic
 
         arb1 = fid.createVariable('arb1', 'i2', ('arb_dim1',))
         arb1.long_name = 'Arbitrary dimension'
@@ -671,6 +778,7 @@ def write_output(vip, ext_prof, mod_prof, ext_tseries, globatt, xret, prior,
                        + ' (3) liquid water path, (4) liquid water Reff, '
                        + '(5) ice cloud optical depth, (6) ice cloud Reff, (7) carbon dioxide'
                        + ' (8) methane, (9) nitrous oxide')
+        arb1.variable_type = varType_diagnostic
 
         arb2 = fid.createVariable('arb2', 'i2', ('arb_dim2',))
         arb2.long_name = 'Arbitrary dimension'
@@ -679,14 +787,17 @@ def write_output(vip, ext_prof, mod_prof, ext_tseries, globatt, xret, prior,
                        + ' (3) liquid water path , (4) liquid water Reff, '
                        + '(5) ice cloud optical depth, (6) ice cloud Reff, (7) carbon dioxide' 
                        + ' (8) methane, (9) nitrous oxide')
+        arb2.variable_type = varType_diagnostic
 
         Xa = fid.createVariable('Xa', 'f8', ('arb_dim1',))
         Xa.long_name = 'Prior mean state'
         Xa.comment1 = 'mixed units -- see field arb above'
+        Xa.variable_type = varType_diagnostic
 
         Sa = fid.createVariable('Sa', 'f8', ('arb_dim1','arb_dim2',))
         Sa.long_name = 'Prior covariance'
         Sa.comment1 = 'mixed units -- see field arb above'
+        Sa.variable_type = varType_diagnostic
         
         # If we are trying to keep the output file small, then do not include
         # these fields in the output file
@@ -695,14 +806,17 @@ def write_output(vip, ext_prof, mod_prof, ext_tseries, globatt, xret, prior,
             Xop = fid.createVariable('Xop', 'f4', ('time','arb_dim1',))
             Xop.long_name = 'Optimal solution'
             Xop.comment1 = 'mixed units -- see field arb above'
+            Xop.variable_type = varType_diagnostic
 
             Sop = fid.createVariable('Sop', 'f4', ('time','arb_dim1','arb_dim2',))
             Sop.long_name = 'Covariance matrix of the solution'
             Sop.comment1 = 'mixed units -- see field arb above'
+            Sop.variable_type = varType_diagnostic
 
             Akernal = fid.createVariable('Akernal', 'f4', ('time','arb_dim1','arb_dim2',))
             Akernal.long_name = 'Averaging kernal'
             Akernal.comment1 = 'mixed units -- see field arb above'
+            Akernal.variable_type = varType_diagnostic
         
         # Output the no model data averaging kernal
         if vip['output_akernal'] == 2:
@@ -710,6 +824,7 @@ def write_output(vip, ext_prof, mod_prof, ext_tseries, globatt, xret, prior,
             Akernal_nm = fid.createVariable('Akernal_no_model', 'f4', ('time', 'arb_dim1', 'arb_dim2',))
             Akernal_nm.long_name = 'Averaging kernal with no model data'
             Akernal_nm.comment1 = 'mixed units -- see field arb above'
+            Akernal_nm.variable_type = varType_diagnostic
             
 
         # These should be the last three variables in the file
@@ -735,7 +850,8 @@ def write_output(vip, ext_prof, mod_prof, ext_tseries, globatt, xret, prior,
         fid.Prior_dataset_Q_inflation_factor = str(vip['prior_q_ival']) + ' at the surface to 1.0 at ' + str(vip['prior_q_iht']) + ' km AGL'
         fid.Prior_dataset_TQ_correlation_reduction_factor = vip['prior_tq_cov_val']
         fid.Total_clock_execution_time_in_s = exectime
-        fid.Retrieval_option_flags = '{:0d}, {:0d}, {:0d}, {:0d}, {:0d}, {:0d}, {:0d}, {:0d}, {:0d}'.format(modeflag[0], modeflag[1], modeflag[2], modeflag[3], modeflag[4], modeflag[5], modeflag[6], modeflag[7], modeflag[8])
+        fid.Retrieval_option_flags = '{:0d}, {:0d}, {:0d}, {:0d}, {:0d}, {:0d}, {:0d}'.format(modeflag[0], modeflag[1], modeflag[2], modeflag[3], modeflag[4], modeflag[5], modeflag[6])
+        fid.Retrieval_option_flags_variables = 'doTemp, doWVMR, doLiqCloud, doIceCloud, doCO2, doCH4, doN2O'
         fid.vip_tres = (str(vip['tres']) + ' minutes. Note that the sample time corresponds to the '
                       + 'center of the averaging interval. A value of 0 implies that no averaging was performed')
         fid.Retrieval_start_hour = shour
@@ -856,7 +972,6 @@ def write_output(vip, ext_prof, mod_prof, ext_tseries, globatt, xret, prior,
     cdfs_wv = fid.variables['cdfs_waterVapor']
     cdfs_wv_nm = fid.variables['cdfs_waterVapor_no_model']
 
-    hatchOpen = fid.variables['hatchOpen']
     cbh = fid.variables['cbh']
     cbh_flag = fid.variables['cbh_flag']
     pressure = fid.variables['pressure']
@@ -959,7 +1074,6 @@ def write_output(vip, ext_prof, mod_prof, ext_tseries, globatt, xret, prior,
     cdfs_wv[fsample,:] = xret[fsample]['cdfs'][1,:]
     cdfs_wv_nm[fsample,:] = xret[fsample]['cdfs_nm'][1,:]
     
-    hatchOpen[fsample] = xret[fsample]['hatchopen']
     cbh[fsample] = xret[fsample]['cbh']
     cbh_flag[fsample] = xret[fsample]['cbhflag']
     pressure[fsample,:] = xret[fsample]['p'][0:nht]
