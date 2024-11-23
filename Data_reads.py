@@ -3329,7 +3329,7 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
 
                 sigma_t = 0.5     # The assumed uncertainty of the radiosonde temperature measurement
 
-                tunit = 'C'
+                tunit = 'degC'
                 ttype = 'ARM radiosonde'
 
                 # Append the data to the growing structure
@@ -3353,7 +3353,7 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
             print('  Reading in ARM Raman lidar (rlproftemp) data to constrain the temp profile')
 
         ttype = 'ARM Raman lidar (rlproftemp)'
-        tunit = 'C'
+        tunit = 'degC'
 
         files = []
         for i in range(len(dates)):
@@ -3510,7 +3510,7 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
             else:
                 external['nQprof'] = 0
 
-        tunit = 'C'
+        tunit = 'degC'
         ttype = 'NWP model output from ' + model_type + ' at ' + str(model_lat) + ' degN, ' + str(model_lon) + ' degE'
 
             # Read in the RASS virtual temperature data
@@ -3519,7 +3519,7 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
             print('  Reading in RASS virtual temperature data')
 
         ttype = 'RASS Tv data'
-        tunit = 'C'
+        tunit = 'degC'
 
         files = []
         for i in range(len(dates)):
@@ -3620,7 +3620,7 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
 
             # Perform a quick chec
 
-            tunit = 'C'
+            tunit = 'degC'
             ttype = 'Generic observation output'
 
 
@@ -3688,7 +3688,7 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
                 # Dave hard coded
 
                 sigma_t = np.interp(z,[0,2.5,3.5,20],[1.5,1.5,0.5,0.5])
-                tunit = 'C'
+                tunit = 'degC'
                 ttype = 'AER profile for RHUBC-2'
 
                 # Append the data to the growing structure
@@ -4017,7 +4017,7 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
                 p = p[foo] #.squeeze()
                 t = t[foo] #.squeeze()
                 u = u[foo] #.squeeze()
-                tunit = 'C'
+                tunit = 'degC'
                 ttype = 'ARM met station'
 
                 # Append the data to the growing structure
@@ -4072,7 +4072,7 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
                 p = p[foo]
                 t = t[foo]
                 u = u[foo]
-                tunit = 'C'
+                tunit = 'degC'
                 ttype = 'NCAR ISFS met station'
 
                 # Append the data to the growing structure
@@ -4138,12 +4138,12 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
                 if len(np.where(np.array(list(fid.variables.keys())) == 'sfc_temp')[0]) > 0:
                     t = fid.variables['sfc_temp'][:]
                     ttunit = fid.variables['sfc_temp'].units
-                    if ((ttunit == 'K') | (ttunit == 'k') | (ttunit == 'Kelvin')):
+                    if ((ttunit == 'K') | (ttunit == 'k') | (ttunit == 'Kelvin') | (ttunit == 'degK')):
                         t -= 273.15
                 elif len(np.where(np.array(list(fid.variables.keys())) == 't_sfc')[0]) > 0:
                     t = fid.variables['t_sfc'][:]
                     ttunit = fid.variables['t_sfc'].units
-                    if ((ttunit == 'K') | (ttunit == 'k') | (ttunit == 'Kelvin')):
+                    if ((ttunit == 'K') | (ttunit == 'k') | (ttunit == 'Kelvin') | (ttunit == 'degK')):
                         t -= 273.15
                 elif len(np.where(np.array(list(fid.variables.keys())) == 'ta')[0]) > 0:    # This is the Cologne option
                     t = fid.variables['ta'][:]
@@ -4171,7 +4171,7 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
                 p = p[foo]
                 t = t[foo]
                 u = u[foo]
-                tunit = 'C'
+                tunit = 'degC'
                 ttype = 'Microwave radiometer met station'
 
                 # Append the data to the growing structure
@@ -4223,7 +4223,7 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
                 to = to[foo]
                 p = p[foo]
                 t = t[foo]
-                tunit = 'C'
+                tunit = 'degC'
                 ttype = 'E-PROFILE microwave radiometer met station'
 
                 # Append the data to the growing structure
@@ -4282,7 +4282,7 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
                 to = to[foo]
                 p = p[foo]
                 t = t[foo]
-                tunit = 'C'
+                tunit = 'degC'
                 ttype = 'ASSIST summary met station'
 
                 # Append the data to the growing structure
@@ -4506,12 +4506,12 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
                 if len(np.where(np.array(list(fid.variables.keys())) == 'sfc_temp')[0]) > 0:
                     t = fid.variables['sfc_temp'][:]
                     ttunit = fid.variables['sfc_temp'].units
-                    if ((ttunit == 'K') | (ttunit == 'k') | (ttunit == 'Kelvin')):
+                    if ((ttunit == 'K') | (ttunit == 'k') | (ttunit == 'Kelvin') | (ttunit == 'degK')):
                         t -= 273.15
                 elif len(np.where(np.array(list(fid.variables.keys())) == 't_sfc')[0]) > 0:
                     t = fid.variables['t_sfc'][:]
                     ttunit = fid.variables['t_sfc'].units
-                    if ((ttunit == 'K') | (ttunit == 'k') | (ttunit == 'Kelvin')):
+                    if ((ttunit == 'K') | (ttunit == 'k') | (ttunit == 'Kelvin') | (ttunit == 'degK')):
                         t -= 273.15
                 elif len(np.where(np.array(list(fid.variables.keys())) == 'ta')[0]) > 0:    # This is the Cologne option
                     t = fid.variables['ta'][:]

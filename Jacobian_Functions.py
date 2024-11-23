@@ -1636,7 +1636,7 @@ def compute_jacobian_external_sfc_met(Xn, p, z, sfc_relative_height,
         return flag, -999., -999.
 
     for i in range(len(units)):
-        if units[i] == 'C':
+        if units[i] == 'degC':
             func = scipy.interpolate.interp1d(z[foo], t[foo], fill_value = 'extrapolate')
             FXn[i] = func(sfc_rel_height)
             dell = 0.1
