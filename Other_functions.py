@@ -2538,6 +2538,9 @@ def inflate_in_tropoe_uncertainty(flag, sampleTime, in_tropoe, zSa, Sa, vip, ver
         print('ERROR in inflate_in_tropoe_uncertainty: the height arrays from prior and retrieval are not the same -- aborting')
         sys.exit()
 
+        # The temporal resolution of the retrieval
+    tres = vip['tres']*60       # get the temporal resolution of the retrievals in seconds
+
         # Extract out the 1-sigma uncertainties from the prior
     Sa_sigT = sig_t = np.sqrt(np.diag(Sa))[0:len(zSa)]
     Sa_sigq = sig_t = np.sqrt(np.diag(Sa))[len(zSa):2*len(zSa)]
@@ -2545,13 +2548,14 @@ def inflate_in_tropoe_uncertainty(flag, sampleTime, in_tropoe, zSa, Sa, vip, ver
         # Only apply logic if there is a valid profile in the in_tropoe structure (i.e., secs > 0)
     if in_tropoe['secs'] > 0:
                 # Compute the time delta
-        delt = sampleTime - in_tropoe['secs']
+        delt = np.abs(sampleTime - in_tropoe['secs'])
+        if np.isclose(delt,0):
+            delt = tres
                 # Make sure this time delta makes sense
         if delt <= 0:
             print('ERROR in inflate_in_tropoe_uncertainty: the time delta must be strictly positive -- aborting')
             sys.exit()
                 # Noise inflation factor
-        tres = vip['tres']*60       # get the temporal resolution of the retrievals in seconds
         inflateFactor  = np.sqrt(1 + (delt - tres)/tres)
         if verbose > 1:
             print(f"      Inflating in_tropoe {flag:s} profile by a factor of {inflateFactor:.2f} using delt = {delt:.1f} and tres = {tres:.1f}")

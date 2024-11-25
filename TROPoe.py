@@ -11,7 +11,7 @@
 #
 # ----------------------------------------------------------------------------
 
-__version__ = '0.17.4'
+__version__ = '0.17.5'
 
 import os
 import sys
@@ -1235,7 +1235,8 @@ for i in range(len(irs['secs'])):                        # { loop_i
     # If we are to append to the file, then I need to find the last valid
     # sample in the file, so I only process after that point...
     if ((vip['output_clobber'] == 2) & (check_clobber == 1)):
-        xret, fsample, noutfilename, origXa, origSa, opres = Output_Functions.create_xret(xret, fsample, vip, irs, Xa, Sa, z, bands, dimY, flagY, shour)
+        xret, fsample, noutfilename, origXa, origSa, opres, in_tropoe = Output_Functions.create_xret(xret,
+                            fsample, vip, irs, Xa, Sa, z, bands, dimY, flagY, shour, in_tropoe)
         check_clobber = 0
         if fsample < 0:
             VIP_Databases_functions.abort(lbltmpdir,date)
@@ -1252,7 +1253,8 @@ for i in range(len(irs['secs'])):                        # { loop_i
     # If we are not in append mode, but do not have clobber set to 1 then
     # check to see if a conflicting file exists and if so abort
     elif ((vip['output_clobber'] == 0) & (check_clobber == 1)):
-        xret, fsample, noutfilename, origXa, origSa, opres = Output_Functions.create_xret(xret, fsample, vip, irs, Xa, Sa, z, bands, dimY, flagY, shour)
+        xret, fsample, noutfilename, origXa, origSa, opres, in_tropoe = Output_Functions.create_xret(xret,
+                            fsample, vip, irs, Xa, Sa, z, bands, dimY, flagY, shour, in_tropoe)
         check_clobber = 0
         if fsample < 0:
            VIP_Databases_functions.abort(lbltmpdir,date)
@@ -2013,28 +2015,24 @@ for i in range(len(irs['secs'])):                        # { loop_i
         
         # Check for values that are too low
         foo = np.where((Xnp1[feh,0] < minQ) | (Xnp1[feh,0] < Xa[feh] - multiplier*np.sqrt((np.diag(Sa)[feh]))))[0]
-
         if len(foo) > 0:
             # First check to make sure the entire profile isn't nonphysical
             if len(foo) == len(z):
-                print('The entire water vapor profile is non-physical. Major error in TROPoe, must abort')
+                print('The entire water vapor profile is non-physical. Major error, must abort')
                 VIP_Databases_functions.abort(lbltmpdir,date)
                 sys.exit()
-            
             # A nonphysical water vapor value exists so we are going interpolate across those values
             # by calling this function
             Xnp1[feh,0] = Other_functions.fix_nonphysical_wv(Xnp1[feh,0],z,Xa[feh],foo)
         
         # Check for values that are too high
         foo = np.where((Xnp1[feh,0] > maxQ) | (Xnp1[feh,0] > Xa[feh] + multiplier*np.sqrt((np.diag(Sa)[feh]))))[0]
-        
         if len(foo) > 0:
             # First check to make sure the entire profile isn't nonphysical
             if len(foo) == len(z):
-                print('The entire water vapor profile is non-physical. Major error in TROPoe, must abort')
+                print('The entire water vapor profile is non-physical. Major error, must abort')
                 VIP_Databases_functions.abort(lbltmpdir,date)
                 sys.exit()
-            
             # A nonphysical water vapor value exists so we are going interpolate across those values
             # by calling this function
             Xnp1[feh,0] = Other_functions.fix_nonphysical_wv(Xnp1[feh,0],z,Xa[feh],foo)
@@ -2346,6 +2344,7 @@ for i in range(len(irs['secs'])):                        # { loop_i
         xret.append(copy.deepcopy(xsamp[len(xsamp)-1]))
 
     # Update the in_tropoe structure, if conditions warrant
+    # Be sure to keep the logic to identify samples that go into in_tropoe the same as in Output_Functions.py
     if((gfac < vip['add_tropoe_gamma_threshold']) & ((cbh > vip['add_tropoe_input_cbh_thres']) | (Xn[nX] < vip['add_tropoe_input_lwp_thres']))):
         if((vip['add_tropoe_T_input_flag'] == 1) | (vip['add_tropoe_q_input_flag'] == 1)):
             if verbose >= 1:

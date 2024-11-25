@@ -1132,7 +1132,7 @@ def write_output(vip, ext_prof, mod_prof, ext_tseries, globatt, xret, prior,
 # "secs" field needs to have the proper values though...
 ################################################################################
 
-def create_xret(xret, fsample, vip, irs, Xa, Sa, z, bands, obsdim, obsflag, shour):
+def create_xret(xret, fsample, vip, irs, Xa, Sa, z, bands, obsdim, obsflag, shour, in_tropoe):
 
     # Set a default value
     opres = -8888.  # Special flag, to help with the debugging if the pressure is negative
@@ -1153,10 +1153,10 @@ def create_xret(xret, fsample, vip, irs, Xa, Sa, z, bands, obsdim, obsflag, shou
             print('The flag output_clobber was set to 2 for append, but no prior file was found')
             print('    so code will run as normal')
             nfilename = ' '
-            return xret, fsample, nfilename, Xa, Sa, opres
+            return xret, fsample, nfilename, Xa, Sa, opres, in_tropoe
         else:
             nfilename = ' '
-            return xret, fsample, nfilename, Xa, Sa, opres
+            return xret, fsample, nfilename, Xa, Sa, opres, in_tropoe
     
     # Check to see if a file with the same shour exists
     found = False
@@ -1173,19 +1173,19 @@ def create_xret(xret, fsample, vip, irs, Xa, Sa, z, bands, obsdim, obsflag, shou
         print('     to prevent clobbering.')
         print('     Existing file name: ' + files[i])
         nfilename = files[i]
-        return xret, -1, nfilename, Xa, Sa, opres
+        return xret, -1, nfilename, Xa, Sa, opres, in_tropoe
     
     # There was a file for this day, but there were different shours
     if not found and vip['output_clobber'] == 0:
         nfilename = ' '
-        return xret, fsample, nfilename, Xa, Sa, opres
+        return xret, fsample, nfilename, Xa, Sa, opres, in_tropoe
     
     if not found and vip['output_clobber'] == 2:
         print('The flag output_clobber was set to 2 for append, but no prior file')
         print('      with the same shour was found so code will run as normal')
         print('      and create a new file.')
         nfilename = ' '
-        return xret, fsample, nfilename, Xa, Sa, opres
+        return xret, fsample, nfilename, Xa, Sa, opres, in_tropoe
         
     if not found:
         print('Error: There seems to be some condition that was unanticipated -- aborting')
@@ -1196,15 +1196,37 @@ def create_xret(xret, fsample, vip, irs, Xa, Sa, z, bands, obsdim, obsflag, shou
     fid = Dataset(nfilename, 'r')
     bt = fid.variables['base_time'][:]
     to = fid.variables['time_offset'][:]
+    xhour = fid.variables['hour'][:]
     xobsdim = fid.variables['obs_dimension'][:]
     xobsflag = fid.variables['obs_flag'][:]
     pressure = fid.variables['pressure'][:]
     xz = fid.variables['height'][:]
+    xt = fid.variables['temperature'][:]
+    xq = fid.variables['waterVapor'][:]
+    xst = fid.variables['sigma_temperature'][:]
+    xsq = fid.variables['sigma_waterVapor'][:]
+    gfac = fid.variables['gamma'][:]
+    pblh = fid.variables['pblh'][:]
+    cbh = fid.variables['cbh'][:]
+    lwp = fid.variables['lwp'][:]
     xXa = fid.variables['Xa'][:]
     xSa = fid.variables['Sa'][:]
     fid.close()
 
     secs = bt+to
+
+    # Load the in_tropoe structure with the last good profile (if one exists)
+    # Be sure to keep the logic to identify samples that go into in_tropoe the same as in TROPoe.py
+    if((vip['add_tropoe_T_input_flag'] == 1) | (vip['add_tropoe_q_input_flag'] == 1)):
+        idx = -1
+        for i in range(len(secs)):
+            if((gfac[i] < vip['add_tropoe_gamma_threshold']) & ((cbh[i] > vip['add_tropoe_input_cbh_thres']) | (lwp[i] < vip['add_tropoe_input_lwp_thres']))):
+                idx = i
+        if idx > 0:
+            print(f'  Extracted retrieved profile at {xhour[idx]:.4f} UTC to the "in_tropoe" structure, to be used as input later')
+            in_tropoe = {'secs':secs[idx], 'height':xz, 'pblh':pblh[idx], 'lwp':lwp[idx],
+                           'temperature':np.copy(xt[idx,:]), 'waterVapor':np.copy(xq[idx,:]),
+                           'sigma_temperature':np.copy(xst[idx,:]), 'sigma_waterVapor':np.copy(xsq[idx,:])}
 
     # Convert the masked arrays to ndarrays
     #   Note that setting the mask values to zero should not do anything, as there shouldn't
@@ -1214,7 +1236,7 @@ def create_xret(xret, fsample, vip, irs, Xa, Sa, z, bands, obsdim, obsflag, shou
     if((len(fooXa) > 0) or (len(fooSa) > 0)):
         print('The mean prior or its covariance, which is coming from a preexisting output file, has NaNs. Aborting retrieval')
         nfilename = files[i]
-        return xret, -1, nfilename, Xa, Sa, opres
+        return xret, -1, nfilename, Xa, Sa, opres, in_tropoe
     oXa = xXa.filled(fill_value=np.double(-9999))
     oSa = xSa.filled(fill_value=np.double(-9999))
 
@@ -1243,21 +1265,21 @@ def create_xret(xret, fsample, vip, irs, Xa, Sa, z, bands, obsdim, obsflag, shou
     if ((len(xz) != len(z)) | (len(foo) > 0)):
         print('Error: output_clobber is set to 2 (append), but there is a mismatch in heights')
         fsample = -1
-        return xret, fsample, nfilename, Xa, Sa, opres
+        return xret, fsample, nfilename, Xa, Sa, opres, in_tropoe
 
     diff = np.abs(obsdim - xobsdim)
     foo = np.where(diff > 0.001)[0]
     if ((len(obsdim) != len(xobsdim)) | (len(foo) > 0)):
         print('Error: output_clobber is set to 2 (append), but there is a mismatch in obs_dim')
         fsample = -1
-        return xret, fsample, nfilename, Xa, Sa, opres
+        return xret, fsample, nfilename, Xa, Sa, opres, in_tropoe
 
     diff = np.abs(obsflag - xobsflag)
     foo = np.where(diff > 0.001)[0]
     if ((len(obsflag) != len(xobsflag)) | (len(foo) > 0)):
         print('Error: output_clobber is set to 2 (append), but there is a mismatch in obs_flag')
         fsample = -1
-        return xret, fsample, nfilename, Xa, Sa, opres
+        return xret, fsample, nfilename, Xa, Sa, opres, in_tropoe
 
     # This structure must match that at the end of the main iteration loop
     # where the retrieval is performed. The values can be anything, with
@@ -1283,7 +1305,7 @@ def create_xret(xret, fsample, vip, irs, Xa, Sa, z, bands, obsdim, obsflag, shou
         xret[i]['secs'] = secs[i]
     fsample = len(secs)
 
-    return xret, fsample, nfilename, oXa, oSa, opres
+    return xret, fsample, nfilename, oXa, oSa, opres, in_tropoe
 
 ################################################################################
 # This function writes out the prior data into a temporary netCDF file (used for debugging)
