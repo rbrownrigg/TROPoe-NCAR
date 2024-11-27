@@ -89,6 +89,11 @@ def add_vip_to_global_atts(nc, full_vip):
         if key == 'spectral_bands':
             data = ','.join([f"{data[0, i]}-{data[1, i]}" for i in range(len(data[0])) if data[0, i] > 0])
 
+        # If the attribute is an integer, cast it as a 32-bit one (otherwise it defaults to a long int)
+        #     This was a request of the ARM program (since none of the global attributes need this precision)
+        if isinstance(data,int):
+            data = np.int32(data)
+
         # Set the netcdf attribute
         nc.setncattr(f"VIP_{key}", data)
 
@@ -194,7 +199,7 @@ def write_output(vip, ext_prof, mod_prof, ext_tseries, globatt, xret, prior,
 
         hour = fid.createVariable('hour', 'f8', ('time',))
         hour.long_name = 'Time'
-        hour.units = 'hours since ' + dt.strftime('%Y-%m-%d') +' 00:00:00 0:00 UTC'
+        hour.units = 'hours since ' + dt.strftime('%Y-%m-%d') +' 00:00:00 0:00'
 
         qc_flag = fid.createVariable('qc_flag', 'i2', ('time',))
         qc_flag.long_name = 'Manual QC flag'
@@ -315,7 +320,7 @@ def write_output(vip, ext_prof, mod_prof, ext_tseries, globatt, xret, prior,
 
         sigma_iReff = fid.createVariable('sigma_iReff', 'f4', ('time',))
         sigma_iReff.long_name = '1-sigma uncertainty in ice effective radius'
-        sigma_iReff.comment1 = 'microns'
+        sigma_iReff.units = 'microns'
         sigma_iReff.variable_type = varType_uncertainty
 
         sigma_co2 = fid.createVariable('sigma_co2', 'f4', ('time','gas_dim',))
