@@ -815,8 +815,7 @@ def read_all_data(date, retz, tres, dostop, verbose, avg_instant, ch1_path,
                         'missingDataFlag': np.zeros(len(mwr_data['secs'])),
                         'fv':0.0, 'fa': 0.0})
 
-            irssum = ({'success':1, 'secs':mwr_data['secs'], 'ymd':ymd, 'hour':hour, 'wnum':wnum, 'noise':noise,
-                        'lat':mwr_data['lat'], 'lon':mwr_data['lon'], 'alt':mwr_data['alt']})
+            irssum = ({'success':1, 'secs':mwr_data['secs'], 'ymd':ymd, 'hour':hour, 'wnum':wnum, 'noise':noise})
 
     elif (irs_type <= -1) & (mwr_type == 0):
 
@@ -852,8 +851,7 @@ def read_all_data(date, retz, tres, dostop, verbose, avg_instant, ch1_path,
                    'missingDataFlag': np.zeros(len(fake_secs)),
                    'fv': 0.0, 'fa': 0.0})
 
-        irssum = ({'success': 1, 'secs': fake_secs, 'ymd': ymd, 'hour': hour, 'wnum': wnum, 'noise': noise,
-                   'lat': -999, 'lon': -999, 'alt': -999})
+        irssum = ({'success': 1, 'secs': fake_secs, 'ymd': ymd, 'hour': hour, 'wnum': wnum, 'noise': noise})
 
 
     else:
@@ -1151,25 +1149,16 @@ def read_mwr(path, rootname, date, mwr_type, step, mwr_freq_field, mwr_elev_fiel
             if(mwr_type <= 2):
                 bt = fid.variables['base_time'][:].astype('float')
                 to = fid.variables['time_offset'][:].astype('float')
-                lat = fid.variables['lat'][:]
-                lon = fid.variables['lon'][:]
-                alt = fid.variables['alt'][:]
             elif(mwr_type == 3):
                 if verbose >= 3:
                     print("    using the Univ Cologne data format")
                 bt = 0
                 to = fid.variables['time'][:].astype('float')
-                lat = fid.variables['lat'][:]
-                lon = fid.variables['lon'][:]
-                alt = fid.variables['zsl'][:]
             elif(mwr_type == 4):
                 if verbose >= 3:
                     print("    using the E-PROFILE data format")
                 bt = 0
                 to = fid.variables['time'][:].astype('float')
-                lat = fid.variables['station_latitude'][0]
-                lon = fid.variables['station_longitude'][0]
-                alt = fid.variables['station_altitude'][0]
             if len(to) <= 1:
                 fid.close()
                 continue
@@ -1339,7 +1328,7 @@ def read_mwr(path, rootname, date, mwr_type, step, mwr_freq_field, mwr_elev_fiel
 
         if mwr_n_tb_fields == 0:
            return ({'success':1, 'secs':secs[idx], 'ymd':ymd[idx], 'hour':hour[idx],
-                 'lat':lat, 'lon':lon, 'alt':alt, 'psfc':psfc[idx], 'n_fields':mwr_n_tb_fields,
+                 'psfc':psfc[idx], 'n_fields':mwr_n_tb_fields,
                  'type':mwr_type, 'rootname':rootname})
         else:
            # Compute the near-air surface temperature (i.e., brightness temperature in a
@@ -1354,9 +1343,9 @@ def read_mwr(path, rootname, date, mwr_type, step, mwr_freq_field, mwr_elev_fiel
                nearSfcTb = np.copy(tbsky[foo,:]) - 273.15  # Convert to degC
 
            return ({'success':1, 'secs':secs[idx], 'ymd':ymd[idx], 'hour':hour[idx],
-                 'lat':lat, 'lon':lon, 'alt':alt, 'psfc':psfc[idx], 'n_fields':mwr_n_tb_fields,
+                 'psfc':psfc[idx], 'n_fields':mwr_n_tb_fields,
                  'type':mwr_type, 'rootname':rootname, 'tbsky_orig':tbsky0[:,idx], 'tbsky_corr':tbsky[:,idx],
-                  'freq':freq, 'noise':noise, 'bias':bias, 'nearSfcTb':nearSfcTb[idx]})
+                 'freq':freq, 'noise':noise, 'bias':bias, 'nearSfcTb':nearSfcTb[idx]})
 
 ################################################################################
 # This function reads in the mwr scan data.
@@ -1451,25 +1440,16 @@ def read_mwrscan(path, rootname, date, mwrscan_type, mwrscan_freq_field, mwrscan
             if(mwrscan_type <= 2):
                 bt = fid.variables['base_time'][:].astype('float')
                 to = fid.variables['time_offset'][:].astype('float')
-                lat = fid.variables['lat'][:]
-                lon = fid.variables['lon'][:]
-                alt = fid.variables['alt'][:]
             elif(mwrscan_type == 3):
                 if verbose >= 3:
                     print("    using the Univ Cologne data format")
                 bt = 0
                 to = fid.variables['time'][:].astype('float')
-                lat = fid.variables['lat'][:]
-                lon = fid.variables['lon'][:]
-                alt = fid.variables['zsl'][:]
             elif(mwrscan_type == 4):
                 if verbose >= 3:
                     print("    using the E-PROFILE data format")
                 bt = 0
                 to = fid.variables['time'][:].astype('float')
-                lat = fid.variables['station_latitude'][0]
-                lon = fid.variables['station_longitude'][0]
-                alt = fid.variables['station_altitude'][0]
             if len(to) <= 1:
                 fid.close()
                 continue
@@ -1646,7 +1626,7 @@ def read_mwrscan(path, rootname, date, mwrscan_type, mwrscan_freq_field, mwrscan
         ymd = yy*10000 + mm*100 + dd
 
         return ({'success':1, 'secs':secs, 'ymd':ymd, 'hour':hour, 'elev':elev,
-                'lat':lat, 'lon':lon, 'alt':alt, 'n_fields':mwrscan_n_tb_fields,
+                'n_fields':mwrscan_n_tb_fields,
                 'type':mwrscan_type, 'rootname':rootname, 'tbsky_orig':tbsky0, 'tbsky_corr':tbsky,
                 'freq':freq, 'noise':noise, 'bias':bias})
 
@@ -1873,24 +1853,6 @@ def read_irs_sum(path,date,irs_type,smooth_noise,verbose):
             print('Error in read_irs_sum: unable to find the SkyNENCh2 field')
             return err
 
-        if len(np.where(np.array(list(fid.variables.keys())) == 'lat')[0]) > 0:
-            lat = fid.variables['lat'][:]
-        elif len(np.where(np.array(list(fid.variables.keys())) == 'Latitude')[0]) > 0:
-            lat = np.ma.median(fid.variables['Latitude'][:])
-        else:
-            lat = -999.0
-        if len(np.where(np.array(list(fid.variables.keys())) == 'lon')[0]) > 0:
-            lon = fid.variables['lon'][:]
-        elif len(np.where(np.array(list(fid.variables.keys())) == 'Longitude')[0]) > 0:
-            lon =  np.ma.median(fid.variables['Longitude'][:])
-        else:
-            lon = -999.0
-        if len(np.where(np.array(list(fid.variables.keys())) == 'alt')[0]) > 0:
-            alt = fid.variables['alt'][:]
-        elif len(np.where(np.array(list(fid.variables.keys())) == 'Altitude')[0]) > 0:
-            alt =  np.ma.median(fid.variables['Altitude'][:])
-        else:
-            alt = 0.0
         fid.close()
 
         #Append the data together into single arrays
@@ -1962,8 +1924,8 @@ def read_irs_sum(path,date,irs_type,smooth_noise,verbose):
     # Sometimes the data are not in time-ascending order.  So sort the data
     sidx = np.argsort(secs)
 
-    return ({'success':1, 'secs':secs[sidx],'ymd':ymd[sidx], 'hour':hour[sidx], 'wnum':wnum,
-             'noise':noise[:,sidx], 'lat':lat, 'lon':lon, 'alt':alt})
+    return ({'success':1, 'secs':secs[sidx],'ymd':ymd[sidx], 'hour':hour[sidx], 
+             'wnum':wnum, 'noise':noise[:,sidx]})
 
 ################################################################################
 # This function read in the ceilometer/vertically pointing lidar data.
@@ -2480,8 +2442,7 @@ def grid_irs(ch1, irssum, avg_instant, hatchOpenSwitch, missingDataFlagSwitch,
     return ({'success':1, 'secs':secs, 'ymd':ymd, 'hour':hour, 'yy':yy, 'mm':mm, 'dd':dd,
             'hatchopen':hatflag, 'avg_instant':avg_instant,
             'wnum':wnum, 'radmn':rrad, 'noise':noise, 'atmos_pres':atmos_pres, 'nearSfcTb':nsfc_temp, 
-            'tsfc':Tsfc, 'fv':ch1['fv'], 'fa':ch1['fa'], 'missingDataFlag':mssflag,
-            'lat':irssum['lat'],'lon':irssum['lon'],'alt':irssum['alt']})
+            'tsfc':Tsfc, 'fv':ch1['fv'], 'fa':ch1['fa'], 'missingDataFlag':mssflag})
 
 ################################################################################
 # This function puts the MWR data onto a common temporal grid.
@@ -2558,11 +2519,9 @@ def grid_mwr(mwr, avg_instant, secs, tavg, time_delta, verbose):
     # The structure being returned depends on the number of Tb fields desired
     if mwr['n_fields'] == 0:
         return ({'success':1, 'secs':secs, 'ymd':ymd, 'hour':hour,
-                'lat':-999., 'lon':-999., 'alt':-999., 
                 'n_fields':0, 'type': mwr['type'], 'rootname':mwr['rootname']})
     else:
         return ({'success':1, 'secs':secs, 'ymd':ymd, 'hour':hour,
-                'lat':mwr['lat'], 'lon':mwr['lon'], 'alt':mwr['alt'], 
                 'n_fields':mwr['n_fields'], 'tbsky':tbsky, 'freq':mwr['freq'], 'nearSfcTb':nsfc_temp, 
                 'noise':mwr['noise'], 'bias':mwr['bias'], 'type': mwr['type'], 'rootname':mwr['rootname']})
 

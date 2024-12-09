@@ -11,7 +11,7 @@
 #
 # ----------------------------------------------------------------------------
 
-__version__ = '0.17.7'
+__version__ = '0.17.8'
 
 import os
 import sys
@@ -580,7 +580,7 @@ if ext_tseries['success'] != 1:
 # If the surface pressure field is all negative, then use the default station_pres from the VIP file
 foo = np.where((irs['atmos_pres'][:] < 200) | (irs['atmos_pres'][:] > 1200))[0]
 if(len(foo) > 0):
-    print('    Warning: changing the surface pressure of some IRS samples to the default "station_pres" in the VIP file')
+    print('    Warning: changing the surface pressure of some samples to the default "station_pres" in the VIP file')
     if(vip['station_pres'] < 0):
         print('    Error: the keyword "station_pres" must be set to a positive value (in mb) in the VIP file')
         sys.exit()
@@ -593,15 +593,8 @@ if ehour < 0:
     if verbose >= 2:
         print(('Resetting the processing end hour to ' + str(ehour) + ' UTC'))
 
-# Capture the lat/lon/alt data in a structure.  Use the VIP supplied entry first,
-# but overwride it if the vip supplied altitude is negative
+# Capture the lat/lon/alt data in a structure.  Use the VIP supplied data
 location = {'lat':vip['station_lat'], 'lon':vip['station_lon'], 'alt':int(vip['station_alt'])}
-if((irs['alt'] >= 0) and (location['alt'] < 0)):
-    print('  Overriding lat/lon/alt in VIP.station with the IRS instrument location')
-    location = {'lat':irs['lat'], 'lon':irs['lon'], 'alt': int(irs['alt'])}
-elif((mwr['alt'] >= 0) and (location['alt'] < 0)):
-    print('  Overriding lat/lon/alt in VIP.station with the MWR instrument location')
-    location = {'lat':mwr['lat'], 'lon':mwr['lon'], 'alt': int(mwr['alt'])}
 
 # Very simple check to make sure station altitude makes sense [m MSL]
 if(location['alt'] <= 0):
@@ -843,7 +836,7 @@ for i in range(len(irs['secs'])):                        # { loop_i
     # See if we want to use the external sfc pressure instead of irs pressure
     # and check to make sure external data read went okay
     if ((vip['ext_sfc_pres_type'] > 0) & (ext_tseries['nPsfc'] >= 0)):
-        print("    Replacing IRS pressure with " +  ext_tseries['ptype'] + " pressure")
+        print("    Replacing pressure with " +  ext_tseries['ptype'] + " pressure")
         irs['atmos_pres'][i] = ext_tseries['psfc'][i]
 
     # Make sure the IRS's surface pressure is a valid value, as
