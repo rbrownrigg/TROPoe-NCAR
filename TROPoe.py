@@ -11,7 +11,7 @@
 #
 # ----------------------------------------------------------------------------
 
-__version__ = '0.17.6'
+__version__ = '0.17.7'
 
 import os
 import sys
@@ -496,6 +496,8 @@ if np.max(zz) >= np.max(z):
     print(f'Error: The maximum height in the input vip.grid must be less than {np.max(z):.3f} km')
     VIP_Databases_functions.abort(lbltmpdir,date)
     sys.exit()
+if(verbose >= 2):
+    print('  Adjusting prior to the defined vertical grid')
 newXa,newSa,newPa = Other_functions.interpolate_prior_covariance(z,Xa,Sa,Pa,zz,verbose=verbose)
         # Replace the prior values from the input file with the values on the input zgrid
 z  = zz
@@ -504,7 +506,7 @@ Xa = newXa
 Sa = newSa
 
 if verbose >= 1:
-    print(('  Retrieved profiles will have ' + str(len(z)) + ' levels (from prior)'))
+    print(('  Retrieved profiles will have ' + str(len(z)) + ' levels (from VIP.zgrid)'))
 if verbose >= 2:
     print(('    There were ' + str(nsonde_prior) + ' radiosondes used in the calculation of the prior'))
 
@@ -568,15 +570,7 @@ if mod_prof['success'] != 1:
     sys.exit()
 
 # Read in any external time series data that would be used
-ext_tseries = Data_reads.read_external_timeseries(date, irs['secs'], vip['tres'], vip['avg_instant'],
-              vip['ext_sfc_temp_type'], vip['ext_sfc_wv_type'], vip['ext_sfc_path'], vip['ext_sfc_rootname'], 
-              vip['ext_sfc_temp_npts'], vip['ext_sfc_wv_npts'], vip['ext_sfc_temp_rep_error'],
-              vip['ext_sfc_wv_mult_error'], vip['ext_sfc_wv_rep_error'], 
-              vip['ext_sfc_rh_random_error'], vip['ext_sfc_temp_random_error'], 
-              vip['ext_sfc_time_delta'],
-              vip['ext_sfc_relative_height'], vip['co2_sfc_type'], vip['co2_sfc_npts'],
-              vip['co2_sfc_rep_error'], vip['co2_sfc_path'], vip['co2_sfc_relative_height'],
-              vip['co2_sfc_time_delta'], vip['ext_sfc_pres_type'], dostop, verbose)
+ext_tseries = Data_reads.read_external_timeseries(date, irs['secs'], vip, dostop, verbose)
 
 if ext_tseries['success'] != 1:
     print('Error: there is some problem in the external time series data specification')

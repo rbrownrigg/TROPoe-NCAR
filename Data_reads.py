@@ -3927,12 +3927,7 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
 # retrieval (e.g., surface met data)
 ################################################################################
 
-def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
-            sfc_wv_type, sfc_path, sfc_rootname, sfc_temp_npts, sfc_wv_npts, sfc_temp_rep_error, sfc_wv_mult_error,
-            sfc_wv_rep_error, sfc_rh_sigma_error, sfc_temp_sigma_error,
-            sfc_time_delta, sfc_relative_height, co2_sfc_type,
-            co2_sfc_npts, co2_sfc_rep_error, co2_sfc_path, co2_sfc_relative_height,
-            co2_sfc_time_delta, sfc_p_type, dostop, verbose):
+def read_external_timeseries(date, secs, vip, dostop, verbose):
 
     external = {'success':0, 'nTsfc':-1, 'nQsfc':-1, 'nPsfc':-1, 'nCO2sfc':-1}
     ttype = 'None'
@@ -3943,14 +3938,14 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
     # Some quick QC of the input entries in the VIP file
     estring = ' '
     maxpts = 1000                         # Maximum number of surface replication points allowed
-    if sfc_temp_npts > 0:
-        if ((sfc_temp_npts < 1) | (maxpts < sfc_temp_npts)):
+    if vip['ext_sfc_temp_npts'] > 0:
+        if ((vip['ext_sfc_temp_npts'] < 1) | (maxpts < vip['ext_sfc_temp_npts'])):
             estring = 'VIP input error: when sfc_temp_type > 0, then 1 <= ext_sfc_temp_npts < ' + str(maxpts)
-    if sfc_wv_type > 0:
-        if ((sfc_wv_npts < 1) | (maxpts < sfc_wv_npts)):
+    if vip['ext_sfc_wv_npts'] > 0:
+        if ((vip['ext_sfc_wv_npts'] < 1) | (maxpts < vip['ext_sfc_wv_npts'])):
             estring = 'VIP input error; when sfc_wv_type > 0, then 1 <= ext_sfc_wv_npts < ' + str(maxpts)
-    if co2_sfc_type > 0:
-        if ((co2_sfc_npts < 1) | (maxpts < co2_sfc_npts)):
+    if vip['co2_sfc_npts'] > 0:
+        if ((vip['co2_sfc_npts'] < 1) | (maxpts < vip['co2_sfc_npts'])):
             estring = 'VIP input error; when co2_sfc_npts > 0, then 1 <= co2_sfc_npts < ' + str(maxpts)
 
     if estring != ' ':
@@ -3958,945 +3953,242 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
             print(estring)
         return external
 
-    # Read the external surface met temperature data first
-    # No external surface temperature source specified
-
-    tunit = ' '
+    # Read the external surface met data all at once.  Then we will fill out the 
+    # vectors that need data, as specified by the VIP file
 
     dates = [(datetime.strptime(str(date), '%Y%m%d') - timedelta(days=1)).strftime('%Y%m%d') ,
             str(date) ,  (datetime.strptime(str(date), '%Y%m%d') + timedelta(days=1)).strftime('%Y%m%d') ]
 
-    if sfc_temp_type == 0:
-        ttype = 'none'
-        external['nTsfc'] = 0
-
-    # Read in the ARM met temperature data
-    elif (sfc_temp_type == 1):
+    files = []
+    for i in range(len(dates)):
+        tempfiles, status = (findfile(vip['ext_sfc_path'],'*'+vip['ext_sfc_rootname']+'*' + dates[i] + '*.(cdf|nc)'))
+        if status == 1:
+            return external
+        files = files + tempfiles
+    if len(files) == 0:
         if verbose >= 1:
-            print('  Reading in ARM met temperature data')
-
-        files = []
-        for i in range(len(dates)):
-            tempfiles, status = (findfile(sfc_path,'*'+sfc_rootname+'*' + dates[i] + '*.(cdf|nc)'))
-            if status == 1:
-                return external
-            files = files + tempfiles
-        if len(files) == 0:
-            if verbose >= 1:
-                print('    No ARM met found in this directory for this date')
-        else:
-            for i in range(len(files)):
-                fid = Dataset(files[i], 'r')
-                fid.set_auto_mask(False)
-                bt = fid.variables['base_time'][:].astype('float')
-                to = fid.variables['time_offset'][:].astype('float')
-                # If the field "atmos_pressure" exists, assume we are reading the "met" datastream
-                if len(np.where(np.array(list(fid.variables.keys())) == 'atmos_pressure')[0]) > 0:
-                    p = fid.variables['atmos_pressure'][:]    # kPa
-                    p *= 10.                                  # Convert kPa to hPa
-                    t = fid.variables['temp_mean'][:]         # degC
-                    u = fid.variables['rh_mean'][:]           # %RH
-                    fid.close()
-                # Else if the field "pres" exists, then assume we are reading the "thwaps" datastream
-                elif len(np.where(np.array(list(fid.variables.keys())) == 'pres')[0]) > 0:
-                    p = fid.variables['pres'][:]              # hPa
-                    t = fid.variables['temp'][:]              # degC
-                    u = fid.variables['rh'][:]                # %RH
-                    fid.close()
-                # Else I don't know what I am reading -- abort here
-                else:
-                    fid.close()
-                    print('    Problem reading the ARM met/thwaps data -- returning missing data')
-                    return external
-
-                # Some simple QC
-                foo = np.where((p > 0) & (p < 1050) & (t < 60) & (u >= 0) & (u < 103))[0]
-                if len(foo) < 1:
-                    continue
-                to = to[foo] #.squeeze()
-                p = p[foo] #.squeeze()
-                t = t[foo] #.squeeze()
-                u = u[foo] #.squeeze()
-                tunit = 'degC'
-                ttype = 'ARM met station'
-
-                # Append the data to the growing structure
-                sigma_t = sfc_temp_sigma_error
-                if external['nTsfc'] <= 0:
-                    tsecs = bt+to
-                    temp = np.copy(t)
-                    stemp = np.ones(len(t))*sigma_t
-                else:
-                    tsecs = np.append(tsecs,bt+to)
-                    temp = np.append(temp,t)
-                    stemp = np.append(stemp,np.ones(len(t))*sigma_t)
-                external['nTsfc'] = len(tsecs)
-
-        # Read in the NCAR ISFS data
-
-    elif sfc_temp_type == 2:
-        if verbose >= 1:
-            print('  Reading in NCAR ISFS met temperature data')
-
-        files = []
-        for i in range(len(dates)):
-            tempfiles, status = (findfile(sfc_path,'*'+sfc_rootname+'*' + dates[i] + '*.(cdf|nc)'))
-            if status == 1:
-                return external
-            files = files + tempfiles
-
-        if len(files) == 0:
-            if verbose >= 1:
-                print('    No NCAR ISFS met found in this directory for this date')
-        else:
-            for i in range(len(files)):
-                fid = Dataset(files[i],'r')
-                fid.set_auto_mask(False)
-                bt = fid.variables['base_time'][:].astype('float')
-                if len(np.where(np.array(list(fid.variables.keys())) == 'time')[0]) > 0:
-                    to = fid.variables['time'][:].astype('float')
-                elif len(np.where(np.array(list(fid.variables.keys())) == 'time_offset')[0]) > 0:
-                    to = fid.variables['time_offset'][:].astype('float')
-                else:
-                    print('Error: Unable to find the time field in the ISFS data file')
-                    fid.close()
-                    return external
-                p = fid.variables['pres'][:]            # hPa
-                t = fid.variables['tdry'][:]            # degC
-                u = fid.variables['rh'][:]              # %RH
-
-                foo = np.where((p > 0) & (p < 1050) & (t < 60) & (u >= 0) & (u < 103))[0]
-                if len(foo) < 1:
-                    continue
-                to = to[foo]
-                p = p[foo]
-                t = t[foo]
-                u = u[foo]
-                tunit = 'degC'
-                ttype = 'NCAR ISFS met station'
-
-                # Append the data to the growing structure
-                sigma_t = sfc_temp_sigma_error
-                if external['nTsfc'] <= 0:
-                    tsecs = bt+to
-                    temp = np.copy(t)
-                    stemp = np.ones(len(t))*sigma_t
-                else:
-                    tsecs = np.append(tsecs,bt+to)
-                    temp = np.append(temp,t)
-                    stemp = np.append(stemp,np.ones(len(t))*sigma_t)
-                external['nTsfc'] = len(tsecs)
-
-        # Read in the microwave radiometer met data
-
-    elif sfc_temp_type == 3:
-        if verbose >= 1:
-            print('  Reading in MWR met temperature data')
-
-        files = []
-        for i in range(len(dates)):
-            tempfiles, status = (findfile(sfc_path,'*'+sfc_rootname+'*' + dates[i] + '*.(cdf|nc)'))
-            if status == 1:
-                return external
-            files = files + tempfiles
-
-        if len(files) == 0:
-            if verbose >= 1:
-                print('    No MWR met found in this directory for this date')
-        else:
-            for i in range(len(files)):
-                fid = Dataset(files[i],'r')
-                fid.set_auto_mask(False)
-                if len(np.where(np.array(list(fid.variables.keys())) == 'base_time')[0]) > 0:
-                    bt = fid.variables['base_time'][:].astype('float')
-                else:
-                    bt = 0
-                if len(np.where(np.array(list(fid.variables.keys())) == 'time_offset')[0]) > 0:
-                    to = fid.variables['time_offset'][:].astype('float')
-                elif len(np.where(np.array(list(fid.variables.keys())) == 'time')[0]) > 0:
-                    to = fid.variables['time'][:].astype('float')
-                else:
-                    fid.close()
-                    print('    Problem reading the MWR met data -- returning missing data')
-                    return external
-
-                #This field could be sfc_pres or p_sfc
-
-                if len(np.where(np.array(list(fid.variables.keys())) == 'sfc_pres')[0]) > 0:
-                    p = fid.variables['sfc_pres'][:]
-                elif len(np.where(np.array(list(fid.variables.keys())) == 'p_sfc')[0]) > 0:
-                    p = fid.variables['p_sfc'][:]
-                elif len(np.where(np.array(list(fid.variables.keys())) == 'pa')[0]) > 0:    # This is the Cologne option
-                    p = fid.variables['pa'][:]
-                    p = p / 100.        # Convert Pa to hPa
-                else:
-                    p = np.ones(len(to))*-999.
-
-                # This field could be sfc_temp or t_sfc. I also need to check the
-                # units to make sure that is handled correctly
-
-                if len(np.where(np.array(list(fid.variables.keys())) == 'sfc_temp')[0]) > 0:
-                    t = fid.variables['sfc_temp'][:]
-                    ttunit = fid.variables['sfc_temp'].units
-                    if ((ttunit == 'K') | (ttunit == 'k') | (ttunit == 'Kelvin') | (ttunit == 'degK')):
-                        t -= 273.15
-                elif len(np.where(np.array(list(fid.variables.keys())) == 't_sfc')[0]) > 0:
-                    t = fid.variables['t_sfc'][:]
-                    ttunit = fid.variables['t_sfc'].units
-                    if ((ttunit == 'K') | (ttunit == 'k') | (ttunit == 'Kelvin') | (ttunit == 'degK')):
-                        t -= 273.15
-                elif len(np.where(np.array(list(fid.variables.keys())) == 'ta')[0]) > 0:    # This is the Cologne option
-                    t = fid.variables['ta'][:]
-                    t -= 273.15      # Convert K to C
-                else:
-                    t = np.ones(len(to))*-999.
-
-                # This field could be sfc_rh or rh_sfc
-
-                if len(np.where(np.array(list(fid.variables.keys())) == 'sfc_rh')[0]) > 0:
-                    u = fid.variables['sfc_rh'][:]
-                elif len(np.where(np.array(list(fid.variables.keys())) == 'rh_sfc')[0]) > 0:
-                    u = fid.variables['rh_sfc'][:]
-                elif len(np.where(np.array(list(fid.variables.keys())) == 'hur')[0]) > 0:    # This is the Cologne option
-                    u = fid.variables['hur'][:]
-                    u = u * 100.        # Convert fraction to %
-                else:
-                    u = np.ones(len(to))*-999.
-                fid.close()
-
-                foo = np.where((p > 0) & (p < 1050) & (t < 60) & (u >= 0) & (u < 103))[0]
-                if len(foo) < 1:
-                    continue
-                to = to[foo]
-                p = p[foo]
-                t = t[foo]
-                u = u[foo]
-                tunit = 'degC'
-                ttype = 'Microwave radiometer met station'
-
-                # Append the data to the growing structure
-                sigma_t = sfc_temp_sigma_error
-                if external['nTsfc'] <= 0:
-                    tsecs = bt+to
-                    temp = np.copy(t)
-                    stemp = np.ones(len(t))*sigma_t
-                else:
-                    tsecs = np.append(tsecs,bt+to)
-                    temp = np.append(temp,t)
-                    stemp = np.append(stemp,np.ones(len(t))*sigma_t)
-                external['nTsfc'] = len(tsecs)
-
-        # Read in the E-PROFILE MWR met data
-    elif sfc_temp_type == 4:
-        if verbose >= 1:
-            print('  Reading in E-PROFILE MWR met temperature data')
-
-        files = []
-        for i in range(len(dates)):
-            tempfiles, status = (findfile(sfc_path,'*'+sfc_rootname+'*' + dates[i] + '*.(cdf|nc)'))
-            if status == 1:
-                return external
-            files = files + tempfiles
-
-        if len(files) == 0:
-            if verbose >= 1:
-                print('    No E-PROFILE MWR met found in this directory for this date')
-        else:
-            for i in range(len(files)):
-                fid = Dataset(files[i],'r')
-                fid.set_auto_mask(False)
-                bt  = 0
-                to  = fid.variables['time'][:].astype('float')
-
-                p = fid.variables['air_pressure'][:]
-                t = fid.variables['air_temperature'][:]
-                t -= 273.15     # Convert K to C
-                if len(np.where(np.array(list(fid.variables.keys())) == 'relative_humidity')[0]) > 0:
-                    u = fid.variables['relative_humidity'][:]
-                else:
-                    u = np.ones(len(to))*-999.
-                fid.close()
-
-                foo = np.where((p > 0) & (p < 1050) & (t < 60))[0]
-                if len(foo) < 1:
-                    continue
-                to = to[foo]
-                p = p[foo]
-                t = t[foo]
-                tunit = 'degC'
-                ttype = 'E-PROFILE microwave radiometer met station'
-
-                # Append the data to the growing structure
-                sigma_t = sfc_temp_sigma_error
-                if external['nTsfc'] <= 0:
-                    tsecs = bt+to
-                    temp = np.copy(t)
-                    stemp = np.ones(len(t))*sigma_t
-                else:
-                    tsecs = np.append(tsecs,bt+to)
-                    temp = np.append(temp,t)
-                    stemp = np.append(stemp,np.ones(len(t))*sigma_t)
-                external['nTsfc'] = len(tsecs)
-
-        # Read in the ASSIST Summary data
-    elif sfc_temp_type == 5:
-        if verbose >= 1:
-            print('  Reading in ASSIST summary met temperature data')
-
-        files = []
-        for i in range(len(dates)):
-            tempfiles, status = (findfile(sfc_path,'*'+sfc_rootname+'*' + dates[i] + '*.(cdf|nc)'))
-            if status == 1:
-                return external
-            files = files + tempfiles
-
-        if len(files) == 0:
-            if verbose >= 1:
-                print('    No ASSIST summary met found in this directory for this date')
-        else:
-            for i in range(len(files)):
-                fid = Dataset(files[i],'r')
-                fid.set_auto_mask(False)
-                bt  = fid.variables['base_time'][:].astype('float')
-                bt  = bt / 1000.
-                to  = fid.variables['time'][:].astype('float')
-
-                if len(np.where(np.array(list(fid.variables.keys())) == 'atmosphericPressure')[0]) > 0:
-                    p = fid.variables['atmosphericPressure'][:]
-                    p = p * 10.     # Convert kPa to hPa
-                else:
-                    p = np.ones(len(to))*-999.
-                if len(np.where(np.array(list(fid.variables.keys())) == 'externalTemperature')[0]) > 0:
-                    t = fid.variables['externalTemperature'][:]
-                else:
-                    t = np.ones(len(to))*-999.
-                if len(np.where(np.array(list(fid.variables.keys())) == 'externalHumidity')[0]) > 0:
-                    u = fid.variables['externalHumidity'][:]
-                else:
-                    u = np.ones(len(to))*-999.
-                fid.close()
-
-                foo = np.where((p > 0) & (p < 1050) & (t < 60))[0]
-                if len(foo) < 1:
-                    continue
-                to = to[foo]
-                p = p[foo]
-                t = t[foo]
-                tunit = 'degC'
-                ttype = 'ASSIST summary met station'
-
-                # Append the data to the growing structure
-                sigma_t = sfc_temp_sigma_error
-                if external['nTsfc'] <= 0:
-                    tsecs = bt+to
-                    temp = np.copy(t)
-                    stemp = np.ones(len(t))*sigma_t
-                else:
-                    tsecs = np.append(tsecs,bt+to)
-                    temp = np.append(temp,t)
-                    stemp = np.append(stemp,np.ones(len(t))*sigma_t)
-                external['nTsfc'] = len(tsecs)
-
-        # An undefined external surface met temperature source was specified...
-    else:
-        print('Error in read_external_tseries: Undefined external met temperature source specified')
+            print('    No external met found in the input directory for this date')
         return external
-
-    # Read the external surface met water vapor data next
-    # No external surface water vapor source specified...
-
-    qunit = ' '
-    if sfc_wv_type == 0:
-        qtype = 'none'
-        external['nQsfc'] = 0
-
-    # Read in the ARM met water vapor data
-
-    elif sfc_wv_type == 1:
-        if verbose >= 1:
-            print('  Reading in ARM met water vapor data')
-
-        files = []
-        for i in range(len(dates)):
-            tempfiles, status = (findfile(sfc_path,'*'+sfc_rootname+'*' + dates[i] + '*.(cdf|nc)'))
-            if status == 1:
-                return external
-            files = files + tempfiles
-
-        if len(files) == 0:
-            if verbose >= 1:
-                print('    No ARM met found in this directory for this date')
-        else:
-            for i in range(len(files)):
-                fid = Dataset(files[i], 'r')
-                fid.set_auto_mask(False)
-                bt = fid.variables['base_time'][:].astype('float')
-                to = fid.variables['time_offset'][:].astype('float')
-                # If the field "atmos_pressure" exists, assume we are reading the "met" datastream
-                if len(np.where(np.array(list(fid.variables.keys())) == 'atmos_pressure')[0]) > 0:
-                    p = fid.variables['atmos_pressure'][:]    # kPa
-                    p *= 10.                                  # Convert kPa to hPa
-                    t = fid.variables['temp_mean'][:]         # degC
-                    u = fid.variables['rh_mean'][:]           # %RH
-                    fid.close()
-                # Else if the field "pres" exists, then assume we are reading the "thwaps" datastream
-                elif len(np.where(np.array(list(fid.variables.keys())) == 'pres')[0]) > 0:
-                    p = fid.variables['pres'][:]              # hPa
-                    t = fid.variables['temp'][:]              # degC
-                    u = fid.variables['rh'][:]                # %RH
-                    fid.close()
-                # Else I don't know what I am reading -- abort here
-                else:
-                    fid.close()
-                    print('    Problem reading the ARM met/thwaps data -- returning missing data')
-                    return external
-
-                # Some simple QC
-                foo = np.where((p > 0) & (p < 1050) & (t < 60) & (u >= 0) & (u < 103))[0]
-                if len(foo) < 1:
-                    continue
-                to = to[foo] #.squeeze()
-                p = p[foo] #.squeeze()
-                t = t[foo] #.squeeze()
-                u = u[foo] #.squeeze()
-                qunit = 'g/kg'
-                qtype = 'ARM met station'
-
-                # Append the data to the growing structure
-                sigma_t = sfc_temp_sigma_error     # degC
-                sigma_u = sfc_rh_sigma_error       # %RH
-                w0 = Calcs_Conversions.rh2w(t, u/100., p)
-                w1 = Calcs_Conversions.rh2w(t+sigma_t, u/100., p)
-                w2 = Calcs_Conversions.rh2w(t-sigma_t, u/100., p)
-                u_plus  = (u+sigma_u)/100.
-                u_minus = (u-sigma_u)/100.
-                u_plus[u_plus > 1] = 1
-                u_minus[u_minus < 0] = 0
-                w3 = Calcs_Conversions.rh2w(t, u_plus, p)
-                w4 = Calcs_Conversions.rh2w(t, u_minus, p)
-
-                # Sum of squared errors, but take two-side average for T and RH uncerts
-                sigma_w = np.sqrt( ((w1-w0)**2 + (w2-w0)**2)/2. + ((w3-w0)**2 + (w4-w0)**2)/2. )
-                if external['nQsfc'] <= 0:
-                    qsecs = bt+to
-                    wv = np.copy(w0)
-                    swv = np.copy(sigma_w)
-                else:
-                    qsecs = np.append(qsecs,bt+to)
-                    wv = np.append(wv,w0)
-                    swv = np.append(swv,sigma_w)
-                external['nQsfc'] = len(qsecs)
-
-        # Read in the NCAR ISFS data
-
-    elif sfc_wv_type == 2:
-        if verbose >= 1:
-            print('  Reading in NCAR ISFS met water vapor data')
-
-        files = []
-        for i in range(len(dates)):
-            tempfiles, status = (findfile(sfc_path,'*'+sfc_rootname+'*' + dates[i] + '*.(cdf|nc)'))
-            if status == 1:
-                return external
-            files = files + tempfiles
-
-        if len(files) == 0:
-            if verbose >= 1:
-                print('    No NCAR ISFS met found in this directory for this date')
-
-        else:
-            for i in range(len(files)):
-                fid = Dataset(files[i],'r')
-                fid.set_auto_mask(False)
-                bt = fid.variables['base_time'][:].astype('float')
-                if len(np.where(np.array(list(fid.variables.keys())) == 'time')[0]) > 0:
-                    to = fid.variables['time'][:].astype('float')
-                elif len(np.where(np.array(list(fid.variables.keys())) == 'time_offset')[0]) > 0:
-                    to = fid.variables['time_offset'][:].astype('float')
-                else:
-                    print('Error: Unable to find the time field in the ISFS data file')
-                    fid.close()
-                    return external
-                p = fid.variables['pres'][:]            # hPa
-                t = fid.variables['tdry'][:]            # degC
-                u = fid.variables['rh'][:]              # %RH
-
-                foo = np.where((p > 0) & (p < 1050) & (t < 60) & (u >= 0) & (u < 103))[0]
-                if len(foo) < 1:
-                    continue
-                to = to[foo]
-                p = p[foo]
-                t = t[foo]
-                u = u[foo]
-                qunit = 'g/kg'
-                qtype = 'NCAR ISFS met station'
-
-                # Append the data to the growing structure
-                sigma_t = sfc_temp_sigma_error      # degC
-                sigma_u = sfc_rh_sigma_error        # %RH
-                w0 = Calcs_Conversions.rh2w(t, u/100., p)
-                w1 = Calcs_Conversions.rh2w(t+sigma_t, u/100., p)
-                w2 = Calcs_Conversions.rh2w(t-sigma_t, u/100., p)
-                u_plus  = (u+sigma_u)/100.
-                u_minus = (u-sigma_u)/100.
-                u_plus[u_plus > 1] = 1
-                u_minus[u_minus < 0] = 0
-                w3 = Calcs_Conversions.rh2w(t, u_plus, p)
-                w4 = Calcs_Conversions.rh2w(t, u_minus, p)
-
-                # Sum of squared errors, but take two-side average for T and RH uncerts
-                sigma_w = np.sqrt( ((w1-w0)**2 + (w2-w0)**2)/2. + ((w3-w0)**2 + (w4-w0)**2)/2. )
-                if external['nQsfc'] <= 0:
-                    qsecs = bt+to
-                    wv = np.copy(w0)
-                    swv = np.copy(sigma_w)
-                else:
-                    qsecs = np.append(qsecs,bt+to)
-                    wv = np.append(wv,w0)
-                    swv = np.append(swv,sigma_w)
-                external['nQsfc'] = len(qsecs)
-
-        # Read in the MWR met data
-    elif sfc_wv_type == 3:
-        if verbose >= 1:
-            print('  Reading in MWR met water vapor data')
-
-        files = []
-        for i in range(len(dates)):
-            tempfiles, status = (findfile(sfc_path,'*'+sfc_rootname+'*' + dates[i] + '*.(cdf|nc)'))
-            if status == 1:
-                return external
-            files = files + tempfiles
-
-        if len(files) == 0:
-            if verbose >= 1:
-                print('    No MWR met found in this directory for this date')
-        else:
-            for i in range(len(files)):
-                fid = Dataset(files[i],'r')
-                fid.set_auto_mask(False)
-                if len(np.where(np.array(list(fid.variables.keys())) == 'base_time')[0]) > 0:
-                    bt = fid.variables['base_time'][:].astype('float')
-                else:
-                    bt = 0
-                if len(np.where(np.array(list(fid.variables.keys())) == 'time_offset')[0]) > 0:
-                    to = fid.variables['time_offset'][:].astype('float')
-                elif len(np.where(np.array(list(fid.variables.keys())) == 'time')[0]) > 0:
-                    to = fid.variables['time'][:].astype('float')
-                else:
-                    fid.close()
-                    print('    Problem reading the MWR met data -- returning missing data')
-                    return external
-
-                #This field could be sfc_pres or p_sfc
-
-                if len(np.where(np.array(list(fid.variables.keys())) == 'sfc_pres')[0]) > 0:
-                    p = fid.variables['sfc_pres'][:]
-                elif len(np.where(np.array(list(fid.variables.keys())) == 'p_sfc')[0]) > 0:
-                    p = fid.variables['p_sfc'][:]
-                elif len(np.where(np.array(list(fid.variables.keys())) == 'pa')[0]) > 0:    # This is the Cologne option
-                    p = fid.variables['pa'][:]
-                    p = p / 100.        # Convert Pa to hPa
-                else:
-                    p = np.ones(len(to))*-999.
-
-                # This field could be sfc_temp or t_sfc. I also need to check the
-                # units to make sure that is handled correctly
-
-                if len(np.where(np.array(list(fid.variables.keys())) == 'sfc_temp')[0]) > 0:
-                    t = fid.variables['sfc_temp'][:]
-                    ttunit = fid.variables['sfc_temp'].units
-                    if ((ttunit == 'K') | (ttunit == 'k') | (ttunit == 'Kelvin') | (ttunit == 'degK')):
-                        t -= 273.15
-                elif len(np.where(np.array(list(fid.variables.keys())) == 't_sfc')[0]) > 0:
-                    t = fid.variables['t_sfc'][:]
-                    ttunit = fid.variables['t_sfc'].units
-                    if ((ttunit == 'K') | (ttunit == 'k') | (ttunit == 'Kelvin') | (ttunit == 'degK')):
-                        t -= 273.15
-                elif len(np.where(np.array(list(fid.variables.keys())) == 'ta')[0]) > 0:    # This is the Cologne option
-                    t = fid.variables['ta'][:]
-                    t -= 273.15      # Convert K to C
-                else:
-                    t = np.ones(len(to))*-999.
-
-                # This field could be sfc_rh or rh_sfc
-
-                if len(np.where(np.array(list(fid.variables.keys())) == 'sfc_rh')[0]) > 0:
-                    u = fid.variables['sfc_rh'][:]
-                elif len(np.where(np.array(list(fid.variables.keys())) == 'rh_sfc')[0]) > 0:
-                    u = fid.variables['rh_sfc'][:]
-                elif len(np.where(np.array(list(fid.variables.keys())) == 'hur')[0]) > 0:    # This is the Cologne option
-                    u = fid.variables['hur'][:]
-                    u = u * 100.        # Convert fraction to %
-                else:
-                    u = np.ones(len(to))*-999.
-                fid.close()
-
-                foo = np.where((p > 0) & (p < 1050) & (t < 60) & (u >= 0) & (u < 103))[0]
-                if len(foo) < 1:
-                    continue
-                to = to[foo]
-                p = p[foo]
-                t = t[foo]
-                u = u[foo]
-                qunit = 'g/kg'
-                qtype = 'Microwave radiometer met station'
-
-                # Append the data to the growing structure
-                sigma_t = sfc_temp_sigma_error      # degC
-                sigma_u = sfc_rh_sigma_error        # %RH
-                w0 = Calcs_Conversions.rh2w(t, u/100., p)
-                w1 = Calcs_Conversions.rh2w(t+sigma_t, u/100., p)
-                w2 = Calcs_Conversions.rh2w(t-sigma_t, u/100., p)
-                u_plus  = (u+sigma_u)/100.
-                u_minus = (u-sigma_u)/100.
-                u_plus[u_plus > 1] = 1
-                u_minus[u_minus < 0] = 0
-                w3 = Calcs_Conversions.rh2w(t, u_plus, p)
-                w4 = Calcs_Conversions.rh2w(t, u_minus, p)
-
-                # Sum of squared errors, but take two-side average for T and RH uncerts
-                sigma_w = np.sqrt( ((w1-w0)**2 + (w2-w0)**2)/2. + ((w3-w0)**2 + (w4-w0)**2)/2. )
-                if external['nQsfc'] <= 0:
-                    qsecs = bt+to
-                    wv = np.copy(w0)
-                    swv = np.copy(sigma_w)
-                else:
-                    qsecs = np.append(qsecs,bt+to)
-                    wv = np.append(wv,w0)
-                    swv = np.append(swv,sigma_w)
-                external['nQsfc'] = len(qsecs)
-
-        # Read in the E-PROFILE MWR met data
-    elif sfc_wv_type == 4:
-        if verbose >= 1:
-            print('  Reading in E-PROFILE MWR met water vapor data')
-
-        files = []
-        for i in range(len(dates)):
-            tempfiles, status = (findfile(sfc_path,'*'+sfc_rootname+'*' + dates[i] + '*.(cdf|nc)'))
-            if status == 1:
-                return external
-            files = files + tempfiles
-
-        if len(files) == 0:
-            if verbose >= 1:
-                print('    No E-PROFILE MWR met found in this directory for this date')
-        else:
-            for i in range(len(files)):
-                fid = Dataset(files[i],'r')
-                fid.set_auto_mask(False)
-                bt  = 0
-                to  = fid.variables['time'][:].astype('float')
-
-                p = fid.variables['air_pressure'][:]
-                t = fid.variables['air_temperature'][:]
-                t -= 273.15     # Convert K to C
-                if len(np.where(np.array(list(fid.variables.keys())) == 'relative_humidity')[0]) > 0:
-                    u = fid.variables['relative_humidity'][:]
-                else:
-                    u = np.ones(len(to))*-999.
-                fid.close()
-
-                foo = np.where((p > 0) & (p < 1050) & (t < 60) & (u >= 0) & (u < 103))[0]
-                if len(foo) < 1:
-                    continue
-                to = to[foo]
-                p = p[foo]
-                t = t[foo]
-                u = u[foo]
-                qunit = 'g/kg'
-                qtype = 'E-PROFILE microwave radiometer met station'
-
-                # Append the data to the growing structure
-                sigma_t = sfc_temp_sigma_error      # degC
-                sigma_u = sfc_rh_sigma_error        # %RH
-                w0 = Calcs_Conversions.rh2w(t, u/100., p)
-                w1 = Calcs_Conversions.rh2w(t+sigma_t, u/100., p)
-                w2 = Calcs_Conversions.rh2w(t-sigma_t, u/100., p)
-                u_plus  = (u+sigma_u)/100.
-                u_minus = (u-sigma_u)/100.
-                u_plus[u_plus > 1] = 1
-                u_minus[u_minus < 0] = 0
-                w3 = Calcs_Conversions.rh2w(t, u_plus, p)
-                w4 = Calcs_Conversions.rh2w(t, u_minus, p)
-
-                # Sum of squared errors, but take two-side average for T and RH uncerts
-                sigma_w = np.sqrt( ((w1-w0)**2 + (w2-w0)**2)/2. + ((w3-w0)**2 + (w4-w0)**2)/2. )
-                if external['nQsfc'] <= 0:
-                    qsecs = bt+to
-                    wv = np.copy(w0)
-                    swv = np.copy(sigma_w)
-                else:
-                    qsecs = np.append(qsecs,bt+to)
-                    wv = np.append(wv,w0)
-                    swv = np.append(swv,sigma_w)
-                external['nQsfc'] = len(qsecs)
-
-        # Read in the ASSIST summary met data
-    elif sfc_wv_type == 5:
-        if verbose >= 1:
-            print('  Reading in ASSIST summary met water vapor data')
-
-        files = []
-        for i in range(len(dates)):
-            tempfiles, status = (findfile(sfc_path,'*'+sfc_rootname+'*' + dates[i] + '*.(cdf|nc)'))
-            if status == 1:
-                return external
-            files = files + tempfiles
-
-        if len(files) == 0:
-            if verbose >= 1:
-                print('    No ASSIST summary met found in this directory for this date')
-        else:
-            for i in range(len(files)):
-                fid = Dataset(files[i],'r')
-                fid.set_auto_mask(False)
-                bt  = fid.variables['base_time'][:].astype('float')
-                bt  = bt / 1000.
-                to  = fid.variables['time'][:].astype('float')
-
-                if len(np.where(np.array(list(fid.variables.keys())) == 'atmosphericPressure')[0]) > 0:
-                    p = fid.variables['atmosphericPressure'][:]
-                    p = p * 10.     # Convert kPa to hPa
-                else:
-                    p = np.ones(len(to))*-999.
-                if len(np.where(np.array(list(fid.variables.keys())) == 'externalTemperature')[0]) > 0:
-                    t = fid.variables['externalTemperature'][:]
-                else:
-                    t = np.ones(len(to))*-999.
-                if len(np.where(np.array(list(fid.variables.keys())) == 'externalHumidity')[0]) > 0:
-                    u = fid.variables['externalHumidity'][:]
-                else:
-                    u = np.ones(len(to))*-999.
-                fid.close()
-
-                foo = np.where((p > 0) & (p < 1050) & (t < 60) & (u >= 0) & (u < 103))[0]
-                if len(foo) < 1:
-                    continue
-                to = to[foo]
-                p = p[foo]
-                t = t[foo]
-                u = u[foo]
-                qunit = 'g/kg'
-                qtype = 'ASSIST summary met station'
-
-                # Append the data to the growing structure
-                sigma_t = sfc_temp_sigma_error      # degC
-                sigma_u = sfc_rh_sigma_error        # %RH
-                w0 = Calcs_Conversions.rh2w(t, u/100., p)
-                w1 = Calcs_Conversions.rh2w(t+sigma_t, u/100., p)
-                w2 = Calcs_Conversions.rh2w(t-sigma_t, u/100., p)
-                u_plus  = (u+sigma_u)/100.
-                u_minus = (u-sigma_u)/100.
-                u_plus[u_plus > 1] = 1
-                u_minus[u_minus < 0] = 0
-                w3 = Calcs_Conversions.rh2w(t, u_plus, p)
-                w4 = Calcs_Conversions.rh2w(t, u_minus, p)
-
-                # Sum of squared errors, but take two-side average for T and RH uncerts
-                sigma_w = np.sqrt( ((w1-w0)**2 + (w2-w0)**2)/2. + ((w3-w0)**2 + (w4-w0)**2)/2. )
-                if external['nQsfc'] <= 0:
-                    qsecs = bt+to
-                    wv = np.copy(w0)
-                    swv = np.copy(sigma_w)
-                else:
-                    qsecs = np.append(qsecs,bt+to)
-                    wv = np.append(wv,w0)
-                    swv = np.append(swv,sigma_w)
-                external['nQsfc'] = len(qsecs)
-
-        # An undefined external surface met water vapor source was specified
     else:
-        print('Error in read_external_tseries: Undefined external met water vapor source')
-        return external
+        for i in range(len(files)):
+            fid = Dataset(files[i], 'r')
+            fid.set_auto_mask(False)
 
-    # Read the external surface pressure data next
-    # No external  source specified...
+            # Read in the time field(s)
+            if vip['ext_sfc_time_format'] == 0:
+                bt = fid.variables['base_time'][:].astype('float')
+            elif vip['ext_sfc_time_format'] == 1:
+                bt = fid.variables['base_time'][:].astype('float')
+                bt /= 1000.     # Convert milliseconds to seconds (epoch time)
+            else:
+                bt = 0
+            if len(np.where(np.array(list(fid.variables.keys())) == 'time_offset')[0]) > 0:
+                to = fid.variables['time_offset'][:].astype('float')
+            elif len(np.where(np.array(list(fid.variables.keys())) == 'time')[0]) > 0:
+                to = fid.variables['time'][:].astype('float')
+            else:
+                fid.close()
+                print('    Problem reading the external surface met time data -- returning missing data')
+                return external
 
-    if sfc_p_type == 0:
+            # Now read in the pressure field, as specified by the VIP file
+            if len(np.where(np.array(list(fid.variables.keys())) == vip['ext_sfc_pres_fieldname'])[0]) > 0:
+                p = fid.variables[vip['ext_sfc_pres_fieldname']][:]
+                if vip['ext_sfc_pres_units'] == 1:
+                    p *= 10.                        # Convert kPa to hPa
+                elif vip['ext_sfc_pres_units'] == 2:
+                    p *=  1.                        # Do nothing (units are correct)
+                elif vip['ext_sfc_pres_units'] == 3:
+                    p /= 100.                       # Convert Pa to hPa
+                else:
+                    fid.close()
+                    print(f"    Problem converting pressure units in the external met data -- ",
+                                 f"undefined option {vip['ext_sfc_pres_units']:d} but needs to be one of (1,2,3)")
+                    sys.exit()
+            else:
+                print('    Problem reading the external met pressure data -- the field ',
+                              vip['ext_sfc_pres_fieldname'],' does not exist')
+                p = np.ones(len(to))*(-999.)
+
+            # Now read in the temperature field, as specified by the VIP file
+            if len(np.where(np.array(list(fid.variables.keys())) == vip['ext_sfc_temp_fieldname'])[0]) > 0:
+                t = fid.variables[vip['ext_sfc_temp_fieldname']][:]
+                if vip['ext_sfc_temp_units'] == 1:
+                    t +=  0.                        # Do nothing (units are correct in degC)
+                elif vip['ext_sfc_temp_units'] == 2:
+                    t -=  273.15                    # Convert degK to degC
+                else:
+                    fid.close()
+                    print(f"    Problem converting temperature units in the external met data -- ",
+                                 f"undefined option {vip['ext_sfc_temp_units']:d} but needs to be one of (1,2)")
+                    sys.exit()
+            else:
+                print('    Problem reading the external met temperature data -- the field ',
+                              vip['ext_sfc_temp_fieldname'],' does not exist')
+                t = np.ones(len(to))*(-999.)
+
+            # Now read in the water vapor (relative humidity) field, as specified by the VIP file
+            if len(np.where(np.array(list(fid.variables.keys())) == vip['ext_sfc_wv_fieldname'])[0]) > 0:
+                u = fid.variables[vip['ext_sfc_wv_fieldname']][:]
+                if vip['ext_sfc_wv_units'] == 1:
+                    u +=  0.                        # Do nothing (units are correct in %rh)
+                elif vip['ext_sfc_wv_units'] == 2:
+                    u *=  100.                      # Convert fraction_rh to %rh
+                else:
+                    fid.close()
+                    print(f"    Problem converting water vapor (RH) units in the external met data -- ",
+                                 f"undefined option {vip['ext_sfc_wv_units']:d} but needs to be one of (1,2)")
+                    sys.exit()
+            else:
+                print('    Problem reading the external met water vapor (RH) data -- the field ',
+                              vip['ext_sfc_rh_fieldname'],' does not exist')
+                u = np.ones(len(to))*(-999.)
+
+            # Now close the file being read
+            fid.close()
+            if verbose >= 2: 
+                print('    Here are the first 10 surface met data that was just read in:')
+                print('           sfcP  sfcT   sfcRH')
+                for j in range(1,10):
+                    print(f"        {p[j]:.3f}, {t[j]:.2f}, {u[j]:.2f}")
+
+                # Do some checks to see if the units are anywhere close
+            foo = np.where((p < 300) | (p > 1050))[0]   # these are generous thresholds for pres in the trop [mb]
+            if len(foo) == len(p):
+                print("    Possible Units Error: all external surface pressure values are outside (300,1050) mb",
+                                "-- check units in VIP file")
+                sys.exit(1)
+            foo = np.where((t < -100) | (t > 200))[0]   # these are generous thresholds for temp in the trop [degC]
+            if len(foo) == len(t):
+                print("    Possible Units Error: all external surface temperature values are outside (-100,200) degC",
+                                "-- check units in VIP file")
+                sys.exit(1)
+            foo = np.where((u < 1) | (u > 105))[0]   # these are generous thresholds for RH in the trop [%]
+            if len(foo) == len(u):
+                print("    Possible Units Error: all external surface RH values are outside (1,105) %RH",
+                                "-- check units in VIP file")
+                sys.exit(1)
+
+                # Some simple QC for pressure (find any bad points)
+            foo = np.where((p > 0) & (p < 1050))[0]
+            if len(foo) < 1:
+                continue
+            to = to[foo]
+            p  = p[foo]
+            t  = t[foo]
+            u  = u[foo]
+
+                # Append the pressure data to the growning structure
+            if external['nPsfc'] <= 0:
+                psecs = bt+to
+                press = np.copy(p)
+            else:
+                psecs = np.append(psecs,bt+to)
+                press = np.append(press, p)
+            external['nPsfc'] = len(psecs)
+
+                # Some simple QC for temperature (find any bad points; this adds to previous QC on pres)
+            foo = np.where((t < 70) & (-100 < t))[0]
+            if len(foo) < 1:
+                continue
+            to = to[foo]
+            p  = p[foo]
+            t  = t[foo]
+            u  = u[foo]
+
+                # Append the temperature data to the growing structure
+            sigma_t = vip['ext_sfc_temp_random_error']
+            if external['nTsfc'] <= 0:
+                tsecs = bt+to
+                temp  = np.copy(t)
+                stemp = np.ones(len(t))*sigma_t
+            else:
+                tsecs = np.append(tsecs,bt+to)
+                temp  = np.append(temp,t)
+                stemp = np.append(stemp,np.ones(len(t))*sigma_t)
+            external['nTsfc'] = len(tsecs)
+
+                # Some simple QC for water vapor (find any bad points; this adds to previous QC on pres and temp)
+            foo = np.where((u >= 0) & (u < 103))[0]
+            if len(foo) < 1:
+                continue
+            to = to[foo]
+            p  = p[foo]
+            t  = t[foo]
+            u  = u[foo]
+
+                # Convert surface RH to surface WVMR, and compute its random uncertainty
+            sigma_u = vip['ext_sfc_rh_random_error']       # %RH
+            w0 = Calcs_Conversions.rh2w(t, u/100., p)
+            w1 = Calcs_Conversions.rh2w(t+sigma_t, u/100., p)
+            w2 = Calcs_Conversions.rh2w(t-sigma_t, u/100., p)
+            u_plus  = (u+sigma_u)/100.
+            u_minus = (u-sigma_u)/100.
+            u_plus[u_plus > 1] = 1
+            u_minus[u_minus < 0] = 0
+            w3 = Calcs_Conversions.rh2w(t, u_plus, p)
+            w4 = Calcs_Conversions.rh2w(t, u_minus, p)
+                # Sum of squared errors, but take two-side average for T and RH uncerts
+            sigma_w = np.sqrt( ((w1-w0)**2 + (w2-w0)**2)/2. + ((w3-w0)**2 + (w4-w0)**2)/2. )
+
+                # Append the water vapor data to the growning structure
+            if external['nQsfc'] <= 0:
+                qsecs = bt+to
+                wv = np.copy(w0)
+                swv = np.copy(sigma_w)
+            else:
+                qsecs = np.append(qsecs,bt+to)
+                wv = np.append(wv,w0)
+                swv = np.append(swv,sigma_w)
+            external['nQsfc'] = len(qsecs)
+
+        if(verbose >= 2):
+            print(f"    After reading in met file {files[i]:s}, the number of p, t, u points ",
+                         f"are {external['nPsfc']:d}, {external['nTsfc']:d}, and {external['nQsfc']:d}")
+    # Done with the loop over reading the files
+
+        # Now add the logic to set the data fields properly
+    if vip['ext_sfc_pres_type'] == 0:
         ptype = 'none'
         external['nPsfc'] = 0
-
-    # Read in the ARM met water vapor data
-
-    elif sfc_p_type == 1:
-        if verbose >= 1:
-            print('  Reading in ARM met pressure data')
-
-        files = []
-        for i in range(len(dates)):
-            tempfiles, status = (findfile(sfc_path,'*'+sfc_rootname+'*' + dates[i] + '*.(cdf|nc)'))
-            if status == 1:
-                return external
-            files = files + tempfiles
-
-        if len(files) == 0:
-            if verbose >= 1:
-                print('    No ARM met found in this directory for this date, using IRS psfc')
-        else:
-            for i in range(len(files)):
-                fid = Dataset(files[i], 'r')
-                fid.set_auto_mask(False)
-                bt = fid.variables['base_time'][:].astype('float')
-                to = fid.variables['time_offset'][:].astype('float')
-                if len(np.where(np.array(list(fid.variables.keys())) == 'atmos_pressure')[0]) > 0:
-                    p = fid.variables['atmos_pressure'][:]    # kPa
-                    p *= 10.                                  # Convert kPa to hPa
-                    fid.close()
-                # Else if the field "pres" exists, then assume we are reading the "thwaps" datastream
-                elif len(np.where(np.array(list(fid.variables.keys())) == 'pres')[0]) > 0:
-                    p = fid.variables['pres'][:]              # hPa
-                    fid.close()
-                # Else I don't know what I am reading -- abort here
-                else:
-                    fid.close()
-                    print('    Problem reading the ARM met/thwaps data -- returning missing data')
-                    return external
-                foo = np.where((p > 0) & (p < 1050))[0]
-                if len(foo) < 1:
-                    continue
-                p = p[foo] #.squeeze()
-                ptype = 'ARM met station'
-
-                # Append the data to the growing structure
-
-                if external['nPsfc'] <= 0:
-                    psecs = bt+to
-                    press = np.copy(p)
-                else:
-                    psecs = np.append(psecs,bt+to)
-                    press = np.append(press, p)
-                external['nPsfc'] = len(psecs)
-
-        # Read in the NCAR ISFS data
-
-    elif sfc_p_type == 2:
-        if verbose >= 1:
-            print('  Reading in NCAR ISFS pressure data')
-
-        files = []
-        for i in range(len(dates)):
-            tempfiles, status = (findfile(sfc_path,'*'+sfc_rootname+'*' + dates[i] + '*.(cdf|nc)'))
-            if status == 1:
-                return external
-            files = files + tempfiles
-
-        if len(files) == 0:
-            if verbose >= 1:
-                print('    No NCAR ISFS met found in this directory for this date, using IRS psfc')
-
-        else:
-            for i in range(len(files)):
-                fid = Dataset(files[i],'r')
-                fid.set_auto_mask(False)
-                bt = fid.variables['base_time'][:].astype('float')
-                if len(np.where(np.array(list(fid.variables.keys())) == 'time')[0]) > 0:
-                    to = fid.variables['time'][:].astype('float')
-                elif len(np.where(np.array(list(fid.variables.keys())) == 'time_offset')[0]) > 0:
-                    to = fid.variables['time_offset'][:].astype('float')
-                else:
-                    print('Error: Unable to find the time field in the ISFS data file')
-                    fid.close()
-                    return external
-                p = fid.variables['pres'][:]            # hPa
-
-                foo = np.where((p > 0) & (p < 1050))[0]
-                if len(foo) < 1:
-                    continue
-                to = to[foo]
-                p = p[foo]
-                ptype = 'NCAR ISFS met station'
-
-                if external['nPsfc'] <= 0:
-                    psecs = bt+to
-                    press = np.copy(p)
-                else:
-                    psecs = np.append(psecs,bt+to)
-                    press = np.append(press, p)
-                external['nPsfc'] = len(psecs)
-
-        # Read in the MWR met data
-    elif sfc_p_type == 3:
-        if verbose >= 1:
-            print('  Reading in MWR met pressure data')
-
-        files = []
-        for i in range(len(dates)):
-            tempfiles, status = (findfile(sfc_path,'*'+sfc_rootname+'*' + dates[i] + '*.(cdf|nc)'))
-            if status == 1:
-                return external
-            files = files + tempfiles
-
-        if len(files) == 0:
-            if verbose >= 1:
-                print('    No MWR met found in this directory for this date, using IRS psfc')
-        else:
-            for i in range(len(files)):
-                fid = Dataset(files[i],'r')
-                fid.set_auto_mask(False)
-                if len(np.where(np.array(list(fid.variables.keys())) == 'base_time')[0]) > 0:
-                    bt = fid.variables['base_time'][:].astype('float')
-                else:
-                    bt = 0
-                if len(np.where(np.array(list(fid.variables.keys())) == 'time_offset')[0]) > 0:
-                    to = fid.variables['time_offset'][:].astype('float')
-                elif len(np.where(np.array(list(fid.variables.keys())) == 'time')[0]) > 0:
-                    to = fid.variables['time'][:].astype('float')
-                else:
-                    fid.close()
-                    print('    Problem reading the MWR met data -- returning missing data')
-                    return external
-
-                #This field could be sfc_pres or p_sfc
-
-                if len(np.where(np.array(list(fid.variables.keys())) == 'sfc_pres')[0]) > 0:
-                    p = fid.variables['sfc_pres'][:]
-                elif len(np.where(np.array(list(fid.variables.keys())) == 'p_sfc')[0]) > 0:
-                    p = fid.variables['p_sfc'][:]
-                elif len(np.where(np.array(list(fid.variables.keys())) == 'pa')[0]) > 0:    # This is the Cologne option
-                    p = fid.variables['pa'][:]
-                    p = p / 100.        # Convert Pa to hPa
-                else:
-                    p = np.ones(len(to))*-999.
-
-                foo = np.where((p > 0) & (p < 1050))[0]
-                if len(foo) < 1:
-                    continue
-                to = to[foo]
-                p = p[foo]
-                ptype = 'Microwave radiometer met station'
-
-                if external['nPsfc'] <= 0:
-                    psecs = bt+to
-                    press = np.copy(p)
-                else:
-                    psecs = np.append(psecs,bt+to)
-                    press = np.append(press, p)
-                external['nPsfc'] = len(psecs)
+    else:
+        punit = 'mb'
+        ptype = 'External surface met station'
+    if vip['ext_sfc_temp_type'] == 0:
+        ttype = 'none'
+        external['nTsfc'] = 0
+    else:
+        tunit = 'degC'
+        ttype = 'External surface met station'
+    if vip['ext_sfc_wv_type'] == 0:
+        qtype = 'none'
+        external['nQsfc'] = 0
+    else:
+        qunit = 'g/kg'
+        qtype = 'External surface met station'
 
     # Add on the representativeness errors that were specified
-    if ((external['nTsfc'] > 0) & (sfc_temp_rep_error > 0)):
-        stemp += sfc_temp_rep_error
-    if ((external['nQsfc'] > 0) & (sfc_wv_mult_error >= 0)):
-        swv *= sfc_wv_mult_error
-    if ((external['nQsfc'] > 0) & (sfc_wv_rep_error > 0)):
-        swv += sfc_wv_rep_error
+    if ((external['nTsfc'] > 0) & (vip['ext_sfc_temp_rep_error'] > 0)):
+        stemp += vip['ext_sfc_temp_rep_error']
+    if ((external['nQsfc'] > 0) & (vip['ext_sfc_wv_mult_error'] > 0)):
+        swv *= vip['ext_sfc_wv_mult_error']
+    if ((external['nQsfc'] > 0) & (vip['ext_sfc_wv_rep_error'] > 0)):
+        swv += vip['ext_sfc_wv_rep_error']
 
     # Now I need to bin/interpolate the data appropriately
     if external['nTsfc'] > 0:
         # Compute the median time interval between Tsfc measurements [minutes]
-        tdel = np.nanmedian(tsecs[1:len(tsecs)] - tsecs[0:len(tsecs)-1]) / 60.
+        tdel = np.nanmedian(tsecs[1:len(tsecs)] - tsecs[0:len(tsecs)-1]) / 60.   # in minutes
 
         # If the median time interval is much smaller than tavg, then we will
         # bin up the data. Otherwise, we will just interpolate linearly
 
-        if (tdel*4 < tres):
+        if (tdel*4 < vip['tres']):
             #Bin the data
             tt0 = np.zeros(len(secs))
             st0 = np.zeros(len(secs))
             for i in range(len(secs)):
-                foo = np.where((secs[i]-tres*60/2. <= tsecs) & (tsecs <= secs[i] + tres*60/2.))[0]
+                foo = np.where((secs[i]-vip['tres']*60/2. <= tsecs) & (tsecs <= secs[i] + vip['tres']*60/2.))[0]
                 if len(foo) > 0:
                     tt0[i] = np.nanmean(temp[foo])
                     st0[i] = np.nanmean(stemp[foo])
@@ -4907,25 +4199,25 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
         else:
             tt0 = np.interp(secs,tsecs,temp)
             st0 = np.interp(secs,tsecs,stemp)
-            foo = np.where(secs < tsecs[0]-sfc_time_delta*3600)[0]
+
+            # Make sure we did not interpolate out of bounds here.
+            foo = np.where(secs < tsecs[0]-vip['ext_sfc_time_delta']*3600)[0]
             if len(foo) > 0:
                 tt0[foo] = -999.
                 st0[foo] = -999.
-
-            # Make sure we did not interpolate out of bounds here.
-            foo = np.where((tsecs[0]-sfc_time_delta*3600 <= secs) & (secs < tsecs[0]))[0]
+            foo = np.where((tsecs[0]-vip['ext_sfc_time_delta']*3600 <= secs) & (secs < tsecs[0]))[0]
             if len(foo) > 0:
                 tt0[foo] = temp[0]
                 st0[foo] = stemp[0]
             n = len(tsecs) - 1
-            foo = np.where(tsecs[n]+sfc_time_delta*3600 < secs)[0]
+            foo = np.where(tsecs[n]+vip['ext_sfc_time_delta']*3600 < secs)[0]
             if len(foo) > 0:
                 tt0[foo] = -999.
                 st0[foo] = -999.
-            foo = np.where((tsecs[n] < secs) & (secs <= tsecs[n]+sfc_time_delta*3600))[0]
+            foo = np.where((tsecs[n] < secs) & (secs <= tsecs[n]+vip['ext_sfc_time_delta']*3600))[0]
             if len(foo) > 0:
-                tt0[foo] = temp[0]
-                st0[foo] = stemp[0]
+                tt0[foo] = temp[n]
+                st0[foo] = stemp[n]
     else:
         tt0 = -999.
         st0 = -999
@@ -4937,12 +4229,12 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
         # If the median time interval is much smaller than tavg, then we will
         # bin up the data. Otherwise, we will just interpolate linearly
 
-        if (tdel*4 < tres):
+        if (tdel*4 < vip['tres']):
             #Bin the data
             qq0 = np.zeros(len(secs))
             sq0 = np.zeros(len(secs))
             for i in range(len(secs)):
-                foo = np.where((secs[i]-tres*60/2. <= qsecs) & (qsecs <= secs[i] + tres*60/2.))[0]
+                foo = np.where((secs[i]-vip['tres']*60/2. <= qsecs) & (qsecs <= secs[i] + vip['tres']*60/2.))[0]
                 if len(foo) > 0:
                     qq0[i] = np.nanmean(wv[foo])
                     sq0[i] = np.nanmean(swv[foo])
@@ -4952,25 +4244,25 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
         else:
             qq0 = np.interp(secs,qsecs,wv)
             sq0 = np.interp(secs,qsecs,swv)
-            foo = np.where(secs < qsecs[0]-sfc_time_delta*3600)[0]
+
+            # Make sure we did not interpolate out of bounds here.
+            foo = np.where(secs < qsecs[0]-vip['ext_sfc_time_delta']*3600)[0]
             if len(foo) > 0:
                 qq0[foo] = -999.
                 sq0[foo] = -999.
-
-            # Make sure we did not interpolate out of bounds here.
-            foo = np.where((qsecs[0]-sfc_time_delta*3600 <= secs) & (secs < qsecs[0]))[0]
+            foo = np.where((qsecs[0]-vip['ext_sfc_time_delta']*3600 <= secs) & (secs < qsecs[0]))[0]
             if len(foo) > 0:
                 qq0[foo] = wv[0]
                 sq0[foo] = swv[0]
             n = len(qsecs) - 1
-            foo = np.where(qsecs[n]+sfc_time_delta*3600 < secs)[0]
+            foo = np.where(qsecs[n]+vip['ext_sfc_time_delta']*3600 < secs)[0]
             if len(foo) > 0:
                 qq0[foo] = -999.
                 sq0[foo] = -999.
-            foo = np.where((qsecs[n] < secs) & (secs <= qsecs[n]+sfc_time_delta*3600))[0]
+            foo = np.where((qsecs[n] < secs) & (secs <= qsecs[n]+vip['ext_sfc_time_delta']*3600))[0]
             if len(foo) > 0:
-                qq0[foo] = wv[0]
-                sq0[foo] = swv[0]
+                qq0[foo] = wv[n]
+                sq0[foo] = swv[n]
     else:
         qq0 = -999.
         sq0 = -999.
@@ -4982,32 +4274,32 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
         # If the median time interval is much smaller than tavg, then we will
         # bin up the data. Otherwise, we will just interpolate linearly
 
-        if (tdel*4 < tres):
+        if (tdel*4 < vip['tres']):
             #Bin the data
             p0 = np.zeros(len(secs))
             for i in range(len(secs)):
-                foo = np.where((secs[i]-tres*60/2. <= psecs) & (psecs <= secs[i] + tres*60/2.))[0]
+                foo = np.where((secs[i]-vip['tres']*60/2. <= psecs) & (psecs <= secs[i] + vip['tres']*60/2.))[0]
                 if len(foo) > 0:
                     p0[i] = np.nanmean(press[foo])
                 else:
                     p0[i] = -999.
         else:
             p0 = np.interp(secs,psecs,press)
-            foo = np.where(secs < psecs[0]-sfc_time_delta*3600)[0]
-            if len(foo) > 0:
-                p0[foo] = -999.
 
             # Make sure we did not interpolate out of bounds here.
-            foo = np.where((psecs[0]-sfc_time_delta*3600 <= secs) & (secs < psecs[0]))[0]
+            foo = np.where(secs < psecs[0]-vip['ext_sfc_time_delta']*3600)[0]
+            if len(foo) > 0:
+                p0[foo] = -999.
+            foo = np.where((psecs[0]-vip['ext_sfc_time_delta']*3600 <= secs) & (secs < psecs[0]))[0]
             if len(foo) > 0:
                 p0[foo] = press[0]
             n = len(psecs) - 1
-            foo = np.where(psecs[n]+sfc_time_delta*3600 < secs)[0]
+            foo = np.where(psecs[n]+vip['ext_sfc_time_delta']*3600 < secs)[0]
             if len(foo) > 0:
                 p0[foo] = -999.
-            foo = np.where((psecs[n] < secs) & (secs <= psecs[n]+sfc_time_delta*3600))[0]
+            foo = np.where((psecs[n] < secs) & (secs <= psecs[n]+vip['ext_sfc_time_delta']*3600))[0]
             if len(foo) > 0:
-                p0[foo] = press[0]
+                p0[foo] = press[n]
     else:
         p0 = -999.
 
@@ -5015,18 +4307,18 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
     # Read in the surface in-situ CO2 data, if desired
     # No external surface CO2 source specified....
     co2unit = ' '
-    if co2_sfc_type == 0:
+    if vip['co2_sfc_type'] == 0:
         co2type = 'none'
         external['nCo2sfc'] = 0
 
     # Read in the surface in-situ CO2 data (assuming DDT's PGS qc1turn datastream)
-    elif co2_sfc_type == 1:
+    elif vip['co2_sfc_type'] == 1:
         if verbose >= 1:
             print('  Reading in ARM PGS qc1turn datastream')
 
         files = []
         for i in range(len(dates)):
-            tempfiles, status = (findfile(co2_sfc_path,'*pgs*' + dates[i] + '*.(cdf|nc)'))
+            tempfiles, status = (findfile(vip['co2_sfc_path'],'*pgs*' + dates[i] + '*.(cdf|nc)'))
             if status == 1:
                 return external
             files = files + tempfiles
@@ -5074,8 +4366,8 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
             external['nCo2sfc'] = 0
 
     # Add on the representativeness errors that were specified
-    if ((external['nCo2sfc'] > 0) & (co2_sfc_rep_error > 0)):
-        sco2 += co2_sfc_rep_error
+    if ((external['nCo2sfc'] > 0) & (vip['co2_sfc_rep_error'] > 0)):
+        sco2 += vip['co2_sfc_rep_error']
 
     # Now I need to bin/interpolate the data appropriately
     if external['nCo2sfc'] > 0:
@@ -5085,12 +4377,12 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
         # If the median time interval is much smaller than tavg, then
         # we will bin up the data. Otherwise, we will just interpolate linearly
 
-        if (tdel*4 < tres):
+        if (tdel*4 < vip['tres']):
             # Bin the data
             cco2 = np.zeros(len(secs))
             scco2 = np.zeros(len(secs))
             for i in range(len(secs)):
-                foo = np.where((secs[i]-tres*60/2. <= co2secs) & (co2secs <= secs[i] + tres*60/2.))[0]
+                foo = np.where((secs[i]-vip['tres']*60/2. <= co2secs) & (co2secs <= secs[i] + vip['tres']*60/2.))[0]
                 if len(foo) > 0:
                     cco2[i] = np.nanmean(co2[foo])
                     scco2[i] = np.nanmean(sco2[foo])
@@ -5100,25 +4392,25 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
         else:
             cco2 = np.interp(secs,co2secs,co2)
             scco2 = np.interp(secs,co2secs,sco2)
-            foo = np.where(secs < co2secs[0]-co2_sfc_time_delta*3600)[0]
+
+            # Make sure we did not interpolate out of bounds here.
+            foo = np.where(secs < co2secs[0]-vip['co2_sfc_time_delta']*3600)[0]
             if len(foo) > 0:
                 cco2[foo] = -999.
                 scco2[foo] = -999.
-
-            # Make sure we did not interpolate out of bounds here.
-            foo = np.where((co2secs[0]-co2_sfc_time_delta*3600 <= secs) & (secs < co2secs[0]))[0]
+            foo = np.where((co2secs[0]-vip['co2_sfc_time_delta']*3600 <= secs) & (secs < co2secs[0]))[0]
             if len(foo) > 0:
                 cco2[foo] = co2[0]
                 scco2[foo] = sco2[0]
             n = len(co2secs) - 1
-            foo = np.where(co2secs[n]+co2_sfc_time_delta*3600 < secs)[0]
+            foo = np.where(co2secs[n]+vip['co2_sfc_time_delta']*3600 < secs)[0]
             if len(foo) > 0:
                 cco2[foo] = -999.
                 scco2[foo] = -999.
-            foo = np.where((co2secs[n] < secs) & (secs <= co2secs[n]+co2_sfc_time_delta*3600))[0]
+            foo = np.where((co2secs[n] < secs) & (secs <= co2secs[n]+vip['co2_sfc_time_delta']*3600))[0]
             if len(foo) > 0:
-                cco2[foo] = co2[0]
-                scco2[foo] = sco2[0]
+                cco2[foo] = co2[n]
+                scco2[foo] = sco2[n]
     else:
         cco2 = -999.
         scco2 = -999.
@@ -5129,23 +4421,23 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
     # the random error into the time-series...
 
     if external['nTsfc'] > 0:
-        tt1 = np.zeros((sfc_temp_npts,len(secs)))
-        st1 = np.zeros((sfc_temp_npts,len(secs)))
+        tt1 = np.zeros((vip['ext_sfc_temp_npts'],len(secs)))
+        st1 = np.zeros((vip['ext_sfc_temp_npts'],len(secs)))
         tt1[0,:] = tt0
         st1[0,:] = st0
-        for j in range(1,sfc_temp_npts):
-            tt1[j,:] = tt1 = tt0 + np.random.normal(size = len(secs))*st0/10.
+        for j in range(1,vip['ext_sfc_temp_npts']):
+            tt1[j,:] = tt0 + np.random.normal(size = len(secs))*st0/10.
             st1[j,:] = np.copy(st0)
     else:
         tt1 = np.copy(tt0)
         st1 = np.copy(st0)
 
     if external['nQsfc'] > 0:
-        qq1 = np.zeros((sfc_wv_npts,len(secs)))
-        sq1 = np.zeros((sfc_wv_npts,len(secs)))
+        qq1 = np.zeros((vip['ext_sfc_wv_npts'],len(secs)))
+        sq1 = np.zeros((vip['ext_sfc_wv_npts'],len(secs)))
         qq1[0,:] = np.copy(qq0)
         sq1[0,:] = np.copy(sq0)
-        for j in range(1,sfc_wv_npts):
+        for j in range(1,vip['ext_sfc_wv_npts']):
             qq1[j,:] = qq0 + np.random.normal(size = len(secs))*sq0/10.
             sq1[j,:] = np.copy(sq0)
     else:
@@ -5153,11 +4445,11 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
         sq1 = np.copy(sq0)
 
     if external['nCo2sfc'] > 0:
-        cco2a = np.zeros((co2_sfc_npts,len(secs)))
-        scco2a = np.zeros((co2_sfc_npts,len(secs)))
+        cco2a = np.zeros((vip['co2_sfc_npts'],len(secs)))
+        scco2a = np.zeros((vip['co2_sfc_npts'],len(secs)))
         cco2a[0,:] = np.copy(cco2)
         scco2a[0,:] = np.copy(scco2)
-        for j in range(1,co2_sfc_npts):
+        for j in range(1,vip['co2_sfc_npts']):
             cco2a[j,:] = cco2 + np.random.normal(size = len(secs))*scco2/10.
             scco2a[j,:] = np.copy(scco2)
     else:
@@ -5166,14 +4458,14 @@ def read_external_timeseries(date, secs, tres, avg_instant, sfc_temp_type,
 
     # Build the output structure and return it
 
-    external = {'success':1, 'sfc_relative_height':sfc_relative_height,
-          'nTsfc':external['nTsfc'],'nptsT':sfc_temp_npts, 'tunit':tunit, 'ttype':ttype,
-          'temp':tt1, 'stemp':st1, 'nQsfc':external['nQsfc'], 'nptsQ':sfc_wv_npts, 'qunit':qunit,
-          'qtype':qtype, 'wv':qq1, 'swv':sq1, 'sfc_temp_rep_error':sfc_temp_rep_error,
-          'sfc_wv_rep_error':sfc_wv_rep_error, 'sfc_wv_mult_error':sfc_wv_mult_error,
-          'nCO2sfc':external['nCO2sfc'], 'co2unit':co2unit, 'nptsCO2':co2_sfc_npts,
-          'co2type':co2type, 'co2':cco2a, 'sco2':scco2a, 'co2_sfc_rep_error':co2_sfc_rep_error,
-          'co2_sfc_relative_height':co2_sfc_relative_height, 'nPsfc':external['nPsfc'],
+    external = {'success':1, 'sfc_relative_height':vip['ext_sfc_relative_height'],
+          'nTsfc':external['nTsfc'],'nptsT':vip['ext_sfc_temp_npts'], 'tunit':tunit, 'ttype':ttype,
+          'temp':tt1, 'stemp':st1, 'nQsfc':external['nQsfc'], 'nptsQ':vip['ext_sfc_wv_npts'], 'qunit':qunit,
+          'qtype':qtype, 'wv':qq1, 'swv':sq1, 'sfc_temp_rep_error':vip['ext_sfc_temp_rep_error'],
+          'sfc_wv_rep_error':vip['ext_sfc_wv_rep_error'], 'sfc_wv_mult_error':vip['ext_sfc_wv_mult_error'],
+          'nCO2sfc':external['nCO2sfc'], 'co2unit':co2unit, 'nptsCO2':vip['co2_sfc_npts'],
+          'co2type':co2type, 'co2':cco2a, 'sco2':scco2a, 'co2_sfc_rep_error':vip['co2_sfc_rep_error'],
+          'co2_sfc_relative_height':vip['co2_sfc_relative_height'], 'nPsfc':external['nPsfc'],
           'ptype':ptype, 'psfc': p0}
     return external
 
