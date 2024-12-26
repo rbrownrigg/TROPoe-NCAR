@@ -110,7 +110,7 @@ def findfile(path,pattern,verbose=2):
 #    2) Custom, with fields pressure [mb], temperature [C], rh [%], and height [km AGL]
 # If the function finds the field "tdry", it assumes this is an ARM radiosonde
 ################################################################################
-def read_omb_file(path, filename, verbose=1):
+def read_omb_file(path, filename, hour, verbose=1):
     ombfile = path+'/'+filename
 
     if os.path.exists(ombfile) == False:
@@ -120,12 +120,25 @@ def read_omb_file(path, filename, verbose=1):
         print('    Reading this file for the O-B calculation: '+ombfile)
         fid = Dataset(ombfile)
         if len(np.where(np.array(list(fid.variables.keys())) == 'tdry')[0]) > 0:
+            print('        This is an ARM-like radiosonde file')  # Has a field named "tdry"
             z  = fid.variables['alt'][:]
             p  = fid.variables['pres'][:]
             rh = fid.variables['rh'][:]
             t  = fid.variables['tdry'][:]
             z  = (z - z[0])/1000.           # Convert m MSL to km AGL
+        elif len(np.where(np.array(list(fid.variables.keys())) == 'gamma')[0]) > 0:
+            foo = np.where(fid.variables['hour'][:] >= hour)[0]
+            print(f"        This is a TROPoe file; extracting sample {foo[0]:d} at time {hour:.3f} UTC") # Has a field named "gamma"
+            z  = fid.variables['height'][:]
+            p  = fid.variables['pressure'][:]
+            rh = fid.variables['rh'][:]
+            t  = fid.variables['temperature'][:]
+                # Now extract out the sample we desire
+            p  =  p[foo[0],:]
+            t  =  t[foo[0],:]
+            rh = rh[foo[0],:]
         else:
+            print('        This is the fixed-format OMB input file')   # The default
             z  = fid.variables['height'][:]
             p  = fid.variables['pressure'][:]
             rh = fid.variables['rh'][:]

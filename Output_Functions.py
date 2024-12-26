@@ -699,7 +699,7 @@ def write_output(vip, ext_prof, mod_prof, ext_tseries, globatt, xret, prior,
 
         foo = np.where(xret[0]['flagY'] == 5)[0]
         if len(foo) > 0:
-            obs_flag.value_05 = 'Surface met temeprature in ' + ext_tseries['tunit'] + ' from ' + ext_tseries['ttype']
+            obs_flag.value_05 = 'Surface met temperature in ' + ext_tseries['tunit'] + ' from ' + ext_tseries['ttype']
             obs_flag.value_05_comment1 = 'Surface met station is ' + str(ext_tseries['sfc_relative_height']) + ' m above height=0 level'
             if ext_tseries['sfc_temp_rep_error'] > 0:
                 obs_flag.value_05_comment2 = 'Adding ' + str(ext_tseries['sfc_temp_rep_error']) + ' C to uncertainty to account for representativeness error'
