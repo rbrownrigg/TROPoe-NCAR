@@ -4013,7 +4013,7 @@ def read_external_timeseries(date, secs, vip, dostop, verbose):
                     sys.exit()
             else:
                 print('    Problem reading the external met water vapor (RH) data -- the field ',
-                              vip['ext_sfc_rh_fieldname'],' does not exist')
+                              vip['ext_sfc_wv_fieldname'],' does not exist')
                 u = np.ones(len(to))*(-999.)
 
             # Now close the file being read
