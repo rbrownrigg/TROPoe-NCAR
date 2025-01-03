@@ -115,7 +115,7 @@ def read_omb_file(path, filename, hour, verbose=1):
 
     if os.path.exists(ombfile) == False:
         print('    Unable to find the input file for the O-B calculation')
-        return ({'sucess':0})
+        return ({'success':0})
     else:
         print('    Reading this file for the O-B calculation: '+ombfile)
         fid = Dataset(ombfile)
@@ -157,7 +157,7 @@ def read_omb_file(path, filename, hour, verbose=1):
             errmess = 'All profiles in OMB input file must be of the same length'
         if err == 1:
             print('Error in read_omb_file: '+errmess)
-            return ({'status':0})
+            return ({'success':0})
     return ({'success':1, 'z':z, 't':t, 'p':p, 'q':q, 'rh':rh, 'filename':path+'/'+filename})
 
 
