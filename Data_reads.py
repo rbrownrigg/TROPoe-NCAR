@@ -110,12 +110,12 @@ def findfile(path,pattern,verbose=2):
 #    2) Custom, with fields pressure [mb], temperature [C], rh [%], and height [km AGL]
 # If the function finds the field "tdry", it assumes this is an ARM radiosonde
 ################################################################################
-def read_omb_file(path, filename, hour, verbose=1):
+def read_omb_file(path, filename, hour, maxht, verbose=1):
     ombfile = path+'/'+filename
 
     if os.path.exists(ombfile) == False:
-        print('    Unable to find the input file for the O-B calculation')
-        return ({'success':0})
+        errmess = (f"Unable to find the O-B input file {path:s}/{filename:s}")
+        return ({'success':0, 'errstring':errmess})
     else:
         print('    Reading this file for the O-B calculation: '+ombfile)
         fid = Dataset(ombfile)
@@ -149,16 +149,15 @@ def read_omb_file(path, filename, hour, verbose=1):
         if len(z) < 3:
             err = 1
             errmess = 'Too few height elements -- needs to be at least 3 heights'
-        elif np.max(z) < 10:
+        elif np.max(z) < maxht:
             err = 1
-            errmess = 'Maximum height in the OMB input file must exceed 10 km AGL'
+            errmess = (f"Maximum height in the OMB input file ({np.max(z):.3f}) must be larger than the omb_required_minht in the VIP file ({maxht:.3f})")
         elif ((len(z) != len(t)) | (len(z) != len(p)) | (len(z) != len(rh))):
             err = 1
             errmess = 'All profiles in OMB input file must be of the same length'
         if err == 1:
-            print('Error in read_omb_file: '+errmess)
-            return ({'success':0})
-    return ({'success':1, 'z':z, 't':t, 'p':p, 'q':q, 'rh':rh, 'filename':path+'/'+filename})
+            return ({'success':0, 'errstring':errmess})
+    return ({'success':1, 'errstring':'None', 'z':z, 't':t, 'p':p, 'q':q, 'rh':rh, 'filename':path+'/'+filename})
 
 
 ################################################################################

@@ -11,7 +11,7 @@
 #
 # ----------------------------------------------------------------------------
 
-__version__ = '0.18.2'
+__version__ = '0.18.3'
 
 import os
 import sys
@@ -1199,13 +1199,13 @@ for i in range(len(irs['secs'])):                        # { loop_i
         VIP_Databases_functions.abort(lbltmpdir,date)
         sys.exit()
 
-    # If this is an observation-minus-background calculation, then override multiple VIP entries and 
+    # If this is an observation-minus-background calculation, then override multiple VIP entries and
     # populate the first-guess vector with the input profile
     if vip['omb_flag'] == 1:
         print('  Performing an observation-minus-background (O-B) calculation')
-        omb_input = Data_reads.read_omb_file(vip['omb_path'],vip['omb_file'],irs['hour'][i])
+        omb_input = Data_reads.read_omb_file(vip['omb_path'],vip['omb_file'],irs['hour'][i], vip['omb_required_minht'])
         if omb_input['success'] == 0:
-            print(f,"Error: Unable to find the O-B input file {vip['omb_path']:s}/{vip['omb_file']:s} -- so aborting")
+            print(omb_input['errstring'])
             VIP_Databases_functions.abort(lbltmpdir,date)
             sys.exit()
         vip['max_iterations'] = 0
