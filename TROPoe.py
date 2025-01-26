@@ -11,7 +11,7 @@
 #
 # ----------------------------------------------------------------------------
 
-__version__ = '0.18.3'
+__version__ = '0.18.4'
 
 import os
 import sys
@@ -1407,9 +1407,10 @@ for i in range(len(irs['secs'])):                        # { loop_i
                     Kij   = np.copy(precompute_prior_jacobian['Kij0'])
                     flag  = np.copy(precompute_prior_jacobian['flag0'])
                     wnumc = np.copy(precompute_prior_jacobian['wnumc0'])
+                    mlev  = copy.deepcopy(precompute_prior_mlev)
                 else:
                         # Otherwise, run the forward model and compute the Jacobian
-                    flag, Kij, FXn, wnumc, totaltime, tape3_info  = \
+                    flag, Kij, FXn, wnumc, totaltime, mlev, tape3_info = \
                            Jacobian_Functions.compute_jacobian_irs_interpol(Xn, p, z,
                            vip['lbl_home'], lbldir, lbltmp, vip['lbl_std_atmos'], lbltp5, lbltp3,
                            cbh, sspl, sspi, lblwnum1, lblwnum2,
@@ -1419,7 +1420,7 @@ for i in range(len(irs['secs'])):                        # { loop_i
                            location['alt'], rt_extra_layers, stdatmos, vip['lblrtm_jac_interpol_npts_wnum'],
                            vip['irs_type'], tape3_info, vip, verbose, debug, doapodize=False) 
                         # Confirm that the TAPE3 is appropriate for this calculation
-                    if tape3_info['success'] > 0:
+                    if((flag != 0) & (tape3_info['success'] > 0)):
                         if((lblwnum1 < tape3_info['minw']) or (tape3_info['maxw'] < lblwnum2)):
                             print('Error: The tape3 selected in the VIP does not span the desired IRS calculation range')
                             print(f"            TAPE3 spans from {tape3_info['minw']:.3f} to {tape3_info['maxw']:.3f} cm-1")
@@ -1429,6 +1430,7 @@ for i in range(len(irs['secs'])):                        # { loop_i
                     # If we are using the prior for the first guess (FG=1), and we have not already loaded
                     # this structure, then capture the forward calc and jacobian for the first guess
             if((precompute_prior_jacobian['status'] == 0) & (vip['first_guess'] == 1) & (flag != 0)):
+                precompute_prior_mlev     = copy.deepcopy(mlev)
                 precompute_prior_jacobian = {'status':1, 'X0':np.copy(Xn), 'FX0':np.copy(FXn), 'Kij0':np.copy(Kij),
                     'flag0':np.copy(flag), 'wnumc0':np.copy(wnumc)}
         else:
@@ -1452,6 +1454,11 @@ for i in range(len(irs['secs'])):                        # { loop_i
         wnumc = wnumc[w1idx]
         FXn = FXn[w1idx]
         Kij = Kij[w1idx,:]
+
+        # Derive the CBH estimate from the spectral data
+        cbh_mlev, cld_emis = Other_functions.do_mlev_cbh(irs['wnum'][w0idx],irs['radmn'][w0idx,i],
+                        mlev['wnum'][w1idx],mlev['radclear'][w1idx],mlev['radBcld'][:,w1idx],mlev['maxht'],z,itern, vip)
+        cbh_tcld = Other_functions.do_tcld_cbh(irs['wnum'][w0idx],irs['radmn'][w0idx,i], Xn, z, cbh_mlev, vip)
 
         # Are there missing values from the IRS? If so,then we want to make the
         # forward model calculation have the same value and put no sensitivity
@@ -2202,6 +2209,9 @@ for i in range(len(irs['secs'])):                        # { loop_i
             rmsr = xsamp[itern-1]['rmsr']
             rmsp = xsamp[itern-1]['rmsp']
             chi2 = xsamp[itern-1]['chi2']
+            cbh_mlev = xsamp[itern-1]['cbh_mlev']
+            cbh_tcld = xsamp[itern-1]['cbh_tcld']
+            cld_emis = xsamp[itern-1]['cld_emis']
             itern = -1
 
         elif itern > 1:
@@ -2229,6 +2239,9 @@ for i in range(len(irs['secs'])):                        # { loop_i
                 rmsr = xsamp[old_iter]['rmsr']
                 rmsp = xsamp[old_iter]['rmsp']
                 chi2 = xsamp[old_iter]['chi2']
+                cbh_mlev = xsamp[old_iter]['cbh_mlev']
+                cbh_tcld = xsamp[old_iter]['cbh_tcld']
+                cld_emis = xsamp[old_iter]['cld_emis']
                 itern = old_iter
 
             # But also check for convergence in the normal manner
@@ -2242,7 +2255,7 @@ for i in range(len(irs['secs'])):                        # { loop_i
         xtmp = {'idx':i, 'secs':irs['secs'][i], 'ymd':irs['ymd'][i], 'hour':irs['hour'][i],
                 'nX':nX, 'nY':nY, 'dimY':np.copy(dimY), 'Y':np.copy(Y), 'sigY':np.copy(sigY), 'flagY':np.copy(flagY),
                 'niter':itern, 'z':np.copy(z), 'p':np.copy(p), 'hatchopen':irs['hatchopen'][i],
-                'cbh':cbh, 'cbhflag':cbhflag,
+                'cbh':cbh, 'cbhflag':cbhflag, 'cbh_mlev':cbh_mlev, 'cbh_tcld':cbh_tcld, 'cld_emis':cld_emis,
                 'X0':np.copy(X0), 'Xn':np.copy(Xn), 'FXn':np.copy(FXn), 'Sop':np.copy(Sop),
                 'vres_nm':np.copy(vres_nm), 'K':np.copy(Kij), 'Gain':np.copy(Gain), 'Akern':np.copy(Akern), 'Akern_nm':np.copy(Akern_nm), 'vres':np.copy(vres),
                 'gamma':gfac, 'qcflag':0, 'sic':sic, 'dfs':np.copy(dfs), 'dfs_nm':np.copy(dfs_nm),
@@ -2311,10 +2324,13 @@ for i in range(len(irs['secs'])):                        # { loop_i
         rmsr = xsamp[itern]['rmsr']
         rmsp = xsamp[itern]['rmsp']
         chi2 = xsamp[itern]['chi2']
+        cbh_mlev = xsamp[itern]['cbh_mlev']
+        cbh_tcld = xsamp[itern]['cbh_tcld']
+        cld_emis = xsamp[itern]['cld_emis']
         xtmp = {'idx':i, 'secs':irs['secs'][i], 'ymd':irs['ymd'][i], 'hour':irs['hour'][i],
                 'nX':nX, 'nY':nY, 'dimY':np.copy(dimY), 'Y':np.copy(Y), 'sigY':np.copy(sigY), 'flagY':np.copy(flagY),
                 'niter':itern, 'z':np.copy(z), 'p':np.copy(p), 'hatchopen':irs['hatchopen'][i],
-                'cbh':cbh, 'cbhflag':cbhflag,
+                'cbh':cbh, 'cbhflag':cbhflag, 'cbh_mlev':cbh_mlev, 'cbh_tcld':cbh_tcld, 'cld_emis':cld_emis,
                 'X0':np.copy(X0), 'Xn':np.copy(Xn), 'FXn':np.copy(FXn), 'Sop':np.copy(Sop),
                 'vres_nm':np.copy(vres_nm), 'K':np.copy(Kij), 'Gain':np.copy(Gain), 'Akern':np.copy(Akern), 'Akern_nm':np.copy(Akern_nm), 'vres':np.copy(vres),
                 'gamma':gfac, 'qcflag':0, 'sic':sic, 'dfs':np.copy(dfs), 'dfs_nm':np.copy(dfs_nm),
@@ -2332,7 +2348,8 @@ for i in range(len(irs['secs'])):                        # { loop_i
 
     # Update the in_tropoe structure, if conditions warrant
     # Be sure to keep the logic to identify samples that go into in_tropoe the same as in Output_Functions.py
-    if((gfac < vip['add_tropoe_gamma_threshold']) & ((cbh > vip['add_tropoe_input_cbh_thres']) | (Xn[nX] < vip['add_tropoe_input_lwp_thres']))):
+    if((gfac < vip['add_tropoe_gamma_threshold']) &
+            ((cbh > vip['add_tropoe_input_cbh_thres']) | (Xn[nX] < vip['add_tropoe_input_lwp_thres']))):
         if((vip['add_tropoe_T_input_flag'] == 1) | (vip['add_tropoe_q_input_flag'] == 1)):
             if verbose >= 1:
                 print('    Adding retrieved profile to the "in_tropoe" structure, to be used as input later')
@@ -2398,10 +2415,9 @@ for i in range(len(irs['secs'])):                        # { loop_i
     derived['ch4_profile'] = Other_functions.trace_gas_prof(doch4, z, Xn[range(nX+7,nX+10)])
     derived['n2o_profile'] = Other_functions.trace_gas_prof(don2o, z, Xn[range(nX+10,nX+13)])
     
-    
     dindices = Other_functions.calc_derived_indices(xret[-1],vip,derived,verbose)
-    # Write the data into the netCDF file
 
+    # Write the data into the netCDF file
     success, noutfilename = Output_Functions.write_output(vip, ext_prof, mod_prof, ext_tseries,
               globatt, xret, prior, fsample, derived, dindices, version, (endtime-starttime).total_seconds(),
               modeflag, noutfilename, location, cbh_string, shour, verbose)

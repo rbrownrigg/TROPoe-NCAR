@@ -250,7 +250,7 @@ def compute_jacobian_irs_interpol(X, p, zz, lblhome, lbldir, lblroot, lbl_std_at
         if debug:
             wait = input('Stopping inside compute_jacobian_interpol to debug. Press enter to continue')
         else:
-            return success, -999., -999., -999., -999., tape3_info
+            return success, -999., -999., -999., -999., -999., tape3_info
 
     # Read in the spectral limits used in the TAPE3 file
     if(tape3_info['success'] == -2):
@@ -295,7 +295,7 @@ def compute_jacobian_irs_interpol(X, p, zz, lblhome, lbldir, lblroot, lbl_std_at
                     if debug:
                         wait = input('Stopping inside compute_jacobian_interpol to debug. Press enter to continue')
                     else:
-                        return success, -999., -999., -999., -999., tape3_info
+                        return success, -999., -999., -999., -999., -999., tape3_info
                 od11 = np.zeros((len(files1), len(v)))
                 iod11 = np.zeros((len(files1), len(iv)))
             s0, v0 = LBLRTM_Functions.lbl_read(files2[i], do_load_data=True)
@@ -313,7 +313,7 @@ def compute_jacobian_irs_interpol(X, p, zz, lblhome, lbldir, lblroot, lbl_std_at
                     if debug:
                         wait = input('Stopping inside compute_jacobian_interpol to debug. Press enter to continue')
                     else:
-                        return success, -999., -999., -999., -999., tape3_info
+                        return success, -999., -999., -999., -999., -999., tape3_info
                 od22 = np.zeros((len(files1),len(v)))
                 iod22 = np.zeros((len(files1),len(iv)))
             s0, v0 = LBLRTM_Functions.lbl_read(files3[i], do_load_data=True)
@@ -331,7 +331,7 @@ def compute_jacobian_irs_interpol(X, p, zz, lblhome, lbldir, lblroot, lbl_std_at
                     if debug:
                         wait = input('Stopping inside compute_jacobian_interpol to debug. Press enter to continue')
                     else:
-                        return success, -999., -999., -999., -999., tape3_info
+                        return success, -999., -999., -999., -999., -999., tape3_info
                 od33 = np.zeros((len(files1),len(v)))
                 iod33 = np.zeros((len(files1),len(iv)))
             s0, v0 = LBLRTM_Functions.lbl_read(files4[i], do_load_data=True)
@@ -349,7 +349,7 @@ def compute_jacobian_irs_interpol(X, p, zz, lblhome, lbldir, lblroot, lbl_std_at
                     if debug:
                         wait = input('Stopping inside compute_jacobian_interpol to debug. Press enter to continue')
                     else:
-                        return success, -999., -999., -999., -999., tape3_info
+                        return success, -999., -999., -999., -999., -999., tape3_info
                 od44 = np.zeros((len(files1),len(v)))
                 iod44 = np.zeros((len(files1),len(iv)))
             s0, v0 = LBLRTM_Functions.lbl_read(files5[i], do_load_data=True)
@@ -367,7 +367,7 @@ def compute_jacobian_irs_interpol(X, p, zz, lblhome, lbldir, lblroot, lbl_std_at
                     if debug:
                         wait = input('Stopping inside compute_jacobian_interpol to debug. Press enter to continue')
                     else:
-                        return success, -999., -999., -999., -999., tape3_info
+                        return success, -999., -999., -999., -999., -999., tape3_info
                 od55 = np.zeros((len(files1),len(v)))
                 iod55 = np.zeros((len(files1),len(iv)))
             s0, v0 = LBLRTM_Functions.lbl_read(files6[i], do_load_data=True)
@@ -922,17 +922,17 @@ def compute_jacobian_irs_interpol(X, p, zz, lblhome, lbldir, lblroot, lbl_std_at
     if verbose >= 3:
         print('Forward model F(Xn) using radxfer and assuming clouds')
 
-    gasod = np.copy(od00)
+    gasod = np.copy(od00)    # this is only the gaseous optical depths
+    totod = np.copy(od00)    # this will be the total (gas + cloud) optical depths
     lcldodir = np.interp(v,wnum,lcldodir)
     icldodir = np.interp(v,wnum,icldodir)
-    gasod[cldidx,:] += lcldodir + icldodir
+    totod[cldidx,:] += lcldodir + icldodir
 
         # Compute the surface to layer transmission
-
-    trans1 = np.copy(gasod)
+    trans1 = np.copy(totod)
     trans1[0,:] = 1
     for i in range(1,len(t)-1):
-        trans1[i,:] = trans1[i-1,:]*np.exp(-gasod[i-1,:])
+        trans1[i,:] = trans1[i-1,:]*np.exp(-totod[i-1,:])
 
         # Compute the reflected radiance from the cloud.
         # I am using my simple approximation for cloud reflectivity
@@ -942,13 +942,12 @@ def compute_jacobian_irs_interpol(X, p, zz, lblhome, lbldir, lblroot, lbl_std_at
         # account for the 2-way attenution by the atmosphere.  Note
         # that I am also assuming that the amount of radiation emitted
         # by the atmosphere and reflected by the cloud is negligible.
-
     reflection = Other_functions.cloud_reflectivity(v, cldodvis+taui)
     sfcrad = Calcs_Conversions.planck(v,t[0])
     cldrefrad = sfcrad * reflection * trans1[cldidx,:] * trans1[cldidx,:]
 
         # Compute the baseline radiance
-    radv = Other_functions.radxfer(v, mlayert, gasod)
+    radv = Other_functions.radxfer(v, mlayert, totod)
     radv += cldrefrad
     if(irs_type == 6):
         bar = Other_functions.convolve_to_refir(v, radv)
@@ -959,13 +958,46 @@ def compute_jacobian_irs_interpol(X, p, zz, lblhome, lbldir, lblroot, lbl_std_at
     if doapoFor:
         brad = np.real(Other_functions.apodizer(brad,0))
 
+    # Compute the downwelling clear sky radiance, and the downwelling radiance for each 
+    # height, assuming that the "cloud" is opaque at each height (for the MLEV later)
+    foo = np.where(mlayerz <= jac_maxht)[0]
+    radclear = Other_functions.radxfer(v, mlayert, gasod)
+    radBcld  = np.zeros((len(foo),len(v)))
+    for k in range(len(foo)):
+        tmpod = np.copy(gasod)
+        tmpod[k,:] = 1e6        # Make this layer have super high OD
+        tmprad = Other_functions.radxfer(v, mlayert, tmpod)
+        radBcld[k,:] = tmprad
+
+        # Now convolve the radiances from the MLEV step to the IRS instrument function
+    foo = np.where(mlayerz <= jac_maxht)[0]
+    if(irs_type == 6):
+        bar = Other_functions.convolve_to_refir(v, radclear)
+    else:
+        bar = Other_functions.convolve_to_aeri(v, radclear)
+    bradclear = np.copy(bar['spec'])
+    if doapoFor:
+        bradclear = np.real(Other_functions.apodizer(bradclear,0))
+    bradBcld = np.zeros((len(foo),len(bradclear)))
+    for k in range(len(foo)):
+        if(irs_type == 6):
+            bar = Other_functions.convolve_to_refir(v, radBcld[k,:])
+        else:
+            bar = Other_functions.convolve_to_aeri(v, radBcld[k,:])
+        bradBcld[k,:] = np.copy(bar['spec'])
+        if doapoFor:
+            bradBcld[k,:] = np.real(Other_functions.apodizer(bradBcld[k,:],0))
+
         # Now cut the radiance down; this is the forward calculation
     foo = np.where((np.min(wnumc)-0.1 <= bwnum) & (bwnum <= np.max(wnumc)+0.1))[0]
     if ((len(foo) != len(wnumc)) | (np.abs(np.min(wnumc)-np.min(bwnum[foo])) > 0.1)):
         print('PROBLEM inside compute_jacobian_interpol -- wavenumber do not match')
-        return success, -999., -999., -999., -999., tape3_info
+        return success, -999., -999., -999., -999., -999., tape3_info
     FXn   = np.copy(brad[foo])
     o1mc0 = o1mc0[foo]
+    bradclear = bradclear[foo]
+    bradBcld  = bradBcld[:,foo]
+    mlev = {'wnum':wnumc, 'radclear':bradclear, 'radBcld':bradBcld, 'maxht':jac_maxht}
 
     # We don't want spectral elements in very opaque channels have any influence
     # on the retrieval, as these may be representing absorption within the instrument
@@ -985,7 +1017,7 @@ def compute_jacobian_irs_interpol(X, p, zz, lblhome, lbldir, lblroot, lbl_std_at
         print(' It took ' + str(totaltime) + ' s to compute Jacobian (interpol)')
     success = 1
 
-    return success, Kij, FXn, wnumc, totaltime, tape3_info
+    return success, Kij, FXn, wnumc, totaltime, mlev, tape3_info
 ################################################################################
 # This function performs the forward model calculation and computes the jacobian
 # for the microwave radiometer. It is designed very similarly to

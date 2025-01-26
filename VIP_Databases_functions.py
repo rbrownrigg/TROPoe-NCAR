@@ -90,6 +90,8 @@ full_vip = ({
     'irs_min_675_bt': {'value': 263., 'comment': 'Minimum brightness temp [K] in the 675-680 cm-1 window -- this is QC screen', 'default': True},
     'irs_max_675_bt': {'value': 313., 'comment': 'Maximum brightness temp [K] in the 675-680 cm-1 window -- this is QC screen\n', 'default': True},
     'irs_spec_cal_factor': {'value': 1.0, 'comment': 'The multiplicative stretch factor to change the spectral calibration of IRS data', 'default': False},
+    'irs_mlev_cbh_wnum_range': {'value': [790.,810], 'comment':'The wavenumber range [cm-1] that should be used for the MLEV CBH calculation', 'default':False},
+    'irs_tcld_wnum_range': {'value': [898.,904], 'comment':'The wavenumber range [cm-1] that should be used for the Tcld CBH calculation', 'default':False},
     'irs_1m_od_thres': {'value': 1.0, 'comment': 'IRS channels where the 1m optical depth is above this threshold are not used', 'default': False},
 
     'mwr_type': {'value': 0, 'comment': '0 - none, 1 - Tb fields are individual time series, 2 - Tb field is 2-d array', 'default': True},
@@ -407,7 +409,8 @@ def read_vip_file(filename,globatt,verbose,debug,dostop):
                         'plot_temp_lim', 'plot_wvmr_lim', 'plot_tuncert_lim', 'plot_wvuncert_lim',
                         'plot_theta_lim', 'plot_rh_lim', 'plot_thetae_lim', 'plot_dewpt_lim',
                         'add_tropoe_T_noise_adder_val', 'add_tropoe_T_noise_adder_hts',
-                        'add_tropoe_q_noise_mult_val', 'add_tropoe_q_noise_mult_hts'
+                        'add_tropoe_q_noise_mult_val', 'add_tropoe_q_noise_mult_hts',
+                        'irs_mlev_cbh_wnum_range', 'irs_tcld_wnum_range'
                     ]:
 
                         feh = inputt[foo,1][0].split(',')

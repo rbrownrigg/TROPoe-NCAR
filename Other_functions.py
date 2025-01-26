@@ -68,6 +68,7 @@ import Output_Functions
 # decompose_irs_band_noise_inflation()
 # calc_derived_indices()
 # inflate_in_tropoe_uncertainty()
+# do_mlev_cbh()
 ################################################################################
 
 
@@ -1200,7 +1201,9 @@ def convolve_to_aeri(wnum, radiance):
 # This function convolves the spectrum to the REFIR-PAD spectral resolution
 def convolve_to_refir(wnum, radiance):
     vlaser = 13107.2
-    tmp = convolve_to_irs(wnum, radiance, vlaser)
+    rad1 = convolve_to_irs(wnum, radiance, vlaser)
+    rad2 = convolve_to_irs(wnum, radiance, vlaser, do_sinc2=1)
+    tmp = {'wnum':rad1['wnum'], 'spec':0.9*rad1['spec']+0.1*rad2['spec']}
     return tmp
 
 
@@ -1213,7 +1216,7 @@ def convolve_to_refir(wnum, radiance):
 # to a multiple of the AERI's spectral resolution, which is then transformed back
 # into interferogram space for chopping. 
 ################################################################################
-def convolve_to_irs(wnum, radiance, vlaser):
+def convolve_to_irs(wnum, radiance, vlaser, do_sinc2=0):
     
     # These will be needed later
     minv = np.min(wnum)
@@ -1379,6 +1382,11 @@ def convolve_to_irs(wnum, radiance, vlaser):
     new_aeri_inter = np.roll(new_aeri_inter, -1*int(n_fold/2))
     new_aeri_opd = 1./(2*new_aeri_dv)
     new_aeri_xx = ((np.arange(n_fold)/np.float(n_fold)) * 2  - 1) * new_aeri_opd
+    
+    # This is where I insert the triangle function to get a sinc^2 instrument function
+    if do_sinc2 == 1:
+        triangle_multiplier = np.interp(new_aeri_xx, [-2*aeri_opd,-1*aeri_opd,0,aeri_opd,2*aeri_opd], [0.,0,1,0,0])
+        new_aeri_inter *= triangle_multiplier
     
     # Now chop this at the desired optical path delay
     foo = np.where((-1*aeri_opd <= new_aeri_xx) & (new_aeri_xx < aeri_opd))[0]
@@ -2607,3 +2615,69 @@ def inflate_in_tropoe_uncertainty(flag, sampleTime, in_tropoe, zSa, Sa, vip, ver
     else:
         return np.zeros(len(in_tropoe['height'])).astype('float')+999.
 
+###############################################################################
+# This function computes an estimate of the cloud base height using the minimum
+# local emissivity variance (MLEV) approach
+###############################################################################
+
+def do_tcld_cbh(obswnum, obsrad, Xn, z, mlev_cbh, vip, verbose=1):
+    cbh   = -999.
+    if len(obswnum) != len(obsrad):
+        print('Error in do_tcld_cbh: the lengths of the two wavenumber arrays are different')
+        return cbh
+    if vip['irs_tcld_wnum_range'][0] < 0:
+        return cbh
+    ix0 = np.where((vip['irs_tcld_wnum_range'][0] <  obswnum) &  (obswnum < vip['irs_tcld_wnum_range'][1]))[0]
+    if len(ix0) < 2:
+        print('      Error in do_tcld_cbh: there are not enough spectral elements in the band')
+        return cbh
+
+        # Calculate the blackbody temperature in this window channel [degC]
+    winTb = Calcs_Conversions.invplanck(np.mean(obswnum[ix0]),np.mean(obsrad[ix0])) - 273.15
+        # Extract out the temperature profile from the retrieval
+    retT  = Xn[0:len(z)]
+        # Find the heights where the retrieved temperature is smaller than the window Tb
+    foo   = np.where(retT <= winTb)[0]
+        # If the surface temperature is less than the window Tb, then there is likely
+        # an inversion, so let's take the value that is closer to the MLEV-derived cbh
+    if z[foo[0]] < 0.001:
+        delz = np.abs(z[foo] - mlev_cbh)
+        bar  = np.where(delz == np.min(delz))[0]
+        cbh  = z[foo[bar[0]]]
+        # DDT print(f"In do_tcld_cbh, dual value so chose {cbh:.3f} using MLEV value of {mlev_cbh:.3f}")
+    else:
+        cbh  = z[foo[0]]
+        # DDT print(f"In do_tcld_cbh, single value of {cbh:.3f}")
+
+    return cbh
+
+###############################################################################
+
+def do_mlev_cbh(obswnum, obsrad, calcwnum, calcradclear, calcBrad, maxht, z, itern, vip, verbose=1):
+    cbh   = -999.
+    memis = -999.
+    if vip['irs_mlev_cbh_wnum_range'][0] < 0:
+        return cbh, memis
+    if len(obswnum) != len(calcwnum):
+        print('Error in do_mlev_cbh: the lengths of the two wavenumber arrays are different')
+        return cbh, memis
+    ix0 = np.where((vip['irs_mlev_cbh_wnum_range'][0] <  obswnum) &  (obswnum < vip['irs_mlev_cbh_wnum_range'][1]))[0]
+    ix1 = np.where((vip['irs_mlev_cbh_wnum_range'][0] < calcwnum) & (calcwnum < vip['irs_mlev_cbh_wnum_range'][1]))[0]
+    if len(ix0) != len(ix1):
+        print('      Error in do_mlev_cbh: the obs and calc wnum arrays do not have the same number of elements in the band')
+        return cbh, memis
+    if len(ix0) < 10:
+        print('      Error in do_mlev_cbh: there are not enough spectral elements in the band')
+        return cbh, memis
+
+    foo  = np.where(z <= maxht)[0]
+    mlev = np.zeros(len(foo)-1)
+    mean = np.zeros(len(foo)-1)
+    for j in range(len(foo)-1):
+        emis = (obsrad[ix0] - calcradclear[ix1]) / (calcBrad[j,ix1] - calcradclear[ix1])
+        mlev[j] = np.nanstd(emis)
+        mean[j] = np.nanmean(emis)
+    foo   = np.where(mlev == np.min(mlev))[0]
+    cbh   = z[foo[0]]
+    memis = mean[foo[0]]
+    return cbh, memis

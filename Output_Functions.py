@@ -466,9 +466,27 @@ def write_output(vip, ext_prof, mod_prof, ext_tseries, globatt, xret, prior,
         cbh_flag.comment1 = 'unitless'
         cbh_flag.comment2 = 'See users guide for explanation of the values'
         cbh_flag.value0 = 'Value 0 implies Clear Sky'
-        cbh_flag.value1 = 'Value 1 implies Inner Window'
-        cbh_flag.value2 = 'Value 2 implies Outer Window'
+        cbh_flag.value1 = 'Value 1 implies Inner Window from ceilometer'
+        cbh_flag.value2 = 'Value 2 implies Outer Window from ceilometer'
         cbh_flag.value3 = 'Value 3 implies Default CBH'
+
+        cbh_tcld = fid.createVariable('cbh_tcld', 'f4', ('time',))
+        cbh_tcld.long_name = 'Cloud base height above ground level using Tcld method'
+        cbh_tcld.units = 'km'
+        cbh_tcld.variable_type = varType_derived
+        cbh_tcld.spectral_range = (f"Spectral window used is {vip['irs_tcld_wnum_range'][0]:.2f} to {vip['irs_tcld_wnum_range'][1]:.2f} cm-1")
+
+        cbh_mlev = fid.createVariable('cbh_mlev', 'f4', ('time',))
+        cbh_mlev.long_name = 'Cloud base height above ground level using MLEV method'
+        cbh_mlev.units = 'km'
+        cbh_mlev.variable_type = varType_derived
+        cbh_mlev.spectral_range = (f"Spectral window used is {vip['irs_mlev_cbh_wnum_range'][0]:.2f} to {vip['irs_mlev_cbh_wnum_range'][1]:.2f} cm-1")
+
+        cld_emis = fid.createVariable('cld_emis', 'f4', ('time',))
+        cld_emis.long_name = 'Cloud emissivity derived using the MLEV method'
+        cld_emis.comment1 = 'unitless'
+        cld_emis.variable_type = varType_derived
+        cld_emis.spectral_range = (f"Spectral window used is {vip['irs_mlev_cbh_wnum_range'][0]:.2f} to {vip['irs_mlev_cbh_wnum_range'][1]:.2f} cm-1")
 
         pressure = fid.createVariable('pressure', 'f4', ('time','height',))
         pressure.long_name = 'Derived pressure'
@@ -979,6 +997,9 @@ def write_output(vip, ext_prof, mod_prof, ext_tseries, globatt, xret, prior,
 
     cbh = fid.variables['cbh']
     cbh_flag = fid.variables['cbh_flag']
+    cbh_tcld = fid.variables['cbh_tcld']
+    cbh_mlev = fid.variables['cbh_mlev']
+    cld_emis = fid.variables['cld_emis']
     pressure = fid.variables['pressure']
 
     theta = fid.variables['theta']
@@ -1081,6 +1102,9 @@ def write_output(vip, ext_prof, mod_prof, ext_tseries, globatt, xret, prior,
     
     cbh[fsample] = xret[fsample]['cbh']
     cbh_flag[fsample] = xret[fsample]['cbhflag']
+    cbh_tcld[fsample] = xret[fsample]['cbh_tcld']
+    cbh_mlev[fsample] = xret[fsample]['cbh_mlev']
+    cld_emis[fsample] = xret[fsample]['cld_emis']
     pressure[fsample,:] = xret[fsample]['p'][0:nht]
 
     theta[fsample,:] = derived['theta'][:]
