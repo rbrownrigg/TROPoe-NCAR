@@ -1,4 +1,4 @@
-# ----------------------------------------------------------------------------
+2643# ----------------------------------------------------------------------------
 #
 #  Copyright (C) 2015,2022,2023 by David D Turner, Joshua Gebauer, and Tyler Bell 
 #  All Rights Reserved
@@ -2640,7 +2640,9 @@ def do_tcld_cbh(obswnum, obsrad, Xn, z, mlev_cbh, vip, verbose=1):
     foo   = np.where(retT <= winTb)[0]
         # If the surface temperature is less than the window Tb, then there is likely
         # an inversion, so let's take the value that is closer to the MLEV-derived cbh
-    if z[foo[0]] < 0.001:
+    if len(foo) == 0:
+        cbh  = -888.
+    elif z[foo[0]] < 0.001:
         delz = np.abs(z[foo] - mlev_cbh)
         bar  = np.where(delz == np.min(delz))[0]
         cbh  = z[foo[bar[0]]]
