@@ -1397,6 +1397,7 @@ for i in range(len(irs['secs'])):                        # { loop_i
                 wnumc = np.copy(irs['wnum'])
                 FXn = np.ones(len(wnumc))*-999.
                 Kij = np.zeros((len(wnumc),len(Xn)))
+                mlev = {}
                 flag = 1
             else:
                 if((precompute_prior_jacobian['status'] == 1) & (itern == 0)):
@@ -1456,9 +1457,15 @@ for i in range(len(irs['secs'])):                        # { loop_i
         Kij = Kij[w1idx,:]
 
         # Derive the CBH estimate from the spectral data
-        cbh_mlev, cld_emis = Other_functions.do_mlev_cbh(irs['wnum'][w0idx],irs['radmn'][w0idx,i],
-                        mlev['wnum'][w1idx],mlev['radclear'][w1idx],mlev['radBcld'][:,w1idx],mlev['maxht'],z,itern, vip)
-        cbh_tcld = Other_functions.do_tcld_cbh(irs['wnum'][w0idx],irs['radmn'][w0idx,i], Xn, z, cbh_mlev, vip)
+        if vip['irs_type'] > 0:
+            cbh_mlev, cld_emis = Other_functions.do_mlev_cbh(irs['wnum'][w0idx],irs['radmn'][w0idx,i],
+                            mlev['wnum'][w1idx],mlev['radclear'][w1idx],mlev['radBcld'][:,w1idx],mlev['maxht'],z,itern, vip)
+            cbh_tcld = Other_functions.do_tcld_cbh(irs['wnum'][w0idx],irs['radmn'][w0idx,i], Xn, z, cbh_mlev, vip)
+        else:
+            cbh_mlev = -999.
+            cld_emis = -999.
+            cbh_tcld = -999.
+
 
         # Are there missing values from the IRS? If so,then we want to make the
         # forward model calculation have the same value and put no sensitivity
