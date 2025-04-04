@@ -1218,6 +1218,10 @@ def convolve_to_refir(wnum, radiance):
 ################################################################################
 def convolve_to_irs(wnum, radiance, vlaser, do_sinc2=0):
     
+        # Set this to 1 to write out temporary files to see if the
+        # zeropadding is inducing ringing in the spectra
+    write_debug_ringing = 0
+
     # These will be needed later
     minv = np.min(wnum)
     maxv = np.max(wnum)
@@ -1267,8 +1271,10 @@ def convolve_to_irs(wnum, radiance, vlaser, do_sinc2=0):
     tapersize = 20.            # The amount of space in the spectrum to taper [cm-1]
     
     # Find the spectral regions that require a roll-off
-    v_rolloff1 = np.where((minv-rolloffsize <= x) & (x <= minv))[0]
-    v_rolloff2 = np.where((maxv <= x) & (x <= maxv + rolloffsize))[0]
+    # v_rolloff1 = np.where((minv-rolloffsize <= x) & (x <= minv))[0]
+    # v_rolloff2 = np.where((maxv <= x) & (x <= maxv + rolloffsize))[0]
+    v_rolloff1 = np.where(x <= minv)[0]     # New approach to go to the end
+    v_rolloff2 = np.where(maxv <= x)[0]     # New approach to go to the end
     
     # Apply the roll-off and then make it smooth for a
     # small wavenumber region around the roll-off
@@ -1284,6 +1290,11 @@ def convolve_to_irs(wnum, radiance, vlaser, do_sinc2=0):
     y[v_rolloff2] = bar * np.mean(y[feh])
     weight = np.arange(len(feh))/(len(feh)-1.)
     y[feh] = y[feh]*(1-weight) + weight*np.mean(y[feh])
+
+    if write_debug_ringing == 1:
+        print(f"DEBUG: writing out the spectrum before the zeropad happens")
+        Output_Functions.write_variable(x,'/data/wnum_before_zeropad.cdf')
+        Output_Functions.write_variable(y,'/data/spec_before_zeropad.cdf')
 
     # If the wavenumber resolution is "coarse", then we need to zeropad
     # the spectrum to allow us to interpolate to a multiple of the AERI
@@ -1337,7 +1348,13 @@ def convolve_to_irs(wnum, radiance, vlaser, do_sinc2=0):
         new_x = np.copy(x)
         new_y = np.copy(y)
         new_delx = delx
-    
+
+    if write_debug_ringing == 1:
+        print(f"DEBUG: orig_delx is {delx:f} and new_delx is {new_delx:f}")
+        print(f"DEBUG: writing out the spectrum before the zeropad happens")
+        Output_Functions.write_variable(new_x,'/data/wnum_after_zeropad.cdf')
+        Output_Functions.write_variable(new_y,'/data/spec_after_zeropad.cdf')
+        sys.exit()
     
     # Now we need to interpolate this spectrum to a multiple of the AERI's
     # wavenumber grid (power of 2, actually).

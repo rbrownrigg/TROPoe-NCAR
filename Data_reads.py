@@ -3973,7 +3973,7 @@ def read_external_timeseries(date, secs, vip, dostop, verbose):
 
         # Now read in the pressure field, as specified by the VIP file
         if len(np.where(np.array(list(fid.variables.keys())) == vip['ext_sfc_pres_fieldname'])[0]) > 0:
-            p = fid.variables[vip['ext_sfc_pres_fieldname']][:]
+            p = fid.variables[vip['ext_sfc_pres_fieldname']][:].astype('float')
             if vip['ext_sfc_pres_units'] == 1:
                 p *= 10.                        # Convert kPa to hPa
             elif vip['ext_sfc_pres_units'] == 2:
@@ -3992,7 +3992,7 @@ def read_external_timeseries(date, secs, vip, dostop, verbose):
 
         # Now read in the temperature field, as specified by the VIP file
         if len(np.where(np.array(list(fid.variables.keys())) == vip['ext_sfc_temp_fieldname'])[0]) > 0:
-            t = fid.variables[vip['ext_sfc_temp_fieldname']][:]
+            t = fid.variables[vip['ext_sfc_temp_fieldname']][:].astype('float')
             if vip['ext_sfc_temp_units'] == 1:
                 t +=  0.                        # Do nothing (units are correct in degC)
             elif vip['ext_sfc_temp_units'] == 2:
@@ -4009,7 +4009,7 @@ def read_external_timeseries(date, secs, vip, dostop, verbose):
 
         # Now read in the water vapor (relative humidity) field, as specified by the VIP file
         if len(np.where(np.array(list(fid.variables.keys())) == vip['ext_sfc_wv_fieldname'])[0]) > 0:
-            u = fid.variables[vip['ext_sfc_wv_fieldname']][:]
+            u = fid.variables[vip['ext_sfc_wv_fieldname']][:].astype('float')
             if vip['ext_sfc_wv_units'] == 1:
                 u +=  0.                        # Do nothing (units are correct in %rh)
             elif vip['ext_sfc_wv_units'] == 2:
