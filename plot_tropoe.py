@@ -315,7 +315,6 @@ def doplot(filename, x_lim=(0, 24), y_lim=(0, 2), temp_lim=(-5, 30), wvmr_lim=(0
     cbh = nc["cbh"][sort]
     qcflag = nc["qc_flag"][sort]
     rms = nc["rmsa"][sort]
-    hatch = nc['hatchOpen'][sort]
     lwp = nc['lwp'][sort]
 
     # Don't forget to close the dataset :)
