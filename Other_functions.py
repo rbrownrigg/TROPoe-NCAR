@@ -1,4 +1,4 @@
-2643# ----------------------------------------------------------------------------
+# ----------------------------------------------------------------------------
 #
 #  Copyright (C) 2015,2022,2023 by David D Turner, Joshua Gebauer, and Tyler Bell 
 #  All Rights Reserved
@@ -1264,17 +1264,22 @@ def convolve_to_irs(wnum, radiance, vlaser, do_sinc2=0):
     yy = np.zeros(len(xx))
     x = np.append(x,xx)
     y = np.append(y,yy)
+
+    if write_debug_ringing == 1:
+        Output_Functions.write_variable(x,'/data/wnum_after_appending_tapers.cdf')
+        Output_Functions.write_variable(y,'/data/spec_after_appending_tapers.cdf')
     
     # Determin the size of the rolloff to apply; it should be 
     # no more than 100 cm-1, but may need to be smaller...
     rolloffsize = np.min([np.max(x)-maxv, minv, 100.])
     tapersize = 20.            # The amount of space in the spectrum to taper [cm-1]
+    tapersize =  5.            # The amount of space in the spectrum to taper [cm-1]
     
     # Find the spectral regions that require a roll-off
-    # v_rolloff1 = np.where((minv-rolloffsize <= x) & (x <= minv))[0]
-    # v_rolloff2 = np.where((maxv <= x) & (x <= maxv + rolloffsize))[0]
-    v_rolloff1 = np.where(x <= minv)[0]     # New approach to go to the end
-    v_rolloff2 = np.where(maxv <= x)[0]     # New approach to go to the end
+    v_rolloff1 = np.where((minv-rolloffsize <= x) & (x <= minv))[0]
+    v_rolloff2 = np.where((maxv <= x) & (x <= maxv + rolloffsize))[0]
+    #v_rolloff1 = np.where(x <= minv)[0]     # New approach to go to the end
+    #v_rolloff2 = np.where(maxv <= x)[0]     # New approach to go to the end
     
     # Apply the roll-off and then make it smooth for a
     # small wavenumber region around the roll-off
@@ -1284,7 +1289,7 @@ def convolve_to_irs(wnum, radiance, vlaser, do_sinc2=0):
     y[v_rolloff1] = bar * np.mean(y[feh])
     weight = np.arange(len(feh))/(len(feh)-1.)
     y[feh] = y[feh]*weight + (1-weight)*np.mean(y[feh])
-    
+
     bar = (np.cos((np.arange(len(v_rolloff2))/(len(v_rolloff2)-1.)) * np.pi) + 1)/2.
     feh = np.where((maxv-tapersize <= x) & (x <= maxv))[0]
     y[v_rolloff2] = bar * np.mean(y[feh])
@@ -1354,7 +1359,6 @@ def convolve_to_irs(wnum, radiance, vlaser, do_sinc2=0):
         print(f"DEBUG: writing out the spectrum before the zeropad happens")
         Output_Functions.write_variable(new_x,'/data/wnum_after_zeropad.cdf')
         Output_Functions.write_variable(new_y,'/data/spec_after_zeropad.cdf')
-        sys.exit()
     
     # Now we need to interpolate this spectrum to a multiple of the AERI's
     # wavenumber grid (power of 2, actually).
@@ -1434,6 +1438,11 @@ def convolve_to_irs(wnum, radiance, vlaser, do_sinc2=0):
         final_aeri_wnum = final_aeri_wnum[foo]
         final_aeri_spec = final_aeri_spec[foo]
     
+    if write_debug_ringing == 1:
+        Output_Functions.write_variable(final_aeri_wnum,'/data/final_wnum.cdf')
+        Output_Functions.write_variable(final_aeri_spec,'/data/final_spec.cdf')
+        sys.exit()
+
     return {'wnum':final_aeri_wnum, 'spec':final_aeri_spec}
 
 ################################################################################
