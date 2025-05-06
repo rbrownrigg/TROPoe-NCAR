@@ -128,6 +128,9 @@ def read_omb_file(path, filename, hour, maxht, verbose=1):
             z  = (z - z[0])/1000.           # Convert m MSL to km AGL
         elif len(np.where(np.array(list(fid.variables.keys())) == 'gamma')[0]) > 0:
             foo = np.where(fid.variables['hour'][:] >= hour)[0]
+            if len(foo) == 0:
+                errmess = (f"Unable to find a matching time between input spectral and O-B input file {path:s}/{filename:s}")
+                return ({'success':0, 'errstring':errmess})
             print(f"        This is a TROPoe file; extracting sample {foo[0]:d} at time {hour:.3f} UTC") # Has a field named "gamma"
             z  = fid.variables['height'][:]
             p  = fid.variables['pressure'][:]
