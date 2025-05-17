@@ -2653,12 +2653,12 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
         qtype = 'None'
         external['nQprof'] = 0.0
 
-    # Read in  the ARM radiosondes as a constraint on the water vapor profile
+    # Read in  the radiosondes as a constraint on the water vapor profile
     # over some range
 
     elif wv_prof_type == 1:
         if verbose >= 1:
-            print('  Reading in ARM radiosonde data to constrain the WV profile')
+            print('  Reading in radiosonde data to constrain the WV profile')
 
         files = []
         for i in range(len(dates)):
@@ -2670,7 +2670,7 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
         external['nQprof'] = 0
         if len(files) == 0:
             if verbose >= 1:
-                print('      No ARM radiosondes found in this directory for this date')
+                print('      No radiosondes found in this directory for this date')
         else:
             maxht = int(wv_prof_maxht+0.1)
             if maxht < wv_prof_maxht:
@@ -2728,7 +2728,7 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
                 we = np.sqrt((w - w1)**2. + (w-w2)**2)            # Sum of squared errors
 
                 qunit = 'g/kg'
-                qtype = 'ARM radiosonde'
+                qtype = 'radiosonde'
 
                 # Append the data to the growing structure
 
@@ -3231,11 +3231,11 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
         ttype = 'none'
         external['nTprof'] = 0
 
-    # Read in the ARM radiosondes as a constraint on the temperature profile over some range
+    # Read in the radiosondes as a constraint on the temperature profile over some range
 
     elif temp_prof_type == 1:
         if verbose >= 1:
-            print('  Reading in ARM radiosonde data to constrain the temp profile')
+            print('  Reading in radiosonde data to constrain the temp profile')
 
         files = []
         for i in range(len(dates)):
@@ -3247,11 +3247,11 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
         external['nTprof'] = 0.
         if len(files) == 0:
             if verbose >= 1:
-                print('    No ARM radiosondes found in this directory for this date')
+                print('    No radiosondes found in this directory for this date')
 
         else:
             if verbose >= 2:
-                print('    Reading ' + str(len(files)) + ' ARM radiosonde files')
+                print('    Reading ' + str(len(files)) + ' radiosonde files')
             maxht = int(temp_prof_maxht+0.1)
             if (maxht < temp_prof_maxht):
                 maxht += 1
@@ -3304,7 +3304,7 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
                 sigma_t = 0.5     # The assumed uncertainty of the radiosonde temperature measurement
 
                 tunit = 'degC'
-                ttype = 'ARM radiosonde'
+                ttype = 'radiosonde'
 
                 # Append the data to the growing structure
                 if external['nTprof'] <= 0:
@@ -3612,7 +3612,7 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
 
         if len(files) == 0:
             if verbose >= 1:
-                print('    No ARM radiosondes found in this directory for this date')
+                print('    No radiosondes found in this directory for this date')
             external['nTprof'] = 0
         else:
             maxht = int(temp_prof_maxht + 0.1)
