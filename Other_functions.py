@@ -2330,7 +2330,7 @@ def mixed_layer(t,p,wv, depth = 100):
 # deviation.
 ###############################################################################
 
-def calc_derived_indices(xret, vip, derived, verbose, num_mc=20):
+def calc_derived_indices(xret, vip, derived, verbose, do_compute, num_mc=20):
     
     # These are the derived indices that I will compute later one. I need to
     # define them here in order to build the netcdf file correctly
@@ -2339,8 +2339,12 @@ def calc_derived_indices(xret, vip, derived, verbose, num_mc=20):
     dindex_units = ['cm', 'km', 'km', 'degC', 'km', 'J/kg', 'J/kg',
                     'km', 'J/kg', 'J/kg']
     
-    indices = np.zeros(len(dindex_name))
-    sigma_indices = np.zeros(len(dindex_name))
+    indices = np.zeros(len(dindex_name))-999.
+    sigma_indices = np.zeros(len(dindex_name))-999.
+
+    # If we don't compute thense, then just return these missing values
+    if(do_compute != 1):
+        return {'indices':indices, 'sigma_indices':sigma_indices, 'name':dindex_name, 'units':dindex_units}
     
     # Get the number of height levels
     nht = len(xret['z'])

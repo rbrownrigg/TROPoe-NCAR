@@ -11,7 +11,7 @@
 #
 # ----------------------------------------------------------------------------
 
-__version__ = '0.18.15'
+__version__ = '0.18.16'
 
 import os
 import sys
@@ -2414,15 +2414,27 @@ for i in range(len(irs['secs'])):                        # { loop_i
 
     # Compute the various convective indices and other useful data.
     derived = {}
-    derived['theta'] = Calcs_Conversions.t2theta(xret[-1]['Xn'][0:int(nX/2)], 0*xret[-1]['Xn'][int(nX/2):nX], xret[-1]['p'])
-    derived['thetae'] = Calcs_Conversions.t2thetae(xret[-1]['Xn'][0:int(nX/2)], xret[-1]['Xn'][int(nX/2):nX], xret[-1]['p'])
-    derived['rh'] = Calcs_Conversions.w2rh(xret[-1]['Xn'][int(nX/2):nX], xret[-1]['p'], xret[-1]['Xn'][0:int(nX/2)],0) * 100
-    derived['dewpt'] = Calcs_Conversions.rh2dpt(xret[-1]['Xn'][0:int(nX/2)], derived['rh']/100.)
-    derived['co2_profile'] = Other_functions.trace_gas_prof(doco2, z, Xn[range(nX+4,nX+7)])
-    derived['ch4_profile'] = Other_functions.trace_gas_prof(doch4, z, Xn[range(nX+7,nX+10)])
-    derived['n2o_profile'] = Other_functions.trace_gas_prof(don2o, z, Xn[range(nX+10,nX+13)])
+    if vip['omb_flag'] != 1:
+        derived['theta'] = Calcs_Conversions.t2theta(xret[-1]['Xn'][0:int(nX/2)], 0*xret[-1]['Xn'][int(nX/2):nX], xret[-1]['p'])
+        derived['thetae'] = Calcs_Conversions.t2thetae(xret[-1]['Xn'][0:int(nX/2)], xret[-1]['Xn'][int(nX/2):nX], xret[-1]['p'])
+        derived['rh'] = Calcs_Conversions.w2rh(xret[-1]['Xn'][int(nX/2):nX], xret[-1]['p'], xret[-1]['Xn'][0:int(nX/2)],0) * 100
+        derived['dewpt'] = Calcs_Conversions.rh2dpt(xret[-1]['Xn'][0:int(nX/2)], derived['rh']/100.)
+        derived['co2_profile'] = Other_functions.trace_gas_prof(doco2, z, Xn[range(nX+4,nX+7)])
+        derived['ch4_profile'] = Other_functions.trace_gas_prof(doch4, z, Xn[range(nX+7,nX+10)])
+        derived['n2o_profile'] = Other_functions.trace_gas_prof(don2o, z, Xn[range(nX+10,nX+13)])
     
-    dindices = Other_functions.calc_derived_indices(xret[-1],vip,derived,verbose)
+        dindices = Other_functions.calc_derived_indices(xret[-1],vip,derived,verbose,1)
+    else:
+        print("     Skipping the computation of derived fields/indices because code is in OMB mode -- filling with missing values")
+        missing = np.zeros(len(z))-999.
+        derived['theta']       = missing
+        derived['thetae']      = missing
+        derived['rh']          = missing
+        derived['dewpt']       = missing
+        derived['co2_profile'] = missing
+        derived['ch4_profile'] = missing
+        derived['n2o_profile'] = missing
+        dindices = Other_functions.calc_derived_indices(xret[-1],vip,derived,verbose,0)
 
     # Write the data into the netCDF file
     success, noutfilename = Output_Functions.write_output(vip, ext_prof, mod_prof, ext_tseries,
