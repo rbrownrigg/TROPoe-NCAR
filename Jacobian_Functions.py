@@ -85,6 +85,12 @@ def compute_jacobian_irs_interpol(X, p, zz, lblhome, lbldir, lblroot, lbl_std_at
     # Path to the "lblrun" script, as I need to assume it is not in the users path
     lblrun = lblhome + '/bin/lblrun'
 
+    # define the wavenumber delta for the two different types of REFIR-PAD instruments 
+    if(irs_type == 6):
+        refir_delwnum = 0.4000
+    if(irs_type == 7):
+        refir_delwnum = 0.3892450
+
     # Get the trace gas profiles
     co2prof = Other_functions.trace_gas_prof(doco2, zz, co2)
     ch4prof = Other_functions.trace_gas_prof(doch4, zz, ch4)
@@ -422,9 +428,9 @@ def compute_jacobian_irs_interpol(X, p, zz, lblhome, lbldir, lblroot, lbl_std_at
     bar   = np.where(np.isnan(t1mc0))[0]    # Really large ODs may have NaN transmission; set these to zero
     if len(bar) > 0:
         t1mc0[bar] = 0
-    if(irs_type == 6):
-        tmp = Other_functions.convolve_to_refir(wnum, radc0)
-        feh = Other_functions.convolve_to_refir(wnum, t1mc0)
+    if((irs_type == 6) or (irs_type == 7)):
+        tmp = Other_functions.convolve_to_refir(wnum, radc0, refir_delwnum)
+        feh = Other_functions.convolve_to_refir(wnum, t1mc0, refir_delwnum)
     else:
         tmp = Other_functions.convolve_to_aeri(wnum, radc0)
         feh = Other_functions.convolve_to_aeri(wnum, t1mc0)
@@ -471,8 +477,8 @@ def compute_jacobian_irs_interpol(X, p, zz, lblhome, lbldir, lblroot, lbl_std_at
                 radc1 = Other_functions.radxfer(wnum, t0, gasod)
                 radc1 += cldrefrad
 
-                if(irs_type == 6):
-                    tmp = Other_functions.convolve_to_refir(wnum, radc1)
+                if((irs_type == 6) or (irs_type == 7)):
+                    tmp = Other_functions.convolve_to_refir(wnum, radc1, refir_delwnum)
                 else:
                     tmp = Other_functions.convolve_to_aeri(wnum, radc1)
                 radc1 = np.copy(tmp['spec'])
@@ -512,8 +518,8 @@ def compute_jacobian_irs_interpol(X, p, zz, lblhome, lbldir, lblroot, lbl_std_at
                 radc1 = Other_functions.radxfer(wnum, mlayert,  gasod)
                 radc1 += cldrefrad
 
-                if(irs_type == 6):
-                    tmp = Other_functions.convolve_to_refir(wnum, radc1)
+                if((irs_type == 6) or (irs_type == 7)):
+                    tmp = Other_functions.convolve_to_refir(wnum, radc1, refir_delwnum)
                 else:
                     tmp = Other_functions.convolve_to_aeri(wnum, radc1)
                 radc1 = np.copy(tmp['spec'])
@@ -542,8 +548,8 @@ def compute_jacobian_irs_interpol(X, p, zz, lblhome, lbldir, lblroot, lbl_std_at
         # Compute the perturbed radiance
         radc1 = Other_functions.radxfer(wnum, mlayert, gasod)
         radc1 += cldrefrad
-        if(irs_type == 6):
-            tmp = Other_functions.convolve_to_refir(wnum, radc1)
+        if((irs_type == 6) or (irs_type == 7)):
+            tmp = Other_functions.convolve_to_refir(wnum, radc1, refir_delwnum)
         else:
             tmp = Other_functions.convolve_to_aeri(wnum, radc1)
         radc1 = np.copy(tmp['spec'])
@@ -566,8 +572,8 @@ def compute_jacobian_irs_interpol(X, p, zz, lblhome, lbldir, lblroot, lbl_std_at
         # Compute the perturbed radiance
         radc1 = Other_functions.radxfer(wnum, mlayert, gasod)
         radc1 += cldrefrad
-        if(irs_type == 6):
-            tmp = Other_functions.convolve_to_refir(wnum, radc1)
+        if((irs_type == 6) or (irs_type == 7)):
+            tmp = Other_functions.convolve_to_refir(wnum, radc1, refir_delwnum)
         else:
             tmp = Other_functions.convolve_to_aeri(wnum, radc1)
         radc1 = np.copy(tmp['spec'])
@@ -609,8 +615,8 @@ def compute_jacobian_irs_interpol(X, p, zz, lblhome, lbldir, lblroot, lbl_std_at
             # Compute the perturbed radiance
             radc1 = Other_functions.radxfer(wnum, mlayert, gasod)
             radc1 += cldrefrad
-            if(irs_type == 6):
-                tmp = Other_functions.convolve_to_refir(wnum, radc1)
+            if((irs_type == 6) or (irs_type == 7)):
+                tmp = Other_functions.convolve_to_refir(wnum, radc1, refir_delwnum)
             else:
                 tmp = Other_functions.convolve_to_aeri(wnum, radc1)
             radc1 = np.copy(tmp['spec'])
@@ -637,8 +643,8 @@ def compute_jacobian_irs_interpol(X, p, zz, lblhome, lbldir, lblroot, lbl_std_at
         # Compute the perturbed radiance
         radc1 = Other_functions.radxfer(wnum, mlayert, gasod)
         radc1 += cldrefrad
-        if(irs_type == 6):
-            tmp = Other_functions.convolve_to_refir(wnum, radc1)
+        if((irs_type == 6) or (irs_type == 7)):
+            tmp = Other_functions.convolve_to_refir(wnum, radc1, refir_delwnum)
         else:
             tmp = Other_functions.convolve_to_aeri(wnum, radc1)
         radc1 = np.copy(tmp['spec'])
@@ -662,8 +668,8 @@ def compute_jacobian_irs_interpol(X, p, zz, lblhome, lbldir, lblroot, lbl_std_at
         # Compute the perturbed radiance
         radc1 = Other_functions.radxfer(wnum, mlayert, gasod)
         radc1 += cldrefrad
-        if(irs_type == 6):
-            tmp = Other_functions.convolve_to_refir(wnum, radc1)
+        if((irs_type == 6) or (irs_type == 7)):
+            tmp = Other_functions.convolve_to_refir(wnum, radc1, refir_delwnum)
         else:
             tmp = Other_functions.convolve_to_aeri(wnum, radc1)
         radc1 = np.copy(tmp['spec'])
@@ -699,8 +705,8 @@ def compute_jacobian_irs_interpol(X, p, zz, lblhome, lbldir, lblroot, lbl_std_at
             # Compute the perturbed radiance
             radc1 = Other_functions.radxfer(wnum, mlayert, gasod)
             radc1 += cldrefrad
-            if(irs_type == 6):
-                tmp = Other_functions.convolve_to_refir(wnum, radc1)
+            if((irs_type == 6) or (irs_type == 7)):
+                tmp = Other_functions.convolve_to_refir(wnum, radc1, refir_delwnum)
             else:
                 tmp = Other_functions.convolve_to_aeri(wnum, radc1)
             radc1 = np.copy(tmp['spec'])
@@ -727,8 +733,8 @@ def compute_jacobian_irs_interpol(X, p, zz, lblhome, lbldir, lblroot, lbl_std_at
         # Compute the perturbed radiance
         radc1 = Other_functions.radxfer(wnum, mlayert, gasod)
         radc1 += cldrefrad
-        if(irs_type == 6):
-            tmp = Other_functions.convolve_to_refir(wnum, radc1)
+        if((irs_type == 6) or (irs_type == 7)):
+            tmp = Other_functions.convolve_to_refir(wnum, radc1, refir_delwnum)
         else:
             tmp = Other_functions.convolve_to_aeri(wnum, radc1)
         radc1 = np.copy(tmp['spec'])
@@ -752,8 +758,8 @@ def compute_jacobian_irs_interpol(X, p, zz, lblhome, lbldir, lblroot, lbl_std_at
         # Compute the perturbed radiance
         radc1 = Other_functions.radxfer(wnum, mlayert, gasod)
         radc1 += cldrefrad
-        if(irs_type == 6):
-            tmp = Other_functions.convolve_to_refir(wnum, radc1)
+        if((irs_type == 6) or (irs_type == 7)):
+            tmp = Other_functions.convolve_to_refir(wnum, radc1, refir_delwnum)
         else:
             tmp = Other_functions.convolve_to_aeri(wnum, radc1)
         radc1 = np.copy(tmp['spec'])
@@ -789,8 +795,8 @@ def compute_jacobian_irs_interpol(X, p, zz, lblhome, lbldir, lblroot, lbl_std_at
             # Compute the perturbed radiance
             radc1 = Other_functions.radxfer(wnum, mlayert, gasod)
             radc1 += cldrefrad
-            if(irs_type == 6):
-                tmp = Other_functions.convolve_to_refir(wnum, radc1)
+            if((irs_type == 6) or (irs_type == 7)):
+                tmp = Other_functions.convolve_to_refir(wnum, radc1, refir_delwnum)
             else:
                 tmp = Other_functions.convolve_to_aeri(wnum, radc1)
             radc1 = np.copy(tmp['spec'])
@@ -822,8 +828,8 @@ def compute_jacobian_irs_interpol(X, p, zz, lblhome, lbldir, lblroot, lbl_std_at
 
         radc1 = Other_functions.radxfer(wnum, mlayert, gasod)
         radc1 += cldrefrad             # Not changing cloud reflectivity component here
-        if(irs_type == 6):
-            tmp = Other_functions.convolve_to_refir(wnum, radc1)
+        if((irs_type == 6) or (irs_type == 7)):
+            tmp = Other_functions.convolve_to_refir(wnum, radc1, refir_delwnum)
         else:
             tmp = Other_functions.convolve_to_aeri(wnum, radc1)
         radc1 = np.copy(tmp['spec'])
@@ -839,8 +845,8 @@ def compute_jacobian_irs_interpol(X, p, zz, lblhome, lbldir, lblroot, lbl_std_at
 
         radc2 = Other_functions.radxfer(wnum, mlayert, gasod)
         radc2 += cldrefrad             # Not changing cloud reflectivity component here
-        if(irs_type == 6):
-            tmp = Other_functions.convolve_to_refir(wnum, radc2)
+        if((irs_type == 6) or (irs_type == 7)):
+            tmp = Other_functions.convolve_to_refir(wnum, radc2, refir_delwnum)
         else:
             tmp = Other_functions.convolve_to_aeri(wnum, radc2)
         radc2 = np.copy(tmp['spec'])
@@ -873,8 +879,8 @@ def compute_jacobian_irs_interpol(X, p, zz, lblhome, lbldir, lblroot, lbl_std_at
 
         radc1 = Other_functions.radxfer(wnum, mlayert, gasod)
         radc1 += cldrefrad             # Not changing cloud reflectivity component here
-        if(irs_type == 6):
-            tmp = Other_functions.convolve_to_refir(wnum, radc1)
+        if((irs_type == 6) or (irs_type == 7)):
+            tmp = Other_functions.convolve_to_refir(wnum, radc1, refir_delwnum)
         else:
             tmp = Other_functions.convolve_to_aeri(wnum, radc1)
         radc1 = np.copy(tmp['spec'])
@@ -890,8 +896,8 @@ def compute_jacobian_irs_interpol(X, p, zz, lblhome, lbldir, lblroot, lbl_std_at
 
         radc2 = Other_functions.radxfer(wnum, mlayert, gasod)
         radc2 += cldrefrad                     # Not changing cloud reflectivity component here
-        if(irs_type == 6):
-            tmp = Other_functions.convolve_to_refir(wnum, radc2)
+        if((irs_type == 6) or (irs_type == 7)):
+            tmp = Other_functions.convolve_to_refir(wnum, radc2, refir_delwnum)
         else:
             tmp = Other_functions.convolve_to_aeri(wnum, radc2)
         radc2 = np.copy(tmp['spec'])
@@ -949,8 +955,8 @@ def compute_jacobian_irs_interpol(X, p, zz, lblhome, lbldir, lblroot, lbl_std_at
         # Compute the baseline radiance
     radv = Other_functions.radxfer(v, mlayert, totod)
     radv += cldrefrad
-    if(irs_type == 6):
-        bar = Other_functions.convolve_to_refir(v, radv)
+    if((irs_type == 6) or (irs_type == 7)):
+        bar = Other_functions.convolve_to_refir(v, radv, refir_delwnum)
     else:
         bar = Other_functions.convolve_to_aeri(v, radv)
     bwnum = np.copy(bar['wnum'])
@@ -971,8 +977,8 @@ def compute_jacobian_irs_interpol(X, p, zz, lblhome, lbldir, lblroot, lbl_std_at
 
         # Now convolve the radiances from the MLEV step to the IRS instrument function
     foo = np.where(mlayerz <= jac_maxht)[0]
-    if(irs_type == 6):
-        bar = Other_functions.convolve_to_refir(v, radclear)
+    if((irs_type == 6) or (irs_type == 7)):
+        bar = Other_functions.convolve_to_refir(v, radclear, refir_delwnum)
     else:
         bar = Other_functions.convolve_to_aeri(v, radclear)
     bradclear = np.copy(bar['spec'])
@@ -980,8 +986,8 @@ def compute_jacobian_irs_interpol(X, p, zz, lblhome, lbldir, lblroot, lbl_std_at
         bradclear = np.real(Other_functions.apodizer(bradclear,0))
     bradBcld = np.zeros((len(foo),len(bradclear)))
     for k in range(len(foo)):
-        if(irs_type == 6):
-            bar = Other_functions.convolve_to_refir(v, radBcld[k,:])
+        if((irs_type == 6) or (irs_type == 7)):
+            bar = Other_functions.convolve_to_refir(v, radBcld[k,:], refir_delwnum)
         else:
             bar = Other_functions.convolve_to_aeri(v, radBcld[k,:])
         bradBcld[k,:] = np.copy(bar['spec'])

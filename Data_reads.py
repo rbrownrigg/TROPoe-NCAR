@@ -349,7 +349,7 @@ def read_irs_ch(path,date,irs_type,fv,fa,irs_spec_cal_factor,
         filename = '*' + str(date % 2000000) + 'C1.RNC.(cdf|nc)'
     elif irs_type == 5:
         filename = '*assist*(Ch|ch)*' + str(date) + '*(cdf|nc)'
-    elif irs_type == 6:
+    elif ((irs_type == 6) or (irs_type == 7)):
         filename = '*refir*(Ch|ch)*' + str(date) + '*(cdf|nc)'
     else:
         print('Error in read_irs_ch: unable to decode irs_type')
@@ -1676,7 +1676,12 @@ def read_irs_eng(path, date, irs_type, verbose):
         print('                     engineering data is found in the summary file')
         print('   irs_type=6 --->')
         print('             ARM-style ch1/ch2/sum REFIR-PAD datastream names, but all of the')
-        print('                     engineering data is found in the summary file')
+        print('                     engineering data is found in the summary file and the ')
+        print('                     spectral resolution of the radiance data is 0.4000000 cm-1')
+        print('   irs_type=7 --->')
+        print('             ARM-style ch1/ch2/sum REFIR-PAD datastream names, but all of the')
+        print('                     engineering data is found in the summary file and the ')
+        print('                     spectral resolution of the radiance data is 0.3892450 cm-1')
         print('-----------------------------------------------------------------')
         print(' ')
         err = {'success':0}
@@ -1692,7 +1697,7 @@ def read_irs_eng(path, date, irs_type, verbose):
         filename = '*aeri*sum*' + str(date) + '*(cdf|nc)'
     elif irs_type == 5:
         filename = '*assist*sum*' + str(date) + '*(cdf|nc)'
-    elif irs_type == 6:
+    elif ((irs_type == 6) or (irs_type == 7)):
         filename = '*refir*sum*' + str(date) + '*(cdf|nc)'
     else:
         print('Error in read_irs_eng: unable to decode irs_type')
@@ -1806,7 +1811,7 @@ def read_irs_sum(path,date,irs_type,smooth_noise,verbose):
         filename = '*' + str(date % 2000000) + '.SUM.(cdf|nc)'
     elif irs_type == 5:
         filename = '*assist*sum*' + str(date) + '*(cdf|nc)'
-    elif irs_type == 6:
+    elif ((irs_type == 6) or (irs_type == 7)):
         filename = '*refir*sum*' + str(date) + '*(cdf|nc)'
     else:
         print('Error in read_irs_sum: unable to decode irs_type')

@@ -1199,8 +1199,10 @@ def convolve_to_aeri(wnum, radiance):
 
 ################################################################################
 # This function convolves the spectrum to the REFIR-PAD spectral resolution
-def convolve_to_refir(wnum, radiance):
-    vlaser = 13107.2
+def convolve_to_refir(wnum, radiance, refir_del_wnum):
+    #vlaser = 13107.2        # irs_type = 6, which is for del_wnum = 0.4000000 cm-1 (like in DomeC)
+    #vlaser = 12754.8        # irs_type = 7, which is for del_wnum = 0.3892450 cm-1 (like in RHUBC-II)
+    vlaser = refir_del_wnum * (2**15)
     rad1 = convolve_to_irs(wnum, radiance, vlaser)
     rad2 = convolve_to_irs(wnum, radiance, vlaser, do_sinc2=1)
     tmp = {'wnum':rad1['wnum'], 'spec':0.9*rad1['spec']+0.1*rad2['spec']}

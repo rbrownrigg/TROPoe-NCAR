@@ -62,7 +62,7 @@ full_vip = ({
     'omb_file': {'value': "omb_input.nc", 'comment': 'NetCDF file with profiles of temperature [C], rh [%], pressure [mb], and height [km AGL] to use in the forward O-B calculation', 'default': True},
     'omb_required_minht': {'value': 10.0, 'comment': 'Minimum height [km AGL] required for the input profiles used in the forward O-B calculation\n', 'default': True},
 
-    'irs_type': {'value': 0, 'comment': '0- output, options, and stop, 1 - ARM AERI data, 2 - dmv2cdf AERI data (C1_rnc.cdf and _sum.cdf), 3 - dmv2ncdf (C1.RNC.cdf and .SUM.cdf), 5- ASSIST, -1 - MWR data is to be used as MASTER dataset (no IRS data being read in)', 'default': True},
+    'irs_type': {'value': 0, 'comment': '0- output, options, and stop, 1 - ARM AERI data, 2 - dmv2cdf AERI data (C1_rnc.cdf and _sum.cdf), 3 - dmv2ncdf (C1.RNC.cdf and .SUM.cdf), 5- ASSIST, 6- REFIR-PAD(0.400), 7- REFIR-PAD(0.3892), -1 - MWR data is to be used as MASTER dataset (no IRS data being read in)', 'default': True},
     'irs_pca_nf': {'value': 1, 'comment': '0 - IRS data was NOT PCA noise filtered, 1 - IRS data was PCA noise filtered', 'default': False},
     'irsch1_path': {'value': "/data/aerich1", 'comment': 'Path to the IRS ch1 radiance files', 'default': True},
     'irssum_path': {'value': "/data/aerisum", 'comment': 'Path to the IRS summary files', 'default': True},
