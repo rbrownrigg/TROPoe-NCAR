@@ -966,7 +966,7 @@ def compute_jacobian_irs_interpol(X, p, zz, lblhome, lbldir, lblroot, lbl_std_at
 
     # Compute the downwelling clear sky radiance, and the downwelling radiance for each 
     # height, assuming that the "cloud" is opaque at each height (for the MLEV later)
-    foo = np.where(mlayerz <= jac_maxht)[0]
+    foo = np.where(mlayerz <= jac_maxht+sfcz)[0]
     radclear = Other_functions.radxfer(v, mlayert, gasod)
     radBcld  = np.zeros((len(foo),len(v)))
     for k in range(len(foo)):
@@ -976,7 +976,6 @@ def compute_jacobian_irs_interpol(X, p, zz, lblhome, lbldir, lblroot, lbl_std_at
         radBcld[k,:] = tmprad
 
         # Now convolve the radiances from the MLEV step to the IRS instrument function
-    foo = np.where(mlayerz <= jac_maxht)[0]
     if((irs_type == 6) or (irs_type == 7)):
         bar = Other_functions.convolve_to_refir(v, radclear, refir_delwnum)
     else:
