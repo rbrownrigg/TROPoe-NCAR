@@ -90,8 +90,8 @@ full_vip = ({
     'irs_min_675_bt': {'value': 263., 'comment': 'Minimum brightness temp [K] in the 675-680 cm-1 window -- this is QC screen', 'default': True},
     'irs_max_675_bt': {'value': 313., 'comment': 'Maximum brightness temp [K] in the 675-680 cm-1 window -- this is QC screen\n', 'default': True},
     'irs_spec_cal_factor': {'value': 1.0, 'comment': 'The multiplicative stretch factor to change the spectral calibration of IRS data', 'default': False},
-    'irs_mlev_cbh_wnum_range': {'value': [790.,810], 'comment':'The wavenumber range [cm-1] that should be used for the MLEV CBH calculation', 'default':False},
-    'irs_tcld_wnum_range': {'value': [898.,904], 'comment':'The wavenumber range [cm-1] that should be used for the Tcld CBH calculation', 'default':False},
+    'irs_mlev_cbh_wnum_range': {'value': [790.,810], 'comment':'The wavenumber range [cm-1] that should be used for the MLEV CBH calculation.  Make the first wavenumber negative to turn off this calculation', 'default':False},
+    'irs_tcld_wnum_range': {'value': [898.,904], 'comment':'The wavenumber range [cm-1] that should be used for the Tcld CBH calculation.  Make the first wavenumber negative to turn off this calculation', 'default':False},
     'irs_1m_od_thres': {'value': 1.0, 'comment': 'IRS channels where the 1m optical depth is above this threshold are not used', 'default': False},
 
     'mwr_type': {'value': 0, 'comment': '0 - none, 1 - Tb fields are individual time series, 2 - Tb field is 2-d array', 'default': True},
