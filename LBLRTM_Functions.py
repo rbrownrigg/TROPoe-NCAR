@@ -24,6 +24,7 @@ from subprocess import Popen, PIPE
 # lbl_read()
 # read_tape27()
 # run_monortm()
+# write_lbldis_parmfile
 ################################################################################
 
 ################################################################################
@@ -420,8 +421,8 @@ def rundecker(model, aprofile, z, p, t, w, co2_profile= None, o3_profile=None,
       	        
             if not mlay_pres:
       	        if have_profile:
-      	            mlayers = mlayers = z[0]
-      	        else:
+      	            mlayers = mlayers + z[0]
+                else:
       	            mlayers = mlayers + altitude
     
     # Put this in the rundeck until I am sure I am
@@ -1598,3 +1599,34 @@ def run_monortm(command, freq, z, stdatmos, outputfile):
         od[:,k] = parts[2:2+len(freq)].astype('float')    
     zz = np.append(mz[0,0], mz[1,:])
     return {'status':1, 'freq':np.copy(freq), 'tb':tb, 'tmr':tmr, 'z':zz, 'od':od}
+
+###################################################################################
+# This routine writes out the LBLDIS parameter file. It creates a two-phased
+# cloud layer with the profiles that are input
+##################################################################################
+
+def write_lbldis_parmfile(parmfile, sza, microwin_file, z, cldlay, Xn,
+                          ltau, itau, vip, lblout, sfc_emissivity, ref_wnum):
+    
+    ncldlay = len(cldlay)
+    f = open(parmfile)
+    f.write('# Header line (blank)\n')
+    f.write('{:0d}\n'.format(vip['nstreams']))
+    f.write('{:6.1f} 0.0 1.0\n')
+    f.write('180.0\n')
+    f.write('-1 0 0 ' + microwin_file +'\n')
+    f.write('1\n')
+    f.write('{:0d}\n'.format(ncldlay*2))
+    for j in range(ncldlay):
+        f.write('{:0d} {:6.3f} {:7.3f} {:7.1f} {:9.4f}\n'.format(0,z(cldlay[j]),Xn[1],ref_wnum,ltau[j]))
+        f.write('{:0d} {:6.3f} {:7.3f} {:7.1f} {:9.4f}\n'.format(0,z(cldlay[j]),Xn[3],ref_wnum,itau[j]))
+    f.write(lblout +'\n')
+    f.write(vip['ssf'] + '\n')
+    f.write('2\n')
+    f.write(vip['lcloud_ssp'] + '\n')
+    f.write('-1\n')
+    f.write('{:0d}\n'.format(len(sfc_emissivity[0])))
+    for j in range(len(sfc_emissivity[0])):
+        f.write('{:6.1f} {:5.3f}\n'.format(sfc_emissivity[0,j],sfc_emissivity[1,j]))
+    f.write(vip['solver'] + '\n')
+    f.close()

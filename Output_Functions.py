@@ -16,7 +16,7 @@ import numpy as np
 import scipy.io
 import glob
 import sys
-from datetime import datetime
+from datetime import datetime,timezone
 from netCDF4 import Dataset
 
 import Other_functions
@@ -30,6 +30,7 @@ import VIP_Databases_functions
 # write_variable()
 # write_output()
 # create_xret()
+# mixcra_write_output()
 ################################################################################
 
 ################################################################################
@@ -79,9 +80,18 @@ def add_vip_to_global_atts(nc, full_vip):
     :return:
     """
 
+    ignore = np.array(['success','tag', 'output_rootname', 'output_path',
+              'output_clobber', 'lbl_temp_dir', 'sfc_emissivity'])
+    
     vip = full_vip.copy()  # Copy the VIP so we don't overwrite anything in the next iterations
 
     for key in sorted(vip.keys()):
+
+        # Check to see if this key should be ignored
+        foo = np.where(key == ignore)
+        if len(foo) > 0:
+            continue
+
         # Grab the data
         data = vip[key]
 
@@ -1407,3 +1417,348 @@ def read_XaSa(filename):
     oSa = xSa.filled(fill_value=np.double(-9999))
 
     return oXa, oSa
+
+#################################################################################
+# This routine writes out the MIXCRA2 output into a netCDF file
+#################################################################################
+
+def mixcra_write_output(out,vip,location,cwnum,outfull,fsample,exectime,
+                        verbose, globatt, ofilename):
+    
+    if fsample == 0:
+        bad = 0
+        if len(ofilename > 0):
+            if ofilename != ' ':
+                bad = 1, ofilename
+            
+        if bad == 1:
+            print('Problem in code: fsample is postive and ofilename is not set')
+            return bad
+            
+        # Build this comment string
+        if vip['ref_wnum'] <= 0:
+            ref_wnum_comment = 'Geometrics optics regime (Qext=2)'
+        else:
+            ref_wnum_comment = str(np.round(vip['ref_wnum']),1) + ' cm-1'
+            
+        # This is the first sample, so let's create the file
+        dt = datetime.fromtimestamp(out['secs'],tz=timezone.utc)
+        
+        ofilename = (vip['output_path'] + '/' + vip['output_rootname'] +
+                     '.' + dt.strftime('%Y%m%d.%H%M%S')) + '.nc'
+            
+        if verbose >= 1:
+            print(' Creating the output file ' + ofilename)
+        fid = Dataset(ofilename, 'w')
+        dd0 = fid.createDimension('time',None)
+        dd1 = fid.createDimension('nobs',len(cwnum))
+        if outfull['include'] > 0:
+            dd2 = fid.createDimension['fobs',len(outfull['wnum'])]
+
+        bt = fid.createVariable('base_time','i4')
+        bt.long_name = 'Epoch time since 1 Jan 1970 at 00:00:00 UTC'
+        bt.units = 's'
+
+        to = fid.createVariable('time_offset','f8',('time',))
+        to.long_name = 'Time since base_time'
+        to.units = 's'
+
+        hr = fid.createVariable('hour','f8',('time',))
+        hr.long_name = 'Time since midnight UTC'
+        hr.units = 'hours'
+
+        wnum = fid.createVariable('wnum','f4',('nobs',))
+        wnum.long_name = 'Wavenumber'
+        wnum.units = 'cm-1'
+
+        ltau = fid.createVariable('ltau','f4',('time',))
+        ltau.long_name = 'Liqid optical depth'
+        ltau.units = 'unitless'
+        ltau.reference_wavenumber = ref_wnum_comment
+
+        lreff = fid.createVariable('lreff','f4',('time',))
+        lreff.long_name = 'Liquid water effective radius'
+        lreff.units  = 'microns'
+
+        itau = fid.createVariable('itau','f4',('time',))
+        itau.long_name = 'Ice optical depth'
+        itau.units = 'unitless'
+        itau.reference_wavenumber = ref_wnum_comment
+
+        ireff = fid.createVariable('ireff','f4',('time',))
+        ireff.long_name = 'Ice effective radius'
+        ireff.units = 'microns'
+
+        sigma_ltau = fid.createVariable('sigma_ltau','f4',('time',))
+        sigma_ltau.long_name = 'Uncertainty in liquid optical depth'
+        sigma_ltau.units = 'unitless'
+
+        sigma_lreff = fid.createVariables('sigma_lreff','f4',('time',))
+        sigma_lreff.long_name = 'Uncertainty in liquid water effective radius'
+        sigma_lreff.units = 'microns'
+
+        sigma_itau = fid.createVariable('sigma_itau','f4',('time',))
+        sigma_itau.long_name = 'Uncertainty in ice optical depth'
+        sigma_itau.units = 'unitless'
+
+        sigma_ireff = fid.createVariables('sigma_ireff','f4',('time',))
+        sigma_ireff.long_name = 'Uncertainty in ice effective radius'
+        sigma_ireff.units = 'microns'
+
+        corr_ltau_lreff = fid.createVariables('corr_ltau_lreff','f4',('time',))
+        corr_ltau_lreff.long_name = 'Correlated uncertainty between lTau and lreff'
+        corr_ltau_lreff.units = 'unitless (between -1 and +1)'
+
+        corr_ltau_itau = fid.createVariables('corr_ltau_itau','f4',('time',))
+        corr_ltau_itau.long_name = 'Correlated uncertainty between lTau and itau'
+        corr_ltau_itau.units = 'unitless (between -1 and +1)'
+
+        corr_ltau_ireff = fid.createVariables('corr_ltau_ireff','f4',('time',))
+        corr_ltau_ireff.long_name = 'Correlated uncertainty between lTau and ireff'
+        corr_ltau_ireff.units = 'unitless (between -1 and +1)'
+
+        corr_lreff_itau = fid.createVariables('corr_lreff_itau','f4',('time',))
+        corr_lreff_itau.long_name = 'Correlated uncertainty between lreff and iTau'
+        corr_lreff_itau.units = 'unitless (between -1 and +1)'
+
+        corr_lreff_ireff = fid.createVariables('corr_lreff_ireff','f4',('time',))
+        corr_lreff_ireff.long_name = 'Correlated uncertainty between lreff and ireff'
+        corr_lreff_ireff.units = 'unitless (between -1 and +1)'
+
+        corr_itau_ireff = fid.createVariables('corr_itau_ireff','f4',('time',))
+        corr_itau_ireff.long_name = 'Correlated uncertainty between itau and ireff'
+        corr_itau_ireff.units = 'unitless (between -1 and +1)'
+
+        dfs_ltau = fid.createVariables('dfs_ltau','f4',('time',))
+        dfs_ltau.long_name = 'DFS in liquid optical depth'
+        dfs_ltau.units = 'unitless'
+
+        dfs_lreff = fid.createVariables('dfs_lreff','f4',('time',))
+        dfs_lreff.long_name = 'DFS in liquid water effective radius'
+        dfs_lreff.units = 'unitless'
+
+        dfs_itau = fid.createVariables('dfs_itau','f4',('time',))
+        dfs_itau.long_name = 'DFS in ice optical depth'
+        dfs_itau.units = 'unitless'
+
+        dfs_ireff = fid.createVariables('dfs_ireff','f4',('time',))
+        dfs_ireff.long_name = 'DFS in ice effective radius'
+        dfs_ireff.units = 'unitless'
+
+        lwp = fid.createVariables('lwp','f4',('time',))
+        lwp.long_name = 'Liquid water path'
+        lwp.units = 'g/m2'
+
+        sigma_lwp = fid.createVariables('sigma_lwp','f4',('time',))
+        sigma_lwp.long_name = 'Uncertainty in liquid water path'
+        sigma_lwp.units = 'g/m2'
+
+        tau_frac = fid.createVariables('tau_frac','f4',('time',))
+        tau_frac.long_name = 'Fraction of total optical depth'
+        tau_frac.units = 'unitless'
+        tau_frac.comment = 'Ratio of ltau / (ltau + itau)'
+
+        sigma_tau_frac = fid.createVariables('sigma_tau_frac','f4',('time',))
+        sigma_tau_frac.long_name = 'Uncertainty in fraction of total optical depth'
+        sigma_tau_frac.units = 'unitless'
+
+        tcld = fid.createVariables('tcld','f4',('time',))
+        tcld.long_name = 'Cloud temperature'
+        tcld.units = 'degC'
+
+        cbh = fid.createVariables('cbh','f4',('time',))
+        cbh.long_name = 'Cloud base height'
+        cbh.units  = 'km AGL'
+
+        sza = fid.createVariables('sza','f4',('time',))
+        sza.long_name = 'Solar zenith angle'
+        sza.units = 'degrees'
+
+        delt_lbl = fid.createVariable('delt_lbl','f4',('time,'))
+        delt_lbl.long_name = 'Time to closest LBLRTM calculation'
+        delt_lbl.units = 'hour'
+
+        obs_vector = fid.createVariable('obs_vector','f4',('time','nobs',))
+        obs_vector.long_name = 'Observed radiance'
+        obs_vector.units = 'RU'
+
+        obs_vector_uncertainty = fid.createVariable('obs_vector_uncertainty','f4',('time','nobs',))
+        obs_vector_uncertainty.long_name = 'Uncertainty in the observed radiance'
+        obs_vector_uncertainty.units = 'RU'
+
+        forward_calc = fid.createVariable('forward_calc','f4',('time','nobs',))
+        forward_calc.long_name = 'Forward calculation'
+        forward_calc.units = 'RU'
+
+        lblrtm_hour = fid.createVariable('lblrtm_hour','f8',('time',))
+        lblrtm_hour.long_name = 'Time when LBLRTM calculation was made'
+        lblrtm_hour.units = 'hours'
+
+        conv = fid.createVariable('conv','i2',('time',))
+        conv.long_name = 'Convergence flag'
+        conv.units = 'unitless'
+        conv.value_0 = 'Did not converge'
+        conv.value_1 = 'Did converge'
+
+        itern = fid.createVariables('iter','i2',('time',))
+        itern.long_name = 'Number of iterations performed'
+        itern.units = 'unitless'
+
+        rms = fid.createVariables('rms','f4',('time',))
+        rms.long_name = 'RMS difference (obs minus calc)'
+        rms.units = 'RU'
+
+        if outfull['include'] > 0:
+            f_wnum = fid.createVariable('f_wnum','f4',('fobs',))
+            f_wnum.long_name = 'Full Wavenumber'
+            f_wnum.units = 'cm-1'
+
+            f_obs_vector = fid.createVariable('f_obs_vector','f4',('time','fobs',))
+            f_obs_vector.long_name = 'Full observed radiance'
+            f_obs_vector.units = 'RU'
+
+            f_obs_vector_uncertainty = fid.createVariable('f_obs_vector_uncertainty','f4',('time','fobs',))
+            f_obs_vector_uncertainty.long_name = 'Uncertainty in the full observed radiance'
+            f_obs_vector_uncertainty.units = 'RU'
+
+            f_forward_calc = fid.createVariable('f_foward_calc','f4',('time','fobs',))
+            f_forward_calc.long_name = 'Full forward calculation'
+            f_forward_calc.units = 'RU'
+            
+        lat = fid.createVariable('lat','f4')
+        lat.long_name = 'Latitude'
+        lat.units = 'deg N'
+
+        lon = fid.createVariable('lon','f4')
+        lon.long_name = 'Longitude'
+        lon.units = 'deg E'
+
+        alt = fid.createVariable('alt','f4')
+        alt.long_name = 'Altitude'
+        alt.units = 'm MSL'
+
+        for i in range(len(list(globatt.keys()))):
+            fid.setncattr(list(globatt.keys())[i], globatt[list(globatt.keys())[i]])
+
+        fid.Total_clock_execution_time_in_s = exectime
+        add_vip_to_global_atts(fid, vip)
+
+        bt[:] = out['secs']
+        wnum[:] = cwnum
+        lat[:] = location['lat']
+        lon[:] = location['lon']
+        alt[:] = location['alt']
+
+        if outfull['include'] > 0:
+            f_wnum[:] = outfull['wnum']
+            
+        fid.close()
+        
+    # Append the data to the already existing file
+    if verbose >= 2:
+        print(' Appending to the output file ' + ofilename)
+    
+    fid = Dataset(ofilename,'a')
+    bt = fid.variables['base_time']
+
+    # Update the total execution time
+    fid.Total_clock_execution_time_in_s = exectime
+
+    dt = datetime.fromtimestamp(out['secs'],tz=timezone.utc).hour
+    
+    to = fid.variables['time_offset']
+    hr = fid.variables['hour']
+    ltau = fid.variables['ltau']
+    itau = fid.variables['itau']
+    ireff = fid.variables['ireff']
+    sigma_ltau = fid.variables['sigma_ltau']
+    sigma_lreff = fid.variables['sigma_lreff']
+    sigma_itau = fid.variables['sigma_itau']
+    sigma_ireff = fid.variables['sigma_ltau']
+
+    corr_ltau_lreff = fid.variables['corr_ltau_lreff']
+    corr_ltau_itau = fid.variables['corr_ltau_itau']
+    corr_ltau_ireff = fid.variables['corr_ltau_ireff']
+    corr_lreff_itau = fid.variables['corr_lreff_itau']
+    corr_ltau_ireff = fid.variables['corr_ltau_ireff']
+    corr_itau_ireff = fid.variables['corr_itau_ireff']
+
+    lwp = fid.variables['lwp']
+    sigma_lwp = fid.variables['sigma_lwp']
+
+    tau_frac = fid.variables['tau_frac']
+    sigma_tau_frac = fid.variables['sigma_tau_frac']
+
+    dfs_ltau = fid.variables['dfs_ltau']
+    dfs_lreff = fid.variables['dfs_lreff']
+    dfs_itau = fid.variables['dfs_itau']
+    dfs_ireff = fid.variables['dfs_ireff']
+
+    tcld = fid.variables['tcld']
+    cbh = fid.variables['lreff']
+    sza = fid.variables['sza']
+    delt_lbl = fid.variables['delt_lbl']
+
+    obs_vector = fid.variables['obs_vector']
+    obs_vector_uncertainty = fid.variables['obs_vector_uncertainty']
+    forward_calc = fid.variables['forward_calc']
+    lblrtm_hour = fid.variables['lblrtm_hour']
+    conv = fid.variables['conv']
+    itern = fid.variables['iter']
+    rms = fid.variables['rms']
+
+    to[fsample] = out['secs']-bt[0]
+    hr[fsample] = dt
+    ltau[fsample] = out['x'][0]
+    lreff[fsample] = out['x'][1]
+    itau[fsample] = out['x'][2]
+    ireff[fsample] = out['x'][3]
+    sigma_ltau[fsample] = out['sigx'][0]
+    sigma_lreff[fsample] = out['sigx'][1]
+    sigma_itau[fsample] = out['sigx'][2]
+    sigma_ireff[fsample] = out['sigx'][3]
+
+    corr_ltau_lreff[fsample] = out['corr'][0]
+    corr_ltau_itau[fsample] = out['corr'][1]
+    corr_ltau_ireff[fsample] = out['corr'][2]
+    corr_lreff_itau[fsample] = out['corr'][3]
+    corr_lreff_ireff[fsample] = out['corr'][4]
+    corr_itau_ireff[fsample] = out['corr'][5]
+
+    lwp[fsample] = out['lwp']
+    sigma_lwp[fsample] = out['sigma_lwp']
+
+    tau_frac[fsample] = out['tau_frac']
+    sigma_tau_frac[fsample] = out['sigma_tau_frac']
+
+    dfs_ltau[fsample] = out['dfs'][0]
+    dfs_lreff[fsample] = out['dfs'][0]
+    dfs_itau[fsample] = out['dfs'][0]
+    dfs_ireff[fsample] = out['dfs'][0]
+
+    tcld[fsample] = out['tcld']
+    cbh[fsample] = out['cbh']
+    sza[fsample] = out['sza']
+    delt_lbl[fsample] = out['delt']
+
+    obs_vector[fsample,:] = out['y']
+    obs_vector_uncertainty[fsample,:] = out['sigy']
+    forward_calc[fsample,:] = out['FXn']
+    lblrtm_hour[fsample] = out['lhour']
+    conv[fsample] = out['conv']
+    itern[fsample] = out['intrn']
+    rms[fsample] = out['rms']
+
+    if outfull['include'] > 0:
+        f_obs_vector = fid.variables['f_obs_vector']
+        f_obs_vector_uncertainty = fid.variables['f_obs_vector_uncertainty']
+        f_forward_calc = fid.variables['f_forward_calc']
+
+        f_obs_vector[fsample,:] = outfull['y']
+        f_obs_vector_uncertainty[fsample,:] = outfull['sigy']
+        f_forward_calc[fsample,:] = outfull['FXn']
+
+    
+    fid.close()
+
+    return 1, ofilename

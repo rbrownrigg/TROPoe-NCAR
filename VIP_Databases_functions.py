@@ -23,6 +23,7 @@ import scipy.io
 # abort()
 # read_scat_databases()
 # read_stdatmos()
+# read_mixcra_vip_file()
 ################################################################################
 
 
@@ -300,6 +301,83 @@ full_vip = ({
 
 }
 )
+
+full_mixcra_vip = ({
+    'success': {'value': 0, 'comment': 'Interal success flag. Not for outside use', 'default': False},
+    'tres_lblrtm': {'value': 3, 'comment': 'Temporal resoltuion of the LBLRTM runs [h]', 'default':True},
+    'wordir': {'value':'tag', 'comment': 'The working directory for the iterating retrieval','default':True},
+
+    'delete_temporary': {'value':1, 'comment': 'Delete the temporary output after MIXCRA completes (1) or keep it (0)'},
+
+    'irsch1_path': {'value': "/data/aerich1", 'comment': 'Path to the IRS ch1 radiance files', 'default': True},
+    'irsch2_path': {'value': "/data/aerich2", 'comment': 'Path to the IRS ch1 radiance files', 'default': True},
+    'irssum_path': {'value': "/data/aerisum", 'comment': 'Path to the IRS summary files', 'default': True},
+    'irs_sampling': {'value': 1, 'comment': 'Process every (irs_sampling)th spectrum', 'default':True},
+    'irs_noise_multipler': {'value': 1, 'comment': 'Multiplicative factor used to increase the IRS noise level', 'default':True},
+    'irs_zenith_scene_mirror_angle': {'value':180, 'comment': 'The angle [degrees] of the IRS scene mirror that corresponds to zenith', 'default':True},
+
+    'tropoe_path': {'value': "/data/tropoe", 'comment': 'Path to TROPoe output files', 'default': True},
+
+    'station_lat': {'value': -999., 'comment': 'Station latitude [degN]; if negative get value from IRS/MWR data file', 'default': True},
+    'station_lon': {'value': -999., 'comment': 'Station longitude [degE]; if negative get value from IRS/MWR data file', 'default': True},
+    'station_alt': {'value': -999., 'comment': 'Station altitude [m MSL]; if negative get value from IRS/MWR data file', 'default': True},
+
+    'lwc': {'value': 0.3, 'comment': 'The maximum liquid water content in a layer; used to help find cloud top [g/m^3]', 'default': True},
+    'iwc': {'value': 0.1, 'comment': 'The maximum ice water content in a layer; used to find cloud top [g/m^3]', 'default':True},
+    'fix_cbh': {'value': -1.0, 'comment': 'If greater than zero, then use this fixed value as the CBH (not the TROPoe value); the absolute value of the fix_cbh field will be used as the CBH if the observed CBH < 0', 'default':True},
+
+    'output_rootname': {'value': 'mixcra', 'comment': 'The rootname of the output file', 'default': True},
+    'output_path': {'value': '/data/mixcra', 'comment': 'Path where the output file will be placed', 'default': True},
+
+    'lblrtm_home': {'value': '/home/tropoe/vip/src/lblrtm_v12.1/lblrtm', 'comment': 'String with the LBL_HOME path (environment variable)', 'default': False},
+    'lbldis_exec': {'value': '/home/tropoe/vip/src/lbldis.Release_3_0/lbldis', 'comment': 'The LBLDIS executable (with path)', 'default': False},
+    'lbl_std_atmos': {'value': 6, 'comment': 'Standard atmosphere to use in LBLRTM and MonoRTM calcs', 'default': False},
+    'lbl_tape3': {'value': 'tape3.data', 'comment': 'The TAPE3 file to use in the lblrtm calculation.  Needs to be in the directory lbl_home/hitran/', 'default': False},
+    'ssf': {'value': '/home/tropoe/vip/src/ssp_db_files/solar.kurucz.rad.1cm-1binned.full_disk.asc', 'comment':'The solar source fuction', 'default': False},
+    'lblout': {'value': 'lblout', 'comment': 'The output path to the gaseous optical depth from the LBLRTM run','default': True},
+
+    'spectral_bands': {'value': 'None', 'comment': 'An 2-m matrix of spectral bands to use', 'default': False},
+    'sfc_emissivity': {'value': 'None', 'comment': 'An 2-m matrix of spectral bands to use', 'default': False},
+    'include_full_calc': {'value': -1, 'comment': 'If greater than zero, include obs and calc (using final retrieved values) for full spectral band at this spectral resolution [cm-1]', 'default': True},
+
+    'nstreams': {'value': 16, 'comment': 'The number of streams to use in the LBLDIS calculation', 'default': False},
+    'solver': {'value': 0, 'comment': 'The RT solver to use in LBLDIS: 0-DISORT, 1-AbsorptionOnly', 'default':False},
+    'math_choice': {'value': 0, 'comment': 'The choice of Rodgers Equations to use 0->Eq 5.9, 1->Eq 5.8 with annealing','default':False},
+
+    'maxiter': {'value': 10, 'comment': 'The maximum number of iterations to use', 'default': False},
+    'converge_factor': {'value': 0.2, 'comment': 'To be considered converged, di2m < converge_factor*dimY; must be (0,1]', 'default':False},
+
+    'retrieve_lcloud': {'value': 1, 'comment': '0 - do not retrieve liquid clouds, 1 - retrieve liquid cloud properties', 'default': True},
+    'retrieve_icloud': {'value': 0, 'comment': '0 - do not retrieve   ice  clouds, 1 - retrieve   ice  cloud properties', 'default': True},
+
+    'compute_lwp': {'value': 1, 'comment': 'Set this to 1 if liquid is being retrieved with the lcloud variables', 'default':True},
+    'apply_icloud_constraints': {'value': 1, 'comment': 'If set and algorithm is in dual-phase, then do not let liquid water exist below -40 or ice exist above 0 degC', 'default':True},
+
+    'lcloud_ssp': {'value': '/home/tropoe/vip/src/input/ssp_db_files/ssp_db.mie_wat.gamma_sigma_0p100', 'comment': 'SSP file for liquid cloud properties', 'default': False},
+    'icloud_ssp': {'value': '/home/tropoe/vip/src/input/ssp_db_files/ssp_db.mie_ice.gamma_sigma_0p100', 'comment': 'SSP file for   ice  cloud properties', 'default': False},
+
+    'ref_wnum': {'value': -1., 'comment': 'The reference wavenumber for the retrieved optical depths (-1 implies visible)', 'default':False},
+    'min_ltau': {'value': 0.01, 'comment': 'The minimum optical depth [unitless] at the ref_wnum for the liquid', 'default':False},
+    'min_itau': {'value': 0.01, 'comment': 'The minimum optical depth [unitless] at the ref_wnum for the ice', 'default':False},
+
+    'prior_ltau_mn': {'value':  10.0, 'comment': 'Mean liquid cloud optical depth (geometric limit)', 'default': True},
+    'prior_ltau_sd': {'value': 50.0, 'comment': '1-sigma uncertainty in liquid cloud optical depth', 'default': True},
+    'prior_lReff_mn': {'value': 8.0, 'comment': 'Mean liquid Reff [microns]', 'default': True},
+    'prior_lReff_sd': {'value': 4.0, 'comment': '1-sigma uncertainty in liquid Reff [microns]', 'default': True},
+    'prior_itau_mn': {'value': 4.0, 'comment': 'Mean ice cloud optical depth (geometric limit)', 'default': True},
+    'prior_itau_sd': {'value': 5.0, 'comment': '1-sigma uncertainty in ice cloud optical depth', 'default': True},
+    'prior_iReff_mn': {'value': 25.0, 'comment': 'Mean ice cloud Reff [microns]', 'default': True},
+    'prior_iReff_sd': {'value': 8.0, 'comment': '1-sigma uncertainty in ice cloud} Reff [Reff]', 'default': True},
+    'prior_corr_ltau_lreff': {'value': 0.0, 'comment': 'The correlation to assume between ltau and lreff in the prior', 'default':True},
+    'prior_corr_ltau_itau': {'value': 0.0, 'comment': 'The correlation to assume between ltau and itau in the prior', 'default':True},
+    'prior_corr_ltau_ireff': {'value': 0.0, 'comment': 'The correlation to assume between ltau and ireff in the prior', 'default':True},
+    'prior_corr_lreff_itau': {'value': 0.0, 'comment': 'The correlation to assume between lreff and itau in the prior', 'default':True},
+    'prior_corr_lreff_ireff': {'value': 0.0, 'comment': 'The correlation to assume between lreff and ireff in the prior', 'default':True},
+    'prior_corr_itau_ireff': {'value': 0.0, 'comment': 'The correlation to assume between itau and ireff in the prior', 'default':True},
+    'vip_filename': {'value': 'none', 'comment': 'Just for tracability', 'default':True}
+}
+)
+
 
 ################################################################################
 #This routine reads in the controlling parameters from the VIP file.
@@ -764,6 +842,19 @@ def abort(lbltmpdir, date):
     print('--------------------------------------------------------------------')
     print(' ')
 
+#################################################################################
+# This routine is called when Mixcra aborts
+#################################################################################
+
+def mixcra_abort(lbltmpdir, date):
+
+    if os.path.exists(lbltmpdir):
+        shutil.rmtree(lbltmpdir)
+
+    print('>>> Mixcra retrieval on ' + str(date) + ' FAILED and ABORTED <<<')
+    print('--------------------------------------------------------------------')
+    print(' ')
+
 ################################################################################
 #   This routine reads in the scattering properties from databases that were
 #   created by Mie code (newmie_iteration) and by Ping Yang's computations (that
@@ -843,3 +934,140 @@ def read_stdatmos(filename, stdatmos, verbose):
         print('  Using standard atmosphere: ' + temp['name'][idx].decode())
 
     return {'status':1, 'z':temp['z'][idx,:], 'p':temp['p'][idx,:], 't':temp['t'][idx,:], 'w':temp['w'][idx,:], 'pwv':temp['pwv'][idx], 'name':temp['name'][idx]}
+
+
+################################################################################
+#This routine reads in the controlling parameters from the MIXCRA VIP file.
+################################################################################
+
+def read_mixcra_vip_file(filename,globatt,verbose,dostop):
+
+    vip = {}
+    for key in full_vip.keys():
+        vip[key] = full_vip[key]['value']
+
+    if os.path.exists(filename):
+
+        if verbose >= 1:
+            print('  Reading the VIP file: ' + filename)
+
+        try:
+            # inputt = np.genfromtxt(filename, dtype=str,comments='#', usecols = (0,1,2))
+            inputt = np.genfromtxt(filename, dtype=str, comments='#', delimiter='=', autostrip=True)
+        except Exception as e:
+            print(e)
+            print('  There was an problem reading the VIP file. Check formatting.')
+            return vip
+    else:
+        print('  The VIP file ' + filename + ' does not exist')
+        return vip
+
+    if len(inputt) == 0:
+        print('  There were no valid lines found in the VIP file')
+        return vip
+    
+    # Look for obsolete tags, and abort if they are found (forcing user to update their VIP file)
+    obsolete_tags = ['AERI_LAT','AERI_LON','AERI_ALT','PSFC_MIN','PSFC_MAX']
+    obsolete_idx  = np.zeros_like(obsolete_tags, dtype=int)
+    vip_keys = np.array([k.upper() for k in inputt[:,0]])
+    for i in range(len(obsolete_tags)):
+        foo = np.where(obsolete_tags[i].upper() == vip_keys)[0]
+        if(len(foo) > 0):
+            obsolete_idx[i] = 1
+    foo = np.where(obsolete_idx > 0)[0]
+    if(len(foo) > 0):
+        print('Error: there were obsolete tags in the VIP file:')
+        for i in range(len(foo)):
+            print('     '+obsolete_tags[foo[i]])
+            return vip
+    
+    # Create a tracking array to make sure all keys in the user provided
+    # vip file are used
+    track = np.ones(inputt.shape[0])
+    # Look for these tags
+    nfound = 1
+    for key in vip.keys():
+        if key != 'success':
+            nfound += 1
+            if key == 'vip_filename':
+                vip['vip_filename'] = filename
+            else:
+                foo = np.where(key == inputt[:,0])[0]
+                if len(foo) > 1:
+                    print('Error: There were multiple lines with the same key in VIP file: ' + key)
+                    return vip
+
+                elif len(foo) == 1:
+                    track[foo] = 0
+                    if verbose == 3:
+                        print('Loading the key ' + key)
+                    if key == 'spectral_bands':
+                        bands = np.zeros((2, maxbands))-1
+                        tmp = inputt[foo,1][0].split(',')
+
+                        if len(tmp) >= maxbands:
+                            print('Error: There were more spectral bands defined than maximum allowed (maxbands = ' + str(maxbands) + ')')
+                            return vip
+
+                        for j in range(len(tmp)):
+                            feh = tmp[j].split('-')
+                            if len(feh) != 2:
+                                print('Error: Unable to properly decompose the spectral_bands key')
+                                if dostop:
+                                    wait = input('Stopping inside to debug this bad boy. Press enter to continue')
+                                return vip
+                            bands[0,j] = float(feh[0])
+                            bands[1,j] = float(feh[1])
+                        vip['spectral_bands'] = bands
+
+                    elif key == 'sfc_emissivity':
+                        sfce = np.zeros((2, maxbands))-1
+                        tmp = inputt[foo,1][0].split(',')
+
+                        if len(tmp) >= maxbands:
+                            print('Error: There were more spectral bands defined than maximum allowed (maxbands = ' + str(maxbands) + ')')
+                            return vip
+
+                        for j in range(len(tmp)):
+                            feh = tmp[j].split('-')
+                            if len(feh) != 2:
+                                print('Error: Unable to properly decompose the spectral_bands key')
+                                if dostop:
+                                    wait = input('Stopping inside to debug this bad boy. Press enter to continue')
+                                return vip
+                            sfce[0,j] = float(feh[0])
+                            sfce[1,j] = float(feh[1])
+                        vip['sfc_emissivity'] = sfce
+
+                    else:
+                        vip[key] = type(vip[key])(inputt[foo,1][0])
+                else:
+                    if verbose == 3:
+                        print('UNABLE to find the key ' + key)
+                    nfound -= 1
+
+    # Now look for any global attributes that might have been entered in the file
+
+    matching = [s for s in inputt[:,0] if "globatt" in s]
+
+    if verbose >= 2:
+        print('    There were ' + str(len(matching)) + ' global attributes found')
+
+    for i in range(len(matching)):
+        foo = np.where(matching[i] == inputt[:,0])[0]
+        track[foo] = 0
+        globatt[matching[i][8:]] = inputt[foo,1][0]
+    
+    foo = np.nonzero(track)[0]
+    if len(foo) > 0:
+        print('  There were undefined entries in the VIP file:')
+        for i in range(len(foo)):
+            print('    ' + inputt[foo,0][i])
+        return vip
+    else:
+        vip['success'] = 1
+
+    if dostop:
+        wait = input('Stopping inside to debug this bad boy. Press enter to continue')
+
+    return vip
