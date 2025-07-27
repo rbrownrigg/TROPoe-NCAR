@@ -2485,15 +2485,12 @@ def grid_mwr(mwr, avg_instant, secs, tavg, time_delta, verbose):
         return {'success':1, 'secs':secs, 'ymd':ymd, 'hour':hour, 'n_fields':0,
                 'type':mwr['type'], 'rootname':'none found', 'alt':-1}
 
-    # If the Tavg is too low (or zero), then inflate it somewhat. Units are minutes
+    # If the time_delta [hours] is lower than tavg [min], then warn the user
+    if time_delta/60. < tavg:
+        print('    WARNING: mwr_time_delta is smaller than Tavg; consider resetting it in the VIP file to a larger value')
 
-    if tavg < 2:
-        print('    Tavg for MWR data is too small. Setting it equal to 2 seconds.')
-        twin = 2
-    else:
-        twin = tavg
-    # Now directly specifying the averaging time for the window
-    twin = time_delta*60*2
+    # Now directly specifying the time for the full-width averaging window
+    twin = time_delta*60*2  # Need twin to have units of minutes
 
     nsfc_temp = np.zeros(len(secs)) - 999.0
     if mwr['n_fields'] > 0:

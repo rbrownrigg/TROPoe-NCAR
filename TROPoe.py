@@ -11,7 +11,7 @@
 #
 # ----------------------------------------------------------------------------
 
-__version__ = '0.19.2'
+__version__ = '0.19.3'
 
 import os
 import sys
@@ -1899,6 +1899,7 @@ for i in range(len(irs['secs'])):                        # { loop_i
                     # Only write out some variables once (i.e., not needed for every iteration as they don't change)
             if itern == 0:
                 Output_Functions.write_variable(    Y,vip['lbl_temp_dir']+'/debug_output.Y.iter_'+str(itern)+'.cdf',verbose=verbose)
+                Output_Functions.write_variable(   Sa,vip['lbl_temp_dir']+'/debug_output.Sa.iter_'+str(itern)+'.cdf',verbose=verbose)
                 Output_Functions.write_variable(SaInv,vip['lbl_temp_dir']+'/debug_output.SaInv.iter_'+str(itern)+'.cdf',verbose=verbose)
                 Output_Functions.write_variable(   Xa,vip['lbl_temp_dir']+'/debug_output.Xa.iter_'+str(itern)+'.cdf',verbose=verbose)
                 Output_Functions.write_variable(SmInv,vip['lbl_temp_dir']+'/debug_output.SmInv.iter_'+str(itern)+'.cdf',verbose=verbose)
