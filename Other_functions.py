@@ -69,6 +69,7 @@ import Output_Functions
 # calc_derived_indices()
 # inflate_in_tropoe_uncertainty()
 # do_mlev_cbh()
+# condition_matrix()
 ################################################################################
 
 
@@ -2686,6 +2687,7 @@ def do_tcld_cbh(obswnum, obsrad, Xn, z, mlev_cbh, vip, verbose=1):
     return cbh
 
 ###############################################################################
+# This function estimates the cloud base height using the minimum local emissivity variance method
 
 def do_mlev_cbh(obswnum, obsrad, calcwnum, calcradclear, calcBrad, maxht, z, itern, vip, verbose=1):
     cbh   = -999.
@@ -2715,3 +2717,25 @@ def do_mlev_cbh(obswnum, obsrad, calcwnum, calcradclear, calcBrad, maxht, z, ite
     cbh   = z[foo[0]]
     memis = mean[foo[0]]
     return cbh, memis
+
+###############################################################################
+# This function regularizes the input covariance matrix using Tikhonov Regularization (ridge) approach
+#     NewS = OrigS + alpha*Identity, for alpha small but greater than zero
+# where OrigS is a square covariance matrix, and alpha is the regularization parameter
+
+def condition_matrix(origS, alpha):
+
+    error = ''
+    dims = np.shape(origS)
+    if len(dims) != 2:
+        error = 'Error in function condition_matrix: input structure is not a 2-dimensional structure'
+    if dims[0] != dims[1]:
+        error = 'Error in function condition_matrix: input structure is not a square matrix'
+    if alpha < 0:
+        error = 'Error in function condition_matrix: alpha must be >= 0'
+
+    if error != '':
+        return origS, error
+    iden = np.identity(dims[0])
+    newS = origS + alpha*iden
+    return newS, 'success'

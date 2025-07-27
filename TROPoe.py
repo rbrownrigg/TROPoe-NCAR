@@ -11,7 +11,7 @@
 #
 # ----------------------------------------------------------------------------
 
-__version__ = '0.19.3'
+__version__ = '0.19.4'
 
 import os
 import sys
@@ -515,6 +515,15 @@ Sa, status = Other_functions.inflate_prior_covariance(Sa, z, vip['prior_t_ival']
              vip['prior_q_ival'], vip['prior_q_iht'], vip['prior_tq_cov_val'],
              vip['prior_chimney_ht'], verbose)
 if status == 0:
+    VIP_Databases_functions.abort(lbltmpdir,date)
+    sys.exit()
+
+# Apply the Tikhonov Regularization to improve the condition of the prior covariance
+if ((vip['prior_tikhonov_factor'] > 0) & (verbose >= 1)):
+    print(f"  Applying regularization factor to Tq prior covariance matrix (alpha={vip['prior_tikhonov_factor']:.3e})")
+Sa, status = Other_functions.condition_matrix(Sa, vip['prior_tikhonov_factor'])
+if status != 'success':
+    print(status)
     VIP_Databases_functions.abort(lbltmpdir,date)
     sys.exit()
 
