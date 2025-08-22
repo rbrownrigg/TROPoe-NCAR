@@ -11,7 +11,7 @@
 #
 # ----------------------------------------------------------------------------
 
-__version__ = '0.19.4'
+__version__ = '0.19.5'
 
 import os
 import sys
@@ -1409,7 +1409,7 @@ for i in range(len(irs['secs'])):                        # { loop_i
                 mlev = {}
                 flag = 1
             else:
-                if((precompute_prior_jacobian['status'] == 1) & (itern == 0)):
+                if((precompute_prior_jacobian['status'] == 1) & (itern == 0) & (vip['omb_flag'] != 1)):
                         # Load the forward calculation stuff from the precompute prior data
                     if(verbose >= 1):
                         print('    Preloading forward calculation and jacobian from prior structure')
