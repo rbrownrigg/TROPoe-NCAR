@@ -421,8 +421,8 @@ def rundecker(model, aprofile, z, p, t, w, co2_profile= None, o3_profile=None,
       	        
             if not mlay_pres:
       	        if have_profile:
-      	            mlayers = mlayers + z[0]
-                else:
+      	            mlayers = mlayers = z[0]
+      	        else:
       	            mlayers = mlayers + altitude
     
     # Put this in the rundeck until I am sure I am

@@ -2062,9 +2062,9 @@ def make_lblrtm_calc(vip, ymd, hour, co2, z, p, t, w, wnum1,wnum2,delt,verbose):
     # Check to see if I need to remake the LBLRTM runs or not
     if (delt == 0) and (os.path.exists(tp5)) and (os.path.exists(out)):
         if verbose >= 1:
-            print('  Reading previous lblrtm runs for ' + str(ymd) + '.' + 'hhmm' + ' UTC')
+            print('  Reading previous lblrtm runs for ' + str(ymd) + '.' + str(hhmm) + ' UTC')
     else:
-        print('  Making the lblrtm runs for ' + str(ymd) + '.' + 'hhmm' + ' UTC')
+        print('  Making the lblrtm runs for ' + str(ymd) + '.' + str(hhmm) + ' UTC')
     
         # Make sure that the output paths are ready
         if not os.path.exists(vip['workdir']):

@@ -2753,8 +2753,8 @@ def qc_irs(irs):
             print('Error: Unable to find either 900 or 2550 cm-1 elements to use for QC -- aborting')
             return -999
     
-    flag = np.ones(len(irs['rad'][foo]))
-    bar = np.where((irs['rad'][foo] < thres) | (irs['hatchOpen'] <= 0))[0]
+    flag = np.ones(len(irs['radmn'][foo]))
+    bar = np.where((irs['radmn'][foo] < thres) | (irs['hatchopen'] <= 0))[0]
     if len(bar) > 0:
         flag[bar] = 0
     
@@ -2774,7 +2774,7 @@ def average_irs(irs, spectral_bands):
     for i in range(nyobs):
         foo = np.where((spectral_bands[0,i] <= irs['wnum']) & (irs['wnum'] <= spectral_bands[1,i]))[0]
         if len(foo) > 0:
-            yobs[i,:] = np.sum(irs['rad'][foo,:],axis=0)/len(foo)
+            yobs[i,:] = np.sum(irs['radmn'][foo,:],axis=0)/len(foo)
             ysig[i,:] = np.sum(irs['noise'][foo,:],axis=0)/(len(foo)*np.sqrt(len(foo)))
         else:
             yobs[i,:] = -999.
@@ -2787,15 +2787,16 @@ def average_irs(irs, spectral_bands):
 # the LWC profile pretty reasonably
 ##################################################################################
 def create_lwc_profile(inlwp, height, cbh, lwcmax):
-    lwp = np.max(inlwp,5)   # Always have a little bit of cloud for this masking purpose.....
+    lwp = np.max([inlwp,5])   # Always have a little bit of cloud for this masking purpose.....
     lwc = np.zeros(len(height))
     cth = -999.
     delz = height[1:]-height[:-1]
     if cbh > 0:
         foo = np.where(height > cbh)[0]
-        if len(foo) <= 0:
+        if len(foo) <= 1:
             print('This should not happen, I am sure')
             return -999.
+        foo = foo[0:-1]
         tmp = np.cumsum(delz[foo]*1000*lwcmax)
         bar = np.where(lwp-tmp <= 0)[0]
         if len(bar) <= 0:
@@ -2844,7 +2845,7 @@ def estimate_tcld(lwc, tropoe_temp, tropoe_hour, hour):
 
     tdel = np.abs(tropoe_hour - hour)
     foo = np.where(tdel <= np.min(tdel) + 0.0000001)[0][0]
-    temp = np.squeeze(tropoe_temp[:,foo])
+    temp = np.squeeze(tropoe_temp[foo,:])
     tcld = np.sum(lwc*temp)/np.sum(lwc)
 
     return tcld

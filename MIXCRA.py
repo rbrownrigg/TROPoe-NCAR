@@ -125,12 +125,14 @@ if vip['success'] != 1:
 if (vip['ref_wnum'] <= 0):
     vip['ref_wnum'] = -1
 
-# Determine which AERI spectra to process
+# Determine which IRS spectra to process
 if step is None:
     step = vip['irs_sampling']          # Process every (step)th spectrum
+else:
+    step = int(step)
 if step <= 0:
-    step = 1                            # Must process iin a forward way
-vip['aeri_sampling'] = step             # Update the VIP file, if passed in via command line
+    step = 1                            # Must process in a forward way
+vip['irs_sampling'] = step             # Update the VIP file, if passed in via command line
 
 # If the first spectral bands variable is negative, I will assume it was not in
 # the VIP file and set it to some reasonable default value here
@@ -153,7 +155,7 @@ else:
     sfc_emissivity = vip['sfc_emissivity']
 
 # Apply some QC to the VIP parameters
-if vip['sovler'] != 0 and vip['solver'] != -1:
+if vip['solver'] != 0 and vip['solver'] != -1:
     print('Error: The solver in the VIP file must be either 0 or -1')
     sys.exit()
 
@@ -200,49 +202,24 @@ if keep:
 # Read in the TROPoe input file
 if verbose >= 0:
     print('   Reading the TROPoe output file')
-tropoe_filename = '*{tropoe,aerioe}*' + str(date) + '*.{nc,cdf}'
-files = Data_reads.findfile(vip['tropoe_path'],tropoe_filename)
+tropoe_filename = '*tropoe*.' + str(date) + '.*.(nc|cdf)'
+files, status = Data_reads.findfile(vip['tropoe_path'],tropoe_filename)
 if len(files) != 1:
-    print('Error: Unable to find a single TROPoe file for this date in ' + vip['tropoe_path'])
+    print('Error: Unable to find a unique TROPoe file for this date in ' + vip['tropoe_path'])
+    print('         that matches this file pattern: '+tropoe_filename)
     sys.exit()
-
 tropoe = Data_reads.read_tropoe(files[0])
 
-# Confirm AERI spectra and summary files exist for this date
-irsch1_filename = '*{aeri,assist}*{ch1,ChA,cha}*' + str(date)+'*.{nc,cdf}'
-irsch1_file = Data_reads.findfile(vip['irsch1_path'],irsch1_filename)
+# Now read in the IRS and MWR data (if desired)
+fail, irs, mwr, mwrscan = Data_reads.read_all_data(date, vip, dostop, verbose)
+print('DDT -- woohoo -- through the read_all_data function')
+for key in irs.keys():
+    print('DDT: irs has key '+key)
 
-irsch2_filename = '*{aeri,assist}*{ch2,ChB,chb}*' + str(date)+'*.{nc,cdf}'
-irsch2_file = Data_reads.findfile(vip['irsch2_path'],irsch2_filename)
-
-irssum_filename = '*{aeri,assist}*sum*' + str(date)+'*.{nc,cdf}'
-irssum_file = Data_reads.findfile(vip['irssum_path'],irssum_filename)
-
-if len(irssum_file) != 1:
-    print('Error: Unable to find a single IRS summary file for this date in ' + vip['irssum_path'])
-    sys.exit()
-
-if len(irsch1_file) != len(irssum_file):
-    print('Error: the number of IRS ch1 files does not equal the number of IRS summary files - aborting')
-    sys.exit()
-
-# Now read in the IRS data
-irsch1 = Data_reads.skinny_read_irs_ch(irsch1_file[0],vip)
 if use_sun == 1:
-    if len(irsch2_file) != len(irssum_file):
-        print('Error: the number of IRS ch1 files does not equal the number of IRS summary files - aborting')
-        sys.exit()
-    irsch2 = Data_reads.skinny_read_irs_ch(irsch2_file[0],vip)
-    if irsch2['status'] == 0:
-        sys.exit()
-else:
-    irsch2 = {'status':0}
-
-irssum = Data_reads.skinny_read_irs_sum(irssum_file[0])
-if irssum['status'] == 0:
+    print('Need to modify the read_all_data function to read ch1 & ch2 data and concatenate the spectra')
+    print('   So I will abort this MIXCRA run that is trying to use ch2 data now')
     sys.exit()
-
-irs = Data_reads.combine_irs(irsch1, irsch2, irssum,use_sun)
 
 # Identify the good samples (i.e., apply QC to the IRS data)
 qcflag = Other_functions.qc_irs(irs)
@@ -271,6 +248,7 @@ while np.max(entire_spectrum) < maxw:
     new_row = np.array([[minw, minw + delw]])
     entire_spectrum = np.vstack([entire_spectrum, new_row])
     minw += delw
+entire_spectrum = entire_spectrum.T
 
 # Now avereage the IRS data over the desired spectral bands
 yobs1, ysig1, nyobs1 = Other_functions.average_irs(irs,spectral_bands)       # These are the obs for the retrieval
@@ -286,10 +264,11 @@ else:
 vip['workdir'] = vip['workdir'] + '_' + str(date)
 
 # If this flag was set then delete the working subdirectory, and restart from scratch
-if vip['delete temporary'] != 1:
+if vip['delete_temporary'] != 1:
     if verbose >= 1:
         print('    Reinitializing the working directory ' + vip['workdir'])
-    shutil.rmtree(vip['workdir'])
+    if os.path.exists(vip['workdir']):
+        shutil.rmtree(vip['workdir'])
     os.mkdir(vip['workdir'])
     
 # Select the TROPoe indices to make LBLRTM runs, if we had to recreate the working directory
@@ -321,8 +300,8 @@ for i in range(len(lhour)):
     # Make the LBLRTM calculation, and read in the ODs
     lbl = Jacobian_Functions.make_lblrtm_calc(vip,date,tropoe['hour'][lidx[i]],
                                               tropoe['co2'][lidx[i],0],tropoe['height'],
-                                              tropoe['pressure'][lidx[i],:], tropoe['temperature'[lidx[i],:]],
-                                              tropoe['watervapor'][lidx[i],:], lblwnum1, lblwnum2,
+                                              tropoe['pressure'][lidx[i],:], tropoe['temperature'][lidx[i],:],
+                                              tropoe['waterVapor'][lidx[i],:], lblwnum1, lblwnum2,
                                               vip['delete_temporary'],verbose)
     
     if lbl['status'] == 0:
@@ -346,9 +325,12 @@ if verbose >= 2:
     print('  Generating mixrowindow file for the retrieval bands')
 lun = open(microwin_file1,'w')
 lun.write(str(len(spectral_bands[0])) + '\n')
-for j in len(spectral_bands[0]):
-    lun.write('{:7.2}  {:7.2f}\n'.format(spectral_bands[0,j],spectral_bands[1,j]))
+for j in range(len(spectral_bands[0])):
+    lun.write('{:7.2f}  {:7.2f}\n'.format(spectral_bands[0,j],spectral_bands[1,j]))
 lun.close()
+print('DDT -- length of the spectral_bands and entire_spectrum')
+print(spectral_bands.shape)
+print(entire_spectrum.shape)
 
 # For the end-game "entire_spectrum"
 microwin_file2 = vip['workdir'] + '/microwindows2.txt'
@@ -356,34 +338,35 @@ if verbose >= 3:
     print('  Generating microwindow file for the entire spectral band')
 lun = open(microwin_file2,'w')
 lun.write(str(len(entire_spectrum[0])) + '\n')
-for j in len(entire_spectrum[0]):
-    lun.write('{:7.2}  {:7.2f}\n'.format(entire_spectrum[0,j],entire_spectrum[1,j]))
+for j in range(len(entire_spectrum[0])):
+    lun.write('{:7.2f}  {:7.2f}\n'.format(entire_spectrum[0,j],entire_spectrum[1,j]))
 lun.close()
 
 # Determine the ranges of the effective radii in the SSP DBs
-ssp_file = Data_reads.findfile(vip['lcloud_ssp'])
-if vip['retrieve_lcloud'] and len(ssp_file) != 1:
-    print('Error: Unable to uniquely determine the needed file ' + vip['lcloud_ssp'])
-    sys.exit()
-else:
-    # Don't take the exact_min and max; give room for perturbation calcs
-    sspl, flag = VIP_Databases_functions.read_scat_databases(ssp_file[0])
-    min_lReff = sspl['data'][2,1]
-    max_lReff = sspl['data'][2,-2]
-    print('  The minimum and maximum effective radii in the SSP for ' \
-    'lcloud is {:6.2f} and {:6.2} microns'.format(min_lReff, max_lReff))
+if vip['retrieve_lcloud'] > 0:
+    if os.path.exists(vip['lcloud_ssp']) == False:
+        print('Error: Unable to uniquely determine the needed file ' + vip['lcloud_ssp'])
+        sys.exit()
+    else:
+        # Don't take the exact_min and max; give room for perturbation calcs
+        sspl, flag = VIP_Databases_functions.read_scat_databases(vip['lcloud_ssp'])
+        min_lReff = sspl['data'][2,1]
+        max_lReff = sspl['data'][2,-2]
+        print('  The minimum and maximum effective radii in the SSP for ' \
+        'lcloud is {:6.2f} and {:6.2} microns'.format(min_lReff, max_lReff))
 
-ssp_file = Data_reads.findfile(vip['icloud_ssp'])
-if vip['retrieve_icloud'] and len(ssp_file) != 1:
-    print('Error: Unable to uniquely determine the needed file ' + vip['icloud_ssp'])
-    sys.exit()
-else:
-    # Don't take the exact_min and max; give room for perturbation calcs
-    sspi, flag = VIP_Databases_functions.read_scat_databases(ssp_file[0])
-    min_iReff = sspl['data'][2,1]
-    max_iReff = sspl['data'][2,-2]
-    print('  The minimum and maximum effective radii in the SSP for ' \
-    'icloud is {:6.2f} and {:6.2} microns'.format(min_iReff, max_iReff))
+if vip['retrieve_icloud'] > 0:
+    if os.path.exists(vip['icloud_ssp']) == False:
+        print('Error: Unable to uniquely determine the needed file ' + vip['icloud_ssp'])
+        sys.exit()
+    else:
+        # Don't take the exact_min and max; give room for perturbation calcs
+        sspi, flag = VIP_Databases_functions.read_scat_databases(vip['icloud_ssp'])
+        min_iReff = sspl['data'][2,1]
+        max_iReff = sspl['data'][2,-2]
+        print('  The minimum and maximum effective radii in the SSP for ' \
+        'icloud is {:6.2f} and {:6.2} microns'.format(min_iReff, max_iReff))
+print('DDT -- just finished reading the SSP_DB files')
 
 # Build the prior and its uncertainty
 minsd = 1e-5
@@ -466,10 +449,13 @@ for samp in range(foo[0],len(irs['secs']),step):
     else:
         # Interpolate the CBH from the TROPoe retrievals in time, but don't extrapolate the CBH
         cbh = np.interp(irs['hour'][samp],tropoe['hour'],tropoe['cbh'])
-        foo = np.where(cbh <= 0)[0]
-        if len(foo) <= 0:
-            cbh[foo] = tropoe['cbh'][0]
-    
+        if irs['hour'][samp] < tropoe['hour'][0]:
+            cbh = tropoe['cbh'][0]
+        if irs['hour'][samp] > tropoe['hour'][-1]:
+            cbh = tropoe['cbh'][-1]
+        if cbh <= 0:
+            cbh = np.abs(vip['fix_cbh'])
+
     if len(tropoe['hour']) == 1:
         lwc = Other_functions.create_lwc_profile(max(tropoe['lwp'],5),tropoe['height'], cbh, vip['lwc'])
     else:
@@ -479,8 +465,9 @@ for samp in range(foo[0],len(irs['secs']),step):
     tcld = Other_functions.estimate_tcld(lwc,tropoe['temperature'],tropoe['hour'],irs['hour'][samp])
 
     # Define the a priori mean and covariance
-    Xa = np.array([vip['prior_ltau_mn'],vip['prior_lreff_mn'],vip['prior_itau_mn'],vip['prior_ireff_mn']])
-    sig = np.array([vip['prior_ltau_sd'],vip['prior_lreff_sd'],vip['prior_itau_sd'],vip['prior_ireff_sd']])
+    Xa = np.array([vip['prior_ltau_mn'],vip['prior_lReff_mn'],vip['prior_itau_mn'],vip['prior_iReff_mn']])
+    sig = np.array([vip['prior_ltau_sd'],vip['prior_lReff_sd'],vip['prior_itau_sd'],vip['prior_iReff_sd']])
+    print("DDT is now here1")
 
     # If desired, then modify the liquid and ice optical depths based upon cloud temperature
     if vip['apply_tcloud_constraints'] == 1 and vip['retrieve_icloud'] == 1 and vip['retrieve_lcloud'] == 1:
@@ -494,8 +481,11 @@ for samp in range(foo[0],len(irs['secs']),step):
         Xa[2] *= imult
         sig[2] *= imult
     
-    sig = max(sig,minsd)
-    Ca = np.diag(np.ones(4))
+    # Make sure that all of the uncertainties are above the minimum value allowed
+    foo = np.where(sig < minsd)[0]
+    if len(foo) > 0:
+        sig[foo] = minsd
+    Ca  = np.diag(np.ones(4))
     Ca[0,1] = vip['prior_corr_ltau_lreff']
     Ca[1,0] = Ca[0,1]
     Ca[0,2] = vip['prior_corr_ltau_itau']
@@ -509,25 +499,29 @@ for samp in range(foo[0],len(irs['secs']),step):
     Ca[2,3] = vip['prior_corr_itau_ireff']
     Ca[3,2] = Ca[2,3]
     Sa = np.copy(Ca)
-    for i in len(sig):
-        for j in len(sig):
+    for i in range(len(sig)):
+        for j in range(len(sig)):
             Sa[i,j] = Ca[i,j]*sig[i]*sig[j]
     invSa = np.linalg.pinv(Sa)
 
     # Quick QC on the prior's effective radii
-    Xa[1] = min(max(Xa[1],min_lReff),max_lReff)
-    Xa[3] - min(max(Xa[3],min_iReff),max_iReff)
+    if vip['retrieve_lcloud'] > 0:
+        Xa[1] = np.min([np.max([Xa[1],min_lReff]),max_lReff])
+    if vip['retrieve_icloud'] > 0:
+        Xa[3] = np.min([np.max([Xa[3],min_iReff]),max_iReff])
+    print("DDT is now here2")
 
     # Build the observation vector and its covariance matrix
     cwnum = np.mean(spectral_bands,axis=1)
     Y = np.squeeze(yobs1[:,samp])
     foo = np.where(ysig1[:,samp] > 0)[0]
+    print(cwnum.shape,Y.shape)
     if len(foo) <= 0:
         print('Error: it seems that none of the IRS data were in the spectral bands -- aborting')
         sys.exit()
     
     minnoise = np.min(ysig1[foo,samp])
-    Sm = np.diag((np.maximum(vip.aeri_noise_multiplier * ysig1[:, samp], minnoise))**2)
+    Sm = np.diag((np.maximum([vip['irs_noise_inflation'] * ysig1[:, samp], minnoise]))**2)
     invSm = np.linalg.pinv(Sm)
 
     # Initialize the first guess to the prior, but update the ltau to be a bit more accurate
@@ -623,10 +617,10 @@ for samp in range(foo[0],len(irs['secs']),step):
         itern += 1
 
         # Some QC basic limits
-        Xn[0] = max(Xn[0],vip['min_ltau'])
-        Xn[1] = min(max(Xn[1],min_lReff),max_lReff)
-        Xn[2] = max(Xn[2],vip['min_ltau'])
-        Xn[3] = min(max(Xn[3],min_iReff),max_iReff)
+        Xn[0] = max([Xn[0],vip['min_ltau']])
+        Xn[1] = min([max([Xn[1],min_lReff]),max_lReff])
+        Xn[2] = max([Xn[2],vip['min_itau']])
+        Xn[3] = min([max([Xn[3],min_iReff]),max_iReff])
 
         if verbose >= 1 and conv != 1:
             print('     {:2d}  {:7.2f} {:7.2f} {:7.2f} {:7.2f}    {:6.2f}   {:10.4e}   {:5.2f}'.format(
