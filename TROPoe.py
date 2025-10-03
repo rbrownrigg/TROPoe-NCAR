@@ -519,16 +519,7 @@ if status == 0:
     sys.exit()
 
 # Read in the data
-fail, irs, mwr, mwrscan = Data_reads.read_all_data(date, z, vip['tres'], dostop, verbose, vip['avg_instant'],
-    vip['irsch1_path'], vip['irs_pca_nf'], vip['irs_fv'], vip['irs_fa'],
-    vip['irssum_path'], vip['irseng_path'], vip['irs_type'], vip['irs_calib_pres'],
-    vip['irs_smooth_noise'], vip['irs_use_missingDataFlag'],
-    vip['irs_min_675_bt'], vip['irs_max_675_bt'], vip['irs_spec_cal_factor'], vip['irs_noise_inflation'], 
-    vip['mwr_path'], vip['mwr_rootname'], vip['mwr_type'], vip['mwr_elev_field'], vip['mwr_n_tb_fields'],
-    vip['mwr_tb_replicate'], vip['mwr_tb_field_names'], vip['mwr_tb_freqs'], vip['mwr_tb_noise'],
-    vip['mwr_tb_bias'], vip['mwr_tb_field1_tbmax'], vip['cbh_path'], vip['cbh_type'], vip['cbh_window_in'],
-    vip['cbh_window_out'], vip['cbh_default_ht'], vip['irs_hatch_switch'],
-    vip['irs_use_missingDataFlag'], vip)
+fail, irs, mwr, mwrscan = Data_reads.read_all_data(date, vip, dostop, verbose)
 
 if fail == 1:
     print('Error reading in data: aborting')
