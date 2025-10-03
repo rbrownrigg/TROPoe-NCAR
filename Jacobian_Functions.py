@@ -2068,7 +2068,7 @@ def make_lblrtm_calc(vip, ymd, hour, co2, z, p, t, w, wnum1,wnum2,delt,verbose):
     
         # Make sure that the output paths are ready
         if not os.path.exists(vip['workdir']):
-            os.makdirs(vip['workdir'])
+            os.makedirs(vip['workdir'])
         
         # Make the tape5 file and run the model
         LBLRTM_Functions.rundecker(3, vip['lbl_std_atmos'], z, p, t+273.16, w,

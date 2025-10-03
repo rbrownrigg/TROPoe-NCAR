@@ -666,9 +666,8 @@ for samp in range(foo[0],len(irs['secs']),step):
         uuu2 = lwpm**2 * (Sop[0,0]/Xn[0]**2) + (Sop[1,1]/Xn[1]**2) + 2*(Sop[0,1]/(Xn[0]*Xn[1]))
         lwpu = np.sqrt(uuu2)
         # Trap for any possible low uncertainty or NaN values in the LWP uncertainty
-        foo  = np.where(np.isnan(lwpu) or (lwpu < min_sigma_lwp))[0]
-        if len(foo) > 0:
-            lwpu[foo] = min_sigma_lwp
+        if(np.where(np.isnan(lwpu)) or (lwpu < min_sigma_lwp)):
+            lwpu = min_sigma_lwp
 
     # Compute the optical depth fraction and its uncertainty
     # Use Bevington method, for x = au/(u+v)
