@@ -105,6 +105,7 @@ full_tropoe_vip = ({
     'mwr_tb_freqs': {'value': '23.8,31.4', 'comment': 'Comma separated list of frequency [GHz] of MWR Tb fields', 'default': True},
     'mwr_tb_noise': {'value': '0.3,0.3', 'comment': 'Comma separated list of noise levels [K] in the MWR Tb fields', 'default': True},
     'mwr_tb_bias': {'value': '0.0,0.0', 'comment': 'Comma separated list of bias [K] in the MWR Tb fields; this value is ADDED to the MWR observations', 'default': True},
+    'mwr_tb_replicate': {'value': 1, 'comment': 'Number of times to replicate the obs -- this allows us to change the weight of the MWR data in the retr}ieval (useful for LWP)', 'default': True},
     'mwr_time_delta': {'value': 0.083, 'comment': 'The maximum amount of time [hours] that the MWR zenith obs must be to the sampling time to be used \n', 'default': True},
 
     'mwrscan_type': {'value': 0, 'comment': '0 - none, 1 - Tb fields are individual time series, 2 - Tb field is 2-d array', 'default': True},

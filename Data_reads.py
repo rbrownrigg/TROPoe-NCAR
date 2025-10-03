@@ -777,7 +777,7 @@ def read_all_data(date, vip, dostop, verbose):
     irs_smooth_noise = check_dict_key(vip, 'irs_smooth_noise', 0)
     irs_spec_cal_factor = check_dict_key(vip, 'irs_spec_cal_factor', 1.)
     irs_old_ffov_halfangle = check_dict_key(vip, 'irs_old_ffov_halfangle', 23.)
-    irs_new_ffov_halfangle = check_dict_key(vip, 'irs_old_ffov_halfangle', -1.)
+    irs_new_ffov_halfangle = check_dict_key(vip, 'irs_new_ffov_halfangle', -1.)
 
 
     fail = 0

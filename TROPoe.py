@@ -168,7 +168,7 @@ print('  TROPoe version: '+tropoe_version)
 
 #Find the VIP file and read it
 
-vip = VIP_Databases_functions.read_vip_file(vip_filename, globatt = globatt, debug = debug, verbose = verbose, dostop = dostop)
+vip = VIP_Databases_functions.read_tropoe_vip_file(vip_filename, globatt = globatt, debug = debug, verbose = verbose, dostop = dostop)
 
 if vip['success'] != 1:
     print(('>>> TROPoe retrieval on ' + str(date) + ' FAILED and ABORTED <<<'))
@@ -1005,7 +1005,7 @@ for i in range(len(irs['secs'])):                        # { loop_i
         flagY = np.append(flagY, np.ones(ext_tseries['nptsCO2'])*9)
         dimY = np.append(dimY,np.ones(ext_tseries['nptsCO2'])*ext_tseries['co2_sfc_relative_height'])
 
-    if mwrscan['n_fields'] > 0:
+    if mwrscan['type'] > 0:
         tbsky = np.copy(mwrscan['tbsky'][:,i])
         noise = np.copy(mwrscan['noise'])
         foo = np.where(tbsky < 2.7)[0]
@@ -1773,15 +1773,15 @@ for i in range(len(irs['secs'])):                        # { loop_i
                 create_monortm_config = 0
 
             if create_monortm_sfreq == 1:
+                if(mwrscan['type'] > 0):
                 # Create the MonoRTM frequency file
-                lun = open(lbltmpdir + '/' + monortm_sfreq, 'w')
-                lun.write('\n')
-                lun.write('{:0d}\n'.format(len(mwrscan['freq'])))
-                for gg in range(len(mwrscan['freq'])):
-                    lun.write('{:7.3f}\n'.format(mwrscan['freq'][gg]))
-                lun.close()
-
-                # Turn the flag off, as we only need to create thee files once
+                    lun = open(lbltmpdir + '/' + monortm_sfreq, 'w')
+                    lun.write('\n')
+                    lun.write('{:0d}\n'.format(len(mwrscan['freq'])))
+                    for gg in range(len(mwrscan['freq'])):
+                        lun.write('{:7.3f}\n'.format(mwrscan['freq'][gg]))
+                    lun.close()
+                # Turn the flag off, as we only need to create these files once
                 create_monortm_sfreq = 0
 
             # Run the forward model and compute the Jacobian
