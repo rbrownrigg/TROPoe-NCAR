@@ -882,7 +882,7 @@ def write_output(vip, ext_prof, mod_prof, ext_tseries, globatt, xret, prior,
         fid.Prior_dataset_T_inflation_factor = str(vip['prior_t_ival']) + ' at the surface to 1.0 at ' + str(vip['prior_t_iht']) + ' km AGL'
         fid.Prior_dataset_Q_inflation_factor = str(vip['prior_q_ival']) + ' at the surface to 1.0 at ' + str(vip['prior_q_iht']) + ' km AGL'
         fid.Prior_dataset_TQ_correlation_reduction_factor = vip['prior_tq_cov_val']
-        fid.Total_clock_execution_time_in_s = exectime
+        fid.Total_clock_execution_time_in_s = str(exectime)
         fid.Retrieval_option_flags = '{:0d}, {:0d}, {:0d}, {:0d}, {:0d}, {:0d}, {:0d}'.format(modeflag[0], modeflag[1], modeflag[2], modeflag[3], modeflag[4], modeflag[5], modeflag[6])
         fid.Retrieval_option_flags_variables = 'doTemp, doWVMR, doLiqCloud, doIceCloud, doCO2, doCH4, doN2O'
         fid.vip_tres = (str(vip['tres']) + ' minutes. Note that the sample time corresponds to the '
@@ -1427,7 +1427,7 @@ def mixcra_write_output(out,vip,location,cwnum,outfull,fsample,exectime,
     
     if fsample == 0:
         bad = 0
-        if len(ofilename > 0):
+        if len(ofilename) > 0:
             if ofilename != ' ':
                 bad = 1, ofilename
             
@@ -1493,7 +1493,7 @@ def mixcra_write_output(out,vip,location,cwnum,outfull,fsample,exectime,
         sigma_ltau.long_name = 'Uncertainty in liquid optical depth'
         sigma_ltau.units = 'unitless'
 
-        sigma_lreff = fid.createVariables('sigma_lreff','f4',('time',))
+        sigma_lreff = fid.createVariable('sigma_lreff','f4',('time',))
         sigma_lreff.long_name = 'Uncertainty in liquid water effective radius'
         sigma_lreff.units = 'microns'
 
@@ -1501,80 +1501,80 @@ def mixcra_write_output(out,vip,location,cwnum,outfull,fsample,exectime,
         sigma_itau.long_name = 'Uncertainty in ice optical depth'
         sigma_itau.units = 'unitless'
 
-        sigma_ireff = fid.createVariables('sigma_ireff','f4',('time',))
+        sigma_ireff = fid.createVariable('sigma_ireff','f4',('time',))
         sigma_ireff.long_name = 'Uncertainty in ice effective radius'
         sigma_ireff.units = 'microns'
 
-        corr_ltau_lreff = fid.createVariables('corr_ltau_lreff','f4',('time',))
-        corr_ltau_lreff.long_name = 'Correlated uncertainty between lTau and lreff'
+        corr_ltau_lreff = fid.createVariable('corr_ltau_lreff','f4',('time',))
+        corr_ltau_lreff.long_name = 'Correlated uncertainty between ltau and lreff'
         corr_ltau_lreff.units = 'unitless (between -1 and +1)'
 
-        corr_ltau_itau = fid.createVariables('corr_ltau_itau','f4',('time',))
-        corr_ltau_itau.long_name = 'Correlated uncertainty between lTau and itau'
+        corr_ltau_itau = fid.createVariable('corr_ltau_itau','f4',('time',))
+        corr_ltau_itau.long_name = 'Correlated uncertainty between ltau and itau'
         corr_ltau_itau.units = 'unitless (between -1 and +1)'
 
-        corr_ltau_ireff = fid.createVariables('corr_ltau_ireff','f4',('time',))
-        corr_ltau_ireff.long_name = 'Correlated uncertainty between lTau and ireff'
+        corr_ltau_ireff = fid.createVariable('corr_ltau_ireff','f4',('time',))
+        corr_ltau_ireff.long_name = 'Correlated uncertainty between ltau and ireff'
         corr_ltau_ireff.units = 'unitless (between -1 and +1)'
 
-        corr_lreff_itau = fid.createVariables('corr_lreff_itau','f4',('time',))
-        corr_lreff_itau.long_name = 'Correlated uncertainty between lreff and iTau'
+        corr_lreff_itau = fid.createVariable('corr_lreff_itau','f4',('time',))
+        corr_lreff_itau.long_name = 'Correlated uncertainty between lreff and itau'
         corr_lreff_itau.units = 'unitless (between -1 and +1)'
 
-        corr_lreff_ireff = fid.createVariables('corr_lreff_ireff','f4',('time',))
+        corr_lreff_ireff = fid.createVariable('corr_lreff_ireff','f4',('time',))
         corr_lreff_ireff.long_name = 'Correlated uncertainty between lreff and ireff'
         corr_lreff_ireff.units = 'unitless (between -1 and +1)'
 
-        corr_itau_ireff = fid.createVariables('corr_itau_ireff','f4',('time',))
+        corr_itau_ireff = fid.createVariable('corr_itau_ireff','f4',('time',))
         corr_itau_ireff.long_name = 'Correlated uncertainty between itau and ireff'
         corr_itau_ireff.units = 'unitless (between -1 and +1)'
 
-        dfs_ltau = fid.createVariables('dfs_ltau','f4',('time',))
+        dfs_ltau = fid.createVariable('dfs_ltau','f4',('time',))
         dfs_ltau.long_name = 'DFS in liquid optical depth'
         dfs_ltau.units = 'unitless'
 
-        dfs_lreff = fid.createVariables('dfs_lreff','f4',('time',))
+        dfs_lreff = fid.createVariable('dfs_lreff','f4',('time',))
         dfs_lreff.long_name = 'DFS in liquid water effective radius'
         dfs_lreff.units = 'unitless'
 
-        dfs_itau = fid.createVariables('dfs_itau','f4',('time',))
+        dfs_itau = fid.createVariable('dfs_itau','f4',('time',))
         dfs_itau.long_name = 'DFS in ice optical depth'
         dfs_itau.units = 'unitless'
 
-        dfs_ireff = fid.createVariables('dfs_ireff','f4',('time',))
+        dfs_ireff = fid.createVariable('dfs_ireff','f4',('time',))
         dfs_ireff.long_name = 'DFS in ice effective radius'
         dfs_ireff.units = 'unitless'
 
-        lwp = fid.createVariables('lwp','f4',('time',))
+        lwp = fid.createVariable('lwp','f4',('time',))
         lwp.long_name = 'Liquid water path'
         lwp.units = 'g/m2'
 
-        sigma_lwp = fid.createVariables('sigma_lwp','f4',('time',))
+        sigma_lwp = fid.createVariable('sigma_lwp','f4',('time',))
         sigma_lwp.long_name = 'Uncertainty in liquid water path'
         sigma_lwp.units = 'g/m2'
 
-        tau_frac = fid.createVariables('tau_frac','f4',('time',))
+        tau_frac = fid.createVariable('tau_frac','f4',('time',))
         tau_frac.long_name = 'Fraction of total optical depth'
         tau_frac.units = 'unitless'
         tau_frac.comment = 'Ratio of ltau / (ltau + itau)'
 
-        sigma_tau_frac = fid.createVariables('sigma_tau_frac','f4',('time',))
+        sigma_tau_frac = fid.createVariable('sigma_tau_frac','f4',('time',))
         sigma_tau_frac.long_name = 'Uncertainty in fraction of total optical depth'
         sigma_tau_frac.units = 'unitless'
 
-        tcld = fid.createVariables('tcld','f4',('time',))
+        tcld = fid.createVariable('tcld','f4',('time',))
         tcld.long_name = 'Cloud temperature'
         tcld.units = 'degC'
 
-        cbh = fid.createVariables('cbh','f4',('time',))
+        cbh = fid.createVariable('cbh','f4',('time',))
         cbh.long_name = 'Cloud base height'
         cbh.units  = 'km AGL'
 
-        sza = fid.createVariables('sza','f4',('time',))
+        sza = fid.createVariable('sza','f4',('time',))
         sza.long_name = 'Solar zenith angle'
         sza.units = 'degrees'
 
-        delt_lbl = fid.createVariable('delt_lbl','f4',('time,'))
+        delt_lbl = fid.createVariable('delt_lbl','f4',('time',))
         delt_lbl.long_name = 'Time to closest LBLRTM calculation'
         delt_lbl.units = 'hour'
 
@@ -1600,11 +1600,11 @@ def mixcra_write_output(out,vip,location,cwnum,outfull,fsample,exectime,
         conv.value_0 = 'Did not converge'
         conv.value_1 = 'Did converge'
 
-        itern = fid.createVariables('iter','i2',('time',))
+        itern = fid.createVariable('iter','i2',('time',))
         itern.long_name = 'Number of iterations performed'
         itern.units = 'unitless'
 
-        rms = fid.createVariables('rms','f4',('time',))
+        rms = fid.createVariable('rms','f4',('time',))
         rms.long_name = 'RMS difference (obs minus calc)'
         rms.units = 'RU'
 
@@ -1640,7 +1640,7 @@ def mixcra_write_output(out,vip,location,cwnum,outfull,fsample,exectime,
         for i in range(len(list(globatt.keys()))):
             fid.setncattr(list(globatt.keys())[i], globatt[list(globatt.keys())[i]])
 
-        fid.Total_clock_execution_time_in_s = exectime
+        fid.Total_clock_execution_time_in_s = str(exectime)
         add_vip_to_global_atts(fid, vip)
 
         bt[:] = out['secs']
@@ -1662,25 +1662,24 @@ def mixcra_write_output(out,vip,location,cwnum,outfull,fsample,exectime,
     bt = fid.variables['base_time']
 
     # Update the total execution time
-    fid.Total_clock_execution_time_in_s = exectime
+    fid.Total_clock_execution_time_in_s = str(exectime)
 
-    dt = datetime.fromtimestamp(out['secs'],tz=timezone.utc).hour
-    
     to = fid.variables['time_offset']
     hr = fid.variables['hour']
     ltau = fid.variables['ltau']
     itau = fid.variables['itau']
+    lreff = fid.variables['lreff']
     ireff = fid.variables['ireff']
     sigma_ltau = fid.variables['sigma_ltau']
     sigma_lreff = fid.variables['sigma_lreff']
     sigma_itau = fid.variables['sigma_itau']
-    sigma_ireff = fid.variables['sigma_ltau']
+    sigma_ireff = fid.variables['sigma_ireff']
 
     corr_ltau_lreff = fid.variables['corr_ltau_lreff']
     corr_ltau_itau = fid.variables['corr_ltau_itau']
     corr_ltau_ireff = fid.variables['corr_ltau_ireff']
     corr_lreff_itau = fid.variables['corr_lreff_itau']
-    corr_ltau_ireff = fid.variables['corr_ltau_ireff']
+    corr_lreff_ireff = fid.variables['corr_lreff_ireff']
     corr_itau_ireff = fid.variables['corr_itau_ireff']
 
     lwp = fid.variables['lwp']
@@ -1695,7 +1694,7 @@ def mixcra_write_output(out,vip,location,cwnum,outfull,fsample,exectime,
     dfs_ireff = fid.variables['dfs_ireff']
 
     tcld = fid.variables['tcld']
-    cbh = fid.variables['lreff']
+    cbh = fid.variables['cbh']
     sza = fid.variables['sza']
     delt_lbl = fid.variables['delt_lbl']
 
@@ -1707,12 +1706,17 @@ def mixcra_write_output(out,vip,location,cwnum,outfull,fsample,exectime,
     itern = fid.variables['iter']
     rms = fid.variables['rms']
 
+    samphh = datetime.fromtimestamp(out['secs'],tz=timezone.utc).hour
+    sampnn = datetime.fromtimestamp(out['secs'],tz=timezone.utc).minute
+    sampss = datetime.fromtimestamp(out['secs'],tz=timezone.utc).second
+    samphour = samphh + sampnn/60. + sampss/3600.
+    
     to[fsample] = out['secs']-bt[0]
-    hr[fsample] = dt
-    ltau[fsample] = out['x'][0]
-    lreff[fsample] = out['x'][1]
-    itau[fsample] = out['x'][2]
-    ireff[fsample] = out['x'][3]
+    hr[fsample] = samphour
+    ltau[fsample] = out['X'][0]
+    lreff[fsample] = out['X'][1]
+    itau[fsample] = out['X'][2]
+    ireff[fsample] = out['X'][3]
     sigma_ltau[fsample] = out['sigx'][0]
     sigma_lreff[fsample] = out['sigx'][1]
     sigma_itau[fsample] = out['sigx'][2]
@@ -1725,16 +1729,16 @@ def mixcra_write_output(out,vip,location,cwnum,outfull,fsample,exectime,
     corr_lreff_ireff[fsample] = out['corr'][4]
     corr_itau_ireff[fsample] = out['corr'][5]
 
-    lwp[fsample] = out['lwp']
-    sigma_lwp[fsample] = out['sigma_lwp']
+    lwp[fsample] = out['lwpm']
+    sigma_lwp[fsample] = out['lwpu']
 
-    tau_frac[fsample] = out['tau_frac']
-    sigma_tau_frac[fsample] = out['sigma_tau_frac']
+    tau_frac[fsample] = out['fracm']
+    sigma_tau_frac[fsample] = out['fracu']
 
     dfs_ltau[fsample] = out['dfs'][0]
-    dfs_lreff[fsample] = out['dfs'][0]
-    dfs_itau[fsample] = out['dfs'][0]
-    dfs_ireff[fsample] = out['dfs'][0]
+    dfs_lreff[fsample] = out['dfs'][1]
+    dfs_itau[fsample] = out['dfs'][2]
+    dfs_ireff[fsample] = out['dfs'][3]
 
     tcld[fsample] = out['tcld']
     cbh[fsample] = out['cbh']
@@ -1746,7 +1750,7 @@ def mixcra_write_output(out,vip,location,cwnum,outfull,fsample,exectime,
     forward_calc[fsample,:] = out['FXn']
     lblrtm_hour[fsample] = out['lhour']
     conv[fsample] = out['conv']
-    itern[fsample] = out['intrn']
+    itern[fsample] = out['iter']
     rms[fsample] = out['rms']
 
     if outfull['include'] > 0:

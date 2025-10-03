@@ -2130,15 +2130,15 @@ def mixcra_forward_model(Xn, z, lblout, lwc, vip, jday, sza, sfc_emissivity,ref_
         print('    Computing baseline F(Xn) in forward_model')
     
     # Allocate space for the Jacobian
-    Kij = np.ones((nobs,len(Xn)))*np.zeros
+    Kij = np.ones((nobs,len(Xn)))*0.
 
     # Generate normalized liquid cloud optical depth profile
-    ltau = np.ones(len(cldlay))
+    ltau  = np.ones(len(cldlay))
     ltau *= Xn[0]/np.sum(ltau)
 
     # Generate normalized ice cloud optical depth profile
-    itau = np.ones(len(cldlay))
-    itau = Xn[2]/np.sum(itau)
+    itau  = np.ones(len(cldlay))
+    itau *= Xn[2]/np.sum(itau)
 
     # Write the parameter file
     LBLRTM_Functions.write_lbldis_parmfile(ifile, sza, microwin_file, z, cldlay, Xn,
@@ -2159,7 +2159,7 @@ def mixcra_forward_model(Xn, z, lblout, lwc, vip, jday, sza, sfc_emissivity,ref_
         print('Error: no radiance data found in LBLDIS output file. Most likely, need to rerun LBLRTM over new range')
         return err, -999., -999.
     
-    orad = fid.variables['radiance'][:]
+    orad = np.squeeze(fid.variables['radiance'][:])
     fid.close()
 
     if len(orad) != nobs:
@@ -2172,11 +2172,11 @@ def mixcra_forward_model(Xn, z, lblout, lwc, vip, jday, sza, sfc_emissivity,ref_
             print('      Making the perturbed liquid calculation for Jacobian')
         # Make the run with the perturbed LWP
 
-        pXn = np.copy(Xn)
-        pLtau = max(Xn[0] * 0.1, pLtau) # Perturb OD by 10% or 0.1 which ever is larger
+        pXn     = np.copy(Xn)
+        pLtau   = np.max([Xn[0] * 0.1, pLtau]) # Perturb OD by 10% or 0.1 which ever is larger
         pXn[0] += pLtau
-        plod = np.ones(len(cldlay))
-        plod *= pXn[0]/np.sum(plod)
+        plod    = np.ones(len(cldlay))
+        plod   *= pXn[0]/np.sum(plod)
 
         LBLRTM_Functions.write_lbldis_parmfile(ifile, sza, microwin_file, z, cldlay, Xn,
                                            plod, itau, vip, lblout, sfc_emissivity, ref_wnum)
@@ -2186,7 +2186,7 @@ def mixcra_forward_model(Xn, z, lblout, lwc, vip, jday, sza, sfc_emissivity,ref_
         stdout, stderr = process.communicate()
 
         fid = Dataset(ofile + '.cdf')
-        prad = fid.variables['radiance'][:]
+        prad = np.squeeze(fid.variables['radiance'][:])
         fid.close()
 
         Kij[:,0] = (prad-orad)/(pXn[0] - Xn[0])
@@ -2205,7 +2205,7 @@ def mixcra_forward_model(Xn, z, lblout, lwc, vip, jday, sza, sfc_emissivity,ref_
             stdout, stderr = process.communicate()
 
             fid = Dataset(ofile + '.cdf')
-            prad = fid.variables['radiance'][:]
+            prad = np.squeeze(fid.variables['radiance'][:])
             fid.close()
 
             Kij[:,1] = (prad-orad)/(pXn[1] - Xn[1])
@@ -2218,11 +2218,11 @@ def mixcra_forward_model(Xn, z, lblout, lwc, vip, jday, sza, sfc_emissivity,ref_
             print('      Making the perturbed ice calculations for Jacobian')
 
          # Make the run with the perturbed ice optical depth
-        pXn = np.copy(Xn)
-        pItau = max(Xn[2] * 0.1, pItau) # Perturb OD by 10% or 0.1 which ever is larger
-        pXn[0] += pItau
-        piod = np.ones(len(cldlay))
-        piod *= pXn[2]/np.sum(piod)
+        pXn     = np.copy(Xn)
+        pItau   = np.max([Xn[2] * 0.1, pItau]) # Perturb OD by 10% or 0.1 which ever is larger
+        pXn[2] += pItau
+        piod    = np.ones(len(cldlay))
+        piod   *= pXn[2]/np.sum(piod)
 
         LBLRTM_Functions.write_lbldis_parmfile(ifile, sza, microwin_file, z, cldlay, Xn,
                                            ltau, piod, vip, lblout, sfc_emissivity, ref_wnum)
@@ -2232,7 +2232,7 @@ def mixcra_forward_model(Xn, z, lblout, lwc, vip, jday, sza, sfc_emissivity,ref_
         stdout, stderr = process.communicate()
 
         fid = Dataset(ofile + '.cdf')
-        prad = fid.variables['radiance'][:]
+        prad = np.squeeze(fid.variables['radiance'][:])
         fid.close()
 
         Kij[:,2] = (prad-orad)/(pXn[2] - Xn[2])
@@ -2251,13 +2251,13 @@ def mixcra_forward_model(Xn, z, lblout, lwc, vip, jday, sza, sfc_emissivity,ref_
             stdout, stderr = process.communicate()
 
             fid = Dataset(ofile + '.cdf')
-            prad = fid.variables['radiance'][:]
+            prad = np.squeeze(fid.variables['radiance'][:])
             fid.close()
 
             Kij[:,3] = (prad-orad)/(pXn[3] - Xn[3])
         else:
             Kij[:,3] = 0
     
-    FXn = np.squeeze(orad)
+    FXn = orad
 
     return 1, FXn, Kij
