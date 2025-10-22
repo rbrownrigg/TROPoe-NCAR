@@ -41,9 +41,9 @@ if '--vip' in sys.argv:
     print("Writing default vip file to console")
 
     if '--experimental' in sys.argv:
-        Output_Functions.write_example_vip_file(console=True, experimental=True)
+        Output_Functions.write_example_vip_file('TROPoe',console=True, experimental=True)
     else:
-        Output_Functions.write_example_vip_file(console=True)
+        Output_Functions.write_example_vip_file('TROPoe',console=True)
 
     sys.exit()
 

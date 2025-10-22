@@ -36,10 +36,16 @@ import VIP_Databases_functions
 ################################################################################
 # This function will write out an example VIP file, and then stop
 ################################################################################
-def write_example_vip_file(experimental=False, console=False):
+def write_example_vip_file(app, experimental=False, console=False):
 
     # Grab the full vip from VIP_Databases_functions
-    vip = VIP_Databases_functions.full_vip.copy()
+    if(app == 'TROPoe'):
+        vip = VIP_Databases_functions.full_tropoe_vip.copy()
+    elif(app == 'MIXCRA'):
+        vip = VIP_Databases_functions.full_mixcra_vip.copy()
+    else:
+        print("Error -- undefined 'app' used in write_example_vip_file")
+        sys.exit()
 
     # build a list of vip entries
     # output_lines = [f"{key}: {data['value']} # {data['comment']}" for key, data in vip.items() if data['default'] is True]
@@ -85,12 +91,14 @@ def add_vip_to_global_atts(nc, full_vip):
     
     vip = full_vip.copy()  # Copy the VIP so we don't overwrite anything in the next iterations
 
-    for key in sorted(vip.keys()):
-
+    for key in vip.keys():
         # Check to see if this key should be ignored
         foo = np.where(key == ignore)
-        if len(foo) > 0:
+        if((len(foo) == 1) and (len(ignore[foo[0]]) > 0)):
             continue
+        elif len(foo) > 1:
+            print('Error: should not find more than one key to exclude here -- aborting')
+            sys.exit()
 
         # Grab the data
         data = vip[key]
@@ -1422,8 +1430,8 @@ def read_XaSa(filename):
 # This routine writes out the MIXCRA2 output into a netCDF file
 #################################################################################
 
-def mixcra_write_output(out,vip,location,cwnum,outfull,fsample,exectime,
-                        verbose, globatt, ofilename):
+def mixcra_write_output(out,vip,location,flagY,dimY,outfull,
+                        fsample,exectime,verbose, globatt, ofilename):
     
     if fsample == 0:
         bad = 0
@@ -1451,7 +1459,7 @@ def mixcra_write_output(out,vip,location,cwnum,outfull,fsample,exectime,
             print(' Creating the output file ' + ofilename)
         fid = Dataset(ofilename, 'w')
         dd0 = fid.createDimension('time',None)
-        dd1 = fid.createDimension('nobs',len(cwnum))
+        dd1 = fid.createDimension('obs_dim',len(dimY))
         if outfull['include'] > 0:
             dd2 = fid.createDimension['fobs',len(outfull['wnum'])]
 
@@ -1466,10 +1474,6 @@ def mixcra_write_output(out,vip,location,cwnum,outfull,fsample,exectime,
         hr = fid.createVariable('hour','f8',('time',))
         hr.long_name = 'Time since midnight UTC'
         hr.units = 'hours'
-
-        wnum = fid.createVariable('wnum','f4',('nobs',))
-        wnum.long_name = 'Wavenumber'
-        wnum.units = 'cm-1'
 
         ltau = fid.createVariable('ltau','f4',('time',))
         ltau.long_name = 'Liqid optical depth'
@@ -1578,17 +1582,48 @@ def mixcra_write_output(out,vip,location,cwnum,outfull,fsample,exectime,
         delt_lbl.long_name = 'Time to closest LBLRTM calculation'
         delt_lbl.units = 'hour'
 
-        obs_vector = fid.createVariable('obs_vector','f4',('time','nobs',))
-        obs_vector.long_name = 'Observed radiance'
-        obs_vector.units = 'RU'
+        obs_flag = fid.createVariable('obs_flag', 'i2', ('obs_dim',))
+        obs_flag.long_name = 'Flag indicating type of observation for each vector element'
+        obs_flag.comment1 = 'unitless'
 
-        obs_vector_uncertainty = fid.createVariable('obs_vector_uncertainty','f4',('time','nobs',))
-        obs_vector_uncertainty.long_name = 'Uncertainty in the observed radiance'
-        obs_vector_uncertainty.units = 'RU'
+        # This will make sure that I capture all of the units right in
+        # the metadata, but "blotting them out" as I add the comments
 
-        forward_calc = fid.createVariable('forward_calc','f4',('time','nobs',))
-        forward_calc.long_name = 'Forward calculation'
-        forward_calc.units = 'RU'
+        marker = np.copy(flagY)
+        foo = np.where(flagY == 1)[0]
+        if len(foo) > 0:
+            obs_flag.value_01 = 'IRS spectral radiance in wavenumber -- i.e., cm^(-1)'
+            marker[foo] = -1
+
+        foo = np.where(flagY == 2)[0]
+        if len(foo) > 0:
+            obs_flag.value_02 = 'MWR spectral brightness temperature [degK] from a zenith-pointing microwave radiometer'
+            marker[foo] = -1
+
+        # If there were any values for marker that were not treated above,
+        # then the code must assume that I've screwed up and should abort.
+
+        foo = np.where(marker >= 0)[0]
+        if len(foo) > 0:
+            print('Error in write_output: there seems to be a unit that is not handled here properly')
+            return success, nfilename
+
+        # Now add other observation and forward calculation fields
+        obs_dimension = fid.createVariable('obs_dimension', 'f8', ('obs_dim',))
+        obs_dimension.long_name = 'Dimension of the observation vector'
+        obs_dimension.comment1 = 'mixed units -- see obs_flag field above'
+
+        obs_vector = fid.createVariable('obs_vector', 'f4', ('time','obs_dim',))
+        obs_vector.long_name = 'Observation vector Y'
+        obs_vector.comment1 = 'mixed units -- see obs_flag field above'
+
+        obs_vector_uncertainty = fid.createVariable('obs_vector_uncertainty', 'f4', ('time','obs_dim',))
+        obs_vector_uncertainty.long_name = '1-sigma uncertainty in the observation vector (sigY)'
+        obs_vector_uncertainty.comment1 = 'mixed units -- see obs_flag field above'
+
+        forward_calc = fid.createVariable('forward_calc', 'f4', ('time','obs_dim',))
+        forward_calc.long_name = 'Forward calculation from state vector (i.e., F(Xn))'
+        forward_calc.comment1 = 'mixed units -- see obs_flag field above'
 
         lblrtm_hour = fid.createVariable('lblrtm_hour','f8',('time',))
         lblrtm_hour.long_name = 'Time when LBLRTM calculation was made'
@@ -1610,19 +1645,19 @@ def mixcra_write_output(out,vip,location,cwnum,outfull,fsample,exectime,
 
         if outfull['include'] > 0:
             f_wnum = fid.createVariable('f_wnum','f4',('fobs',))
-            f_wnum.long_name = 'Full Wavenumber'
+            f_wnum.long_name = 'Full Wavenumber Range'
             f_wnum.units = 'cm-1'
 
             f_obs_vector = fid.createVariable('f_obs_vector','f4',('time','fobs',))
-            f_obs_vector.long_name = 'Full observed radiance'
+            f_obs_vector.long_name = 'Full observed infrared radiance'
             f_obs_vector.units = 'RU'
 
             f_obs_vector_uncertainty = fid.createVariable('f_obs_vector_uncertainty','f4',('time','fobs',))
-            f_obs_vector_uncertainty.long_name = 'Uncertainty in the full observed radiance'
+            f_obs_vector_uncertainty.long_name = 'Uncertainty in the full observed infrared radiance'
             f_obs_vector_uncertainty.units = 'RU'
 
             f_forward_calc = fid.createVariable('f_foward_calc','f4',('time','fobs',))
-            f_forward_calc.long_name = 'Full forward calculation'
+            f_forward_calc.long_name = 'Full forward infrared calculation'
             f_forward_calc.units = 'RU'
             
         lat = fid.createVariable('lat','f4')
@@ -1644,7 +1679,8 @@ def mixcra_write_output(out,vip,location,cwnum,outfull,fsample,exectime,
         add_vip_to_global_atts(fid, vip)
 
         bt[:] = out['secs']
-        wnum[:] = cwnum
+        obs_dimension[:] = dimY
+        obs_flag[:]      = flagY
         lat[:] = location['lat']
         lon[:] = location['lon']
         alt[:] = location['alt']
@@ -1670,17 +1706,17 @@ def mixcra_write_output(out,vip,location,cwnum,outfull,fsample,exectime,
     itau = fid.variables['itau']
     lreff = fid.variables['lreff']
     ireff = fid.variables['ireff']
-    sigma_ltau = fid.variables['sigma_ltau']
+    sigma_ltau  = fid.variables['sigma_ltau']
     sigma_lreff = fid.variables['sigma_lreff']
-    sigma_itau = fid.variables['sigma_itau']
+    sigma_itau  = fid.variables['sigma_itau']
     sigma_ireff = fid.variables['sigma_ireff']
 
-    corr_ltau_lreff = fid.variables['corr_ltau_lreff']
-    corr_ltau_itau = fid.variables['corr_ltau_itau']
-    corr_ltau_ireff = fid.variables['corr_ltau_ireff']
-    corr_lreff_itau = fid.variables['corr_lreff_itau']
+    corr_ltau_lreff  = fid.variables['corr_ltau_lreff']
+    corr_ltau_itau   = fid.variables['corr_ltau_itau']
+    corr_ltau_ireff  = fid.variables['corr_ltau_ireff']
+    corr_lreff_itau  = fid.variables['corr_lreff_itau']
     corr_lreff_ireff = fid.variables['corr_lreff_ireff']
-    corr_itau_ireff = fid.variables['corr_itau_ireff']
+    corr_itau_ireff  = fid.variables['corr_itau_ireff']
 
     lwp = fid.variables['lwp']
     sigma_lwp = fid.variables['sigma_lwp']
@@ -1688,14 +1724,14 @@ def mixcra_write_output(out,vip,location,cwnum,outfull,fsample,exectime,
     tau_frac = fid.variables['tau_frac']
     sigma_tau_frac = fid.variables['sigma_tau_frac']
 
-    dfs_ltau = fid.variables['dfs_ltau']
+    dfs_ltau  = fid.variables['dfs_ltau']
     dfs_lreff = fid.variables['dfs_lreff']
-    dfs_itau = fid.variables['dfs_itau']
+    dfs_itau  = fid.variables['dfs_itau']
     dfs_ireff = fid.variables['dfs_ireff']
 
     tcld = fid.variables['tcld']
-    cbh = fid.variables['cbh']
-    sza = fid.variables['sza']
+    cbh  = fid.variables['cbh']
+    sza  = fid.variables['sza']
     delt_lbl = fid.variables['delt_lbl']
 
     obs_vector = fid.variables['obs_vector']
@@ -1713,21 +1749,21 @@ def mixcra_write_output(out,vip,location,cwnum,outfull,fsample,exectime,
     
     to[fsample] = out['secs']-bt[0]
     hr[fsample] = samphour
-    ltau[fsample] = out['X'][0]
+    ltau[fsample]  = out['X'][0]
     lreff[fsample] = out['X'][1]
-    itau[fsample] = out['X'][2]
+    itau[fsample]  = out['X'][2]
     ireff[fsample] = out['X'][3]
-    sigma_ltau[fsample] = out['sigx'][0]
+    sigma_ltau[fsample]  = out['sigx'][0]
     sigma_lreff[fsample] = out['sigx'][1]
-    sigma_itau[fsample] = out['sigx'][2]
+    sigma_itau[fsample]  = out['sigx'][2]
     sigma_ireff[fsample] = out['sigx'][3]
 
-    corr_ltau_lreff[fsample] = out['corr'][0]
-    corr_ltau_itau[fsample] = out['corr'][1]
-    corr_ltau_ireff[fsample] = out['corr'][2]
-    corr_lreff_itau[fsample] = out['corr'][3]
+    corr_ltau_lreff[fsample]  = out['corr'][0]
+    corr_ltau_itau[fsample]   = out['corr'][1]
+    corr_ltau_ireff[fsample]  = out['corr'][2]
+    corr_lreff_itau[fsample]  = out['corr'][3]
     corr_lreff_ireff[fsample] = out['corr'][4]
-    corr_itau_ireff[fsample] = out['corr'][5]
+    corr_itau_ireff[fsample]  = out['corr'][5]
 
     lwp[fsample] = out['lwpm']
     sigma_lwp[fsample] = out['lwpu']
@@ -1735,14 +1771,14 @@ def mixcra_write_output(out,vip,location,cwnum,outfull,fsample,exectime,
     tau_frac[fsample] = out['fracm']
     sigma_tau_frac[fsample] = out['fracu']
 
-    dfs_ltau[fsample] = out['dfs'][0]
+    dfs_ltau[fsample]  = out['dfs'][0]
     dfs_lreff[fsample] = out['dfs'][1]
-    dfs_itau[fsample] = out['dfs'][2]
+    dfs_itau[fsample]  = out['dfs'][2]
     dfs_ireff[fsample] = out['dfs'][3]
 
     tcld[fsample] = out['tcld']
-    cbh[fsample] = out['cbh']
-    sza[fsample] = out['sza']
+    cbh[fsample]  = out['cbh']
+    sza[fsample]  = out['sza']
     delt_lbl[fsample] = out['delt']
 
     obs_vector[fsample,:] = out['y']

@@ -34,17 +34,27 @@ import Data_reads
 import Jacobian_Functions
 import Output_Functions
 
+# Check to see if we are just writing out a blank vip
+if '--vip' in sys.argv:
+    # Write out a default vip file
+    print("Writing default vip file to console")
+    if '--experimental' in sys.argv:
+        Output_Functions.write_example_vip_file('MIXCRA',console=True, experimental=True)
+    else:
+        Output_Functions.write_example_vip_file('MIXCRA',console=True)
+    sys.exit()
+
 # Create parser for command line arguments
 parser = ArgumentParser()
 
 parser.add_argument("date", type=int, help="Date to run the code [YYYYMMDD]")
-parser.add_argument("vip_filename", help="Name if the VIP file (string)")
-parser.add_argument("--step", help="The step size for Mixcra")
+parser.add_argument("vip_filename", help="Name of the VIP file (string)")
+parser.add_argument("--step", type=int, help="The step size for MIXCRA")
 parser.add_argument("--shour", type=float, help="Start hour (decimal, 0-24)")
 parser.add_argument("--ehour", type=float, help="End hour (decimal, 0-24) [If ehour<0 process up to last IRS sample]")
-parser.add_argument("--verbose",type=int, choices=[0,1,2,3], help="The verbosity of the output (0-very quiet, 3-noisy)")
-parser.add_argument("--dostop",action="store_true", help="Set this to stop at the end before exiting")
-parser.add_argument("--keep",action="store_true",help="Not really sure what this does")
+parser.add_argument("--verbose", type=int, choices=[0,1,2,3], help="The verbosity of the output (0-very quiet, 3-noisy)")
+parser.add_argument("--dostop", action="store_true", help="Set this to stop at the end before exiting")
+parser.add_argument("--keep", action="store_true", help="Overrides vip[delete_temporary] to keep the LBLRTM runs for another go")
 
 args = parser.parse_args()
 
@@ -509,7 +519,8 @@ for samp in range(foo[0],len(irs['secs']),step):
         Xa[3] = np.min([np.max([Xa[3],min_iReff]),max_iReff])
 
     # Build the observation vector and its covariance matrix
-    cwnum = np.mean(spectral_bands,axis=0)
+    dimY  = np.mean(spectral_bands,axis=0)
+    flagY = np.ones(dimY.shape)
     Y = np.squeeze(yobs1[:,samp])
     foo = np.where(ysig1[:,samp] > 0)[0]
     if len(foo) <= 0:
@@ -519,6 +530,10 @@ for samp in range(foo[0],len(irs['secs']),step):
     foo = np.where(ysig1[:,samp] <= 0)[0]
     if len(foo) > 0:
         ysig1[foo,samp] = minnoise
+
+    # DDT -- here is where the MWR observations would be appended to the obs vector
+
+    # Now build the covariance matrix
     Sm = np.diag((vip['irs_noise_inflation'] * ysig1[:, samp])**2)
     invSm = np.linalg.pinv(Sm)
 
@@ -714,7 +729,7 @@ for samp in range(foo[0],len(irs['secs']),step):
     # Write the output to the netCDF file
     currenttime = datetime.now()
     
-    flag, ofilename = Output_Functions.mixcra_write_output(mout,vip,location,cwnum,outfull,
+    flag, ofilename = Output_Functions.mixcra_write_output(mout,vip,location,flagY,dimY,outfull,
                                                            fsample,currenttime-starttime,
                                                            verbose,globatt,ofilename)
     
