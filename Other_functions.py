@@ -69,6 +69,7 @@ import Output_Functions
 # calc_derived_indices()
 # inflate_in_tropoe_uncertainty()
 # do_mlev_cbh()
+# compute_lwp()
 # compute_ltau()
 # qc_irs()
 # average_irs()
@@ -2734,7 +2735,6 @@ def compute_lwp(ltau, lreff):
 def compute_ltau(lwp, lreff):
     
     return lwp/lreff * 3./2
-
 
 ##############################################################################
 # This function applies some simple QC to identify obviously bad IRS spectra
