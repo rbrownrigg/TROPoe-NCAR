@@ -1014,9 +1014,9 @@ def read_all_data(date, vip, dostop, verbose):
     #Read in the MWR zenith data
     if vip['mwr_type'] > 0:
         print('  Reading in MWR-zenith data')
-    mwr_data = read_mwr(vip['mwr_path'], vip['mwr_rootname'], date, vip['mwr_type'], 1, vip['mwr_freq_field'], vip['mwr_elev_field'], vip['mwr_n_tb_fields'],
-                        vip['mwr_tb_field_names'], vip['mwr_tb_freqs'], vip['mwr_tb_noise'], vip['mwr_tb_bias'], vip['mwr_tb_field1_tbmax'],
-                        verbose)
+    mwr_data = read_mwr(vip['mwr_path'], vip['mwr_rootname'], date, vip['mwr_type'], 1, vip['mwr_freq_field'],
+            vip['mwr_elev_field'], vip['mwr_n_tb_fields'], vip['mwr_tb_field_names'], vip['mwr_tb_freqs'],
+            vip['mwr_tb_noise'], vip['mwr_tb_bias'], vip['mwr_tb_field1_tbmax'], verbose)
 
     if mwr_data['success'] != 1:
         print('Problem reading in MWR-zenith data')
@@ -4782,9 +4782,10 @@ def read_tropoe(filename):
     iReff = fid.variables['iReff'][:]
     cbh = fid.variables['cbh'][:]
     co2 = fid.variables['co2'][:]
+    pwv = fid.variables['pwv'][:]
 
     fid.close()
 
     return {'base_time':bt, 'time_offset':to, 'hour':hour, 'height':ht, 'pressure':pres,
             'temperature':temp, 'waterVapor':wvmr, 'lwp':lwp, 'lreff':lreff, 'itau':itau,
-            'ireff':iReff, 'cbh':cbh, 'co2':co2}
+            'ireff':iReff, 'cbh':cbh, 'co2':co2, 'pwv':pwv}
