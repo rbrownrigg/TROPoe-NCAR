@@ -32,6 +32,7 @@ import sys
 # compute_jacobian_irs_interpol()
 # compute_jacobian_microwave_finitediff()
 # compute_jacobian_microwave_3method()
+# compute_jacobian_microwave_lwp_only()
 # compute_jacobian_external_temp_profiler()
 # compute_jacobian_external_wv_profiler()
 # compute_jacobian_external_sfc_met()
@@ -1318,6 +1319,73 @@ def compute_jacobian_microwave_3method(Xn, p, z, freq, cbh, vip, workdir,
     flag = 1
 
     return flag, Kij, FXn, totaltime
+
+################################################################################
+# This function performs the forward model calculation and computes the jacobian
+# for the microwave radiometer where only the LWP is perturbed
+################################################################################
+def compute_jacobian_microwave_lwp_only(z, p, t, w, freq, cbh, Xn, vip, workdir,
+                monortm_tfile, monortm_exec, stdatmos, sfc_alt, stored_jacobian, verbose):
+
+    monortm_outputfile = workdir+'/monortm_output.txt'      # A temporary output file
+    flag = 0                      # Failure
+    k = len(z)
+    cth = cbh + 0.300             # km; define the cloud top at x m above the could base
+
+    if(sfc_alt == None):
+        sfcz=0
+    else:
+        sfcz = sfc_alt / 1000.
+
+    # Allocate space for the Jacobian and forward calculation
+    Kij = np.zeros((len(freq),len(Xn)))
+    FXn = np.zeros(len(freq))
+
+    if verbose >= 2:
+        print('Computing the MWR-lwp-only Jacobian using the MonoRTM')
+
+    # Perform the baseline calculation
+    lwp = Other_functions.compute_lwp(Xn[0],Xn[1])
+    u   = Calcs_Conversions.w2rh(w, p, t, 0) * 100
+    Other_functions.write_arm_sonde_file((z+sfcz)*1000, p, t, u, workdir+'/'+monortm_tfile, silent = True)
+    command = ('rm -f '+monortm_outputfile+' ; '+monortm_exec + ' ' + monortm_tfile + ' {:3.1f} {:8.2f} {:6.3f} {:6.3f}'.format(1.0, lwp, cbh, cth)+' > '+monortm_outputfile)
+    a = LBLRTM_Functions.run_monortm(command, freq, z, stdatmos, monortm_outputfile)
+    if a['status'] == 0:
+        print('Problem with MonoRTM-lwp-only calc 0')
+        return flag, -999., -999.
+    FXn = np.copy(a['tb'])
+
+    # Perform the pertubation calculation.  If I already have precomputed it, and the computed Tbs are
+    # less than 200 K for all channels, then I can use the precomputed one.  Otherwise, recompute it.
+    foo = np.where(FXn < 200)[0]
+    if((stored_jacobian['computed'] != 1) and (len(foo) == len(FXn))):
+        if verbose >= 3:
+            print('Computing Jacobian for the liquid cloud properties')
+        lwpp = lwp + 25.
+        command = ('rm -f '+monortm_outputfile+' ; '+monortm_exec + ' ' + monortm_tfile + ' {:3.1f} {:8.2f} {:6.3f} {:6.3f}'.format(1.0, lwpp, cbh, cth)+' > '+monortm_outputfile)
+        d = LBLRTM_Functions.run_monortm(command, freq, z, stdatmos, monortm_outputfile)
+        if d['status'] == 0:
+            print('Problem with MonoRTM-lwp-only calc 1')
+            return flag, -999., -999.
+        dTb_dLWP  = (d['tb']-a['tb'])/(lwpp-lwp)
+            # Store the Jacobian to reuse next time
+        if(stored_jacobian['computed'] != 1):
+            if(verbose >= 2):
+                print('      Storing the computed MWR jacobian')
+            stored_jacobian = {'computed':1, 'dTb_dLWP':dTb_dLWP}
+    else:
+        if(verbose >= 2):
+            print('      Using the precomputed MWR jacobian')
+        dTb_dLWP  = stored_jacobian['dTb_dLWP']
+
+    # Adjust units from perturbations in LWP to perturbations in liquid water optical depth
+    ltau_pert = 1.
+    dLWP_dtau = (lwp - Other_functions.compute_lwp(Xn[0]+ltau_pert,Xn[1])) / (Xn[0] - (Xn[0]+ltau_pert))
+    Kij[:,0]  = dTb_dLWP * dLWP_dtau
+
+    flag = 1
+
+    return flag, Kij, FXn, stored_jacobian
 
 ################################################################################
 # This function performs the forward model calculation and computes the Jacobian
