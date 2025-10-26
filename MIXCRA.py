@@ -278,6 +278,17 @@ if vip['delete_temporary'] != 0:
         shutil.rmtree(vip['workdir'])
     os.mkdir(vip['workdir'])
     
+# This should be included in the VIP file. Right now it is always set.
+if((vip['compute_lwp'] > 0) and (vip['mwr_type'] > 0) and (vip['retrieve_lcloud'] > 0)):
+        # Set up the temporary files needed for the MonoRTM (these will be placed in vip['workdir'])
+    monortm_config = 'monortm_config.txt'
+    monortm_zfreq  = 'monortm_zfreqs.txt'    # For MWR-zenith calculations
+    monortm_tfile  = 'monortm_sonde.cdf'
+    create_monortm_config = 1           # Set this flag to create a custom config file for MonoRTM
+    create_monortm_zfreq  = 1           # Set this flag to create a custom freq-zenith file for MonoRTM
+    monortm_zexec = ('cd ' + vip['workdir'] + ' ; setenv monortm_config ' + monortm_config +
+                ' ; setenv monortm_freqs ' + monortm_zfreq + ' ; ' + vip['monortm_wrapper'])
+
 # Select the TROPoe indices to make LBLRTM runs, if we had to recreate the working directory
 # This might be able to be cleaned up later
 if verbose >= 1:
@@ -326,7 +337,6 @@ if len(lhour) == 1:
 
 # Create the microwindow file used by LBLDIS in this working directory
     # For the retrieval spectral bands
-
 microwin_file1 = vip['workdir'] + '/microwindows1.txt'
 if verbose >= 2:
     print('  Generating mixrowindow file for the retrieval bands')
@@ -371,6 +381,38 @@ else:
     print('  The minimum and maximum effective radii in the SSP for ' \
     'icloud is {:6.2f} and {:6.2} microns'.format(min_iReff, max_iReff))
 
+# Select the LBLRTM version to use
+print('  Working with the LBLRTM version in ' + vip['lblrtm_home'])
+
+# Quick check: make sure the LBLRTM path is properly set
+if not os.path.exists(vip['lblrtm_home'] + '/bin/lblrtm'):
+    print('Error: lblhome is not properly set')
+    VIP_Databases_functions.abort(lbltmpdir,date)
+    sys.exit()
+
+# Make sure that the specified TAPE3 file exists
+if not os.path.exists(vip['lblrtm_home'] + '/hitran/' + vip['lbl_tape3']):
+    print('Error: unable to find the specified TAPE3 file in the LBLRTM_HOME hitran directory')
+    VIP_Databases_functions.abort(lbltmpdir,date)
+    sys.exit()
+
+# Make sure that path to the MonoRTM files are set properly. We will only
+# stop the code if MWR data is used and the files don't exist
+if not os.path.exists(vip['monortm_wrapper']) and ((vip['mwr_type'] > 0) or (vip['mwrscan_type'] > 0)):
+    print('Error: unable to find the the specified MonoRTM wrapper')
+    VIP_Databases_functions.abort(lbltmpdir,date)
+    sys.exit()
+
+if not os.path.exists(vip['monortm_exec']) and ((vip['mwr_type'] > 0) or (vip['mwrscan_type'] > 0)):
+    print('Error: unable to find the the specified MonoRTM executable')
+    VIP_Databases_functions.abort(lbltmpdir,date)
+    sys.exit()
+
+if not os.path.exists(vip['monortm_spec']) and ((vip['mwr_type'] > 0) or (vip['mwrscan_type'] > 0)):
+    print('Error: unable to find the the specified MonoRTM spectral line file')
+    VIP_Databases_functions.abort(lbltmpdir,date)
+    sys.exit()
+
 # Build the prior and its uncertainty
 minsd = 1e-5
 if vip['retrieve_lcloud'] == 0:
@@ -399,7 +441,7 @@ if use_sun == 1:
         solzenang[i] = 90-sun_angle
 
 # Define the gamma array
-gamm = np.ones(vip['maxiter'])
+gamm    = np.ones(vip['maxiter'])
 sfactor = np.ones(vip['maxiter'])
 
 # This bit is an attempt to help the code converge more smoothly, based upon the Rodger's equations used
@@ -425,6 +467,13 @@ else:
 
 if step > 1 and verbose >= 2:
     print('  Will run the retrieval on every ' + str(step) + ' sample')
+
+# This defines the extra vertical layers that will be added to both
+# the infrared and microwave radiative transfer calculations
+rt_extra_layers = Other_functions.compute_extra_layers(np.max(tropoe['height']))
+
+# This will be used to update the MWR jacobian more quickly
+stored_mwr_jacobian = {'computed':0}
 
 #### Main loop over the IRS samples
 foo = np.where(irs['hour'] >= shour)[0]
@@ -521,30 +570,43 @@ for samp in range(foo[0],len(irs['secs']),step):
     # Build the observation vector and its covariance matrix
     dimY  = np.mean(spectral_bands,axis=0)
     flagY = np.ones(dimY.shape)
-    Y = np.squeeze(yobs1[:,samp])
-    foo = np.where(ysig1[:,samp] > 0)[0]
+    Y     = np.squeeze(yobs1[:,samp])
+    sigY  = np.squeeze(ysig1[:,samp])
+    foo   = np.where(sigY > 0)[0]
     if len(foo) <= 0:
         print('Error: it seems that none of the IRS data were in the spectral bands -- aborting')
         sys.exit()
-    minnoise = np.min(ysig1[foo,samp])
-    foo = np.where(ysig1[:,samp] <= 0)[0]
+    minnoise = np.min(sigY[foo])
+    foo = np.where(sigY <= 0)[0]
     if len(foo) > 0:
-        ysig1[foo,samp] = minnoise
+        sigY[foo] = minnoise
+    sigY = sigY * vip['irs_noise_inflation']
 
-    # DDT -- here is where the MWR observations would be appended to the obs vector
+    # Append the MWR observations to the obs vector, if desired
+    if((mwr['n_fields'] > 0) and (vip['compute_lwp'] == 1) and (vip['retrieve_lcloud'] == 1)):
+        tbsky = np.copy(mwr['tbsky'][:,samp])
+        noise = np.copy(mwr['noise'])
+        freq  = np.copy(mwr['freq'])
+        foo   = np.where(tbsky < 2.7)[0]                # Must be larger than the cosmic background
+        if len(foo) > 0:
+            tbsky[foo] = -999.
+        Y     = np.append(Y,tbsky)
+        sigY  = np.append(sigY,noise)
+        flagY = np.append(flagY, np.ones(mwr['n_fields'])*2)
+        dimY  = np.append(dimY,freq)
 
-    # Now build the covariance matrix
-    Sm = np.diag((vip['irs_noise_inflation'] * ysig1[:, samp])**2)
+    # Now build the observational covariance matrix
+    Sm    = np.diag(sigY**2)
     invSm = np.linalg.pinv(Sm)
 
     # Initialize the first guess to the prior, but update the ltau to be a bit more accurate
     Xn = np.copy(Xa)
-    if vip['retrieve_lcloud'] == 1 and vip['compute_lwp'] == 1:
+    if((vip['retrieve_lcloud'] == 1) and (vip['compute_lwp'] == 1)):
         lwp = np.interp(irs['hour'][samp],tropoe['hour'],tropoe['lwp'])
         Xn[0] = Other_functions.compute_ltau(lwp,Xn[1])
     
     # Now iterate the retrieval
-    FXnm1 = np.ones(nyobs1)*999.
+    FXnm1 = np.ones(len(Y))*999.
     di2m = 9e14
     rms = 999.
     itern = 0
@@ -554,31 +616,92 @@ for samp in range(foo[0],len(irs['secs']),step):
         print('     {:2d}  {:7.2f} {:7.2f} {:7.2f} {:7.2f}    {:6.2f}   {:10.4e}   {:5.2f}'.format(
             itern,Xn[0],Xn[1],Xn[2],Xn[3],rms,di2m,0))
     
-    # Now perfrom the iterations
-    while((itern < vip['maxiter']-1) and (conv == 0)):
-        delt = np.abs(lhour-irs['hour'][samp])
-        lidx = np.where(delt == np.min(delt))[0][0]
-        isza = solzenang[samp]
+        # Select the correct LBLRTM run to use for this sample time
+    delt = np.abs(lhour-irs['hour'][samp])
+    tidx = np.where(delt == np.min(delt))[0][0]
+    isza = solzenang[samp]
 
         # If the solar zenith angle is greater than 90 degrees,
         # it is below the horizon sp turn solar input off
-        if isza >= 90:
-            isza = -1
+    if isza >= 90:
+        isza = -1
         
+    # Now perfrom the iterations
+    while((itern < vip['maxiter']-1) and (conv == 0)):
         # Call the LBLDIS
         flag, FXn, Kij = Jacobian_Functions.mixcra_forward_model(Xn, tropoe['height'],
-                        lblout[lidx], lwc, vip, jday[samp], isza,
+                        lblout[tidx], lwc, vip, jday[samp], isza,
                         sfc_emissivity,vip['ref_wnum'], nyobs1, microwin_file1,
                         vip['retrieve_lcloud'], vip['retrieve_icloud'], verbose)
         
         if flag == 0:
             print('problem with the forward model')
         
+        # Perform the forward model calculation and compute the Jacobian for the
+        # MWR-zenith portion of the observation vector.  Note there will only be
+        # MWR data in the obs vector if the LWP retrieval is actually enabled
+        foo = np.where(flagY == 2)[0]
+        if len(foo) > 0:
+            if create_monortm_config == 1:
+                # Create the MonoRTM configuration file
+                lun = open(vip['workdir'] + '/' + monortm_config, 'w')
+                lun.write(vip['monortm_exec'] + '\n')
+                lun.write(vip['monortm_spec'] + '\n')
+                lun.write('0\n')          # The verbose flag
+                lun.write('{:0d}\n'.format(vip['lbl_std_atmos']))
+                lun.write('1\n')          # The 'output layer optical depths' flag
+                for gg in range(6):       # The 6 continuum multipliers
+                    lun.write('1.0\n')
+                lun.write('{:7.3f}\n'.format(np.max(tropoe['height']-0.01)))
+                lun.write('{:0d}\n'.format(len(tropoe['height'])+len(rt_extra_layers)))
+                for gg in range(len(tropoe['height'])):
+                    lun.write('{:7.3f}\n'.format(tropoe['height'][gg]))
+                for gg in range(len(rt_extra_layers)):
+                    lun.write('{:7.3f}\n'.format(rt_extra_layers[gg]))
+                lun.close()
+                    # Turn the flag off, as we only need to create these files once
+                create_monortm_config = 0
+
+            if create_monortm_zfreq == 1:
+                # Create the MonoRTM freuency file
+                lun = open(vip['workdir'] + '/' + monortm_zfreq, 'w')
+                lun.write('\n')
+                lun.write('{:0d}\n'.format(len(mwr['freq'])))
+                for gg in range(len(mwr['freq'])):
+                    lun.write('{:7.3f}\n'.format(mwr['freq'][gg]))
+                lun.close()
+                    # Turn the flag off, as we only need to create these files once
+                create_monortm_zfreq = 0
+
+                # Run the forward model and compute the Jacobian
+            flag, KK, FF, stored_mwr_jacobian = Jacobian_Functions.compute_jacobian_microwave_lwp_only(tropoe['height'],
+                            tropoe['pressure'][lidx[tidx],:],tropoe['temperature'][lidx[tidx],:],tropoe['waterVapor'][lidx[tidx],:],
+                            mwr['freq'], cbh, Xn, vip, vip['workdir'], monortm_tfile, monortm_zexec,
+                            vip['lbl_std_atmos'], location['alt'], stored_mwr_jacobian, verbose)
+
+            # If the Jacobian did not compute properly (i.e., an error ocurred),
+            # then we need to abort
+            if flag == 0:
+                print('-- Skipping this sample due to issue with MonoRTM Jacobian (likely bad input profile)')
+                continue_next_sample = 1
+                break
+
+            # Now the size of the forward calculation should be the correct size to match
+            # the number of MWR observations in the Y vector
+            if len(foo) != len(FF):
+                print('Problem computing the Jacobian for the microwave radiometer')
+                VIP_Databases_functions.abort(lbltmpdir,date)
+                sys.exit()
+
+            # Append the MWR calculated info to the forward calc and jacobian
+            Kij = np.append(Kij, KK, axis = 0)
+            FXn = np.append(FXn,FF)
+
         # If the observation data are missing, then set the forward calc and Jacobian 
         # for that obs to missing and 0, respectively
-        foo = np.where(Y < -990)[0]
+        foo = np.where(Y < -900)[0]
         if len(foo) > 0:
-            FXn[foo] = Y[foo]
+            FXn[foo]   = Y[foo]
             Kij[foo,:] = 0.
         
         # Do the retrieval calculations (matrix math)
@@ -602,7 +725,7 @@ for samp in range(foo[0],len(irs['secs']),step):
         di2m = ((FXn[:,None] - FXnm1[:,None]).T.dot(
                 np.linalg.pinv(Kij.dot(Sop).dot(Kij.T)+Sm)).dot(
                 FXn[:,None] - FXnm1[:,None]))[0,0]
-        if((di2m < vip['converge_factor']*nyobs1) and (sfac >= 0.99)):
+        if((di2m < vip['converge_factor']*len(Y)) and (sfac >= 0.99)):
             conv = 1
         
         # Capture all of the results for this iteration
@@ -673,16 +796,14 @@ for samp in range(foo[0],len(irs['secs']),step):
     # Compute the LWP and its uncertainty
     lwpm = -999.
     lwpu = -999.
-    min_sigma_lwp = 0.1 # Minimum uncertainty in LWP [g/m2]
+    min_sigma_lwp = 0.001 # Minimum uncertainty in LWP [g/m2]
     if((vip['compute_lwp'] == 1) and (vip['retrieve_lcloud'] == 1)):
         # Use Bevington method, for x = auv, then
         # VarX/X^2 = VarU/U^2 + VarV/V^2 + 2*CovUV/(U*V)
         lwpm = Other_functions.compute_lwp(Xn[0],Xn[1])
-        uuu2 = lwpm**2 * (Sop[0,0]/Xn[0]**2) + (Sop[1,1]/Xn[1]**2) + 2*(Sop[0,1]/(Xn[0]*Xn[1]))
-        lwpu = np.sqrt(uuu2)
-        # Trap for any possible low uncertainty or NaN values in the LWP uncertainty
-        if(np.where(np.isnan(lwpu)) or (lwpu < min_sigma_lwp)):
-            lwpu = min_sigma_lwp
+        uuu2 = lwpm**2 * ((Sop[0,0]/Xn[0]**2) + (Sop[1,1]/Xn[1]**2) + 2*(Sop[0,1]/(Xn[0]*Xn[1])))
+        if uuu2 > 0:
+            lwpu = np.sqrt(uuu2)
 
     # Compute the optical depth fraction and its uncertainty
     # Use Bevington method, for x = au/(u+v)
@@ -705,9 +826,9 @@ for samp in range(foo[0],len(irs['secs']),step):
     # Store the data into a growing structure
     mout = {'secs':irs['secs'][samp], 'X':np.copy(Xn), 'sigx':np.copy(msig),
             'dfs':np.copy(mdfs),'y':np.copy(Y),'sigy':np.sqrt(np.diag(Sm)),
-            'FXn':np.copy(FXn),'lhour':lhour[lidx],'lwpm':np.copy(lwpm),
+            'FXn':np.copy(FXn),'lhour':lhour[tidx],'lwpm':np.copy(lwpm),
             'lwpu':np.copy(lwpu),'fracm':np.copy(fracm),'fracu':np.copy(fracu),
-            'delt':delt[lidx],'cbh':np.copy(cbh),'sza':np.copy(isza),'tcld':np.copy(tcld),
+            'delt':delt[tidx],'cbh':np.copy(cbh),'sza':np.copy(isza),'tcld':np.copy(tcld),
             'corr':np.copy(mcor),'iter':np.copy(itern),'conv':np.copy(conv),
             'rms':np.copy(rms),'di2m':np.copy(di2m)}
     
@@ -715,7 +836,7 @@ for samp in range(foo[0],len(irs['secs']),step):
     outfull = {'include':vip['include_full_calc']}
     if vip['include_full_calc'] > 0:
         flag, full_FXn, full_Kij = Jacobian_Functions.mixcra_forward_model(Xn, tropoe['height'],
-                                        lblout[lidx], lwc, vip, jday[samp], isza,
+                                        lblout[tidx], lwc, vip, jday[samp], isza,
                                         sfc_emissivity,vip['ref_wnum'], nyobs2, microwin_file2,
                                         0, 0, verbose)
         
