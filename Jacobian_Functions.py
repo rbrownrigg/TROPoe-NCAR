@@ -2124,15 +2124,15 @@ def make_lblrtm_calc(vip, ymd, hour, co2, z, p, t, w, wnum1,wnum2,delt,verbose):
         return err
     
     # Make the TAPES and the LBLRTM run
-    tp5 = vip['workdir'] + '/tp5.' + str(ymd) + '.' + str(hhmm)
-    out = vip['workdir'] + '/' + vip['lblout'] + '.' + str(ymd) + '.' + str(hhmm)
+    tp5 = vip['workdir'] + '/tp5.' + str(ymd).zfill(8) + '.' + str(hhmm).zfill(4)
+    out = vip['workdir'] + '/' + vip['lblout'] + '.' + str(ymd).zfill(8) + '.' + str(hhmm).zfill(4)
 
     # Check to see if I need to remake the LBLRTM runs or not
     if (delt == 0) and (os.path.exists(tp5)) and (os.path.exists(out)):
         if verbose >= 1:
-            print('  Reading previous lblrtm runs for ' + str(ymd) + '.' + str(hhmm) + ' UTC')
+            print(f'  Reading previous lblrtm runs for {ymd:08d}.{hhmm:04d} UTC')
     else:
-        print('  Making the lblrtm runs for ' + str(ymd) + '.' + str(hhmm) + ' UTC')
+        print(f'  Making the lblrtm runs for {ymd:08d}.{hhmm:04d} UTC')
     
         # Make sure that the output paths are ready
         if not os.path.exists(vip['workdir']):
