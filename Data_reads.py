@@ -43,15 +43,7 @@ import VIP_Databases_functions
 # get_tropoe_version()
 # recenter_prior()
 # tape6_min_max_wnum()
-
-# -- These are from Mixcra but I think we might want to use them to reorganize the 
-# -- the data reads. These mostly just read the data where as the current big ones
-# -- do a lot of extra functions. We probably want to strip those out of data reads and 
-# -- make them separate steps in read_all_data().
-
-# skinny_read_irs_ch()
-# skinny_read_irs_sum()
-# combine_irs(_)
+# combine_irs()
 ################################################################################
 
 ################################################################################
@@ -775,7 +767,8 @@ def read_all_data(date, vip, dostop, verbose):
     fv          = check_dict_key(vip, 'fv', 0.)
     fa          = check_dict_key(vip, 'fa', 0.)
     irs_smooth_noise = check_dict_key(vip, 'irs_smooth_noise', 0)
-    irs_spec_cal_factor = check_dict_key(vip, 'irs_spec_cal_factor', 1.)
+    irs_spec_cal_factor_ch1 = check_dict_key(vip, 'irs_spec_cal_factor_ch1', 1.)
+    irs_spec_cal_factor_ch2 = check_dict_key(vip, 'irs_spec_cal_factor_ch2', 1.)
     irs_old_ffov_halfangle = check_dict_key(vip, 'irs_old_ffov_halfangle', 23.)
     irs_new_ffov_halfangle = check_dict_key(vip, 'irs_new_ffov_halfangle', -1.)
 
@@ -934,17 +927,26 @@ def read_all_data(date, vip, dostop, verbose):
             fail = 1
             return fail, -999, -999, -999
 
-        irsch1 = read_irs_ch(vip['irsch1_path'],date,vip['irs_type'],fv,fa,irs_spec_cal_factor,
+        irsch1 = read_irs_ch(vip['irsch1_path'],date,vip['irs_type'],fv,fa,irs_spec_cal_factor_ch1,
                               irseng['secs'],
                               irseng['interferometerSecondPortTemp'],
                               irseng['bbcavityfactor'], vip['irs_use_missingDataFlag'],
                               vip['irs_zenith_scene_mirror_angle'],
                               irs_old_ffov_halfangle, irs_new_ffov_halfangle, verbose)
 
+        irsch2 = read_irs_ch(vip['irsch2_path'],date,vip['irs_type'],fv,fa,irs_spec_cal_factor_ch2,
+                              irseng['secs'],
+                              irseng['interferometerSecondPortTemp'],
+                              irseng['bbcavityfactor'], vip['irs_use_missingDataFlag'],
+                              vip['irs_zenith_scene_mirror_angle'],
+                              irs_old_ffov_halfangle, irs_new_ffov_halfangle, verbose)
+
+        irsch1 = combine_irs_ch(irsch1, irsch2)
+
         irssum = read_irs_sum(vip['irssum_path'],date,vip['irs_type'],irs_smooth_noise,verbose)
 
         if irsch1['success'] != 1:
-            print('Problem reading IRS ch1 data')
+            print('Problem reading IRS channel data')
             fail = 1
             return fail, -999, -999, -999
         if irssum['success'] != 1:
@@ -4562,204 +4564,68 @@ def tape6_min_max_wnum(lblrtm_path,verbose=2):
     return {'success':1, 'minw':minw, 'maxw':maxw, 'nlines':nlin}
 
 #######################################################################################
-# This is a skinny data read that gets the necessary fields from AERI ch1 radiance file
+# This function time-matches the IRS channel 1 and channel 2 data into a single structure
 #######################################################################################
 
-def skinny_read_irs_ch(filename, vip):
-    
-    fid = Dataset(filename)
-    bt = fid.variables['base_time'][0]
+def combine_irs_ch(ch1, ch2):
 
-    secs = (datetime(2038,1,1,0,0,0)-datetime(1970,1,1,0,0,0)).total_seconds()
-    if secs < 0:
-        print('Need more precision here -- call DDT')
-        return {'status':0}
-    
-    if bt > secs:
-        bt = bt/1000.     # Assume this was in ms and is from the ASSIST
-    
-    if 'time_offset' in fid.variables:
-        to = fid.variables['time_offset'][:]
-    elif 'time' in fid.variables:
-        to = fid.variables['time'][:]
+    if((ch1['success'] != 1) and (ch2['success'] != 1)):
+        print('    Error: both the IRS ch1 and ch2 data were not read in properly -- aborting')
+        return ({'success':0})
+    elif((ch1['success'] != 1) and (ch2['success'] == 1)):
+        return ch2
+    elif((ch1['success'] == 1) and (ch2['success'] != 1)):
+        return ch1
     else:
-        fid.close()
-        print('Error: Unable to find the proper time field in read_irs_ch function')
-        return{'status':0}
-    
-    wnum = fid.variables['wnum'][:]
-    rad = fid.variables['mean_rad'][:]
+        # Merge the two channels together
+        ch1secs = np.copy(ch1['secs'])
+        ch2secs = np.copy(ch2['secs'])
 
-    if 'hatchOpen' in fid.variables:
-        hatchOpen = fid.variables['hatchOpen'][:]
-    elif 'hatchIndicator' in fid.variables:
-        hatchOpen = fid.variables['hatchIndicator'][:]
-    else:
-        hatchOpen = np.ones(len(to))
-    
-    if 'sceneMirrorAngle' in fid:
-        sceneMirrorAngle = fid.variables['sceneMirrorAngle']
-    else:
-        sceneMirrorAngle = np.ones(len(to))*vip['irs_zenith_scene_mrror']
-
-    if 'lat' in fid.variables:
-        lat = fid.variables['lat'][:]
-    else:
-        lat = -999.
-    
-    if 'lon' in fid.variables:
-        lon = fid.variables['lon'][:]
-    else:
-        lon = -999.
-    
-    if 'alt' in fid.variables:
-        alt = fid.variables['alt'][:]
-    else:
-        alt = 0.
-    
-    fid.close()
-
-    # Trap for undefined sceneMirrorAngle data
-    foo = np.where(sceneMirrorAngle < -99)[0]
-    if len(foo) > 0:
-        sceneMirrorAngle[foo] = vip['irs_zenith_scene_mirror_angle']
-    
-    # Now only select the data with the desired sceneMirrorAngle
-    if (vip['irs_zenith_scene_mirror_anlge'] > 357) or (vip['irs_zenith_scene_mirror_angle'] < 3):
-        foo = np.where((sceneMirrorAngle > 356) | (sceneMirrorAngle < 4))[0]
-    else:
-        foo = np.where((vip['irs_zenith_scene_mirror_angle']-3 <= sceneMirrorAngle) &
-                       (sceneMirrorAngle < vip['irs_zenith_scene_mirror_angle']+3))[0]
-    
-    if len(foo) == 0:
-        print('Error: Unable to find any valid zenith views from the IRS')
-        return {'status':0}
-
-    to = to[foo]
-    rad = rad[:,foo]
-    hatchOpen = hatchOpen[foo]
-
-    return {'status':1, 'secs':bt+to, 'wnum':wnum, 'rad':rad, 'hatchOpen':hatchOpen,
-            'lat':lat, 'lon':lon, 'alt':alt}
-
-#######################################################################################
-# This function is a skinny reader for IRS summary data
-#######################################################################################
-
-def skinny_read_irs_sum(filename):
-
-    fid = Dataset(filename)
-    bt = fid.variables['base_time'][0]
-
-    secs = (datetime(2038,1,1,0,0,0)-datetime(1970,1,1,0,0,0)).total_seconds()
-    if secs < 0:
-        print('Need more precision here -- call DDT')
-        return {'status':0}
-    
-    if bt > secs:
-        bt = bt/1000.     # Assume this was in ms and is from the ASSIST
-    
-    if 'time_offset' in fid.variables:
-        to = fid.variables['time_offset'][:]
-    elif 'time' in fid.variables:
-        to = fid.variables['time'][:]
-    else:
-        fid.close()
-        print('Error: Unable to find the proper time field in read_irs_sum function')
-        return {'status':0}
-    
-    if 'wnumsum5' in fid.variables:
-        wnum1 = fid.variables['wnumsum5'][:]
-        wnum2 = fid.variables['wnumsum6'][:]
-    elif 'wnumsum1' in fid.variables:
-        wnum1 = fid.variables['wnumsum1'][:]
-        wnum2 = fid.variables['wnumsum2'][:]
-    elif 'wnum1' in fid.variables:
-        wnum1 = fid.variables['wnum1'][:]
-        wnum2 = fid.variables['wnum2'][:]
-    else:
-        print('Problem finding the right wnumsum fields in the summary file.')
-        return {'status':0}
-    
-    if 'SkyNENCh1' in fid.variables:
-        nen1 = fid.variables['SkyNENCh1'][:]
-    elif 'SkyNENCch1' in fid.variables:
-        nen1 = fid.variables['SkyNENch1'][:]
-    else:
-        print('Problem finding right SkyNENch1 fileds in summary file')
-    
-    if 'SkyNENCh2' in fid.variables:
-        nen2 = fid.variables['SkyNENCh2'][:]
-    elif 'SkyNENCch2' in fid.variables:
-        nen2 = fid.variables['SkyNENch2'][:]
-    
-    # Now combine the error spectra into a single spectrum
-    minv = max(np.min(wnum2),1700)
-    foo = np.where(wnum1 < minv-10)[0]
-    bar = np.where(wnum2 >= minv)[0]
-    wnum = np.append(wnum1[foo],wnum2[bar])
-    nen = np.vstack((nen1[foo,:],nen2[bar,:]))
-
-    # Compute a mean noise spectrum, in case it is needed
-    mn_nen = np.sum(nen,axis=1)/len(to)
-
-    return {'status':1,'secs':bt+to,'wnum':wnum,'nen':nen,'mn_nen':mn_nen}
-
-#######################################################################################
-# This function time-matches the IRS channel data and summary data
-#######################################################################################
-
-def combine_irs(irsch1, irsch2, irssum, use_sun):
-
-    if use_sun > 0:
-        minv = min(irsch2['wnum'])
-        foo = np.where(irsch1['wnum'] < minv-0.1)[0]
-        wnum1 = irsch1['wnum'][foo]
-        rad1 = irsch1['rad'][foo,:]
-        if len(irsch1['secs']) != len(irsch2['secs']):
-            print('Write logic to deal with this 1')
-            return {'status':0}
-        dels = np.abs(irsch1['secs']-irsch2['secs'])
-        foo = np.where(dels > 1)[0]
-
-        if len(foo) > 0:
-            print('Write logic to deal with this 2')
-            return {'status':0}
-        
-        wnum = np.append(wnum1,irsch2['wnum'])
-        rad = np.vstack((rad1,irsch2['rad']))
-        secs = irsch1['secs']
-        hopen = irsch1['hatchopen']
-
-    else:
-
-        wnum = irsch1['wnum']
-        rad = irsch1['rad']
-        secs = irsch1['secs']
-        hopen = irsch1['hatchOpen']
-
-    # Find an error sepctrum for each radiance observations
-    noise = np.zeros((len(wnum),len(secs)))
-    for i in len(secs):
-        dels = np.abs(secs[i]-irssum['secs'])
-        foo = np.where(dels < 0)[0]
-
+        # Find the ch1 data that are in the ch2 times
+        flag, success = Other_functions.matchtimes(ch1secs,ch2secs,1)
+        if success != 1:
+            print('    Error while matching up IRS ch1 to ch2 -- aborting')
+            return ({'success':0})
+        foo = np.where(flag == 1)[0]
         if len(foo) == 0:
-            noise[:,i] = np.interp(wnum, irssum['wnum'],irssum['mn_nen'])
-        else:
-            noise[:,i] = np.interp(wnum,irssum['wnum'],irssum['nen'][:,foo[0]])
+            print('Error in combine_irs_ch: None of the ch2 data match the ch1 data times -- aborting')
+            return ({'success':0})
+        ch1secs = ch1secs[foo]
+        ymd     = np.copy(ch1['ymd'][foo])
+        yy      = np.copy(ch1['yy'][foo])
+        mm      = np.copy(ch1['mm'][foo])
+        dd      = np.copy(ch1['dd'][foo])
+        hour    = np.copy(ch1['hour'][foo])
+        rad1    = np.copy(ch1['rad'][:,foo])
+        nearSfcTb  = np.copy(ch1['nearSfcTb'][foo])
+        hatchOpen  = np.copy(ch1['hatchopen'][foo])
+        atmos_pres = np.copy(ch1['atmos_pres'][foo])
+        missingDataFlag = np.copy(ch1['missingDataFlag'][foo])
+        wnum1      = np.copy(ch1['wnum'])
+        fv         = np.copy(ch1['fv'])
+        fa         = np.copy(ch1['fa'])
+
+        # Find the ch2 data that are in the remaining ch1 times
+        flag, success = Other_functions.matchtimes(ch2secs,ch1secs,1)
+        if success != 1:
+            print('    Error while matching up IRS ch2 to ch1 -- aborting')
+            return ({'success':0})
+        foo = np.where(flag == 1)[0]
+        if len(foo) == 0:
+            print('    Error in combine_irs_ch: None of the ch1 data match the ch2 data times -- aborting')
+            return ({'success':0})
+        rad2    = np.copy(ch2['rad'][:,foo])
+        wnum2   = np.copy(ch2['wnum'])
     
-    #Convert the time to something useful
-    yy = np.array([datetime.utcfromtimestamp(x).year for x in secs])
-    mm = np.array([datetime.utcfromtimestamp(x).month for x in secs])
-    dd = np.array([datetime.utcfromtimestamp(x).day for x in secs])
-    ymd = yy*10000 + mm*100 + dd
-    hour = np.array([((datetime.utcfromtimestamp(x)-datetime(yy[0],mm[0],dd[0])).total_seconds())/3600. for x in secs])
+        # Now append the radiance data together
+        foo1 = np.where(wnum1 < 1799)[0]
+        foo2 = np.where(wnum2 > 1801)[0]
+        wnum = np.append(wnum1[foo1],wnum2[foo2])
+        mrad = np.vstack((rad1[foo1,:],rad2[foo2,:]))
 
-    hour = hour + (dd-dd[0])*24
-
-    return {'status':1, 'secs':secs, 'hour':hour, 'wnum':wnum, 'rad':rad,'noise':noise,
-            'hatchOpen':hopen,'lat':np.copy(irsch1['lat']),'lon':np.copy(irsch1['lon']),'alt':np.copy(irsch1['alt'])}
+        return ({'success':1, 'secs':ch1secs, 'ymd':ymd, 'yy':yy, 'mm':mm, 'dd':dd,
+            'hour':hour, 'wnum':wnum, 'rad':mrad, 'nearSfcTb':nearSfcTb, 'hatchopen':hatchOpen,
+            'atmos_pres':atmos_pres,'missingDataFlag':missingDataFlag, 'fv':fv, 'fa':fa})
 
 #############################################################################
 # This routine reads in the necessary fields from the TROPoe output file

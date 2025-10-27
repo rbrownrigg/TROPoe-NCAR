@@ -1461,7 +1461,7 @@ def mixcra_write_output(out,vip,location,flagY,dimY,outfull,
         dd0 = fid.createDimension('time',None)
         dd1 = fid.createDimension('obs_dim',len(dimY))
         if outfull['include'] > 0:
-            dd2 = fid.createDimension['fobs',len(outfull['wnum'])]
+            dd2 = fid.createDimension('f_obs',len(outfull['wnum']))
 
         bt = fid.createVariable('base_time','i4')
         bt.long_name = 'Epoch time since 1 Jan 1970 at 00:00:00 UTC'
@@ -1644,19 +1644,19 @@ def mixcra_write_output(out,vip,location,flagY,dimY,outfull,
         rms.units = 'RU'
 
         if outfull['include'] > 0:
-            f_wnum = fid.createVariable('f_wnum','f4',('fobs',))
+            f_wnum = fid.createVariable('f_wnum','f4',('f_obs',))
             f_wnum.long_name = 'Full Wavenumber Range'
             f_wnum.units = 'cm-1'
 
-            f_obs_vector = fid.createVariable('f_obs_vector','f4',('time','fobs',))
+            f_obs_vector = fid.createVariable('f_obs_vector','f4',('time','f_obs',))
             f_obs_vector.long_name = 'Full observed infrared radiance'
             f_obs_vector.units = 'RU'
 
-            f_obs_vector_uncertainty = fid.createVariable('f_obs_vector_uncertainty','f4',('time','fobs',))
+            f_obs_vector_uncertainty = fid.createVariable('f_obs_vector_uncertainty','f4',('time','f_obs',))
             f_obs_vector_uncertainty.long_name = 'Uncertainty in the full observed infrared radiance'
             f_obs_vector_uncertainty.units = 'RU'
 
-            f_forward_calc = fid.createVariable('f_foward_calc','f4',('time','fobs',))
+            f_forward_calc = fid.createVariable('f_forward_calc','f4',('time','f_obs',))
             f_forward_calc.long_name = 'Full forward infrared calculation'
             f_forward_calc.units = 'RU'
             

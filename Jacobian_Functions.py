@@ -2166,7 +2166,7 @@ def make_lblrtm_calc(vip, ymd, hour, co2, z, p, t, w, wnum1,wnum2,delt,verbose):
 # This routine runs the LBLDIS as the forward model.
 ############################################################################################
 
-def mixcra_forward_model(Xn, z, lblout, lwc, vip, jday, sza, sfc_emissivity,ref_wnum,
+def mixcra_forward_model(Xn, z, lblout, lwc, vip, jday, sza, sfc_emissivity, ref_wnum,
                          nobs, microwin_file, retrieve_lcloud, retrieve_icloud, verbose):
 
     ifile = vip['workdir'] + '/lbldis.parameters'
@@ -2232,6 +2232,7 @@ def mixcra_forward_model(Xn, z, lblout, lwc, vip, jday, sza, sfc_emissivity,ref_
 
     if len(orad) != nobs:
         print('Error within forward model -- dimensions do not match up')
+        print(f'   len(orad) is {len(orad):d} and nobs is {nobs:d}')
         return err, -999., -999.
     
     # Now make the perturbations needed for liquid clouds

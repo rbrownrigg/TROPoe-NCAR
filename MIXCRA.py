@@ -223,11 +223,6 @@ tropoe = Data_reads.read_tropoe(files[0])
 # Now read in the IRS and MWR data (if desired)
 fail, irs, mwr, mwrscan = Data_reads.read_all_data(date, vip, dostop, verbose)
 
-if use_sun == 1:
-    print('Need to modify the read_all_data function to read ch1 & ch2 data and concatenate the spectra')
-    print('   So I will abort this MIXCRA run that is trying to use ch2 data now')
-    sys.exit()
-
 # Identify the good samples (i.e., apply QC to the IRS data)
 qcflag = Other_functions.qc_irs(irs)
 if qcflag[0] < -900:
@@ -246,8 +241,8 @@ if lblwnum2 > maxw:
 
 if vip['include_full_calc'] > 0:
     delw = vip['include_full_calc']
-    minw = np.min(irs['wnum'])
-    maxw = np.max(irs['wnum'])
+    minw = np.max([lblwnum1,np.min(irs['wnum'])])
+    maxw = np.min([lblwnum2,np.max(irs['wnum'])])
 
 entire_spectrum = np.array([minw,minw+delw])
 minw += delw
@@ -450,10 +445,6 @@ if vip['math_choice'] == 0:
     gamm[0] = 10
     gamm[1] = 3
 
-    # This doesn't make sense but it is in the IDL code so I left it, but it needs looked at.
-    gamm[0] = 1
-    gamm[1] = 1
-    
 elif vip['math_choice'] == 1:
     # If math_choice is 1, then use Eq. 5.8 with no modifications 
     foo = 0       # This does nothing as intended
@@ -462,7 +453,7 @@ elif vip['math_choice'] == 2:
     sfactor[0] = 0.3
     sfactor[1] = 0.7
 else:
-    print('Error -- undefined math_choice in the VIP file -- aorting')
+    print('Error -- undefined math_choice in the VIP file -- aborting')
     sys.exit()
 
 if step > 1 and verbose >= 2:
@@ -607,14 +598,12 @@ for samp in range(foo[0],len(irs['secs']),step):
     
     # Now iterate the retrieval
     FXnm1 = np.ones(len(Y))*999.
-    di2m = 9e14
-    rms = 999.
+    di2m  = 9e14
+    rms   = 999.
     itern = 0
-    conv = 0
+    conv  = 0
     if verbose >= 1:
         print('   Iter     lTau   lReff    iTau   iReff       RMS         di2m  sfactor')
-        print('     {:2d}  {:7.2f} {:7.2f} {:7.2f} {:7.2f}    {:6.2f}   {:10.4e}   {:5.2f}'.format(
-            itern,Xn[0],Xn[1],Xn[2],Xn[3],rms,di2m,0))
     
         # Select the correct LBLRTM run to use for this sample time
     delt = np.abs(lhour-irs['hour'][samp])
@@ -622,7 +611,7 @@ for samp in range(foo[0],len(irs['secs']),step):
     isza = solzenang[samp]
 
         # If the solar zenith angle is greater than 90 degrees,
-        # it is below the horizon sp turn solar input off
+        # it is below the horizon so turn solar input off
     if isza >= 90:
         isza = -1
         
@@ -683,7 +672,6 @@ for samp in range(foo[0],len(irs['secs']),step):
             # then we need to abort
             if flag == 0:
                 print('-- Skipping this sample due to issue with MonoRTM Jacobian (likely bad input profile)')
-                continue_next_sample = 1
                 break
 
             # Now the size of the forward calculation should be the correct size to match
@@ -712,7 +700,7 @@ for samp in range(foo[0],len(irs['secs']),step):
         Gain = Binv.dot(Kij.T).dot(invSm)
 
         if vip['math_choice'] == 0:
-            Xnp1   = Xa[:,None] + Gain.dot(Y[:,None] - FXn[:,None] + Kij.dot((Xn-Xa)[:,None]))
+            Xnp1 = Xa[:,None] + Gain.dot(Y[:,None] - FXn[:,None] + Kij.dot((Xn-Xa)[:,None]))
         else:
             Xnp1 = Xn[:,None] + sfac*Binv.dot(Kij.T.dot(invSm).dot(Y[:,None] - FXn[:,None])-invSa.dot((Xn-Xa)[:,None]))
         Xnp1 = np.squeeze(Xnp1)
@@ -748,6 +736,11 @@ for samp in range(foo[0],len(irs['secs']),step):
         iSop.append(Sop)
         iAkern.append(Akern)
 
+        # Write status of this iteration to stdOut
+        if verbose >= 1 and conv != 1:
+            print('     {:2d}  {:7.2f} {:7.2f} {:7.2f} {:7.2f}    {:6.2f}   {:10.4e}   {:5.2f}'.format(
+            itern,Xn[0],Xn[1],Xn[2],Xn[3],rms,di2m,sfac))
+
         # Update for the next iteration
         FXnm1 = np.copy(FXn)
         Xn = np.copy(Xnp1)
@@ -758,10 +751,6 @@ for samp in range(foo[0],len(irs['secs']),step):
         Xn[1] = np.min([np.max([Xn[1],min_lReff]),max_lReff])
         Xn[2] = np.max([Xn[2],vip['min_itau']])
         Xn[3] = np.min([np.max([Xn[3],min_iReff]),max_iReff])
-
-        if verbose >= 1 and conv != 1:
-            print('     {:2d}  {:7.2f} {:7.2f} {:7.2f} {:7.2f}    {:6.2f}   {:10.4e}   {:5.2f}'.format(
-            itern,Xn[0],Xn[1],Xn[2],Xn[3],rms,di2m,sfac))
         
     # If retrieval converged we will store that result. If not, then we
     # will store the iteration that had the smallest RMS relative to the observations
@@ -835,6 +824,8 @@ for samp in range(foo[0],len(irs['secs']),step):
     # Compute the full spectrum if desired
     outfull = {'include':vip['include_full_calc']}
     if vip['include_full_calc'] > 0:
+        if(verbose >= 1):
+            print('      Computing the full IRS spectrum for this solution')
         flag, full_FXn, full_Kij = Jacobian_Functions.mixcra_forward_model(Xn, tropoe['height'],
                                         lblout[tidx], lwc, vip, jday[samp], isza,
                                         sfc_emissivity,vip['ref_wnum'], nyobs2, microwin_file2,
@@ -842,7 +833,7 @@ for samp in range(foo[0],len(irs['secs']),step):
         
         if flag == 0:
             full_FXn = np.ones(nyobs2)*-999.
-        fullwnum = np.mean(entire_spectrum,axis=1)
+        fullwnum = np.mean(entire_spectrum,axis=0)
         outfull = {'include':vip['include_full_calc'], 'wnum':np.copy(fullwnum),
                    'y':np.squeeze(yobs2[:,samp]),'sigy':np.squeeze(ysig2[:,samp]),
                    'FXn':np.copy(full_FXn)}
@@ -861,8 +852,6 @@ for samp in range(foo[0],len(irs['secs']),step):
 if vip['delete_temporary'] == 1:
     if verbose >= 2:
         print('  Deleting the working directory ' + vip['workdir'])
-
     shutil.rmtree(vip['workdir'])
-    os.mkdir(vip['workdir'])
 
 
