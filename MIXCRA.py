@@ -873,8 +873,8 @@ for samp in range(foo[0],len(irs['secs']),step):
     # Use Bevington method, for x = au/(u+v)
     fracm = Xn[0]/(Xn[0]+Xn[2])
     fracu = ((    Xn[2]**2 / (Xn[0]+Xn[2])**4 ) * Sop[0,0]
-          + (         1    / (Xn[0]+Xn[2])**4 ) * Sop[2,2]
-          - ( (2 * Xn[2])  / (Xn[0]+Xn[2])**4 ) * Sop[0,2])
+          + (     Xn[0]**2 / (Xn[0]+Xn[2])**4 ) * Sop[2,2]
+          - ((Xn[0]*Xn[2]) / (Xn[0]+Xn[2])**4 ) * Sop[0,2])
     fracu = np.sqrt(fracu)
 
     # Generate some additional output to capture the
