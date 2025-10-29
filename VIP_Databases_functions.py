@@ -307,6 +307,7 @@ full_mixcra_vip = ({
     'success': {'value': 0, 'comment': 'Interal success flag. Not for outside use', 'default': False},
     'tres_lblrtm': {'value': 3, 'comment': 'Temporal resoltuion of the LBLRTM runs [h]', 'default':True},
     'workdir': {'value':'tag', 'comment': 'The working directory for the iterating retrieval','default':True},
+    'avg_instant': {'value': 1, 'comment': 'A flag to specify -1:avg with no sqrt(N), 0:avg with sqrt(N), or 1:instantaneous', 'default': False},
 
     'delete_temporary': {'value':1, 'comment': 'Delete the temporary output after MIXCRA completes (1) or keep it (0)', 'default':False},
 
@@ -316,10 +317,10 @@ full_mixcra_vip = ({
     'irssum_path': {'value': "/data/aerisum", 'comment': 'Path to the IRS summary files', 'default': True},
     'irseng_path': {'value': "/data/aerieng", 'comment': 'Path to the IRS engineering files', 'default': True},
     'irs_sampling': {'value': 1, 'comment': 'Process every (irs_sampling)th spectrum', 'default':True},
-    'irs_min_noise_flag':{'value': 0, 'comment': 'If non-zero, then the irs_min_noise_spectrum will be used as a floor; otherwise, will use input IRS noise spectrum from instrument', 'default': True},
-    'irs_min_noise_wnum':{'value': '500,522,546,575,600,631,747,1439,1770,1884,2217,3000', 'comment': 'Wavenumber array [cm-1] for the minimum noise spectrum', 'default': True},
-    'irs_min_noise_spec':{'value': '65.309,14.056,3.283,1.333,0.813,0.557,0.304,0.581,0.822,0.025,0.023,0.044', 'comment': 'Noise array [RU] for the minimum noise spectrum', 'default': True},
-    'irs_noise_inflation':{'value': 1.0, 'comment': 'Value to increase the assumed random error in the IRS data', 'default': False},
+    'irs_min_noise_flag':{'value': 0, 'comment': 'If non-zero, then the irs_min_noise_spectrum will be used as a floor; otherwise, will use input IRS noise spectrum from instrument', 'default': False},
+    'irs_min_noise_wnum':{'value': '500,522,546,575,600,631,747,1439,1770,1884,2217,3000', 'comment': 'Wavenumber array [cm-1] for the minimum noise spectrum', 'default': False},
+    'irs_min_noise_spec':{'value': '65.309,14.056,3.283,1.333,0.813,0.557,0.304,0.581,0.822,0.025,0.023,0.044', 'comment': 'Noise array [RU] for the minimum noise spectrum', 'default': False},
+    'irs_noise_inflation':{'value': 1.0, 'comment': 'Value to increase the assumed random error in the IRS data', 'default': True},
     'irs_smooth_noise': {'value': 0, 'comment': 'The temporal window [minutes] used to smooth the IRS noise with time', 'default': False},
     'irs_band_noise_inflation': {'value': 0, 'comment': '0 -- off (no noise inflation), 1 -- on (will inflate the noise in the spectral band below; requires surface WVMR input from met station)', 'default': False}, 
     'irs_band_noise_wnums': {'value': '775.0,810.0', 'comment': 'A comma separated list of two wavenumbers; the noise spectrum between these will be inflated', 'default': False}, 
@@ -399,8 +400,8 @@ full_mixcra_vip = ({
     'icloud_ssp': {'value': '/home/tropoe/vip/src/input/ssp_db_files/ssp_db.mie_ice.gamma_sigma_0p100', 'comment': 'SSP file for   ice  cloud properties', 'default': False},
 
     'ref_wnum': {'value': -1., 'comment': 'The reference wavenumber for the retrieved optical depths (-1 implies visible)', 'default':False},
-    'min_ltau': {'value': 0.01, 'comment': 'The minimum optical depth [unitless] at the ref_wnum for the liquid', 'default':False},
-    'min_itau': {'value': 0.01, 'comment': 'The minimum optical depth [unitless] at the ref_wnum for the ice', 'default':False},
+    'min_ltau': {'value': 0.001, 'comment': 'The minimum optical depth [unitless] at the ref_wnum for the liquid', 'default':False},
+    'min_itau': {'value': 0.001, 'comment': 'The minimum optical depth [unitless] at the ref_wnum for the ice', 'default':False},
 
     'prior_ltau_mn': {'value':  10.0, 'comment': 'Mean liquid cloud optical depth (geometric limit)', 'default': True},
     'prior_ltau_sd': {'value': 50.0, 'comment': '1-sigma uncertainty in liquid cloud optical depth', 'default': True},
