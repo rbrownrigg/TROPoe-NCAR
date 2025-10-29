@@ -2765,7 +2765,7 @@ def qc_irs(irs):
 # spectral bands
 ###############################################################################
 
-def average_irs(irs, spectral_bands):
+def average_irs(irs, spectral_bands, avg_instant):
 
     nyobs = len(spectral_bands[0,:])
     yobs = np.zeros((nyobs,len(irs['secs'])))
@@ -2775,7 +2775,10 @@ def average_irs(irs, spectral_bands):
         foo = np.where((spectral_bands[0,i] <= irs['wnum']) & (irs['wnum'] <= spectral_bands[1,i]))[0]
         if len(foo) > 0:
             yobs[i,:] = np.sum(irs['radmn'][foo,:],axis=0)/len(foo)
-            ysig[i,:] = np.sum(irs['noise'][foo,:],axis=0)/(len(foo)*np.sqrt(len(foo)))
+            if(avg_instant == 0):
+                ysig[i,:] = np.sum(irs['noise'][foo,:],axis=0)/(len(foo)*np.sqrt(len(foo)))
+            else:
+                ysig[i,:] = np.sum(irs['noise'][foo,:],axis=0)/len(foo)
         else:
             yobs[i,:] = -999.
             ysig[i,:] = -999.
