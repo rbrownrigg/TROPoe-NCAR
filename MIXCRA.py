@@ -253,8 +253,8 @@ while np.max(entire_spectrum) < maxw:
 entire_spectrum = entire_spectrum.T
 
 # Now avereage the IRS data over the desired spectral bands
-yobs1, ysig1, nyobs1 = Other_functions.average_irs(irs,spectral_bands)       # These are the obs for the retrieval
-yobs2, ysig2, nyobs2 = Other_functions.average_irs(irs,entire_spectrum)      # This is only for the end
+yobs1, ysig1, nyobs1 = Other_functions.average_irs(irs,spectral_bands,vip['avg_instant'])       # These are the obs for the retrieval
+yobs2, ysig2, nyobs2 = Other_functions.average_irs(irs,entire_spectrum,vip['avg_instant'])      # This is only for the end
 
 # Need to capture the latitude and longitude of the station
 if vip['station_alt'] > 0:
@@ -359,10 +359,17 @@ if os.path.exists(vip['lcloud_ssp']) == False:
 else:
     # Don't take the exact_min and max; give room for perturbation calcs
     sspl, flag = VIP_Databases_functions.read_scat_databases(vip['lcloud_ssp'])
+    if flag == 1:
+        print('Error reading in the SSP DB '+vip['lcloud_ssp'])
+        sys.exit()
     min_lReff = sspl['data'][2,1]
     max_lReff = sspl['data'][2,-2]
     print('  The minimum and maximum effective radii in the SSP for ' \
-    'lcloud is {:6.2f} and {:6.2} microns'.format(min_lReff, max_lReff))
+    'lcloud is {:7.2f} and {:7.2f} microns'.format(min_lReff, max_lReff))
+    min_lwnum = sspl['data'][1,1]
+    max_lwnum = sspl['data'][1,-2]
+    print('  The minimum and maximum wavenumber in the SSP for ' \
+    'lcloud is {:7.1f} and {:7.1f} cm-1'.format(min_lwnum, max_lwnum))
 
      # Database #2 next
 if os.path.exists(vip['icloud_ssp']) == False:
@@ -371,10 +378,17 @@ if os.path.exists(vip['icloud_ssp']) == False:
 else:
     # Don't take the exact_min and max; give room for perturbation calcs
     sspi, flag = VIP_Databases_functions.read_scat_databases(vip['icloud_ssp'])
+    if flag == 1:
+        print('Error reading in the SSP DB '+vip['icloud_ssp'])
+        sys.exit()
     min_iReff = sspl['data'][2,1]
     max_iReff = sspl['data'][2,-2]
     print('  The minimum and maximum effective radii in the SSP for ' \
-    'icloud is {:6.2f} and {:6.2} microns'.format(min_iReff, max_iReff))
+    'icloud is {:7.2f} and {:7.2f} microns'.format(min_iReff, max_iReff))
+    min_iwnum = sspi['data'][1,1]
+    max_iwnum = sspi['data'][1,-2]
+    print('  The minimum and maximum wavenumber in the SSP for ' \
+    'icloud is {:7.1f} and {:7.1f} cm-1'.format(min_iwnum, max_iwnum))
 
 # Select the LBLRTM version to use
 print('  Working with the LBLRTM version in ' + vip['lblrtm_home'])
@@ -406,6 +420,40 @@ if not os.path.exists(vip['monortm_exec']) and ((vip['mwr_type'] > 0) or (vip['m
 if not os.path.exists(vip['monortm_spec']) and ((vip['mwr_type'] > 0) or (vip['mwrscan_type'] > 0)):
     print('Error: unable to find the the specified MonoRTM spectral line file')
     VIP_Databases_functions.abort(lbltmpdir,date)
+    sys.exit()
+
+# We need to use an internal reference wavenumber that is within the spectral ranges 
+# in the scattering databases.  I will assumed a desired reference wavenumber
+# and check to make sure it is spanned by both SSP DBs
+if(vip['ref_wnum'] > 0):
+    d_ref_wnum = vip['ref_wnum']
+    d_lQext_ratio = 1.0
+    d_iQext_ratio = 1.0
+else:
+    d_ref_wnum    = 900.    # Desired reference wavenumber [cm-1]
+if((vip['retrieve_lcloud'] != 0) and (vip['retrieve_icloud'] != 0)):
+    if((d_ref_wnum < min_lwnum) or (d_ref_wnum < min_iwnum)):
+        print('Error: the reference wavenumber "ref_wnum" is smaller than the smallest wavenumber in the SSP DBs')
+        sys.exit()
+    if((d_ref_wnum > max_lwnum) or (d_ref_wnum > max_iwnum)):
+        print('Error: the reference wavenumber "ref_wnum" is larger than the largesest wavenumber in the SSP DBs')
+        sys.exit()
+elif(vip['retrieve_lcloud'] != 0):
+    if(d_ref_wnum < min_lwnum):
+        print('Error: the reference wavenumber "ref_wnum" is smaller than the smallest wavenumber in the liquid SSP DB')
+        sys.exit()
+    if(d_ref_wnum > max_lwnum):
+        print('Error: the reference wavenumber "ref_wnum" is larger than the largesest wavenumber in the liquid SSP DB')
+        sys.exit()
+elif(vip['retrieve_icloud'] != 0):
+    if(d_ref_wnum < min_iwnum):
+        print('Error: the reference wavenumber "ref_wnum" is smaller than the smallest wavenumber in the ice SSP DB')
+        sys.exit()
+    if(d_ref_wnum > max_iwnum):
+        print('Error: the reference wavenumber "ref_wnum" is larger than the largesest wavenumber in the ice SSP DB')
+        sys.exit()
+else:
+    print('The VIP should have at least one of retrieve_lcloud or retrieve_icloud set to 1 - aborting')
     sys.exit()
 
 # Build the prior and its uncertainty
@@ -574,7 +622,7 @@ for samp in range(foo[0],len(irs['secs']),step):
     sigY = sigY * vip['irs_noise_inflation']
 
     # Append the MWR observations to the obs vector, if desired
-    if((mwr['n_fields'] > 0) and (vip['compute_lwp'] == 1) and (vip['retrieve_lcloud'] == 1)):
+    if((mwr['n_fields'] > 0) and (vip['compute_lwp'] == 1) and (vip['retrieve_lcloud'] == 1) and (vip['ref_wnum'] < 0)):
         tbsky = np.copy(mwr['tbsky'][:,samp])
         noise = np.copy(mwr['noise'])
         freq  = np.copy(mwr['freq'])
@@ -610,9 +658,10 @@ for samp in range(foo[0],len(irs['secs']),step):
     tidx = np.where(delt == np.min(delt))[0][0]
     isza = solzenang[samp]
 
-        # If the solar zenith angle is greater than 90 degrees,
-        # it is below the horizon so turn solar input off
-    if isza >= 90:
+        # If the solar zenith angle is greater than 82 degrees, then the earth's curvature
+        # (when sun is between 82-90 degrees) is too difficult to account for (Thomas and Stamnes)
+        # or the sun is below the horizon -- so turn solar input off
+    if isza >= 82:
         isza = -1
         
     # Now perfrom the iterations
@@ -620,7 +669,7 @@ for samp in range(foo[0],len(irs['secs']),step):
         # Call the LBLDIS
         flag, FXn, Kij = Jacobian_Functions.mixcra_forward_model(Xn, tropoe['height'],
                         lblout[tidx], lwc, vip, jday[samp], isza,
-                        sfc_emissivity,vip['ref_wnum'], nyobs1, microwin_file1,
+                        sfc_emissivity,d_ref_wnum, nyobs1, microwin_file1,
                         vip['retrieve_lcloud'], vip['retrieve_icloud'], verbose)
         
         if flag == 0:
@@ -663,9 +712,10 @@ for samp in range(foo[0],len(irs['secs']),step):
                 create_monortm_zfreq = 0
 
                 # Run the forward model and compute the Jacobian
+            tmp_lQext_ratio = 2. / Other_functions.get_scat_properties('Qe', d_ref_wnum, Xn[1], sspl)
             flag, KK, FF, stored_mwr_jacobian = Jacobian_Functions.compute_jacobian_microwave_lwp_only(tropoe['height'],
                             tropoe['pressure'][lidx[tidx],:],tropoe['temperature'][lidx[tidx],:],tropoe['waterVapor'][lidx[tidx],:],
-                            mwr['freq'], cbh, Xn, vip, vip['workdir'], monortm_tfile, monortm_zexec,
+                            mwr['freq'], cbh, Xn, tmp_lQext_ratio, vip, vip['workdir'], monortm_tfile, monortm_zexec,
                             vip['lbl_std_atmos'], location['alt'], stored_mwr_jacobian, verbose)
 
             # If the Jacobian did not compute properly (i.e., an error ocurred),
@@ -698,6 +748,16 @@ for samp in range(foo[0],len(irs['secs']),step):
         B = (gfac * invSa) + Kij.T.dot(invSm).dot(Kij)
         Binv = np.linalg.pinv(B)
         Gain = Binv.dot(Kij.T).dot(invSm)
+
+#        Output_Functions.write_variable(Y,'/data/Y.nc')
+#        Output_Functions.write_variable(Xa,'/data/Xa.nc')
+#        Output_Functions.write_variable(invSm,'/data/invSm.nc')
+#        Output_Functions.write_variable(invSa,'/data/invSa.nc')
+#        Output_Functions.write_variable(Xn,f'/data/Xn.{itern:d}.nc')
+#        Output_Functions.write_variable(FXn,f'/data/FXn.{itern:d}.nc')
+#        Output_Functions.write_variable(Kij,f'/data/Kij.{itern:d}.nc')
+#        Output_Functions.write_variable(Binv,f'/data/Binv.{itern:d}.nc')
+#        Output_Functions.write_variable(Gain,f'/data/Gain.{itern:d}.nc')
 
         if vip['math_choice'] == 0:
             Xnp1 = Xa[:,None] + Gain.dot(Y[:,None] - FXn[:,None] + Kij.dot((Xn-Xa)[:,None]))
@@ -736,10 +796,15 @@ for samp in range(foo[0],len(irs['secs']),step):
         iSop.append(Sop)
         iAkern.append(Akern)
 
+        # Get the scale factors, if needed (default values already set)
+        if(vip['ref_wnum'] < 0):
+            d_lQext_ratio = 2. / Other_functions.get_scat_properties('Qe', d_ref_wnum, Xn[1], sspl)
+            d_iQext_ratio = 2. / Other_functions.get_scat_properties('Qe', d_ref_wnum, Xn[3], sspi)
+
         # Write status of this iteration to stdOut
         if verbose >= 1 and conv != 1:
             print('     {:2d}  {:7.2f} {:7.2f} {:7.2f} {:7.2f}    {:6.2f}   {:10.4e}   {:5.2f}'.format(
-            itern,Xn[0],Xn[1],Xn[2],Xn[3],rms,di2m,sfac))
+            itern,Xn[0]*d_lQext_ratio,Xn[1],Xn[2]*d_iQext_ratio,Xn[3],rms,di2m,sfac))
 
         # Update for the next iteration
         FXnm1 = np.copy(FXn)
@@ -747,19 +812,17 @@ for samp in range(foo[0],len(irs['secs']),step):
         itern += 1
 
         # Some QC basic limits
-        Xn[0] = np.max([Xn[0],vip['min_ltau']])
+        Xn[0] = np.max([Xn[0],vip['min_ltau']*d_lQext_ratio])
         Xn[1] = np.min([np.max([Xn[1],min_lReff]),max_lReff])
-        Xn[2] = np.max([Xn[2],vip['min_itau']])
+        Xn[2] = np.max([Xn[2],vip['min_itau']*d_iQext_ratio])
         Xn[3] = np.min([np.max([Xn[3],min_iReff]),max_iReff])
         
     # If retrieval converged we will store that result. If not, then we
     # will store the iteration that had the smallest RMS relative to the observations
-
     if conv == 1:
         if verbose >= 1:
             print('         Converged via di2m test')
         itern -= 1
-    
     elif itern >= vip['maxiter'] - 1:
         foo = np.where(irms == np.min(irms))[0]
         itern = foo[0]
@@ -768,7 +831,7 @@ for samp in range(foo[0],len(irs['secs']),step):
     else:
         print('Error: not sure why this "not converge and not maxIter happened -- debug code')
         sys.exit()
-    
+    # Select the case we will store
     Xn    = np.squeeze(iXn[itern])
     Sop   = np.squeeze(iSop[itern])
     Akern = np.squeeze(iAkern[itern])
@@ -776,17 +839,29 @@ for samp in range(foo[0],len(irs['secs']),step):
     rms   = np.squeeze(irms[itern])
     di2m  = np.squeeze(idi2m[itern])
 
+    # Get the scale factors, if needed (default values already set)
+    if(vip['ref_wnum'] < 0):
+        d_lQext_ratio = 2. / Other_functions.get_scat_properties('Qe', d_ref_wnum, Xn[1], sspl)
+        d_iQext_ratio = 2. / Other_functions.get_scat_properties('Qe', d_ref_wnum, Xn[3], sspi)
+    # Scale the optical depths and their uncertainties appropriately (to the desired reference wavenumber)
+    Xn[0]    = Xn[0]*d_lQext_ratio
+    Xn[2]    = Xn[2]*d_iQext_ratio
+    Sop[0,:] = Sop[0,:] * d_lQext_ratio
+    Sop[:,0] = Sop[:,0] * d_lQext_ratio
+    Sop[2,:] = Sop[2,:] * d_iQext_ratio
+    Sop[:,2] = Sop[:,2] * d_iQext_ratio
+
     if verbose >= 1:
         tmp1 = np.sqrt(np.diag(Sop))
         tmp2 = np.diag(Akern)
         print('         {:6.2f} {:6.2f} {:6.2f} {:6.2f} : 1-sigma uncertainties'.format(tmp1[0],tmp1[1],tmp1[2],tmp1[3]))
         print('         {:6.2f} {:6.2f} {:6.2f} {:6.2f} : DFS values'.format(tmp2[0],tmp2[1],tmp2[2],tmp2[3]))
     
-    # Compute the LWP and its uncertainty
+    # Compute the LWP and its uncertainty.  LWP is computed only if the three tests are true
     lwpm = -999.
     lwpu = -999.
     min_sigma_lwp = 0.001 # Minimum uncertainty in LWP [g/m2]
-    if((vip['compute_lwp'] == 1) and (vip['retrieve_lcloud'] == 1)):
+    if((vip['compute_lwp'] == 1) and (vip['retrieve_lcloud'] == 1) and (vip['ref_wnum'] < 0)):
         # Use Bevington method, for x = auv, then
         # VarX/X^2 = VarU/U^2 + VarV/V^2 + 2*CovUV/(U*V)
         lwpm = Other_functions.compute_lwp(Xn[0],Xn[1])
@@ -828,7 +903,7 @@ for samp in range(foo[0],len(irs['secs']),step):
             print('      Computing the full IRS spectrum for this solution')
         flag, full_FXn, full_Kij = Jacobian_Functions.mixcra_forward_model(Xn, tropoe['height'],
                                         lblout[tidx], lwc, vip, jday[samp], isza,
-                                        sfc_emissivity,vip['ref_wnum'], nyobs2, microwin_file2,
+                                        sfc_emissivity,d_ref_wnum, nyobs2, microwin_file2,
                                         0, 0, verbose)
         
         if flag == 0:
