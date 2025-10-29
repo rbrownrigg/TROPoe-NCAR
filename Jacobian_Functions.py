@@ -39,6 +39,7 @@ import sys
 # compute_jacobian_external_sfc_co2()
 # compute_jacobian_microwavescan_3method()
 # make_lblrtm_calc()
+# mixcra_forward_model()
 ################################################################################
 
 
@@ -1324,7 +1325,7 @@ def compute_jacobian_microwave_3method(Xn, p, z, freq, cbh, vip, workdir,
 # This function performs the forward model calculation and computes the jacobian
 # for the microwave radiometer where only the LWP is perturbed
 ################################################################################
-def compute_jacobian_microwave_lwp_only(z, p, t, w, freq, cbh, Xn, vip, workdir,
+def compute_jacobian_microwave_lwp_only(z, p, t, w, freq, cbh, Xn, Qext_ratio, vip, workdir,
                 monortm_tfile, monortm_exec, stdatmos, sfc_alt, stored_jacobian, verbose):
 
     monortm_outputfile = workdir+'/monortm_output.txt'      # A temporary output file
@@ -1345,7 +1346,7 @@ def compute_jacobian_microwave_lwp_only(z, p, t, w, freq, cbh, Xn, vip, workdir,
         print('Computing the MWR-lwp-only Jacobian using the MonoRTM')
 
     # Perform the baseline calculation
-    lwp = Other_functions.compute_lwp(Xn[0],Xn[1])
+    lwp = Other_functions.compute_lwp(Xn[0]*Qext_ratio,Xn[1])
     u   = Calcs_Conversions.w2rh(w, p, t, 0) * 100
     Other_functions.write_arm_sonde_file((z+sfcz)*1000, p, t, u, workdir+'/'+monortm_tfile, silent = True)
     command = ('rm -f '+monortm_outputfile+' ; '+monortm_exec + ' ' + monortm_tfile + ' {:3.1f} {:8.2f} {:6.3f} {:6.3f}'.format(1.0, lwp, cbh, cth)+' > '+monortm_outputfile)
@@ -1380,7 +1381,7 @@ def compute_jacobian_microwave_lwp_only(z, p, t, w, freq, cbh, Xn, vip, workdir,
 
     # Adjust units from perturbations in LWP to perturbations in liquid water optical depth
     ltau_pert = 1.
-    dLWP_dtau = (lwp - Other_functions.compute_lwp(Xn[0]+ltau_pert,Xn[1])) / (Xn[0] - (Xn[0]+ltau_pert))
+    dLWP_dtau = (lwp - Other_functions.compute_lwp((Xn[0]+ltau_pert)*Qext_ratio,Xn[1])) / (Qext_ratio*(Xn[0] - (Xn[0]+ltau_pert)))
     Kij[:,0]  = dTb_dLWP * dLWP_dtau
 
     flag = 1
