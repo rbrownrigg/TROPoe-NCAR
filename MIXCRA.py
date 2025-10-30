@@ -103,11 +103,15 @@ else:
 if verbose == 3:
     print(('The shell for all commands is', SHELL))
 
+# Get the version of the TROPoe package that was installed within the container
+tropoe_version = Data_reads.get_tropoe_version()
+
 # Specify some global parameters
 globatt = {'algorithm_code': 'MIXCRAv3 retrieval code',
             'algorithm_author': 'Dave Turner, NOAA Global System Laboratory (dave.turner@noaa.gov), ' +
                      'Ported to Python by Josh Gebauer NOAA National Severe Storms Laboratory / CIWRO (joshua.gebauer@noaa.gov)',
             'algorithm_version': mixcra_version,
+            'algorithm_package_version': tropoe_version,
             'algorithm_reference1': 'DD Turner, 2005: Arctic mixed-phase cloud '+
                      'properties from AERI-lidar observations: Algorithm and results from SHEBA. '+
                      'J. Appl. Meteor., 44, 427-444, doi:10.1175/JAM2208.1',
