@@ -346,14 +346,14 @@ full_mixcra_vip = ({
     'mwr_tb_freqs': {'value': '23.8,31.4', 'comment': 'Comma separated list of frequency [GHz] of MWR Tb fields', 'default': True},
     'mwr_tb_noise': {'value': '0.3,0.3', 'comment': 'Comma separated list of noise levels [K] in the MWR Tb fields', 'default': True},
     'mwr_tb_bias': {'value': '0.0,0.0', 'comment': 'Comma separated list of bias [K] in the MWR Tb fields; this value is ADDED to the MWR observations', 'default': True},
+    'mwrscan_type': {'value': 0, 'comment': '0 - none, 1 - Tb fields are individual time series, 2 - Tb field is 2-d array', 'default': False},
     'mwr_time_delta': {'value': 0.083, 'comment': 'The maximum amount of time [hours] that the MWR zenith obs must be to the sampling time to be used \n', 'default': True},
-    'mwrscan_type': {'value': 0, 'comment': '0 - none, 1 - Tb fields are individual time series, 2 - Tb field is 2-d array', 'default': True},
 
-    'tropoe_path': {'value': "/data/tropoe", 'comment': 'Path to TROPoe output files', 'default': True},
+    'tropoe_path': {'value': "/data/tropoe", 'comment': 'Path to TROPoe output files \n', 'default': True},
 
     'station_lat': {'value': -999., 'comment': 'Station latitude [degN]; if negative get value from IRS/MWR data file', 'default': True},
     'station_lon': {'value': -999., 'comment': 'Station longitude [degE]; if negative get value from IRS/MWR data file', 'default': True},
-    'station_alt': {'value': -999., 'comment': 'Station altitude [m MSL]; if negative get value from IRS/MWR data file', 'default': True},
+    'station_alt': {'value': -999., 'comment': 'Station altitude [m MSL]; if negative get value from IRS/MWR data file \n', 'default': True},
 
     'cbh_type': {'value': 0, 'comment': '0 - output options and stop, 1 - VCEIL, 2 - Gregs ASOS CBH file, 3 - CLAMPS DLfp data, 4 - ARM dlprofwstats data', 'default': True},
     'cbh_path': {'value': '/data/ceil', 'comment': 'Path to the CBH data', 'default': True},
@@ -363,17 +363,17 @@ full_mixcra_vip = ({
 
     'lwc': {'value': 0.3, 'comment': 'The maximum liquid water content in a layer; used to help find cloud top [g/m^3]', 'default': True},
     'iwc': {'value': 0.1, 'comment': 'The maximum ice water content in a layer; used to find cloud top [g/m^3]', 'default':True},
-    'fix_cbh': {'value': -1.0, 'comment': 'If greater than zero, then use this fixed value as the CBH (not the TROPoe value); the absolute value of the fix_cbh field will be used as the CBH if the observed CBH < 0', 'default':True},
+    'fix_cbh': {'value': -1.0, 'comment': 'If greater than zero, then use this fixed value as the CBH (not the TROPoe value); the absolute value of the fix_cbh field will be used as the CBH if the observed CBH < 0 \n', 'default':True},
 
     'output_rootname': {'value': 'mixcra', 'comment': 'The rootname of the output file', 'default': True},
-    'output_path': {'value': '/data/mixcra', 'comment': 'Path where the output file will be placed', 'default': True},
+    'output_path': {'value': '/data/mixcra', 'comment': 'Path where the output file will be placed \n', 'default': True},
 
     'lblrtm_home': {'value': '/home/tropoe/vip/src/lblrtm_v12.1/lblrtm', 'comment': 'String with the LBL_HOME path (environment variable)', 'default': False},
     'lbldis_exec': {'value': '/home/tropoe/vip/src/lbldis.Release_3_0/lbldis', 'comment': 'The LBLDIS executable (with path)', 'default': False},
     'lbl_std_atmos': {'value': 6, 'comment': 'Standard atmosphere to use in LBLRTM and MonoRTM calcs', 'default': False},
     'lbl_tape3': {'value': 'TAPE3.10-3500cm-1.first_7_molecules', 'comment': 'The TAPE3 file to use in the lblrtm calculation.  Needs to be in the directory lbl_home/hitran/', 'default': False},
     'ssf': {'value': '/home/tropoe/vip/src/input/ssp_db_files/solar.kurucz.rad.1cm-1binned.full_disk.asc', 'comment':'The solar source fuction', 'default': False},
-    'lblout': {'value': 'lblout', 'comment': 'The output path to the gaseous optical depth from the LBLRTM run','default': True},
+    'lblout': {'value': 'lblout', 'comment': 'The output path to the gaseous optical depth from the LBLRTM run','default': False},
     'monortm_version': {'value': 'v5.0', 'comment': 'String with the version information on MonoRTM', 'default': False},
     'monortm_wrapper': {'value': '/home/tropoe/vip/src/monortm_v5.0/wrapper/monortm_v5', 'comment': 'Turner wrapper to run MonoRTM', 'default': False},
     'monortm_exec': {'value': '/home/tropoe/vip/src/monortm_v5.0/monortm/monortm_v5.0_linux_intel_sgl', 'comment': 'AERs MonoRTM executable', 'default': False},
@@ -392,14 +392,12 @@ full_mixcra_vip = ({
 
     'retrieve_lcloud': {'value': 1, 'comment': '0 - do not retrieve liquid clouds, 1 - retrieve liquid cloud properties', 'default': True},
     'retrieve_icloud': {'value': 0, 'comment': '0 - do not retrieve   ice  clouds, 1 - retrieve   ice  cloud properties', 'default': True},
-
+    'lcloud_ssp': {'value': '/home/tropoe/vip/src/input/ssp_db_files/ssp_db.mie_wat.gamma_sigma_0p100', 'comment': 'SSP file for liquid cloud properties', 'default': True},
+    'icloud_ssp': {'value': '/home/tropoe/vip/src/input/ssp_db_files/ssp_db.mie_ice.gamma_sigma_0p100', 'comment': 'SSP file for   ice  cloud properties', 'default': True},
     'compute_lwp': {'value': 1, 'comment': 'Set this to 1 if liquid is being retrieved with the lcloud variables', 'default':True},
-    'apply_tcloud_constraints': {'value': 1, 'comment': 'If set and algorithm is in dual-phase, then do not let liquid water exist below -40 or ice exist above 0 degC', 'default':True},
+    'apply_tcloud_constraints': {'value': 1, 'comment': 'If set and algorithm is in dual-phase, then do not let liquid water exist below -40 or ice exist above 0 degC \n', 'default':True},
 
-    'lcloud_ssp': {'value': '/home/tropoe/vip/src/input/ssp_db_files/ssp_db.mie_wat.gamma_sigma_0p100', 'comment': 'SSP file for liquid cloud properties', 'default': False},
-    'icloud_ssp': {'value': '/home/tropoe/vip/src/input/ssp_db_files/ssp_db.mie_ice.gamma_sigma_0p100', 'comment': 'SSP file for   ice  cloud properties', 'default': False},
-
-    'ref_wnum': {'value': -1., 'comment': 'The reference wavenumber for the retrieved optical depths (-1 implies visible)', 'default':False},
+    'ref_wnum': {'value': -1., 'comment': 'The reference wavenumber for the retrieved optical depths (-1 implies visible)', 'default':True},
     'min_ltau': {'value': 0.001, 'comment': 'The minimum optical depth [unitless] at the ref_wnum for the liquid', 'default':False},
     'min_itau': {'value': 0.001, 'comment': 'The minimum optical depth [unitless] at the ref_wnum for the ice', 'default':False},
 
