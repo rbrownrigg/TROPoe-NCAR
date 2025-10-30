@@ -19,9 +19,9 @@ import numpy as np
 import shutil
 import scipy.io
 import warnings
+import glob
 from netCDF4 import Dataset
 from datetime import datetime, timezone
-from glob import glob
 from time import gmtime, strftime
 from subprocess import Popen, PIPE
 from argparse import ArgumentParser
@@ -33,6 +33,7 @@ import Calcs_Conversions
 import Data_reads
 import Jacobian_Functions
 import Output_Functions
+import LBLRTM_Functions
 
 # Check to see if we are just writing out a blank vip
 if '--vip' in sys.argv:
@@ -400,30 +401,25 @@ print('  Working with the LBLRTM version in ' + vip['lblrtm_home'])
 # Quick check: make sure the LBLRTM path is properly set
 if not os.path.exists(vip['lblrtm_home'] + '/bin/lblrtm'):
     print('Error: lblhome is not properly set')
-    VIP_Databases_functions.abort(lbltmpdir,date)
     sys.exit()
 
 # Make sure that the specified TAPE3 file exists
 if not os.path.exists(vip['lblrtm_home'] + '/hitran/' + vip['lbl_tape3']):
     print('Error: unable to find the specified TAPE3 file in the LBLRTM_HOME hitran directory')
-    VIP_Databases_functions.abort(lbltmpdir,date)
     sys.exit()
 
 # Make sure that path to the MonoRTM files are set properly. We will only
 # stop the code if MWR data is used and the files don't exist
 if not os.path.exists(vip['monortm_wrapper']) and ((vip['mwr_type'] > 0) or (vip['mwrscan_type'] > 0)):
     print('Error: unable to find the the specified MonoRTM wrapper')
-    VIP_Databases_functions.abort(lbltmpdir,date)
     sys.exit()
 
 if not os.path.exists(vip['monortm_exec']) and ((vip['mwr_type'] > 0) or (vip['mwrscan_type'] > 0)):
     print('Error: unable to find the the specified MonoRTM executable')
-    VIP_Databases_functions.abort(lbltmpdir,date)
     sys.exit()
 
 if not os.path.exists(vip['monortm_spec']) and ((vip['mwr_type'] > 0) or (vip['mwrscan_type'] > 0)):
     print('Error: unable to find the the specified MonoRTM spectral line file')
-    VIP_Databases_functions.abort(lbltmpdir,date)
     sys.exit()
 
 # We need to use an internal reference wavenumber that is within the spectral ranges 
@@ -517,6 +513,9 @@ rt_extra_layers = Other_functions.compute_extra_layers(np.max(tropoe['height']))
 
 # This will be used to update the MWR jacobian more quickly
 stored_mwr_jacobian = {'computed':0}
+
+# Used to capture the spectral range in the TAPE3 used by the lblrtm
+tape3_info = {'success':-2}
 
 #### Main loop over the IRS samples
 foo = np.where(irs['hour'] >= shour)[0]
@@ -670,6 +669,29 @@ for samp in range(foo[0],len(irs['secs']),step):
         
     # Now perfrom the iterations
     while((itern < vip['maxiter']-1) and (conv == 0)):
+        # Check to make sure the spectral range spanned by the TAPE3 is sufficient
+        if(tape3_info['success'] < 0):
+            tmplbldir = f'{lblout[tidx]:s}'
+            tape3_info = Data_reads.tape6_min_max_wnum(tmplbldir,verbose=verbose)
+            if(tape3_info['success'] <= 0):
+                print('Error: Unable to determine the spectral range of the LBLRTMs TAPE3 -- (this should not happen)')
+                sys.exit()
+            if((lblwnum1 < tape3_info['minw']) or (tape3_info['maxw'] < lblwnum2)):
+                print('Error: The tape3 selected in the VIP does not span the desired IRS calculation range')
+                print(f"            TAPE3 spans from {tape3_info['minw']:.3f} to {tape3_info['maxw']:.3f} cm-1")
+                print(f"            Needed LBLRTM range is {lblwnum1:.3f} to {lblwnum2:.3f} cm-1")
+                sys.exit()
+        # But also ensure that the spectral range used in the actual calculation is also sufficient
+        # Note that I only need to do this once, which is why I've placed this test in with the tape3 test
+            tmpfile = []
+            tmpfile = tmpfile + sorted(glob.glob(tmplbldir+'/OD*'))
+            tmps0, tmpv0 = LBLRTM_Functions.lbl_read(tmpfile[0], do_load_data=True)
+            if((lblwnum1 < np.min(tmpv0)) or (np.max(tmpv0) < lblwnum2)):
+                print('Error: The LBLRTM calc does not span the desired IRS calculation range')
+                print(f"            Current LBLRTM calc spans from {np.min(tmpv0):.2f} to {np.max(tmpv0):.2f} cm-1")
+                print(f"            Needed LBLRTM range is {lblwnum1:.2f} to {lblwnum2:.2f} cm-1")
+                sys.exit()
+
         # Call the LBLDIS
         flag, FXn, Kij = Jacobian_Functions.mixcra_forward_model(Xn, tropoe['height'],
                         lblout[tidx], lwc, vip, jday[samp], isza,
@@ -732,7 +754,6 @@ for samp in range(foo[0],len(irs['secs']),step):
             # the number of MWR observations in the Y vector
             if len(foo) != len(FF):
                 print('Problem computing the Jacobian for the microwave radiometer')
-                VIP_Databases_functions.abort(lbltmpdir,date)
                 sys.exit()
 
             # Append the MWR calculated info to the forward calc and jacobian
