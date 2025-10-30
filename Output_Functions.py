@@ -1447,7 +1447,7 @@ def mixcra_write_output(out,vip,location,flagY,dimY,outfull,
         if vip['ref_wnum'] <= 0:
             ref_wnum_comment = 'Geometrics optics regime (Qext=2)'
         else:
-            ref_wnum_comment = str(np.round(vip['ref_wnum']),1) + ' cm-1'
+            ref_wnum_comment = str(np.round(vip['ref_wnum'],1)) + ' cm-1'
             
         # This is the first sample, so let's create the file
         dt = datetime.fromtimestamp(out['secs'],tz=timezone.utc)
