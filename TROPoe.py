@@ -77,7 +77,7 @@ dostop = args.dostop
 if shour is None:
     shour = 0.
 if ehour is None:
-    ehour = -1.
+    ehour = 24.
 if verbose is None:
     verbose = 1
 if debug is None:
@@ -576,13 +576,6 @@ if(len(foo) > 0):
         print('    Error: the keyword "station_pres" must be set to a positive value (in mb) in the VIP file')
         sys.exit()
     irs['atmos_pres'][foo] = vip['station_pres']
-
-# If ehour < 0, then set it to the time of the last IRS sample. (This was needed
-# for those cases when the IRS did not automatically reboot at 0 Z.)
-if ehour < 0:
-    ehour = np.nanmax(irs['hour'])
-    if verbose >= 2:
-        print(('Resetting the processing end hour to ' + str(ehour) + ' UTC'))
 
 # Capture the lat/lon/alt data in a structure.  Use the VIP supplied data
 location = {'lat':vip['station_lat'], 'lon':vip['station_lon'], 'alt':int(vip['station_alt'])}
@@ -1391,7 +1384,7 @@ for i in range(len(irs['secs'])):                        # { loop_i
                 mlev = {}
                 flag = 1
             else:
-                if((precompute_prior_jacobian['status'] == 1) & (itern == 0)):
+                if((precompute_prior_jacobian['status'] == 1) & (itern == 0) and (vip['omb_flag'] != 1)):
                         # Load the forward calculation stuff from the precompute prior data
                     if(verbose >= 1):
                         print('    Preloading forward calculation and jacobian from prior structure')
