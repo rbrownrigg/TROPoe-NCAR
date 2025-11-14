@@ -18,11 +18,12 @@ import scipy.io
 
 ################################################################################
 # This file contains the following functions:
-# read_vip_file()
+# read_tropoe_vip_file()
 # check_vip_file()
 # abort()
 # read_scat_databases()
 # read_stdatmos()
+# read_mixcra_vip_file()
 ################################################################################
 
 
@@ -42,7 +43,7 @@ import scipy.io
 
 maxbands = 200  # The maximum number of bands to enable for the retrieval
 
-full_vip = ({
+full_tropoe_vip = ({
     'success': {'value': 0, 'comment': 'Interal success flag. Not for outside use', 'default': False},
     'tres': {'value': 0, 'comment': 'Temporal resolution [min], 0 implies maximum (native) temporal resolution', 'default': True},
     'avg_instant': {'value': 1, 'comment': 'A flag to specify -1:avg with no sqrt(N), 0:avg with sqrt(N), or 1:instantaneous', 'default': True},
@@ -62,9 +63,9 @@ full_vip = ({
     'omb_file': {'value': "omb_input.nc", 'comment': 'NetCDF file with profiles of temperature [C], rh [%], pressure [mb], and height [km AGL] to use in the forward O-B calculation', 'default': True},
     'omb_required_minht': {'value': 10.0, 'comment': 'Minimum height [km AGL] required for the input profiles used in the forward O-B calculation\n', 'default': True},
 
-    'irs_type': {'value': 0, 'comment': '0- output, options, and stop, 1 - ARM AERI data, 2 - dmv2cdf AERI data (C1_rnc.cdf and _sum.cdf), 3 - dmv2ncdf (C1.RNC.cdf and .SUM.cdf), 5- ASSIST, 6- REFIR-PAD(0.400), 7- REFIR-PAD(0.3892), -1 - MWR data is to be used as MASTER dataset (no IRS data being read in)', 'default': True},
-    'irs_pca_nf': {'value': 1, 'comment': '0 - IRS data was NOT PCA noise filtered, 1 - IRS data was PCA noise filtered', 'default': False},
+    'irs_type': {'value': 0, 'comment': '0- output, options, and stop, 1 - ARM AERI data, 2 - dmv2cdf AERI data (C1_rnc.cdf and _sum.cdf), 3 - dmv2ncdf (C1.RNC.cdf and .SUM.cdf), 5- ASSIST, -1 - MWR data is to be used as MASTER dataset (no IRS data being read in)', 'default': True},
     'irsch1_path': {'value': "/data/aerich1", 'comment': 'Path to the IRS ch1 radiance files', 'default': True},
+    'irsch2_path': {'value': "/data/aerich2", 'comment': 'Path to the IRS ch2 radiance files', 'default': True},
     'irssum_path': {'value': "/data/aerisum", 'comment': 'Path to the IRS summary files', 'default': True},
     'irseng_path': {'value': "/data/aerieng", 'comment': 'Path to the IRS engineering files', 'default': True},
     'irs_zenith_scene_mirror_angle': {'value': 180, 'comment': 'SceneMirrorAngle [deg] to use for zenith views (default is 180)', 'default': True},
@@ -89,9 +90,10 @@ full_vip = ({
     'irs_new_ffov_halfangle': {'value': 0.0, 'comment': 'New half angle [millirad] of the finite field of view of the instrument (values} <= 0 will result in no correction being applied)', 'default': False},
     'irs_min_675_bt': {'value': 263., 'comment': 'Minimum brightness temp [K] in the 675-680 cm-1 window -- this is QC screen', 'default': True},
     'irs_max_675_bt': {'value': 313., 'comment': 'Maximum brightness temp [K] in the 675-680 cm-1 window -- this is QC screen\n', 'default': True},
-    'irs_spec_cal_factor': {'value': 1.0, 'comment': 'The multiplicative stretch factor to change the spectral calibration of IRS data', 'default': False},
-    'irs_mlev_cbh_wnum_range': {'value': [790.,810], 'comment':'The wavenumber range [cm-1] that should be used for the MLEV CBH calculation.  Make the first wavenumber negative to turn off this calculation', 'default':False},
-    'irs_tcld_wnum_range': {'value': [898.,904], 'comment':'The wavenumber range [cm-1] that should be used for the Tcld CBH calculation.  Make the first wavenumber negative to turn off this calculation', 'default':False},
+    'irs_spec_cal_factor_ch1': {'value': 1.0, 'comment': 'The multiplicative stretch factor to change the spectral calibration of IRS ch1 data', 'default': False},
+    'irs_spec_cal_factor_ch2': {'value': 1.0, 'comment': 'The multiplicative stretch factor to change the spectral calibration of IRS ch2 data', 'default': False},
+    'irs_mlev_cbh_wnum_range': {'value': [790.,810], 'comment':'The wavenumber range [cm-1] that should be used for the MLEV CBH calculation', 'default':False},
+    'irs_tcld_wnum_range': {'value': [898.,904], 'comment':'The wavenumber range [cm-1] that should be used for the Tcld CBH calculation', 'default':False},
     'irs_1m_od_thres': {'value': 1.0, 'comment': 'IRS channels where the 1m optical depth is above this threshold are not used', 'default': False},
 
     'mwr_type': {'value': 0, 'comment': '0 - none, 1 - Tb fields are individual time series, 2 - Tb field is 2-d array', 'default': True},
@@ -222,7 +224,7 @@ full_vip = ({
     'lbl_temp_dir': {'value': '/tmp', 'comment': 'Temporary working directory for the retrieval', 'default': False},
     'lbl_std_atmos': {'value': 6, 'comment': 'Standard atmosphere to use in LBLRTM and MonoRTM calcs', 'default': False},
     'path_std_atmos': {'value': '/home/tropoe/vip/src/input/idl_code/std_atmosphere.idl', 'comment': 'The path to the IDL save file with the standard atmosphere info in it', 'default': False},
-    'lbl_tape3': {'value': 'tape3.data', 'comment': 'The TAPE3 file to use in the lblrtm calculation.  Needs to be in the directory lbl_home/hitran/', 'default': False},
+    'lbl_tape3': {'value': 'TAPE3.350-1600cm-1.first_7_molecules', 'comment': 'The TAPE3 file to use in the lblrtm calculation.  Needs to be in the directory lbl_home/hitran/', 'default': False},
     'monortm_version': {'value': 'v5.0', 'comment': 'String with the version information on MonoRTM', 'default': False},
     'monortm_wrapper': {'value': '/home/tropoe/vip/src/monortm_v5.0/wrapper/monortm_v5', 'comment': 'Turner wrapper to run MonoRTM', 'default': False},
     'monortm_exec': {'value': '/home/tropoe/vip/src/monortm_v5.0/monortm/monortm_v5.0_linux_intel_sgl', 'comment': 'AERs MonoRTM executable', 'default': False},
@@ -242,9 +244,9 @@ full_vip = ({
     'retrieve_wvmr': {'value': 1, 'comment': '0 - do not retrieve wvmr, 1 - do retrieve wvmr (default)', 'default': True},
     'retrieve_co2': {'value': 0, 'comment': '0 - do not retrieve co2, 1 - do retrieve co2 (step model), 2 - do retrieve co2 (exponential model -- disabled)', 'default': False},
     'fix_co2_shape': {'value': 0, 'comment': '(This option only works with retrieve_co2=2): 0 - retrieve all three coefs, 1 - shape coef is f(PBLH) and fixed', 'default': False},
-    'retrieve_ch4': {'value': 0, 'comment': '0 - do not retrieve ch4, 1 - do retrieve co2 (step model), 2 - do retrieve ch4 (exponential model -- disabled)', 'default': False},
+    'retrieve_ch4': {'value': 0, 'comment': '0 - do not retrieve ch4, 1 - do retrieve ch4 (step model), 2 - do retrieve ch4 (exponential model -- disabled)', 'default': False},
     'fix_ch4_shape': {'value': 0, 'comment': '(This option only works with retrieve_ch4=2): 0 - retrieve all three coefs, 1 - shape coef is f(PBLH) and fixed', 'default': False},
-    'retrieve_n2o': {'value': 0, 'comment': '0 - do not retrieve n2o, 1 - do retrieve co2 (step model), 2 - do retrieve n2o (exponential model -- disabled)', 'default': False},
+    'retrieve_n2o': {'value': 0, 'comment': '0 - do not retrieve n2o, 1 - do retrieve n2o (step model), 2 - do retrieve n2o (exponential model -- disabled)', 'default': False},
     'fix_n2o_shape': {'value': 0, 'comment': '(This option only works with retrieve_n2o=2): 0 - retrieve all three coefs, 1 - shape coef is f(PBLH) and fixed', 'default': False},
     'retrieve_lcloud': {'value': 1, 'comment': '0 - do not retrieve liquid clouds, 1 - retrieve liquid cloud properties', 'default': True},
     'retrieve_icloud': {'value': 0, 'comment': '0 - do not retrieve   ice  clouds, 1 - retrieve   ice  cloud properties', 'default': True},
@@ -266,7 +268,7 @@ full_vip = ({
     'prior_chimney_ht': {'value': 0.0, 'comment': 'The height of any \'chimney\' [km AGL]; prior data below this height are totally decorrelated', 'default': False},
     'prior_co2_mn': {'value': [-1.0, 5, -5], 'comment': 'Mean co2 concentration [ppm] (see \'retrieve_co2\' above)', 'default': False},
     'prior_co2_sd': {'value': [2.0, 15, 3], 'comment': '1-sigma uncertainty in co2 [ppm]', 'default': False},
-    'prior_ch4_mn': {'value': [1.793, 0, -5], 'comment': 'Mean ch4 concentration [ppm] (se}e \'retrieve_ch4\' above)', 'default': False},
+    'prior_ch4_mn': {'value': [1.793, 0, -5], 'comment': 'Mean ch4 concentration [ppm] (see \'retrieve_ch4\' above)', 'default': False},
     'prior_ch4_sd': {'value': [0.0538, 0.0015, 3], 'comment': '1-sigma uncertainty in ch4 [ppm]', 'default': False},
     'prior_n2o_mn': {'value': [0.310, 0, -5], 'comment': 'Mean n2o concentration [ppm] (see \'retrieve_n2o\' above)', 'default': False},
     'prior_n2o_sd': {'value': [0.0093, 0.0002, 3], 'comment': '1-sigma uncertainty in n2o [ppm]', 'default': False},
@@ -302,16 +304,133 @@ full_vip = ({
 }
 )
 
+full_mixcra_vip = ({
+    'success': {'value': 0, 'comment': 'Interal success flag. Not for outside use', 'default': False},
+    'tres_lblrtm': {'value': 3, 'comment': 'Temporal resoltuion of the LBLRTM runs [h]', 'default':True},
+    'workdir': {'value':'tag', 'comment': 'The working directory for the iterating retrieval','default':True},
+    'avg_instant': {'value': 1, 'comment': 'A flag to specify -1:avg with no sqrt(N), 0:avg with sqrt(N), or 1:instantaneous', 'default': False},
+
+    'delete_temporary': {'value':1, 'comment': 'Delete the temporary output after MIXCRA completes (1) or keep it (0)', 'default':False},
+
+    'irs_type': {'value': 0, 'comment': '0- output, options, and stop, 1 - ARM AERI data, 2 - dmv2cdf AERI data (C1_rnc.cdf and _sum.cdf), 3 - dmv2ncdf (C1.RNC.cdf and .SUM.cdf), 5- ASSIST, -1 - MWR data is to be used as MASTER dataset (no IRS data being read in)', 'default': True},
+    'irsch1_path': {'value': "/data/aerich1", 'comment': 'Path to the IRS ch1 radiance files', 'default': True},
+    'irsch2_path': {'value': "/data/aerich2", 'comment': 'Path to the IRS ch1 radiance files', 'default': True},
+    'irssum_path': {'value': "/data/aerisum", 'comment': 'Path to the IRS summary files', 'default': True},
+    'irseng_path': {'value': "/data/aerieng", 'comment': 'Path to the IRS engineering files', 'default': True},
+    'irs_sampling': {'value': 1, 'comment': 'Process every (irs_sampling)th spectrum', 'default':True},
+    'irs_min_noise_flag':{'value': 0, 'comment': 'If non-zero, then the irs_min_noise_spectrum will be used as a floor; otherwise, will use input IRS noise spectrum from instrument', 'default': False},
+    'irs_min_noise_wnum':{'value': '500,522,546,575,600,631,747,1439,1770,1884,2217,3000', 'comment': 'Wavenumber array [cm-1] for the minimum noise spectrum', 'default': False},
+    'irs_min_noise_spec':{'value': '65.309,14.056,3.283,1.333,0.813,0.557,0.304,0.581,0.822,0.025,0.023,0.044', 'comment': 'Noise array [RU] for the minimum noise spectrum', 'default': False},
+    'irs_noise_inflation':{'value': 1.0, 'comment': 'Value to increase the assumed random error in the IRS data', 'default': True},
+    'irs_smooth_noise': {'value': 0, 'comment': 'The temporal window [minutes] used to smooth the IRS noise with time', 'default': False},
+    'irs_band_noise_inflation': {'value': 0, 'comment': '0 -- off (no noise inflation), 1 -- on (will inflate the noise in the spectral band below; requires surface WVMR input from met station)', 'default': False}, 
+    'irs_band_noise_wnums': {'value': '775.0,810.0', 'comment': 'A comma separated list of two wavenumbers; the noise spectrum between these will be inflated', 'default': False}, 
+    'irs_band_noise_sfc_npts': {'value': 4, 'comment': 'The number of points in the x- (surface water vapor) and y- (noise inflation) axes', 'default': False}, 
+    'irs_band_noise_sfc_wvmr_vals': {'value': '0.,7,12,18', 'comment': 'A comma separated list of the surface water vapor mixing ratio values [g/kg] for the x-axis', 'default': False}, 
+    'irs_band_noise_sfc_multiplier': {'value': '20.0,20,1,1', 'comment': 'A comma separated list of multipliers [unitless] for the y-axis', 'default': False}, 
+    'irs_zenith_scene_mirror_angle': {'value':180, 'comment': 'The angle [degrees] of the IRS scene mirror that corresponds to zenith', 'default':True},
+    'irs_min_675_bt': {'value': 263., 'comment': 'Minimum brightness temp [K] in the 675-680 cm-1 window -- this is QC screen', 'default': True},
+    'irs_max_675_bt': {'value': 313., 'comment': 'Maximum brightness temp [K] in the 675-680 cm-1 window -- this is QC screen\n', 'default': True},
+    'irs_use_missingDataFlag': {'value': 1, 'comment': 'Set this to 1 to use the field \'missingDataFlag\' (from the ch1 file) to remove bad IRS data from analysis. If zero, then all IRS data will be processed,', 'default': False},
+    'irs_calib_pres': {'value': [0.0, 1.0], 'comment': 'Intercept [mb] and slope [mb/mb to calib (newP = int = slope*obsP) (need comma between them)', 'default': False},
+    'irs_use_missingDataFlag': {'value': 1, 'comment': 'Set this to 1 to use the field \'missingDataFlag\' (from the ch1 file) to remove bad IRS data from analysis. If zero, then all IRS data will be processed,', 'default': False},
+    'irs_hatch_switch': {'value': 1, 'comment': '1 - only include hatchOpen=1 when averaging, 0 - include all IRS samples when averaging', 'default': False},
+
+    'mwr_type': {'value': 0, 'comment': '0 - none, 1 - Tb fields are individual time series, 2 - Tb field is 2-d array', 'default': True},
+    'mwr_path': {'value': '/data/mwr', 'comment': 'Path to the MWR data', 'default': True},
+    'mwr_rootname': {'value': 'mwr', 'comment': 'Rootname of the MWR data files', 'default': True},
+    'mwr_elev_field': {'value': 'elev', 'comment': 'Name of the scene mirror elevation field; use \'none\' if all data are zenith', 'default': True},
+    'mwr_freq_field': {'value': 'freq', 'comment': 'Name of the frequency field needed if mwr_type >= 2', 'default': True},
+    'mwr_n_tb_fields': {'value': 0, 'comment': 'Number of fields to read in', 'default': True},
+    'mwr_tb_field_names': {'value': 'tbsky23,tbsky31', 'comment': 'Comma separated list of field names for the Tb fields', 'default': True},
+    'mwr_tb_field1_tbmax': {'value': 100., 'comment': 'Maximum value [K] in the first Tb field, used for QC', 'default': True},
+    'mwr_tb_freqs': {'value': '23.8,31.4', 'comment': 'Comma separated list of frequency [GHz] of MWR Tb fields', 'default': True},
+    'mwr_tb_noise': {'value': '0.3,0.3', 'comment': 'Comma separated list of noise levels [K] in the MWR Tb fields', 'default': True},
+    'mwr_tb_bias': {'value': '0.0,0.0', 'comment': 'Comma separated list of bias [K] in the MWR Tb fields; this value is ADDED to the MWR observations', 'default': True},
+    'mwrscan_type': {'value': 0, 'comment': '0 - none, 1 - Tb fields are individual time series, 2 - Tb field is 2-d array', 'default': False},
+    'mwr_time_delta': {'value': 0.083, 'comment': 'The maximum amount of time [hours] that the MWR zenith obs must be to the sampling time to be used \n', 'default': True},
+
+    'tropoe_path': {'value': "/data/tropoe", 'comment': 'Path to TROPoe output files \n', 'default': True},
+
+    'station_lat': {'value': -999., 'comment': 'Station latitude [degN]; if negative get value from IRS/MWR data file', 'default': True},
+    'station_lon': {'value': -999., 'comment': 'Station longitude [degE]; if negative get value from IRS/MWR data file', 'default': True},
+    'station_alt': {'value': -999., 'comment': 'Station altitude [m MSL]; if negative get value from IRS/MWR data file \n', 'default': True},
+
+    'cbh_type': {'value': 0, 'comment': '0 - output options and stop, 1 - VCEIL, 2 - Gregs ASOS CBH file, 3 - CLAMPS DLfp data, 4 - ARM dlprofwstats data', 'default': True},
+    'cbh_path': {'value': '/data/ceil', 'comment': 'Path to the CBH data', 'default': True},
+    'cbh_window_in': {'value': 20, 'comment': 'Inner temporal window (full-size) centered upon IRS time to look for cloud', 'default': True},
+    'cbh_window_out': {'value': 180, 'comment': 'Outer temporal window (full-size) centered upon IRS time to look for cloud}', 'default': True},
+    'cbh_default_ht': {'value': 2.0, 'comment': 'Default CBH height [km AGL], if no CBH data found \n', 'default': True},
+
+    'lwc': {'value': 0.3, 'comment': 'The maximum liquid water content in a layer; used to help find cloud top [g/m^3]', 'default': True},
+    'iwc': {'value': 0.1, 'comment': 'The maximum ice water content in a layer; used to find cloud top [g/m^3]', 'default':True},
+    'fix_cbh': {'value': -1.0, 'comment': 'If greater than zero, then use this fixed value as the CBH (not the TROPoe value); the absolute value of the fix_cbh field will be used as the CBH if the observed CBH < 0 \n', 'default':True},
+
+    'output_rootname': {'value': 'mixcra', 'comment': 'The rootname of the output file', 'default': True},
+    'output_path': {'value': '/data/mixcra', 'comment': 'Path where the output file will be placed \n', 'default': True},
+
+    'lblrtm_home': {'value': '/home/tropoe/vip/src/lblrtm_v12.1/lblrtm', 'comment': 'String with the LBL_HOME path (environment variable)', 'default': False},
+    'lbldis_exec': {'value': '/home/tropoe/vip/src/lbldis.Release_3_0/lbldis', 'comment': 'The LBLDIS executable (with path)', 'default': False},
+    'lbl_std_atmos': {'value': 6, 'comment': 'Standard atmosphere to use in LBLRTM and MonoRTM calcs', 'default': False},
+    'lbl_tape3': {'value': 'TAPE3.10-3500cm-1.first_7_molecules', 'comment': 'The TAPE3 file to use in the lblrtm calculation.  Needs to be in the directory lbl_home/hitran/', 'default': False},
+    'ssf': {'value': '/home/tropoe/vip/src/input/ssp_db_files/solar.kurucz.rad.1cm-1binned.full_disk.asc', 'comment':'The solar source fuction', 'default': False},
+    'lblout': {'value': 'lblout', 'comment': 'The output path to the gaseous optical depth from the LBLRTM run','default': False},
+    'monortm_version': {'value': 'v5.0', 'comment': 'String with the version information on MonoRTM', 'default': False},
+    'monortm_wrapper': {'value': '/home/tropoe/vip/src/monortm_v5.0/wrapper/monortm_v5', 'comment': 'Turner wrapper to run MonoRTM', 'default': False},
+    'monortm_exec': {'value': '/home/tropoe/vip/src/monortm_v5.0/monortm/monortm_v5.0_linux_intel_sgl', 'comment': 'AERs MonoRTM executable', 'default': False},
+    'monortm_spec': {'value': '/home/tropoe/vip/src/monortm_v5.0/monolnfl_v1.0/TAPE3.spectral_lines.dat.0_55.v5.0_veryfast', 'comment': 'MonoRTM spectral database\n', 'default': False},
+
+    'spectral_bands': {'value': 'None', 'comment': 'An 2-m matrix of spectral bands to use', 'default': False},
+    'sfc_emissivity': {'value': 'None', 'comment': 'An 2-m matrix of spectral bands to use', 'default': False},
+    'include_full_calc': {'value': -1, 'comment': 'If greater than zero, include obs and calc (using final retrieved values) for full spectral band at this spectral resolution [cm-1]', 'default': True},
+
+    'nstreams': {'value': 16, 'comment': 'The number of streams to use in the LBLDIS calculation', 'default': False},
+    'solver': {'value': 0, 'comment': 'The RT solver to use in LBLDIS: 0-DISORT, 1-AbsorptionOnly', 'default':False},
+    'math_choice': {'value': 0, 'comment': 'The choice of Rodgers Equations to use 0->Eq 5.9, 1->Eq 5.8, 2->Eq 5.8 with annealing','default':False},
+
+    'maxiter': {'value': 10, 'comment': 'The maximum number of iterations to use', 'default': False},
+    'converge_factor': {'value': 0.2, 'comment': 'To be considered converged, di2m < converge_factor*dimY; must be (0,1]', 'default':False},
+
+    'retrieve_lcloud': {'value': 1, 'comment': '0 - do not retrieve liquid clouds, 1 - retrieve liquid cloud properties', 'default': True},
+    'retrieve_icloud': {'value': 0, 'comment': '0 - do not retrieve   ice  clouds, 1 - retrieve   ice  cloud properties', 'default': True},
+    'lcloud_ssp': {'value': '/home/tropoe/vip/src/input/ssp_db_files/ssp_db.mie_wat.gamma_sigma_0p100', 'comment': 'SSP file for liquid cloud properties', 'default': True},
+    'icloud_ssp': {'value': '/home/tropoe/vip/src/input/ssp_db_files/ssp_db.mie_ice.gamma_sigma_0p100', 'comment': 'SSP file for   ice  cloud properties', 'default': True},
+    'compute_lwp': {'value': 1, 'comment': 'Set this to 1 if liquid is being retrieved with the lcloud variables', 'default':True},
+    'apply_tcloud_constraints': {'value': 1, 'comment': 'If set and algorithm is in dual-phase, then do not let liquid water exist below -40 or ice exist above 0 degC \n', 'default':True},
+
+    'ref_wnum': {'value': -1., 'comment': 'The reference wavenumber for the retrieved optical depths (-1 implies visible)', 'default':True},
+    'min_ltau': {'value': 0.001, 'comment': 'The minimum optical depth [unitless] at the ref_wnum for the liquid', 'default':False},
+    'min_itau': {'value': 0.001, 'comment': 'The minimum optical depth [unitless] at the ref_wnum for the ice', 'default':False},
+
+    'prior_ltau_mn': {'value':  10.0, 'comment': 'Mean liquid cloud optical depth (geometric limit)', 'default': True},
+    'prior_ltau_sd': {'value': 50.0, 'comment': '1-sigma uncertainty in liquid cloud optical depth', 'default': True},
+    'prior_lReff_mn': {'value': 8.0, 'comment': 'Mean liquid Reff [microns]', 'default': True},
+    'prior_lReff_sd': {'value': 4.0, 'comment': '1-sigma uncertainty in liquid Reff [microns]', 'default': True},
+    'prior_itau_mn': {'value': 4.0, 'comment': 'Mean ice cloud optical depth (geometric limit)', 'default': True},
+    'prior_itau_sd': {'value': 5.0, 'comment': '1-sigma uncertainty in ice cloud optical depth', 'default': True},
+    'prior_iReff_mn': {'value': 25.0, 'comment': 'Mean ice cloud Reff [microns]', 'default': True},
+    'prior_iReff_sd': {'value': 8.0, 'comment': '1-sigma uncertainty in ice cloud} Reff [Reff]', 'default': True},
+    'prior_corr_ltau_lreff': {'value': 0.0, 'comment': 'The correlation to assume between ltau and lreff in the prior', 'default':True},
+    'prior_corr_ltau_itau': {'value': 0.0, 'comment': 'The correlation to assume between ltau and itau in the prior', 'default':True},
+    'prior_corr_ltau_ireff': {'value': 0.0, 'comment': 'The correlation to assume between ltau and ireff in the prior', 'default':True},
+    'prior_corr_lreff_itau': {'value': 0.0, 'comment': 'The correlation to assume between lreff and itau in the prior', 'default':True},
+    'prior_corr_lreff_ireff': {'value': 0.0, 'comment': 'The correlation to assume between lreff and ireff in the prior', 'default':True},
+    'prior_corr_itau_ireff': {'value': 0.0, 'comment': 'The correlation to assume between itau and ireff in the prior', 'default':True},
+    'vip_filename': {'value': 'none', 'comment': 'Just for tracability', 'default':True}
+}
+)
+
+
 ################################################################################
 #This routine reads in the controlling parameters from the VIP file.
 ################################################################################
 
-def read_vip_file(filename,globatt,verbose,debug,dostop):
+def read_tropoe_vip_file(filename,globatt,verbose,debug,dostop):
 
     # Read in the all the values from the full vip dict and create a smaller vip file
     vip = {}
-    for key in full_vip.keys():
-        vip[key] = full_vip[key]['value']
+    for key in full_tropoe_vip.keys():
+        vip[key] = full_tropoe_vip[key]['value']
 
     if os.path.exists(filename):
 
@@ -765,6 +884,19 @@ def abort(lbltmpdir, date):
     print('--------------------------------------------------------------------')
     print(' ')
 
+#################################################################################
+# This routine is called when Mixcra aborts
+#################################################################################
+
+def mixcra_abort(lbltmpdir, date):
+
+    if os.path.exists(lbltmpdir):
+        shutil.rmtree(lbltmpdir)
+
+    print('>>> Mixcra retrieval on ' + str(date) + ' FAILED and ABORTED <<<')
+    print('--------------------------------------------------------------------')
+    print(' ')
+
 ################################################################################
 #   This routine reads in the scattering properties from databases that were
 #   created by Mie code (newmie_iteration) and by Ping Yang's computations (that
@@ -844,3 +976,147 @@ def read_stdatmos(filename, stdatmos, verbose):
         print('  Using standard atmosphere: ' + temp['name'][idx].decode())
 
     return {'status':1, 'z':temp['z'][idx,:], 'p':temp['p'][idx,:], 't':temp['t'][idx,:], 'w':temp['w'][idx,:], 'pwv':temp['pwv'][idx], 'name':temp['name'][idx]}
+
+
+################################################################################
+#This routine reads in the controlling parameters from the MIXCRA VIP file.
+################################################################################
+
+def read_mixcra_vip_file(filename,globatt,verbose,dostop):
+
+    vip = {}
+    for key in full_mixcra_vip.keys():
+        vip[key] = full_mixcra_vip[key]['value']
+
+    if os.path.exists(filename):
+
+        if verbose >= 1:
+            print('  Reading the VIP file: ' + filename)
+
+        try:
+            # inputt = np.genfromtxt(filename, dtype=str,comments='#', usecols = (0,1,2))
+            inputt = np.genfromtxt(filename, dtype=str, comments='#', delimiter='=', autostrip=True)
+        except Exception as e:
+            print(e)
+            print('  There was an problem reading the VIP file. Check formatting.')
+            return vip
+    else:
+        print('  The VIP file ' + filename + ' does not exist')
+        return vip
+
+    if len(inputt) == 0:
+        print('  There were no valid lines found in the VIP file')
+        return vip
+    
+    # Look for obsolete tags, and abort if they are found (forcing user to update their VIP file)
+    obsolete_tags = ['AERI_LAT','AERI_LON','AERI_ALT','PSFC_MIN','PSFC_MAX']
+    obsolete_idx  = np.zeros_like(obsolete_tags, dtype=int)
+    vip_keys = np.array([k.upper() for k in inputt[:,0]])
+    for i in range(len(obsolete_tags)):
+        foo = np.where(obsolete_tags[i].upper() == vip_keys)[0]
+        if(len(foo) > 0):
+            obsolete_idx[i] = 1
+    foo = np.where(obsolete_idx > 0)[0]
+    if(len(foo) > 0):
+        print('Error: there were obsolete tags in the VIP file:')
+        for i in range(len(foo)):
+            print('     '+obsolete_tags[foo[i]])
+            return vip
+    
+    # Create a tracking array to make sure all keys in the user provided
+    # vip file are used
+    track = np.ones(inputt.shape[0])
+    # Look for these tags
+    nfound = 1
+    for key in vip.keys():
+        if key != 'success':
+            nfound += 1
+            if key == 'vip_filename':
+                vip['vip_filename'] = filename
+            else:
+                foo = np.where(key == inputt[:,0])[0]
+                if len(foo) > 1:
+                    print('Error: There were multiple lines with the same key in VIP file: ' + key)
+                    return vip
+
+                elif len(foo) == 1:
+                    track[foo] = 0
+                    if verbose == 3:
+                        print('Loading the key ' + key)
+                    if key == 'spectral_bands':
+                        bands = np.zeros((2, maxbands))-1
+                        tmp = inputt[foo,1][0].split(',')
+
+                        if len(tmp) >= maxbands:
+                            print('Error: There were more spectral bands defined than maximum allowed (maxbands = ' + str(maxbands) + ')')
+                            return vip
+
+                        for j in range(len(tmp)):
+                            feh = tmp[j].split('-')
+                            if len(feh) != 2:
+                                print('Error: Unable to properly decompose the spectral_bands key')
+                                if dostop:
+                                    wait = input('Stopping inside to debug this bad boy. Press enter to continue')
+                                return vip
+                            bands[0,j] = float(feh[0])
+                            bands[1,j] = float(feh[1])
+                        vip['spectral_bands'] = bands
+
+                    elif key == 'sfc_emissivity':
+                        sfce = np.zeros((2, maxbands))-1
+                        tmp = inputt[foo,1][0].split(',')
+
+                        if len(tmp) >= maxbands:
+                            print('Error: There were more spectral bands defined than maximum allowed (maxbands = ' + str(maxbands) + ')')
+                            return vip
+
+                        for j in range(len(tmp)):
+                            feh = tmp[j].split('-')
+                            if len(feh) != 2:
+                                print('Error: Unable to properly decompose the spectral_bands key')
+                                if dostop:
+                                    wait = input('Stopping inside to debug this bad boy. Press enter to continue')
+                                return vip
+                            sfce[0,j] = float(feh[0])
+                            sfce[1,j] = float(feh[1])
+                        vip['sfc_emissivity'] = sfce
+
+                    else:
+                        vip[key] = type(vip[key])(inputt[foo,1][0])
+                else:
+                    if verbose == 3:
+                        print('UNABLE to find the key ' + key)
+                    nfound -= 1
+
+    # Now look for any global attributes that might have been entered in the file
+
+    matching = [s for s in inputt[:,0] if "globatt" in s]
+
+    if verbose >= 2:
+        print('    There were ' + str(len(matching)) + ' global attributes found')
+
+    for i in range(len(matching)):
+        foo = np.where(matching[i] == inputt[:,0])[0]
+        track[foo] = 0
+        globatt[matching[i][8:]] = inputt[foo,1][0]
+    
+    # Need to trap condition where spectral_bands was not set (and thus is the default string "None")
+    # and then reset it to a standard set of bands used for IR sounding
+    if(type(vip['spectral_bands']) == str):
+        blo = [770.9, 785.9, 809.0, 815.3, 828.3, 842.8, 860.1, 872.2, 891.9, 898.2, 929.6, 959.9, 985.0, 1076.6, 1092.1, 1113.3, 1124.4, 1142.2, 1155.2]
+        bhi = [774.8, 790.7, 812.9, 824.4, 834.6, 848.1, 864.0, 877.5, 895.8, 905.4, 939.7, 964.3, 998.0, 1084.8, 1098.8, 1116.6, 1132.6, 1148.0, 1163.4]
+        vip['spectral_bands'] = np.array([blo,bhi])
+
+    foo = np.nonzero(track)[0]
+    if len(foo) > 0:
+        print('  There were undefined entries in the VIP file:')
+        for i in range(len(foo)):
+            print('    ' + inputt[foo,0][i])
+        return vip
+    else:
+        vip['success'] = 1
+
+    if dostop:
+        wait = input('Stopping inside to debug this bad boy. Press enter to continue')
+
+    return vip
