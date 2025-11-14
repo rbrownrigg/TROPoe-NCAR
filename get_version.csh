@@ -11,5 +11,5 @@ set VERSION = `git describe --tags `
 echo "Tagging the code with $VERSION"
 sed -i "" "s/TROPoe_software_version =.*/TROPoe_software_version = '$VERSION'/" version.py
 
-git add TROPoe.py
+git add version.py
 git commit --amend --no-edit --no-verify
