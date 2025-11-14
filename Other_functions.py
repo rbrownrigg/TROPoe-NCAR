@@ -77,6 +77,7 @@ import Output_Functions
 # create_iwc_profile()
 # estimate_tcld()
 
+# condition_matrix()
 ################################################################################
 
 
@@ -1207,8 +1208,10 @@ def convolve_to_aeri(wnum, radiance):
 
 ################################################################################
 # This function convolves the spectrum to the REFIR-PAD spectral resolution
-def convolve_to_refir(wnum, radiance):
-    vlaser = 13107.2
+def convolve_to_refir(wnum, radiance, refir_del_wnum):
+    #vlaser = 13107.2        # irs_type = 6, which is for del_wnum = 0.4000000 cm-1 (like in DomeC)
+    #vlaser = 12754.8        # irs_type = 7, which is for del_wnum = 0.3892450 cm-1 (like in RHUBC-II)
+    vlaser = refir_del_wnum * (2**15)
     rad1 = convolve_to_irs(wnum, radiance, vlaser)
     rad2 = convolve_to_irs(wnum, radiance, vlaser, do_sinc2=1)
     tmp = {'wnum':rad1['wnum'], 'spec':0.9*rad1['spec']+0.1*rad2['spec']}
@@ -2338,7 +2341,7 @@ def mixed_layer(t,p,wv, depth = 100):
 # deviation.
 ###############################################################################
 
-def calc_derived_indices(xret, vip, derived, verbose, num_mc=20):
+def calc_derived_indices(xret, vip, derived, verbose, do_compute, num_mc=20):
     
     # These are the derived indices that I will compute later one. I need to
     # define them here in order to build the netcdf file correctly
@@ -2347,8 +2350,12 @@ def calc_derived_indices(xret, vip, derived, verbose, num_mc=20):
     dindex_units = ['cm', 'km', 'km', 'degC', 'km', 'J/kg', 'J/kg',
                     'km', 'J/kg', 'J/kg']
     
-    indices = np.zeros(len(dindex_name))
-    sigma_indices = np.zeros(len(dindex_name))
+    indices = np.zeros(len(dindex_name))-999.
+    sigma_indices = np.zeros(len(dindex_name))-999.
+
+    # If we don't compute thense, then just return these missing values
+    if(do_compute != 1):
+        return {'indices':indices, 'sigma_indices':sigma_indices, 'name':dindex_name, 'units':dindex_units}
     
     # Get the number of height levels
     nht = len(xret['z'])
@@ -2688,6 +2695,7 @@ def do_tcld_cbh(obswnum, obsrad, Xn, z, mlev_cbh, vip, verbose=1):
     return cbh
 
 ###############################################################################
+# This function estimates the cloud base height using the minimum local emissivity variance method
 
 def do_mlev_cbh(obswnum, obsrad, calcwnum, calcradclear, calcBrad, maxht, z, itern, vip, verbose=1):
     cbh   = -999.
@@ -2852,3 +2860,24 @@ def estimate_tcld(lwc, tropoe_temp, tropoe_hour, hour):
     tcld = np.sum(lwc*temp)/np.sum(lwc)
 
     return tcld
+###############################################################################
+# This function regularizes the input covariance matrix using Tikhonov Regularization (ridge) approach
+#     NewS = OrigS + alpha*Identity, for alpha small but greater than zero
+# where OrigS is a square covariance matrix, and alpha is the regularization parameter
+
+def condition_matrix(origS, alpha):
+
+    error = ''
+    dims = np.shape(origS)
+    if len(dims) != 2:
+        error = 'Error in function condition_matrix: input structure is not a 2-dimensional structure'
+    if dims[0] != dims[1]:
+        error = 'Error in function condition_matrix: input structure is not a square matrix'
+    if alpha < 0:
+        error = 'Error in function condition_matrix: alpha must be >= 0'
+
+    if error != '':
+        return origS, error
+    iden = np.identity(dims[0])
+    newS = origS + alpha*iden
+    return newS, 'success'

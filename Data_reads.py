@@ -351,7 +351,7 @@ def read_irs_ch(path,date,irs_type,fv,fa,irs_spec_cal_factor,
         filename = '*' + str(date % 2000000) + 'C1.RNC.(cdf|nc)'
     elif irs_type == 5:
         filename = '*assist*(Ch|ch)*' + str(date) + '*(cdf|nc)'
-    elif irs_type == 6:
+    elif ((irs_type == 6) or (irs_type == 7)):
         filename = '*refir*(Ch|ch)*' + str(date) + '*(cdf|nc)'
     else:
         print('Error in read_irs_ch: unable to decode irs_type')
@@ -1705,7 +1705,12 @@ def read_irs_eng(path, date, irs_type, verbose):
         print('                     engineering data is found in the summary file')
         print('   irs_type=6 --->')
         print('             ARM-style ch1/ch2/sum REFIR-PAD datastream names, but all of the')
-        print('                     engineering data is found in the summary file')
+        print('                     engineering data is found in the summary file and the ')
+        print('                     spectral resolution of the radiance data is 0.4000000 cm-1')
+        print('   irs_type=7 --->')
+        print('             ARM-style ch1/ch2/sum REFIR-PAD datastream names, but all of the')
+        print('                     engineering data is found in the summary file and the ')
+        print('                     spectral resolution of the radiance data is 0.3892450 cm-1')
         print('-----------------------------------------------------------------')
         print(' ')
         err = {'success':0}
@@ -1721,7 +1726,7 @@ def read_irs_eng(path, date, irs_type, verbose):
         filename = '*aeri*sum*' + str(date) + '*(cdf|nc)'
     elif irs_type == 5:
         filename = '*assist*sum*' + str(date) + '*(cdf|nc)'
-    elif irs_type == 6:
+    elif ((irs_type == 6) or (irs_type == 7)):
         filename = '*refir*sum*' + str(date) + '*(cdf|nc)'
     else:
         print('Error in read_irs_eng: unable to decode irs_type')
@@ -1835,7 +1840,7 @@ def read_irs_sum(path,date,irs_type,smooth_noise,verbose):
         filename = '*' + str(date % 2000000) + '.SUM.(cdf|nc)'
     elif irs_type == 5:
         filename = '*assist*sum*' + str(date) + '*(cdf|nc)'
-    elif irs_type == 6:
+    elif ((irs_type == 6) or (irs_type == 7)):
         filename = '*refir*sum*' + str(date) + '*(cdf|nc)'
     else:
         print('Error in read_irs_sum: unable to decode irs_type')
@@ -2509,15 +2514,12 @@ def grid_mwr(mwr, avg_instant, secs, tavg, time_delta, verbose):
         return {'success':1, 'secs':secs, 'ymd':ymd, 'hour':hour, 'n_fields':0,
                 'type':mwr['type'], 'rootname':'none found', 'alt':-1}
 
-    # If the Tavg is too low (or zero), then inflate it somewhat. Units are minutes
+    # If the time_delta [hours] is lower than tavg [min], then warn the user
+    if time_delta/60. < tavg:
+        print('    WARNING: mwr_time_delta is smaller than Tavg; consider resetting it in the VIP file to a larger value')
 
-    if tavg < 2:
-        print('    Tavg for MWR data is too small. Setting it equal to 2 seconds.')
-        twin = 2
-    else:
-        twin = tavg
-    # Now directly specifying the averaging time for the window
-    twin = time_delta*60*2
+    # Now directly specifying the time for the full-width averaging window
+    twin = time_delta*60*2  # Need twin to have units of minutes
 
     nsfc_temp = np.zeros(len(secs)) - 999.0
     if mwr['n_fields'] > 0:
@@ -2682,12 +2684,12 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
         qtype = 'None'
         external['nQprof'] = 0.0
 
-    # Read in  the ARM radiosondes as a constraint on the water vapor profile
+    # Read in  the radiosondes as a constraint on the water vapor profile
     # over some range
 
     elif wv_prof_type == 1:
         if verbose >= 1:
-            print('  Reading in ARM radiosonde data to constrain the WV profile')
+            print('  Reading in radiosonde data to constrain the WV profile')
 
         files = []
         for i in range(len(dates)):
@@ -2699,7 +2701,7 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
         external['nQprof'] = 0
         if len(files) == 0:
             if verbose >= 1:
-                print('      No ARM radiosondes found in this directory for this date')
+                print('      No radiosondes found in this directory for this date')
         else:
             maxht = int(wv_prof_maxht+0.1)
             if maxht < wv_prof_maxht:
@@ -2757,7 +2759,7 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
                 we = np.sqrt((w - w1)**2. + (w-w2)**2)            # Sum of squared errors
 
                 qunit = 'g/kg'
-                qtype = 'ARM radiosonde'
+                qtype = 'radiosonde'
 
                 # Append the data to the growing structure
 
@@ -3260,11 +3262,11 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
         ttype = 'none'
         external['nTprof'] = 0
 
-    # Read in the ARM radiosondes as a constraint on the temperature profile over some range
+    # Read in the radiosondes as a constraint on the temperature profile over some range
 
     elif temp_prof_type == 1:
         if verbose >= 1:
-            print('  Reading in ARM radiosonde data to constrain the temp profile')
+            print('  Reading in radiosonde data to constrain the temp profile')
 
         files = []
         for i in range(len(dates)):
@@ -3276,11 +3278,11 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
         external['nTprof'] = 0.
         if len(files) == 0:
             if verbose >= 1:
-                print('    No ARM radiosondes found in this directory for this date')
+                print('    No radiosondes found in this directory for this date')
 
         else:
             if verbose >= 2:
-                print('    Reading ' + str(len(files)) + ' ARM radiosonde files')
+                print('    Reading ' + str(len(files)) + ' radiosonde files')
             maxht = int(temp_prof_maxht+0.1)
             if (maxht < temp_prof_maxht):
                 maxht += 1
@@ -3333,7 +3335,7 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
                 sigma_t = 0.5     # The assumed uncertainty of the radiosonde temperature measurement
 
                 tunit = 'degC'
-                ttype = 'ARM radiosonde'
+                ttype = 'radiosonde'
 
                 # Append the data to the growing structure
                 if external['nTprof'] <= 0:
@@ -3641,7 +3643,7 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
 
         if len(files) == 0:
             if verbose >= 1:
-                print('    No ARM radiosondes found in this directory for this date')
+                print('    No radiosondes found in this directory for this date')
             external['nTprof'] = 0
         else:
             maxht = int(temp_prof_maxht + 0.1)

@@ -11,7 +11,7 @@
 #
 # ----------------------------------------------------------------------------
 
-__version__ = '0.18.15'
+__version__ = '0.19.5'
 
 import os
 import sys
@@ -515,6 +515,15 @@ Sa, status = Other_functions.inflate_prior_covariance(Sa, z, vip['prior_t_ival']
              vip['prior_q_ival'], vip['prior_q_iht'], vip['prior_tq_cov_val'],
              vip['prior_chimney_ht'], verbose)
 if status == 0:
+    VIP_Databases_functions.abort(lbltmpdir,date)
+    sys.exit()
+
+# Apply the Tikhonov Regularization to improve the condition of the prior covariance
+if ((vip['prior_tikhonov_factor'] > 0) & (verbose >= 1)):
+    print(f"  Applying regularization factor to Tq prior covariance matrix (alpha={vip['prior_tikhonov_factor']:.3e})")
+Sa, status = Other_functions.condition_matrix(Sa, vip['prior_tikhonov_factor'])
+if status != 'success':
+    print(status)
     VIP_Databases_functions.abort(lbltmpdir,date)
     sys.exit()
 
@@ -1384,7 +1393,7 @@ for i in range(len(irs['secs'])):                        # { loop_i
                 mlev = {}
                 flag = 1
             else:
-                if((precompute_prior_jacobian['status'] == 1) & (itern == 0) and (vip['omb_flag'] != 1)):
+                if((precompute_prior_jacobian['status'] == 1) & (itern == 0) & (vip['omb_flag'] != 1)):
                         # Load the forward calculation stuff from the precompute prior data
                     if(verbose >= 1):
                         print('    Preloading forward calculation and jacobian from prior structure')
@@ -1883,6 +1892,7 @@ for i in range(len(irs['secs'])):                        # { loop_i
                     # Only write out some variables once (i.e., not needed for every iteration as they don't change)
             if itern == 0:
                 Output_Functions.write_variable(    Y,vip['lbl_temp_dir']+'/debug_output.Y.iter_'+str(itern)+'.cdf',verbose=verbose)
+                Output_Functions.write_variable(   Sa,vip['lbl_temp_dir']+'/debug_output.Sa.iter_'+str(itern)+'.cdf',verbose=verbose)
                 Output_Functions.write_variable(SaInv,vip['lbl_temp_dir']+'/debug_output.SaInv.iter_'+str(itern)+'.cdf',verbose=verbose)
                 Output_Functions.write_variable(   Xa,vip['lbl_temp_dir']+'/debug_output.Xa.iter_'+str(itern)+'.cdf',verbose=verbose)
                 Output_Functions.write_variable(SmInv,vip['lbl_temp_dir']+'/debug_output.SmInv.iter_'+str(itern)+'.cdf',verbose=verbose)
@@ -2398,15 +2408,27 @@ for i in range(len(irs['secs'])):                        # { loop_i
 
     # Compute the various convective indices and other useful data.
     derived = {}
-    derived['theta'] = Calcs_Conversions.t2theta(xret[-1]['Xn'][0:int(nX/2)], 0*xret[-1]['Xn'][int(nX/2):nX], xret[-1]['p'])
-    derived['thetae'] = Calcs_Conversions.t2thetae(xret[-1]['Xn'][0:int(nX/2)], xret[-1]['Xn'][int(nX/2):nX], xret[-1]['p'])
-    derived['rh'] = Calcs_Conversions.w2rh(xret[-1]['Xn'][int(nX/2):nX], xret[-1]['p'], xret[-1]['Xn'][0:int(nX/2)],0) * 100
-    derived['dewpt'] = Calcs_Conversions.rh2dpt(xret[-1]['Xn'][0:int(nX/2)], derived['rh']/100.)
-    derived['co2_profile'] = Other_functions.trace_gas_prof(doco2, z, Xn[range(nX+4,nX+7)])
-    derived['ch4_profile'] = Other_functions.trace_gas_prof(doch4, z, Xn[range(nX+7,nX+10)])
-    derived['n2o_profile'] = Other_functions.trace_gas_prof(don2o, z, Xn[range(nX+10,nX+13)])
+    if vip['omb_flag'] != 1:
+        derived['theta'] = Calcs_Conversions.t2theta(xret[-1]['Xn'][0:int(nX/2)], 0*xret[-1]['Xn'][int(nX/2):nX], xret[-1]['p'])
+        derived['thetae'] = Calcs_Conversions.t2thetae(xret[-1]['Xn'][0:int(nX/2)], xret[-1]['Xn'][int(nX/2):nX], xret[-1]['p'])
+        derived['rh'] = Calcs_Conversions.w2rh(xret[-1]['Xn'][int(nX/2):nX], xret[-1]['p'], xret[-1]['Xn'][0:int(nX/2)],0) * 100
+        derived['dewpt'] = Calcs_Conversions.rh2dpt(xret[-1]['Xn'][0:int(nX/2)], derived['rh']/100.)
+        derived['co2_profile'] = Other_functions.trace_gas_prof(doco2, z, Xn[range(nX+4,nX+7)])
+        derived['ch4_profile'] = Other_functions.trace_gas_prof(doch4, z, Xn[range(nX+7,nX+10)])
+        derived['n2o_profile'] = Other_functions.trace_gas_prof(don2o, z, Xn[range(nX+10,nX+13)])
     
-    dindices = Other_functions.calc_derived_indices(xret[-1],vip,derived,verbose)
+        dindices = Other_functions.calc_derived_indices(xret[-1],vip,derived,verbose,1)
+    else:
+        print("     Skipping the computation of derived fields/indices because code is in OMB mode -- filling with missing values")
+        missing = np.zeros(len(z))-999.
+        derived['theta']       = missing
+        derived['thetae']      = missing
+        derived['rh']          = missing
+        derived['dewpt']       = missing
+        derived['co2_profile'] = missing
+        derived['ch4_profile'] = missing
+        derived['n2o_profile'] = missing
+        dindices = Other_functions.calc_derived_indices(xret[-1],vip,derived,verbose,0)
 
     # Write the data into the netCDF file
     success, noutfilename = Output_Functions.write_output(vip, ext_prof, mod_prof, ext_tseries,
