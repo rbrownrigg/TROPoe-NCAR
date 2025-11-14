@@ -13,6 +13,9 @@
 
 
 ################################################################################
+# This function is called to get the software version information, 
+# and this string is updated via the command in get_version.csh, which is 
+# triggered by a post-commit hook
 
 def get_software_version():
 
