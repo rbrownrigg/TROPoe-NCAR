@@ -11,8 +11,6 @@
 #
 # ----------------------------------------------------------------------------
 
-__version__ = '0.19.5'
-
 import os
 import sys
 import numpy as np
@@ -34,6 +32,7 @@ import Data_reads
 import Jacobian_Functions
 import Output_Functions
 import plot_tropoe
+import version
 
 # Check to see if we are just writing out a blank vip
 if '--vip' in sys.argv:
@@ -116,8 +115,9 @@ else:
 if verbose == 3:
     print(('The shell for all commands is', SHELL))
 
-# Get the version of the TROPoe package that was installed within the container
-tropoe_version = Data_reads.get_tropoe_version()
+# Get the version of the TROPoe package and the software
+tropoe_version   = Data_reads.get_tropoe_version()
+software_version = version.get_software_version()
 
 #Capture the version of this file
 globatt = {'algorithm_code': 'TROPoe Retrieval Code (formerly AERIoe)',
@@ -132,7 +132,7 @@ globatt = {'algorithm_code': 'TROPoe Retrieval Code (formerly AERIoe)',
            'algorithm_comment3': 'Code was ported to python, and packaged into a container with the ' +
                                  'needed radiative transfer models and other required inputs',
            'algorithm_disclaimer': 'TROPoe was developed by NOAA and is provided on an as-is basis, with no warranty',
-           'algorithm_code_version': __version__,
+           'algorithm_code_version': software_version,
            'algorithm_package_version': tropoe_version,
            'algorithm_reference1': 'DD Turner and U Loehnert, 2014: Information Content and ' +
                     'Uncertanties in Thermodynamic Profiles and Liquid Cloud Properties ' +
@@ -164,7 +164,8 @@ print('---- Contacts are dave.turner, joshua.gebauer, tyler.bell (@noaa.gov) ---
 print('------- The code is provided on an "as-is" basis, with no warranty ------')
 print(' ')
 print(('>>> Starting TROPoe retrieval for ' + str(date) + ' (from ' + str(shour) + ' to ' + str(ehour) + ' UTC) <<<'))
-print('  TROPoe version: '+tropoe_version)
+print('  TROPoe package version: '+tropoe_version)
+print('   Software code version: '+software_version)
 
 #Find the VIP file and read it
 
@@ -2387,7 +2388,7 @@ for i in range(len(irs['secs'])):                        # { loop_i
                'doco2':doco2, 'doch4': doch4, 'don2o':don2o,
                'dolcloud':dolcloud,'Sa':Sa, 'Xa':Xa, 'nsonde_prior':nsonde_prior,
                'comment_prior':comment_prior, 'irs':irs, 'shour':shour,'ehour':ehour,
-               'starttime':starttime, 'endtime':endtime, 'version':__version__}
+               'starttime':starttime, 'endtime':endtime, 'version':software_version}
         with open(savename, 'wb') as fh:
             pickle.dump(out, fh)
 

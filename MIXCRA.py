@@ -11,8 +11,6 @@
 #
 # ----------------------------------------------------------------------------
 
-__version__ = '0.0.1'
-
 import os
 import sys
 import numpy as np
@@ -34,6 +32,7 @@ import Data_reads
 import Jacobian_Functions
 import Output_Functions
 import LBLRTM_Functions
+import version
 
 # Check to see if we are just writing out a blank vip
 if '--vip' in sys.argv:
@@ -75,10 +74,21 @@ if ehour is None:
 if verbose is None:
     verbose = 1
 
-# Capture the version of the code
-# TODO Figure out how we want to do the version stuff here. This is just a simple place holder
-mixcra_version = __version__
-print('  Running MIXCRA version ' + mixcra_version)
+# Get the version of the TROPoe package and the software
+tropoe_version   = Data_reads.get_tropoe_version()
+software_version = version.get_software_version()
+
+# Start the retrieval
+print(' ')
+print('-------------------------------------------------------------------------------------')
+print('-----           MIXCRA is the mixed-phase cloud retrieval algorithm             -----')
+print('-----It was developed by Dave.Turner, and ported to python by Josh.Gebauer      -----')
+print('---- It is part of the TROPoe thermodynamic retrieval package developed at NOAA -----')
+print('----       Contacts are dave.turner, joshua.gebauer, tyler.bell (@noaa.gov)     -----')
+print('-------       The code is provided on an "as-is" basis, with no warranty       ------')
+print(' ')
+print('  TROPoe package version: '+tropoe_version)
+print('   Software code version: '+software_version)
 
 # We need the background shell to be the C-shell, as we will be spawning out
 # a variety of commands that make this assumption. So we will do a
@@ -104,14 +114,11 @@ else:
 if verbose == 3:
     print(('The shell for all commands is', SHELL))
 
-# Get the version of the TROPoe package that was installed within the container
-tropoe_version = Data_reads.get_tropoe_version()
-
 # Specify some global parameters
-globatt = {'algorithm_code': 'MIXCRAv3 retrieval code',
+globatt = {'algorithm_code': 'MIXCRAv3 retrieval code, which is part of the TROPoe software package',
             'algorithm_author': 'Dave Turner, NOAA Global System Laboratory (dave.turner@noaa.gov), ' +
                      'Ported to Python by Josh Gebauer NOAA National Severe Storms Laboratory / CIWRO (joshua.gebauer@noaa.gov)',
-            'algorithm_version': mixcra_version,
+            'algorithm_version': software_version,
             'algorithm_package_version': tropoe_version,
             'algorithm_reference1': 'DD Turner, 2005: Arctic mixed-phase cloud '+
                      'properties from AERI-lidar observations: Algorithm and results from SHEBA. '+
