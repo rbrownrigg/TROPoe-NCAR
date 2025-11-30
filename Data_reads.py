@@ -44,6 +44,7 @@ import VIP_Databases_functions
 # recenter_prior()
 # tape6_min_max_wnum()
 # combine_irs()
+# read_omb_file()
 ################################################################################
 
 ################################################################################
@@ -109,7 +110,8 @@ def findfile(path,pattern,verbose=2):
 # This function reads in the input file for an O-B calculation
 # It is able to read netCDF files of two formats:
 #    1) ARM radiosondes, with fields pres [mb], tdry [C], rh [%], and alt [m MSL]
-#    2) Custom, with fields pressure [mb], temperature [C], rh [%], and height [km AGL]
+#    2) TROPoe input, with field "gamma" (indicates it is TROPoe output it is reading in)
+#    3) Custom, with fields pressure [mb], temperature [C], rh [%], and height [km AGL]
 # If the function finds the field "tdry", it assumes this is an ARM radiosonde
 ################################################################################
 def read_omb_file(path, filename, hour, maxht, verbose=1):
@@ -129,7 +131,9 @@ def read_omb_file(path, filename, hour, maxht, verbose=1):
             t  = fid.variables['tdry'][:]
             z  = (z - z[0])/1000.           # Convert m MSL to km AGL
         elif len(np.where(np.array(list(fid.variables.keys())) == 'gamma')[0]) > 0:
-            foo = np.where(fid.variables['hour'][:] >= hour)[0]
+                    # This is a TROPoe input file; looking for the nearest sample 
+                    # after the (desired_hour minus 1 second)
+            foo = np.where(fid.variables['hour'][:] >= hour-1/3600.)[0]
             if len(foo) == 0:
                 errmess = (f"Unable to find a matching time between input spectral and O-B input file {path:s}/{filename:s}")
                 return ({'success':0, 'errstring':errmess})
@@ -150,6 +154,8 @@ def read_omb_file(path, filename, hour, maxht, verbose=1):
             t  = fid.variables['temperature'][:]
         fid.close()
         q  = Calcs_Conversions.rh2w(t, rh/100., p)
+
+            # Apply some simple QC
         err = 0
         if len(z) < 3:
             err = 1
@@ -160,6 +166,16 @@ def read_omb_file(path, filename, hour, maxht, verbose=1):
         elif ((len(z) != len(t)) | (len(z) != len(p)) | (len(z) != len(rh))):
             err = 1
             errmess = 'All profiles in OMB input file must be of the same length'
+
+            # Apply some simple QC to ensure units are ok
+        if((p[0] < 400) or (1050 < p[0])):
+            err = 1
+            errmess = 'Surface pressure in OMB input is outside 400 to 1050 mb (unexpected -- check units)'
+        if((t[0] < -90) or (60 < t[0])):
+            err = 1
+            errmess = 'Surface temperature in OMB input is outside -90 to 60 degC (unexpected -- check units)'
+
+            # If there is an error, the write out the message and return 
         if err == 1:
             return ({'success':0, 'errstring':errmess})
     return ({'success':1, 'errstring':'None', 'z':z, 't':t, 'p':p, 'q':q, 'rh':rh, 'filename':path+'/'+filename})
