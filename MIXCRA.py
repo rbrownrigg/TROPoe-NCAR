@@ -88,7 +88,7 @@ print('----       Contacts are dave.turner, joshua.gebauer, tyler.bell (@noaa.go
 print('-------       The code is provided on an "as-is" basis, with no warranty       ------')
 print(' ')
 print('  TROPoe package version: '+tropoe_version)
-print('   Software code version: '+software_version)
+print('  Software code version : '+software_version)
 
 # We need the background shell to be the C-shell, as we will be spawning out
 # a variety of commands that make this assumption. So we will do a
@@ -142,6 +142,9 @@ if vip['success'] != 1:
     print('---------------------------------------------------------------------')
     print(' ')
     sys.exit()
+print(('  Working with the LBLRTM '))
+print(('    in the directory ' + vip['lblrtm_home']))
+print(('    and the TAPE3 file ' + vip['lbl_tape3']))
 
 # Make sure that the reference wavenumber makes some sense
 if (vip['ref_wnum'] <= 0):
@@ -223,7 +226,7 @@ if keep:
 
 # Read in the TROPoe input file
 if verbose >= 0:
-    print('   Reading the TROPoe output file')
+    print('  Reading the TROPoe output file')
 tropoe_filename = '*tropoe*.' + str(date) + '.*.(nc|cdf)'
 files, status = Data_reads.findfile(vip['tropoe_path'],tropoe_filename)
 if len(files) != 1:

@@ -165,7 +165,7 @@ print('------- The code is provided on an "as-is" basis, with no warranty ------
 print(' ')
 print(('>>> Starting TROPoe retrieval for ' + str(date) + ' (from ' + str(shour) + ' to ' + str(ehour) + ' UTC) <<<'))
 print('  TROPoe package version: '+tropoe_version)
-print('   Software code version: '+software_version)
+print('  Software code version : '+software_version)
 
 #Find the VIP file and read it
 
@@ -353,7 +353,7 @@ modeflag = [dotemp, dowvmr, dolcloud, doicloud, doco2, doch4, don2o]
 
 # Select the LBLRTM version to use
 print(' ')
-print(('  Working with the LBLRTM version ' + vip['lbl_version']))
+print(('  Working with the LBLRTM '))
 print(('    in the directory ' + vip['lbl_home']))
 print(('    and the TAPE3 file ' + vip['lbl_tape3']))
 print(' ')

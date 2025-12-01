@@ -219,8 +219,7 @@ full_tropoe_vip = ({
     'output_akernal': {'value': 1, 'comment': '0 - do not output Sop and Akernal; 1 - output normal Sop and normal Akernal; 2 - output normal Sop, normal Akernal, and "no-model" Akernal', 'default': False},
     'output_clobber': {'value': 0, 'comment': '0 - do not clobber preexisting output files, 1 - clobber them, 2 - append to the last file of this day\n', 'default': True},
 
-    'lbl_home': {'value': '/home/tropoe/vip/src/lblrtm_v12.1/lblrtm', 'comment': 'String with the LBL_HOME path (environment variable)', 'default': False},
-    'lbl_version': {'value': 'v12.1', 'comment': 'String with the version information on LBLRTM', 'default': False},
+    'lbl_home': {'value': '/home/tropoe/vip/src/lblrtm_v12.17/lblrtm', 'comment': 'String with the LBL_HOME path (environment variable)', 'default': False},
     'lbl_temp_dir': {'value': '/tmp', 'comment': 'Temporary working directory for the retrieval', 'default': False},
     'lbl_std_atmos': {'value': 6, 'comment': 'Standard atmosphere to use in LBLRTM and MonoRTM calcs', 'default': False},
     'path_std_atmos': {'value': '/home/tropoe/vip/src/input/idl_code/std_atmosphere.idl', 'comment': 'The path to the IDL save file with the standard atmosphere info in it', 'default': False},
@@ -370,7 +369,7 @@ full_mixcra_vip = ({
     'output_rootname': {'value': 'mixcra', 'comment': 'The rootname of the output file', 'default': True},
     'output_path': {'value': '/data/mixcra', 'comment': 'Path where the output file will be placed \n', 'default': True},
 
-    'lblrtm_home': {'value': '/home/tropoe/vip/src/lblrtm_v12.1/lblrtm', 'comment': 'String with the LBL_HOME path (environment variable)', 'default': False},
+    'lblrtm_home': {'value': '/home/tropoe/vip/src/lblrtm_v12.17/lblrtm', 'comment': 'String with the LBL_HOME path (environment variable)', 'default': False},
     'lbldis_exec': {'value': '/home/tropoe/vip/src/lbldis.Release_3_0/lbldis', 'comment': 'The LBLDIS executable (with path)', 'default': False},
     'lbl_std_atmos': {'value': 6, 'comment': 'Standard atmosphere to use in LBLRTM and MonoRTM calcs', 'default': False},
     'lbl_tape3': {'value': 'TAPE3.10-3500cm-1.first_7_molecules', 'comment': 'The TAPE3 file to use in the lblrtm calculation.  Needs to be in the directory lbl_home/hitran/', 'default': False},
