@@ -350,7 +350,8 @@ full_mixcra_vip = ({
     'mwrscan_type': {'value': 0, 'comment': '0 - none, 1 - Tb fields are individual time series, 2 - Tb field is 2-d array', 'default': False},
     'mwr_time_delta': {'value': 0.083, 'comment': 'The maximum amount of time [hours] that the MWR zenith obs must be to the sampling time to be used \n', 'default': True},
 
-    'tropoe_path': {'value': "/data/tropoe", 'comment': 'Path to TROPoe output files \n', 'default': True},
+    'tropoe_path': {'value': "/data/tropoe", 'comment': 'Path to TROPoe output files', 'default': True},
+    'tropoe_rmsr_thres': {'value': 5.0, 'comment': 'TROPoe input profiles need RMSr values below this threshold to be used \n', 'default': True},
 
     'station_lat': {'value': -999., 'comment': 'Station latitude [degN]; if negative get value from IRS/MWR data file', 'default': True},
     'station_lon': {'value': -999., 'comment': 'Station longitude [degE]; if negative get value from IRS/MWR data file', 'default': True},

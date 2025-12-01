@@ -44,6 +44,7 @@ import VIP_Databases_functions
 # recenter_prior()
 # tape6_min_max_wnum()
 # combine_irs()
+# read_tropoe()
 # read_omb_file()
 ################################################################################
 
@@ -4649,10 +4650,9 @@ def combine_irs_ch(ch1, ch2):
 # This routine reads in the necessary fields from the TROPoe output file
 #############################################################################
 
-def read_tropoe(filename):
+def read_tropoe(filename,vip):
 
     fid = Dataset(filename)
-
     bt = fid.variables['base_time'][:]
     to = fid.variables['time_offset'][:]
     hour = fid.variables['hour'][:]
@@ -4660,16 +4660,36 @@ def read_tropoe(filename):
     pres = fid.variables['pressure'][:]
     temp = fid.variables['temperature'][:]
     wvmr = fid.variables['waterVapor'][:]
-    lwp = fid.variables['lwp'][:]
+    lwp  = fid.variables['lwp'][:]
     lreff = fid.variables['lReff'][:]
-    itau = fid.variables['iTau'][:]
-    iReff = fid.variables['iReff'][:]
-    cbh = fid.variables['cbh'][:]
-    co2 = fid.variables['co2'][:]
-    pwv = fid.variables['pwv'][:]
-
+    itau  = fid.variables['iTau'][:]
+    ireff = fid.variables['iReff'][:]
+    cbh   = fid.variables['cbh'][:]
+    co2   = fid.variables['co2'][:]
+    pwv   = fid.variables['pwv'][:]
+    gamm  = fid.variables['gamma'][:]
+    rmsr  = fid.variables['rmsr'][:]
     fid.close()
+    
+    # Only keep the data that pass the QC: gamma = 1 and ...
+    foo = np.where((gamm < 2) & (rmsr <= vip['tropoe_rmsr_thres']))[0]
+    if len(foo) > 0:
+        to    = to[foo]
+        hour  = hour[foo]
+        pres  = pres[foo,:]
+        temp  = temp[foo,:]
+        wvmr  = wvmr[foo,:]
+        lwp   = lwp[foo]
+        lreff = lreff[foo]
+        itau  = itau[foo]
+        ireff = ireff[foo]
+        cbh   = cbh[foo]
+        co2   = co2[foo]
+        pwv   = pwv[foo]
+    else:
+        print(f"Error: None of the input TROPoe data passed QC (vip[tropoe_rmsr_thres] = {vip['tropoe_rmsr_thres']:.3f}) -- Aborting")
+        sys.exit()
 
     return {'base_time':bt, 'time_offset':to, 'hour':hour, 'height':ht, 'pressure':pres,
             'temperature':temp, 'waterVapor':wvmr, 'lwp':lwp, 'lreff':lreff, 'itau':itau,
-            'ireff':iReff, 'cbh':cbh, 'co2':co2, 'pwv':pwv}
+            'ireff':ireff, 'cbh':cbh, 'co2':co2, 'pwv':pwv}

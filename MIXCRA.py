@@ -230,7 +230,7 @@ if len(files) != 1:
     print('Error: Unable to find a unique TROPoe file for this date in ' + vip['tropoe_path'])
     print('         that matches this file pattern: '+tropoe_filename)
     sys.exit()
-tropoe = Data_reads.read_tropoe(files[0])
+tropoe = Data_reads.read_tropoe(files[0],vip)
 
 # Now read in the IRS and MWR data (if desired)
 fail, irs, mwr, mwrscan = Data_reads.read_all_data(date, vip, dostop, verbose)
