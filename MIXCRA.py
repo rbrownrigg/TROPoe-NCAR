@@ -286,6 +286,11 @@ if vip['delete_temporary'] != 0:
         print('    Reinitializing the working directory ' + vip['workdir'])
     if os.path.exists(vip['workdir']):
         shutil.rmtree(vip['workdir'])
+            # Test to see if the current working directory is still there, as it should
+            # have been deleted in the previous step.  If it is, then abort
+    if os.path.exists(vip['workdir']):
+        print(f"Error: working directory {vip['workdir']:s} previously exists and can not be deleted -- aborting")
+        sys.exit()
     os.mkdir(vip['workdir'])
     
 # This should be included in the VIP file. Right now it is always set.
@@ -952,8 +957,7 @@ for samp in range(foo[0],len(irs['secs']),step):
     currenttime = datetime.now()
     
     flag, ofilename = Output_Functions.mixcra_write_output(mout,vip,location,flagY,dimY,outfull,
-                                                           fsample,currenttime-starttime,
-                                                           verbose,globatt,ofilename)
+                          fsample,(currenttime-starttime).total_seconds(),verbose,globatt,ofilename)
     
     # Increment the pointer, and continue
     fsample += 1
@@ -964,4 +968,8 @@ if vip['delete_temporary'] == 1:
         print('  Deleting the working directory ' + vip['workdir'])
     shutil.rmtree(vip['workdir'])
 
+# Successful exit
+print(('>>> MIXCRA retrieval on ' + str(date) + ' ended properly <<<'))
+print('--------------------------------------------------------------------')
+print(' ')
 
