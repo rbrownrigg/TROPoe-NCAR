@@ -306,7 +306,7 @@ full_tropoe_vip = ({
 full_mixcra_vip = ({
     'success': {'value': 0, 'comment': 'Interal success flag. Not for outside use', 'default': False},
     'tres_lblrtm': {'value': 3, 'comment': 'Temporal resoltuion of the LBLRTM runs [h]', 'default':True},
-    'workdir': {'value':'tag', 'comment': 'The working directory for the iterating retrieval','default':True},
+    'workdir': {'value':'/data/tag', 'comment': 'The working directory for the iterating retrieval','default':True},
     'avg_instant': {'value': 1, 'comment': 'A flag to specify -1:avg with no sqrt(N), 0:avg with sqrt(N), or 1:instantaneous', 'default': False},
 
     'delete_temporary': {'value':1, 'comment': 'Delete the temporary output after MIXCRA completes (1) or keep it (0)', 'default':False},
@@ -1067,13 +1067,13 @@ def read_mixcra_vip_file(filename,globatt,verbose,dostop):
                         tmp = inputt[foo,1][0].split(',')
 
                         if len(tmp) >= maxbands:
-                            print('Error: There were more spectral bands defined than maximum allowed (maxbands = ' + str(maxbands) + ')')
+                            print('Error: There were more surface emissivity elements defined than maximum allowed (maxbands = ' + str(maxbands) + ')')
                             return vip
 
                         for j in range(len(tmp)):
                             feh = tmp[j].split('-')
                             if len(feh) != 2:
-                                print('Error: Unable to properly decompose the spectral_bands key')
+                                print('Error: Unable to properly decompose the sfc_emissivity key')
                                 if dostop:
                                     wait = input('Stopping inside to debug this bad boy. Press enter to continue')
                                 return vip
@@ -1106,6 +1106,13 @@ def read_mixcra_vip_file(filename,globatt,verbose,dostop):
         blo = [770.9, 785.9, 809.0, 815.3, 828.3, 842.8, 860.1, 872.2, 891.9, 898.2, 929.6, 959.9, 985.0, 1076.6, 1092.1, 1113.3, 1124.4, 1142.2, 1155.2]
         bhi = [774.8, 790.7, 812.9, 824.4, 834.6, 848.1, 864.0, 877.5, 895.8, 905.4, 939.7, 964.3, 998.0, 1084.8, 1098.8, 1116.6, 1132.6, 1148.0, 1163.4]
         vip['spectral_bands'] = np.array([blo,bhi])
+
+    # Need to trap condition where sfc_emissivity was not set (and thus is the default string "None")
+    # and then reset it to a standard emissivity spectrum
+    if(type(vip['sfc_emissivity']) == str):
+        bwn = [100.0,  500.0,  700.0, 1000.0, 1100.0, 1200.0, 1300.0, 2000.0, 2200.0, 2450.0, 2800.0, 3000.0]
+        bem = [0.990,  0.990,  0.990,  0.980,  0.950,  0.950,  0.995,  0.990,  0.940,  0.920,  0.950,  0.990]
+        vip['sfc_emissivity'] = np.array([bwn,bem])
 
     foo = np.nonzero(track)[0]
     if len(foo) > 0:
