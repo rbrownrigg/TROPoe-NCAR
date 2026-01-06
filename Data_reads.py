@@ -2358,6 +2358,42 @@ def read_vceil(path, date, vceil_type, ret_secs, mpd_abc_thres, verbose):
         if len(foo) > 1:
             print('     Some CBH values are non-positive!! ')
 
+    elif vceil_type == 11:
+        if verbose >= 1:
+            print('  Reading in Viasala CL61 ceilometer data')
+        for i in range(len(udate)):
+            tempfiles, status = (findfile(path, '*_cl61_*' + udate[i] + '*.nc'))
+            if status == 1:
+                return err
+            files = files + tempfiles
+        if len(files) == 0:
+            print('    No CBH files found for this date')
+            return err
+
+        for i in range(len(files)):
+            if verbose == 3:
+                print('    Reading the file ' + files[i])
+            fid = Dataset(files[i], 'r')
+            fid.set_auto_mask(False)
+            to = fid.variables['time'][:].astype('float')
+            # CL61 supports upto 5 cloud layers; we want the first (lowest); hence the [:, 0]
+            cbhx = fid.variables['cloud_base_heights'][:, 0]
+            fid.close()
+
+            if i == 0:
+                secs = to
+                cbh = np.copy(cbhx)
+            else:
+                secs = np.append(secs, to)
+                cbh = np.append(cbh, cbhx)
+
+        cbh = cbh / 1000.  # Convert m AGL to km AGL
+        bt = secs[0]
+        
+        nonpos = np.where(cbh <= 0)
+        if len(nonpos) > 1:
+            print('     Some CBH values are non-positive!! ')
+
     else:
         print('Error in read_vceil: Undefined ceilometer type')
         return err
