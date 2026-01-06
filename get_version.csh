@@ -6,24 +6,9 @@
 #
 
 # Get the version from git describe
-set VERSION = `git describe --tags `
-
-# Get the latest tag and commits since that tag
-set VERSION = ($VERSION:as/-/ /)
-
-# Seperate the major.minor and the number of commits, then increment the commits by 1
-set MAJOR = $VERSION[1]
-if($#VERSION > 2) then
-  set COMMITS = $VERSION[2]
-else 
-  set COMMITS = 0
-endif
-@ COMMITS = $COMMITS + 1
-set VERSION = "$MAJOR.$COMMITS"
+set VERSION = `git describe --tags`
 
 echo "Tagging the code with $VERSION"
-# Add this new version to the __init__.py
-sed -i "" "s/__version__ =.*/__version__ = '$VERSION'/" TROPoe.py
+sed -i "" "s/TROPoe_software_version =.*/TROPoe_software_version = '$VERSION'/" version.py
 
-# Add the __init__.py to the commit
-git add TROPoe.py
+git add version.py

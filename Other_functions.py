@@ -69,6 +69,14 @@ import Output_Functions
 # calc_derived_indices()
 # inflate_in_tropoe_uncertainty()
 # do_mlev_cbh()
+# compute_lwp()
+# compute_ltau()
+# qc_irs()
+# average_irs()
+# create_lwc_profile()
+# create_iwc_profile()
+# estimate_tcld()
+
 # condition_matrix()
 ################################################################################
 
@@ -2718,6 +2726,140 @@ def do_mlev_cbh(obswnum, obsrad, calcwnum, calcradclear, calcBrad, maxht, z, ite
     memis = mean[foo[0]]
     return cbh, memis
 
+##############################################################################
+# This function computes LWP [g/m^2] from the optical depth [unitless] and 
+# effective radius [microns]
+##############################################################################
+
+def compute_lwp(ltau, lreff):
+
+    return 2./3 * ltau * lreff
+
+##############################################################################
+# This function computes optical depth [unitless] from the LWP [g/m^2] and 
+# effective radius [microns]
+##############################################################################
+
+def compute_ltau(lwp, lreff):
+    
+    return lwp/lreff * 3./2
+
+##############################################################################
+# This function applies some simple QC to identify obviously bad IRS spectra
+##############################################################################
+
+def qc_irs(irs):
+
+    foo = np.where(irs['wnum'] >= 900)[0][0]
+    delw = np.abs(900-irs['wnum'][foo])
+    thres = -10
+    if delw > 5:
+        foo = np.where(irs['wnum'] >= 2550)[0][0]
+        delw = np.abs(2550-irs['wnum'][foo])
+        thres = -2
+        if delw > 5:
+            print('Error: Unable to find either 900 or 2550 cm-1 elements to use for QC -- aborting')
+            return -999
+    
+    flag = np.ones(len(irs['radmn'][foo]))
+    bar = np.where((irs['radmn'][foo] < thres) | (irs['hatchopen'] <= 0))[0]
+    if len(bar) > 0:
+        flag[bar] = 0
+    
+    return flag
+
+###############################################################################
+# This function averages the IRS radiance (and noise) over the desired 
+# spectral bands
+###############################################################################
+
+def average_irs(irs, spectral_bands, avg_instant):
+
+    nyobs = len(spectral_bands[0,:])
+    yobs = np.zeros((nyobs,len(irs['secs'])))
+    ysig = np.zeros((nyobs,len(irs['secs'])))
+
+    for i in range(nyobs):
+        foo = np.where((spectral_bands[0,i] <= irs['wnum']) & (irs['wnum'] <= spectral_bands[1,i]))[0]
+        if len(foo) > 0:
+            yobs[i,:] = np.sum(irs['radmn'][foo,:],axis=0)/len(foo)
+            if(avg_instant == 0):
+                ysig[i,:] = np.sum(irs['noise'][foo,:],axis=0)/(len(foo)*np.sqrt(len(foo)))
+            else:
+                ysig[i,:] = np.sum(irs['noise'][foo,:],axis=0)/len(foo)
+        else:
+            yobs[i,:] = -999.
+            ysig[i,:] = -999.
+    
+    return yobs, ysig, nyobs
+
+##################################################################################
+# This function creates the liquid water cloud profiles. Note I am trying to capture
+# the LWC profile pretty reasonably
+##################################################################################
+def create_lwc_profile(inlwp, height, cbh, lwcmax):
+    lwp = np.max([inlwp,5])   # Always have a little bit of cloud for this masking purpose.....
+    lwc = np.zeros(len(height))
+    cth = -999.
+    delz = height[1:]-height[:-1]
+    if cbh > 0:
+        foo = np.where(height > cbh)[0]
+        if len(foo) <= 1:
+            print('This should not happen, I am sure')
+            return -999.
+        foo = foo[0:-1]
+        tmp = np.cumsum(delz[foo]*1000*lwcmax)
+        bar = np.where(lwp-tmp <= 0)[0]
+        if len(bar) <= 0:
+            print('This should not happen either')
+            return -999.
+        bar = np.where(lwp-tmp > 0)[0]
+        if len(bar) == 0:
+            lwc[foo[0]] = lwp
+            cth = height[foo[0]]
+        else:
+            lwc[foo[bar]] = (lwp-tmp[bar])
+            cth = height[foo[bar[0]]]
+            lwc *= lwp/np.sum(lwc)
+
+    else:
+        print('Why is the CBH not positive (cbh is ' + str(cbh) +')')
+
+    return lwc
+
+###################################################################################
+# Now create ice water cloud profiles. Unlike the liquid water, I will do something
+# quite simple here. I am assuming that the TROPoe was run in single-phase liquid-only
+# mode here.
+# #################################################################################
+
+def create_iwc_profile(intau, height, cbh, iwcmax):
+    print('This function is a mess (only partially completed -- finish developing it -- it needs to use iwcmax)')
+    return -999.
+
+    tau = max(intau, 1)
+    iwc = np.zeros(len(height))
+    foo = np.where(iwc > 0)[0]
+    if len(foo) > 0:
+        iwc[foo] = 1          # Default value -- I will scale this so the entire optical depth is 1.0
+    
+    iwc = iwc/np.sum(iwc)
+
+    return iwc
+
+#####################################################################################
+# This routine makes a very simple estimate of the cloud tempature from the closest
+# TROPoe retrieved temperature profile.
+#####################################################################################
+
+def estimate_tcld(lwc, tropoe_temp, tropoe_hour, hour):
+
+    tdel = np.abs(tropoe_hour - hour)
+    foo = np.where(tdel <= np.min(tdel) + 0.0000001)[0][0]
+    temp = np.squeeze(tropoe_temp[foo,:])
+    tcld = np.sum(lwc*temp)/np.sum(lwc)
+
+    return tcld
 ###############################################################################
 # This function regularizes the input covariance matrix using Tikhonov Regularization (ridge) approach
 #     NewS = OrigS + alpha*Identity, for alpha small but greater than zero

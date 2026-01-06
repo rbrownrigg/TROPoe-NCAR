@@ -44,6 +44,9 @@ import VIP_Databases_functions
 # get_tropoe_version()
 # recenter_prior()
 # tape6_min_max_wnum()
+# combine_irs()
+# read_tropoe()
+# read_omb_file()
 ################################################################################
 
 ################################################################################
@@ -54,46 +57,47 @@ import VIP_Databases_functions
 ################################################################################
 
 def findfile(path,pattern,verbose=2):
+    patt = pattern
     if(verbose >= 2):
-        print('      Searching for files matching '+path+'/'+pattern)
-    #print('Input path is: '+path)
-    #print('Input pattern is: '+pattern)
+        print('      Searching for files matching '+path+'/'+patt)
 
-        # We want to preserve periods (dots) in the pattern,
-        # as many of our file patterns have periods in the name
-    pattern = pattern.replace('.','\.')
+        # We want to preserve periods (dots) in the patt,
+        # as many of our file patt have periods in the name
+    patt = patt.replace('.','\.')
         # Regex requires that we replace any asterisks with .*
-    pattern = pattern.replace('*','.*')
+    patt = patt.replace('*','.*')
         # Regex uses a period as a single character wildcard
-    pattern = pattern.replace('?','.')
+    patt = patt.replace('?','.')
 
-        # Trap the first and last character of the pattern
-    first = pattern[0]
-    lastl = pattern[-1]
+        # Trap the first and last character of the patt
+    first = patt[0]
+    lastl = patt[-1]
 
         # If the first letter is an * or ?, then we prepend a dot
     if(first == '*'):
-      pattern = '.'+pattern
+      patt = '.'+patt
     elif(first == '?'):
-      pattern = '.'+pattern
+      patt = '.'+patt
     else:
-      pattern = '^'+pattern
+      patt = '^'+patt
 
         # If the last letter is not a *, then we append a $
     if(lastl != '*'):
-      pattern = pattern+'$'
+      patt = patt+'$'
 
-    #print('Modified pattern is: '+pattern)
-    # Good idea to write out the pattern to StdErr for future debugging
+    #print('Modified patt is: '+patt)
+    # Good idea to write out the patt to StdErr for future debugging
+    # print('DDT -- and now we are looking for: '+patt)
 
          # Compile the regex expression, and return the files that are found
-    prog  = re.compile(pattern)
+    prog  = re.compile(patt)
 
     # Check to see if the file directory exists
     if os.path.exists(path):
         files = [f for f in os.listdir(path) if re.search(prog, f)]
 
         # Now prepend the path to each files
+        # print(f"DDT -- we found {len(files):d} files")
         for i in range(len(files)):
             files[i] = path+'/'+files[i]
         files.sort()
@@ -108,7 +112,8 @@ def findfile(path,pattern,verbose=2):
 # This function reads in the input file for an O-B calculation
 # It is able to read netCDF files of two formats:
 #    1) ARM radiosondes, with fields pres [mb], tdry [C], rh [%], and alt [m MSL]
-#    2) Custom, with fields pressure [mb], temperature [C], rh [%], and height [km AGL]
+#    2) TROPoe input, with field "gamma" (indicates it is TROPoe output it is reading in)
+#    3) Custom, with fields pressure [mb], temperature [C], rh [%], and height [km AGL]
 # If the function finds the field "tdry", it assumes this is an ARM radiosonde
 ################################################################################
 def read_omb_file(path, filename, hour, maxht, verbose=1):
@@ -128,7 +133,9 @@ def read_omb_file(path, filename, hour, maxht, verbose=1):
             t  = fid.variables['tdry'][:]
             z  = (z - z[0])/1000.           # Convert m MSL to km AGL
         elif len(np.where(np.array(list(fid.variables.keys())) == 'gamma')[0]) > 0:
-            foo = np.where(fid.variables['hour'][:] >= hour)[0]
+                    # This is a TROPoe input file; looking for the nearest sample 
+                    # after the (desired_hour minus 1 second)
+            foo = np.where(fid.variables['hour'][:] >= hour-1/3600.)[0]
             if len(foo) == 0:
                 errmess = (f"Unable to find a matching time between input spectral and O-B input file {path:s}/{filename:s}")
                 return ({'success':0, 'errstring':errmess})
@@ -149,6 +156,8 @@ def read_omb_file(path, filename, hour, maxht, verbose=1):
             t  = fid.variables['temperature'][:]
         fid.close()
         q  = Calcs_Conversions.rh2w(t, rh/100., p)
+
+            # Apply some simple QC
         err = 0
         if len(z) < 3:
             err = 1
@@ -159,6 +168,16 @@ def read_omb_file(path, filename, hour, maxht, verbose=1):
         elif ((len(z) != len(t)) | (len(z) != len(p)) | (len(z) != len(rh))):
             err = 1
             errmess = 'All profiles in OMB input file must be of the same length'
+
+            # Apply some simple QC to ensure units are ok
+        if((p[0] < 400) or (1050 < p[0])):
+            err = 1
+            errmess = 'Surface pressure in OMB input is outside 400 to 1050 mb (unexpected -- check units)'
+        if((t[0] < -90) or (60 < t[0])):
+            err = 1
+            errmess = 'Surface temperature in OMB input is outside -90 to 60 degC (unexpected -- check units)'
+
+            # If there is an error, the write out the message and return 
         if err == 1:
             return ({'success':0, 'errstring':errmess})
     return ({'success':1, 'errstring':'None', 'z':z, 't':t, 'p':p, 'q':q, 'rh':rh, 'filename':path+'/'+filename})
@@ -737,19 +756,40 @@ def read_irs_ch(path,date,irs_type,fv,fa,irs_spec_cal_factor,
 
 
 ################################################################################
+# This function will look for the key in a dictionary, and if it exists, will
+# return the value in the dictionary; otherwise, it will return the alternative value
+################################################################################
+
+def check_dict_key(vip, key, alt_value):
+ 
+    if key in vip:
+        value = vip[key]
+    else:
+        value = alt_value
+    
+    return (value)
+
+################################################################################
 # This function controls the reading of the IRS, MWR, and ceilometer data. The function
 # calls out many other functions to do this.
 ################################################################################
 
-def read_all_data(date, retz, tres, dostop, verbose, avg_instant, ch1_path,
-              pca_nf, fv, fa, sum_path, eng_path, irs_type, cal_irs_pres,
-              irs_smooth_noise, get_irs_missingDataFlag, irs_min_675_tb,
-              irs_max_675_tb, irs_spec_cal_factor, irs_noise_inflation,
-              mwr_path, mwr_rootname, mwr_type, mwr_elev_field,
-              mwr_n_tb_fields, mwr_tb_replicate, mwr_tb_field_names, mwr_tb_freqs,
-              mwr_tb_noise, mwr_tb_bias, mwr_tb_field1_tbmax, vceil_path, vceil_type,
-              vceil_window_in, vceil_window_out, vceil_default_cbh,
-              hatchOpenSwitch, missingDataFlagSwitch, vip):
+def read_all_data(date, vip, dostop, verbose):
+
+            # Process a bunch of keys in the VIP file to see if they exist,
+            # as some keys are used in TROPoe and not MIXCRA (and vice versa)
+            # This will set the defaults to use, if needed (these are mostly 
+            # not needed in MIXCRA but could be used in TROPoe)
+    tres        = check_dict_key(vip, 'tres', 0)
+    avg_instant = check_dict_key(vip, 'avg_instant', 1)
+    fv          = check_dict_key(vip, 'fv', 0.)
+    fa          = check_dict_key(vip, 'fa', 0.)
+    irs_smooth_noise = check_dict_key(vip, 'irs_smooth_noise', 0)
+    irs_spec_cal_factor_ch1 = check_dict_key(vip, 'irs_spec_cal_factor_ch1', 1.)
+    irs_spec_cal_factor_ch2 = check_dict_key(vip, 'irs_spec_cal_factor_ch2', 1.)
+    irs_old_ffov_halfangle = check_dict_key(vip, 'irs_old_ffov_halfangle', 23.)
+    irs_new_ffov_halfangle = check_dict_key(vip, 'irs_new_ffov_halfangle', -1.)
+
 
     fail = 0
 
@@ -763,15 +803,7 @@ def read_all_data(date, retz, tres, dostop, verbose, avg_instant, ch1_path,
     # in, and instead use tres to create data that acts as the master dataset. I will also simulate a
     # few channels on the IRS because it makes the rest of the code easier (fewer changes) to make
 
-    if ((irs_type <= -1) & (mwr_type > 0)):
-
-        #In this example, the "replicate" keyword should be unity. Since we aren't
-        # using IRS data in this case, it should not have any other value
-
-        if mwr_tb_replicate != 1:
-            print('Error: The mwr_tb_replicate should be unity in this MWR-only retrieval (no IRS data)')
-            fail = 1
-            return fail, -999, -999, -999
+    if ((vip['irs_type'] <= -1) & (vip['mwr_type'] > 0)):
 
         # I will read in the MWR data here and again later. I need to read it here
         # so that I can simulate IRS data (all as MISSING) so that the rest of the code
@@ -783,18 +815,18 @@ def read_all_data(date, retz, tres, dostop, verbose, avg_instant, ch1_path,
         print('  Attempting to use MWR as the master instrument')
 
         # Check to make sure the directory exists and has files in it
-        if os.path.isdir(mwr_path):
-            if len(os.listdir(mwr_path)) > 0:
-                mwr_data = read_mwr(mwr_path, mwr_rootname, date, mwr_type, abs(irs_type),
-                           vip['mwr_freq_field'], mwr_elev_field, mwr_n_tb_fields,
-                           mwr_tb_field_names, mwr_tb_freqs, mwr_tb_noise, mwr_tb_bias, mwr_tb_field1_tbmax,
+        if os.path.isdir(vip['mwr_path']):
+            if len(os.listdir(vip['mwr_path'])) > 0:
+                mwr_data = read_mwr(vip['mwr_path'], vip['mwr_rootname'], date, vip['mwr_type'], abs(vip['irs_type']),
+                           vip['mwr_freq_field'], vip['mwr_elev_field'], vip['mwr_n_tb_fields'],
+                           vip['mwr_tb_field_names'], vip['mwr_tb_freqs'], vip['mwr_tb_noise'], vip['mwr_tb_bias'], vip['mwr_tb_field1_tbmax'],
                            verbose, single_date=True)
             else:
-                print('  The directory for the master instrument: ' + mwr_path)
+                print('  The directory for the master instrument: ' + vip['mwr_path'])
                 print('      has no files in it!')
                 return 1, -999, -999, -999
         else:
-            print('  The directory for the master instrument: ' + mwr_path)
+            print('  The directory for the master instrument: ' + vip['mwr_path'])
             print('      does not exist!')
             return 1, -999, -999, -999
 
@@ -833,7 +865,7 @@ def read_all_data(date, retz, tres, dostop, verbose, avg_instant, ch1_path,
 
             irssum = ({'success':1, 'secs':mwr_data['secs'], 'ymd':ymd, 'hour':hour, 'wnum':wnum, 'noise':noise})
 
-    elif (irs_type <= -1) & (mwr_type == 0):
+    elif (vip['irs_type'] <= -1) & (vip['mwr_type'] == 0):
 
         if tres <= 0:
             print("Error: tres must be greater than 0 if irs_type is < 0 and mwr_type are less than 0")
@@ -875,37 +907,37 @@ def read_all_data(date, retz, tres, dostop, verbose, avg_instant, ch1_path,
         # Read in the IRS data. Befoe we do though we are going to check if directories
         # for the engineering, summmary, and ch1 files exist and have files
 
-        if not os.path.isdir(eng_path):
-            print('  The IRS engineering file directory: ' + eng_path)
+        if not os.path.isdir(vip['irseng_path']):
+            print('  The IRS engineering file directory: ' + vip['irseng_path'])
             print('    does not exist!')
             return 1, -999, -999, -999
         else:
-            if os.listdir(eng_path) == []:
-                print('  The IRS engineering file directory: ' + eng_path)
+            if os.listdir(vip['irseng_path']) == []:
+                print('  The IRS engineering file directory: ' + vip['irseng_path'])
                 print('    has no files in it!')
                 return 1, -999, -999, -999
 
-        if not os.path.isdir(ch1_path):
-            print('  The IRS channel file directory: ' + ch1_path)
+        if not os.path.isdir(vip['irsch1_path']):
+            print('  The IRS channel file directory: ' + vip['irsch1_path'])
             print('    does not exist!')
             return 1, -999, -999, -999
         else:
-            if os.listdir(ch1_path) == []:
-                print('  The IRS channel file directory: ' + ch1_path)
+            if os.listdir(vip['irsch1_path']) == []:
+                print('  The IRS channel file directory: ' + vip['irsch1_path'])
                 print('    has no files in it!')
                 return 1, -999, -999, -999
 
-        if not os.path.isdir(sum_path):
-            print('  The IRS summary file directory: ' + sum_path)
+        if not os.path.isdir(vip['irssum_path']):
+            print('  The IRS summary file directory: ' + vip['irssum_path'])
             print('    does not exist!')
             return 1, -999, -999, -999
         else:
-            if os.listdir(sum_path) == []:
-                print('  The IRS summary file directory: ' + sum_path)
+            if os.listdir(vip['irssum_path']) == []:
+                print('  The IRS summary file directory: ' + vip['irssum_path'])
                 print('    has no files in it!')
                 return 1, -999, -999, -999
 
-        irseng = read_irs_eng(eng_path,date,irs_type,verbose)
+        irseng = read_irs_eng(vip['irseng_path'],date,vip['irs_type'],verbose)
         if irseng['success'] == 0:
             print('  Problem reading IRS eng data')
             if dostop:
@@ -913,17 +945,26 @@ def read_all_data(date, retz, tres, dostop, verbose, avg_instant, ch1_path,
             fail = 1
             return fail, -999, -999, -999
 
-        irsch1 = read_irs_ch(ch1_path,date,irs_type,fv,fa,irs_spec_cal_factor,
+        irsch1 = read_irs_ch(vip['irsch1_path'],date,vip['irs_type'],fv,fa,irs_spec_cal_factor_ch1,
                               irseng['secs'],
                               irseng['interferometerSecondPortTemp'],
-                              irseng['bbcavityfactor'], get_irs_missingDataFlag,
+                              irseng['bbcavityfactor'], vip['irs_use_missingDataFlag'],
                               vip['irs_zenith_scene_mirror_angle'],
-                              vip['irs_old_ffov_halfangle'], vip['irs_new_ffov_halfangle'], verbose)
+                              irs_old_ffov_halfangle, irs_new_ffov_halfangle, verbose)
 
-        irssum = read_irs_sum(sum_path,date,irs_type,irs_smooth_noise,verbose)
+        irsch2 = read_irs_ch(vip['irsch2_path'],date,vip['irs_type'],fv,fa,irs_spec_cal_factor_ch2,
+                              irseng['secs'],
+                              irseng['interferometerSecondPortTemp'],
+                              irseng['bbcavityfactor'], vip['irs_use_missingDataFlag'],
+                              vip['irs_zenith_scene_mirror_angle'],
+                              irs_old_ffov_halfangle, irs_new_ffov_halfangle, verbose)
+
+        irsch1 = combine_irs_ch(irsch1, irsch2)
+
+        irssum = read_irs_sum(vip['irssum_path'],date,vip['irs_type'],irs_smooth_noise,verbose)
 
         if irsch1['success'] != 1:
-            print('Problem reading IRS ch1 data')
+            print('Problem reading IRS channel data')
             fail = 1
             return fail, -999, -999, -999
         if irssum['success'] != 1:
@@ -937,7 +978,7 @@ def read_all_data(date, retz, tres, dostop, verbose, avg_instant, ch1_path,
             for i in range(len(irsch1['secs'])):
                 tmp = np.nanmean(irsch1['rad'][foo,i])
                 tb = Calcs_Conversions.invplanck(677.5,tmp)
-                if ((tb < irs_min_675_tb) | (tb > irs_max_675_tb)):
+                if ((tb < vip['irs_min_675_bt']) | (tb > vip['irs_max_675_bt'])):
                     irsch1['missingDataFlag'][i] = 10
             isclose = np.isclose(irsch1['missingDataFlag'][:],10)
             foo = np.where(isclose == True)[0]
@@ -953,13 +994,13 @@ def read_all_data(date, retz, tres, dostop, verbose, avg_instant, ch1_path,
             return fail, -999, -999, -999
 
         #Calibrate the IRS pressure sensor using a linear function
-        if len(cal_irs_pres) != 2:
+        if len(vip['irs_calib_pres']) != 2:
             print('  Error: The calibration information for the IRS pressure sensor is ill-formed')
             fail = 1
         else:
-            if ((cal_irs_pres[0] != 0) | (cal_irs_pres[1] != 1)):
-                print(' Calibrating IRS pressure with intercept ' + str(cal_irs_pres[0]) + ' and  slope ' + str(cal_irs_pres[1]))
-            irsch1['atmos_pres'] = cal_irs_pres[0] + irsch1['atmos_pres'] *cal_irs_pres[1]
+            if ((vip['irs_calib_pres'][0] != 0) | (vip['irs_calib_pres'][1] != 1)):
+                print(' Calibrating IRS pressure with intercept ' + str(vip['irs_calib_pres'][0]) + ' and  slope ' + str(vip['irs_calib_pres'][1]))
+            irsch1['atmos_pres'] = vip['irs_calib_pres'][0] + irsch1['atmos_pres'] *vip['irs_calib_pres'][1]
 
         if ((fail == 1) & (dostop != 0)):
             wait = input('Stopping inside routine for debugging. Press enter to continue')
@@ -991,11 +1032,11 @@ def read_all_data(date, retz, tres, dostop, verbose, avg_instant, ch1_path,
         ret_tavg = tres
 
     #Read in the MWR zenith data
-    if mwr_type > 0:
+    if vip['mwr_type'] > 0:
         print('  Reading in MWR-zenith data')
-    mwr_data = read_mwr(mwr_path, mwr_rootname, date, mwr_type, 1, vip['mwr_freq_field'], mwr_elev_field, mwr_n_tb_fields,
-                        mwr_tb_field_names, mwr_tb_freqs, mwr_tb_noise, mwr_tb_bias, mwr_tb_field1_tbmax,
-                        verbose)
+    mwr_data = read_mwr(vip['mwr_path'], vip['mwr_rootname'], date, vip['mwr_type'], 1, vip['mwr_freq_field'],
+            vip['mwr_elev_field'], vip['mwr_n_tb_fields'], vip['mwr_tb_field_names'], vip['mwr_tb_freqs'],
+            vip['mwr_tb_noise'], vip['mwr_tb_bias'], vip['mwr_tb_field1_tbmax'], verbose)
 
     if mwr_data['success'] != 1:
         print('Problem reading in MWR-zenith data')
@@ -1005,23 +1046,25 @@ def read_all_data(date, retz, tres, dostop, verbose, avg_instant, ch1_path,
     #Read in the MWR scan data
     if vip['mwrscan_type'] > 0:
         print('  Reading in MWR-scan data')
-    mwrscan_data = read_mwrscan(vip['mwrscan_path'], vip['mwrscan_rootname'], date, vip['mwrscan_type'],
+        mwrscan_data = read_mwrscan(vip['mwrscan_path'], vip['mwrscan_rootname'], date, vip['mwrscan_type'],
                    vip['mwrscan_freq_field'], vip['mwrscan_elev_field'], vip['mwrscan_n_tb_fields'], vip['mwrscan_tb_field_names'],
                    vip['mwrscan_tb_freqs'], vip['mwrscan_tb_noise'], vip['mwrscan_tb_bias'],
                    vip['mwrscan_tb_field1_tbmax'], vip['mwrscan_n_elevations'], vip['mwrscan_elevations'], verbose)
 
-    if mwrscan_data['success'] == 0:
-        print('Problem reading MWR-scan data')
-        fail = 1
-        return fail, -999, -999, -999
+        if mwrscan_data['success'] == 0:
+            print('Problem reading MWR-scan data')
+            fail = 1
+            return fail, -999, -999, -999
+    else:
+        mwrscan_data = ({'type':vip['mwrscan_type'],'success':0})
 
     #Read in the ceilometer data
-    vceil = read_vceil(vceil_path, date, vceil_type, ret_secs, vip['cbh_mpd_abc_thres'], verbose)
+    vceil = read_vceil(vip['cbh_path'], date, vip['cbh_type'], ret_secs, vip['cbh_mpd_abc_thres'], verbose)
 
     if vceil['success'] < 0:
         fail = 1
     elif vceil['success'] == 0:
-        print('  No vceil data -- using default cbh for entire period')
+        print('  No ceil data -- using default cbh for entire period')
         vceil = {'success':2, 'secs':irsch1['secs'], 'ymd':irsch1['ymd'], 'hour':irsch1['hour'], 'cbh':np.ones(len(irsch1['secs']))*-1}
 
     if ((fail == 1) & (dostop)):
@@ -1034,8 +1077,8 @@ def read_all_data(date, retz, tres, dostop, verbose, avg_instant, ch1_path,
     # that the RL sample time is for the start of the period, whereas the
     # IRS sample time is the middle of its period and the MWR's is the end.
 
-    irs = grid_irs(irsch1, irssum, avg_instant, hatchOpenSwitch, missingDataFlagSwitch,
-                    ret_secs, ret_tavg, irs_noise_inflation, vip, verbose)
+    irs = grid_irs(irsch1, irssum, avg_instant, vip['irs_hatch_switch'], vip['irs_use_missingDataFlag'],
+                    ret_secs, ret_tavg, vip['irs_noise_inflation'], vip, verbose)
 
     if irs['success'] == 0:
         fail = 1
@@ -1046,7 +1089,7 @@ def read_all_data(date, retz, tres, dostop, verbose, avg_instant, ch1_path,
     # are cloudy samples, use the lidar to get an estimate of the cloud
     # base height for the subsequent retrieval
 
-    cirs = Other_functions.find_cloud(irs, vceil, vceil_window_in, vceil_window_out, vceil_default_cbh)
+    cirs = Other_functions.find_cloud(irs, vceil, vip['cbh_window_in'], vip['cbh_window_out'], vip['cbh_default_ht'])
     
     mwr = grid_mwr(mwr_data, avg_instant, ret_secs, ret_tavg, vip['mwr_time_delta'], verbose)
 
@@ -1054,12 +1097,15 @@ def read_all_data(date, retz, tres, dostop, verbose, avg_instant, ch1_path,
         fail = 1
         return fail, -999, -999, -999
 
-    mwrscan = grid_mwrscan(mwrscan_data, ret_secs, vip['mwrscan_n_elevations'],
+    if vip['mwrscan_type'] > 0:
+        mwrscan = grid_mwrscan(mwrscan_data, ret_secs, vip['mwrscan_n_elevations'],
                         vip['mwrscan_elevations'], vip['mwrscan_time_delta'], verbose)
+        if mwrscan['success'] == 0:
+            fail = 1
+            return fail, -999, -999, -999
+    else:
+        mwrscan = ({'type':vip['mwrscan_type'],'success':0})
 
-    if mwrscan['success'] == 0:
-        fail = 1
-        return fail, -999, -999, -999
 
     if dostop:
         wait = input('Stopping inside to debug this bad boy. Press enter to continue')
@@ -2014,6 +2060,10 @@ def read_vceil(path, date, vceil_type, ret_secs, mpd_abc_thres, verbose):
         print('             CBH derived from NCAR MPD aerosol_backscatter_coefficient')
         print('                     Files named "mpd04*nc" ')
         print('                     CBH comes from range coordinate variable, units m AGL')
+        print('   cbh_type=11 -->')
+        print('             Vaisala CL61 NetCDF files')
+        print('                     Files named "*cl61_yyyymmdd*nc" ')
+        print('                     CBH comes from "cloud_base_height[time,0]", which has units m AGL')
         print('-------------------------------------------------------')
         print(' ')
         err = {'success':-1}
@@ -4686,3 +4736,115 @@ def tape6_min_max_wnum(lblrtm_path,verbose=2):
         print(f'      The wavenumber limits in the TAPE3 file: {minw:.3f} to {maxw:.3f} cm-1')
 
     return {'success':1, 'minw':minw, 'maxw':maxw, 'nlines':nlin}
+
+#######################################################################################
+# This function time-matches the IRS channel 1 and channel 2 data into a single structure
+#######################################################################################
+
+def combine_irs_ch(ch1, ch2):
+
+    if((ch1['success'] != 1) and (ch2['success'] != 1)):
+        print('    Error: both the IRS ch1 and ch2 data were not read in properly -- aborting')
+        return ({'success':0})
+    elif((ch1['success'] != 1) and (ch2['success'] == 1)):
+        return ch2
+    elif((ch1['success'] == 1) and (ch2['success'] != 1)):
+        return ch1
+    else:
+        # Merge the two channels together
+        ch1secs = np.copy(ch1['secs'])
+        ch2secs = np.copy(ch2['secs'])
+
+        # Find the ch1 data that are in the ch2 times
+        flag, success = Other_functions.matchtimes(ch1secs,ch2secs,1)
+        if success != 1:
+            print('    Error while matching up IRS ch1 to ch2 -- aborting')
+            return ({'success':0})
+        foo = np.where(flag == 1)[0]
+        if len(foo) == 0:
+            print('Error in combine_irs_ch: None of the ch2 data match the ch1 data times -- aborting')
+            return ({'success':0})
+        ch1secs = ch1secs[foo]
+        ymd     = np.copy(ch1['ymd'][foo])
+        yy      = np.copy(ch1['yy'][foo])
+        mm      = np.copy(ch1['mm'][foo])
+        dd      = np.copy(ch1['dd'][foo])
+        hour    = np.copy(ch1['hour'][foo])
+        rad1    = np.copy(ch1['rad'][:,foo])
+        nearSfcTb  = np.copy(ch1['nearSfcTb'][foo])
+        hatchOpen  = np.copy(ch1['hatchopen'][foo])
+        atmos_pres = np.copy(ch1['atmos_pres'][foo])
+        missingDataFlag = np.copy(ch1['missingDataFlag'][foo])
+        wnum1      = np.copy(ch1['wnum'])
+        fv         = np.copy(ch1['fv'])
+        fa         = np.copy(ch1['fa'])
+
+        # Find the ch2 data that are in the remaining ch1 times
+        flag, success = Other_functions.matchtimes(ch2secs,ch1secs,1)
+        if success != 1:
+            print('    Error while matching up IRS ch2 to ch1 -- aborting')
+            return ({'success':0})
+        foo = np.where(flag == 1)[0]
+        if len(foo) == 0:
+            print('    Error in combine_irs_ch: None of the ch1 data match the ch2 data times -- aborting')
+            return ({'success':0})
+        rad2    = np.copy(ch2['rad'][:,foo])
+        wnum2   = np.copy(ch2['wnum'])
+    
+        # Now append the radiance data together
+        foo1 = np.where(wnum1 < 1799)[0]
+        foo2 = np.where(wnum2 > 1801)[0]
+        wnum = np.append(wnum1[foo1],wnum2[foo2])
+        mrad = np.vstack((rad1[foo1,:],rad2[foo2,:]))
+
+        return ({'success':1, 'secs':ch1secs, 'ymd':ymd, 'yy':yy, 'mm':mm, 'dd':dd,
+            'hour':hour, 'wnum':wnum, 'rad':mrad, 'nearSfcTb':nearSfcTb, 'hatchopen':hatchOpen,
+            'atmos_pres':atmos_pres,'missingDataFlag':missingDataFlag, 'fv':fv, 'fa':fa})
+
+#############################################################################
+# This routine reads in the necessary fields from the TROPoe output file
+#############################################################################
+
+def read_tropoe(filename,vip):
+
+    fid = Dataset(filename)
+    bt = fid.variables['base_time'][:]
+    to = fid.variables['time_offset'][:]
+    hour = fid.variables['hour'][:]
+    ht = fid.variables['height'][:]
+    pres = fid.variables['pressure'][:]
+    temp = fid.variables['temperature'][:]
+    wvmr = fid.variables['waterVapor'][:]
+    lwp  = fid.variables['lwp'][:]
+    lreff = fid.variables['lReff'][:]
+    itau  = fid.variables['iTau'][:]
+    ireff = fid.variables['iReff'][:]
+    cbh   = fid.variables['cbh'][:]
+    co2   = fid.variables['co2'][:]
+    pwv   = fid.variables['pwv'][:]
+    gamm  = fid.variables['gamma'][:]
+    rmsr  = fid.variables['rmsr'][:]
+    fid.close()
+    
+    # Only keep the data that pass the QC: gamma = 1 and ...
+    foo = np.where((gamm < 2) & (rmsr <= vip['tropoe_rmsr_thres']))[0]
+    if len(foo) > 0:
+        to    = to[foo]
+        hour  = hour[foo]
+        pres  = pres[foo,:]
+        temp  = temp[foo,:]
+        wvmr  = wvmr[foo,:]
+        lwp   = lwp[foo]
+        lreff = lreff[foo]
+        itau  = itau[foo]
+        ireff = ireff[foo]
+        cbh   = cbh[foo]
+        co2   = co2[foo]
+        pwv   = pwv[foo]
+    else:
+        print(f"Error: None of the input TROPoe data passed QC (vip[tropoe_rmsr_thres] = {vip['tropoe_rmsr_thres']:.3f}) -- Aborting")
+        sys.exit()
+
+    return {'base_time':bt, 'time_offset':to, 'hour':hour, 'height':ht, 'pressure':pres,
+            'temperature':temp, 'waterVapor':wvmr, 'lwp':lwp, 'lreff':lreff, 'itau':itau,
+            'ireff':ireff, 'cbh':cbh, 'co2':co2, 'pwv':pwv}

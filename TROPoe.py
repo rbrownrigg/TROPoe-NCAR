@@ -11,8 +11,6 @@
 #
 # ----------------------------------------------------------------------------
 
-__version__ = '0.19.5'
-
 import os
 import sys
 import numpy as np
@@ -34,6 +32,7 @@ import Data_reads
 import Jacobian_Functions
 import Output_Functions
 import plot_tropoe
+import version
 
 # Check to see if we are just writing out a blank vip
 if '--vip' in sys.argv:
@@ -41,9 +40,9 @@ if '--vip' in sys.argv:
     print("Writing default vip file to console")
 
     if '--experimental' in sys.argv:
-        Output_Functions.write_example_vip_file(console=True, experimental=True)
+        Output_Functions.write_example_vip_file('TROPoe',console=True, experimental=True)
     else:
-        Output_Functions.write_example_vip_file(console=True)
+        Output_Functions.write_example_vip_file('TROPoe',console=True)
 
     sys.exit()
 
@@ -77,7 +76,7 @@ dostop = args.dostop
 if shour is None:
     shour = 0.
 if ehour is None:
-    ehour = -1.
+    ehour = 24.
 if verbose is None:
     verbose = 1
 if debug is None:
@@ -116,8 +115,9 @@ else:
 if verbose == 3:
     print(('The shell for all commands is', SHELL))
 
-# Get the version of the TROPoe package that was installed within the container
-tropoe_version = Data_reads.get_tropoe_version()
+# Get the version of the TROPoe package and the software
+tropoe_version   = Data_reads.get_tropoe_version()
+software_version = version.get_software_version()
 
 #Capture the version of this file
 globatt = {'algorithm_code': 'TROPoe Retrieval Code (formerly AERIoe)',
@@ -132,7 +132,7 @@ globatt = {'algorithm_code': 'TROPoe Retrieval Code (formerly AERIoe)',
            'algorithm_comment3': 'Code was ported to python, and packaged into a container with the ' +
                                  'needed radiative transfer models and other required inputs',
            'algorithm_disclaimer': 'TROPoe was developed by NOAA and is provided on an as-is basis, with no warranty',
-           'algorithm_code_version': __version__,
+           'algorithm_code_version': software_version,
            'algorithm_package_version': tropoe_version,
            'algorithm_reference1': 'DD Turner and U Loehnert, 2014: Information Content and ' +
                     'Uncertanties in Thermodynamic Profiles and Liquid Cloud Properties ' +
@@ -164,11 +164,12 @@ print('---- Contacts are dave.turner, joshua.gebauer, tyler.bell (@noaa.gov) ---
 print('------- The code is provided on an "as-is" basis, with no warranty ------')
 print(' ')
 print(('>>> Starting TROPoe retrieval for ' + str(date) + ' (from ' + str(shour) + ' to ' + str(ehour) + ' UTC) <<<'))
-print('  TROPoe version: '+tropoe_version)
+print('  TROPoe package version: '+tropoe_version)
+print('  Software code version : '+software_version)
 
 #Find the VIP file and read it
 
-vip = VIP_Databases_functions.read_vip_file(vip_filename, globatt = globatt, debug = debug, verbose = verbose, dostop = dostop)
+vip = VIP_Databases_functions.read_tropoe_vip_file(vip_filename, globatt = globatt, debug = debug, verbose = verbose, dostop = dostop)
 
 if vip['success'] != 1:
     print(('>>> TROPoe retrieval on ' + str(date) + ' FAILED and ABORTED <<<'))
@@ -352,7 +353,7 @@ modeflag = [dotemp, dowvmr, dolcloud, doicloud, doco2, doch4, don2o]
 
 # Select the LBLRTM version to use
 print(' ')
-print(('  Working with the LBLRTM version ' + vip['lbl_version']))
+print(('  Working with the LBLRTM '))
 print(('    in the directory ' + vip['lbl_home']))
 print(('    and the TAPE3 file ' + vip['lbl_tape3']))
 print(' ')
@@ -528,16 +529,7 @@ if status != 'success':
     sys.exit()
 
 # Read in the data
-fail, irs, mwr, mwrscan = Data_reads.read_all_data(date, z, vip['tres'], dostop, verbose, vip['avg_instant'],
-    vip['irsch1_path'], vip['irs_pca_nf'], vip['irs_fv'], vip['irs_fa'],
-    vip['irssum_path'], vip['irseng_path'], vip['irs_type'], vip['irs_calib_pres'],
-    vip['irs_smooth_noise'], vip['irs_use_missingDataFlag'],
-    vip['irs_min_675_bt'], vip['irs_max_675_bt'], vip['irs_spec_cal_factor'], vip['irs_noise_inflation'], 
-    vip['mwr_path'], vip['mwr_rootname'], vip['mwr_type'], vip['mwr_elev_field'], vip['mwr_n_tb_fields'],
-    vip['mwr_tb_replicate'], vip['mwr_tb_field_names'], vip['mwr_tb_freqs'], vip['mwr_tb_noise'],
-    vip['mwr_tb_bias'], vip['mwr_tb_field1_tbmax'], vip['cbh_path'], vip['cbh_type'], vip['cbh_window_in'],
-    vip['cbh_window_out'], vip['cbh_default_ht'], vip['irs_hatch_switch'],
-    vip['irs_use_missingDataFlag'], vip)
+fail, irs, mwr, mwrscan = Data_reads.read_all_data(date, vip, dostop, verbose)
 
 if fail == 1:
     print('Error reading in data: aborting')
@@ -594,13 +586,6 @@ if(len(foo) > 0):
         print('    Error: the keyword "station_pres" must be set to a positive value (in mb) in the VIP file')
         sys.exit()
     irs['atmos_pres'][foo] = vip['station_pres']
-
-# If ehour < 0, then set it to the time of the last IRS sample. (This was needed
-# for those cases when the IRS did not automatically reboot at 0 Z.)
-if ehour < 0:
-    ehour = np.nanmax(irs['hour'])
-    if verbose >= 2:
-        print(('Resetting the processing end hour to ' + str(ehour) + ' UTC'))
 
 # Capture the lat/lon/alt data in a structure.  Use the VIP supplied data
 location = {'lat':vip['station_lat'], 'lon':vip['station_lon'], 'alt':int(vip['station_alt'])}
@@ -1023,7 +1008,7 @@ for i in range(len(irs['secs'])):                        # { loop_i
         flagY = np.append(flagY, np.ones(ext_tseries['nptsCO2'])*9)
         dimY = np.append(dimY,np.ones(ext_tseries['nptsCO2'])*ext_tseries['co2_sfc_relative_height'])
 
-    if mwrscan['n_fields'] > 0:
+    if mwrscan['type'] > 0:
         tbsky = np.copy(mwrscan['tbsky'][:,i])
         noise = np.copy(mwrscan['noise'])
         foo = np.where(tbsky < 2.7)[0]
@@ -1791,15 +1776,15 @@ for i in range(len(irs['secs'])):                        # { loop_i
                 create_monortm_config = 0
 
             if create_monortm_sfreq == 1:
+                if(mwrscan['type'] > 0):
                 # Create the MonoRTM frequency file
-                lun = open(lbltmpdir + '/' + monortm_sfreq, 'w')
-                lun.write('\n')
-                lun.write('{:0d}\n'.format(len(mwrscan['freq'])))
-                for gg in range(len(mwrscan['freq'])):
-                    lun.write('{:7.3f}\n'.format(mwrscan['freq'][gg]))
-                lun.close()
-
-                # Turn the flag off, as we only need to create thee files once
+                    lun = open(lbltmpdir + '/' + monortm_sfreq, 'w')
+                    lun.write('\n')
+                    lun.write('{:0d}\n'.format(len(mwrscan['freq'])))
+                    for gg in range(len(mwrscan['freq'])):
+                        lun.write('{:7.3f}\n'.format(mwrscan['freq'][gg]))
+                    lun.close()
+                # Turn the flag off, as we only need to create these files once
                 create_monortm_sfreq = 0
 
             # Run the forward model and compute the Jacobian
@@ -2403,7 +2388,7 @@ for i in range(len(irs['secs'])):                        # { loop_i
                'doco2':doco2, 'doch4': doch4, 'don2o':don2o,
                'dolcloud':dolcloud,'Sa':Sa, 'Xa':Xa, 'nsonde_prior':nsonde_prior,
                'comment_prior':comment_prior, 'irs':irs, 'shour':shour,'ehour':ehour,
-               'starttime':starttime, 'endtime':endtime, 'version':__version__}
+               'starttime':starttime, 'endtime':endtime, 'version':software_version}
         with open(savename, 'wb') as fh:
             pickle.dump(out, fh)
 

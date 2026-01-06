@@ -12,10 +12,13 @@
 # ----------------------------------------------------------------------------
 
 import numpy as np
+import os
 import glob
 import scipy
 from datetime import datetime
 from subprocess import Popen, PIPE
+from netCDF4 import Dataset
+
 
 import Data_reads
 import Other_functions
@@ -29,11 +32,14 @@ import sys
 # compute_jacobian_irs_interpol()
 # compute_jacobian_microwave_finitediff()
 # compute_jacobian_microwave_3method()
+# compute_jacobian_microwave_lwp_only()
 # compute_jacobian_external_temp_profiler()
 # compute_jacobian_external_wv_profiler()
 # compute_jacobian_external_sfc_met()
 # compute_jacobian_external_sfc_co2()
 # compute_jacobian_microwavescan_3method()
+# make_lblrtm_calc()
+# mixcra_forward_model()
 ################################################################################
 
 
@@ -1321,6 +1327,73 @@ def compute_jacobian_microwave_3method(Xn, p, z, freq, cbh, vip, workdir,
     return flag, Kij, FXn, totaltime
 
 ################################################################################
+# This function performs the forward model calculation and computes the jacobian
+# for the microwave radiometer where only the LWP is perturbed
+################################################################################
+def compute_jacobian_microwave_lwp_only(z, p, t, w, freq, cbh, Xn, Qext_ratio, vip, workdir,
+                monortm_tfile, monortm_exec, stdatmos, sfc_alt, stored_jacobian, verbose):
+
+    monortm_outputfile = workdir+'/monortm_output.txt'      # A temporary output file
+    flag = 0                      # Failure
+    k = len(z)
+    cth = cbh + 0.300             # km; define the cloud top at x m above the could base
+
+    if(sfc_alt == None):
+        sfcz=0
+    else:
+        sfcz = sfc_alt / 1000.
+
+    # Allocate space for the Jacobian and forward calculation
+    Kij = np.zeros((len(freq),len(Xn)))
+    FXn = np.zeros(len(freq))
+
+    if verbose >= 2:
+        print('Computing the MWR-lwp-only Jacobian using the MonoRTM')
+
+    # Perform the baseline calculation
+    lwp = Other_functions.compute_lwp(Xn[0]*Qext_ratio,Xn[1])
+    u   = Calcs_Conversions.w2rh(w, p, t, 0) * 100
+    Other_functions.write_arm_sonde_file((z+sfcz)*1000, p, t, u, workdir+'/'+monortm_tfile, silent = True)
+    command = ('rm -f '+monortm_outputfile+' ; '+monortm_exec + ' ' + monortm_tfile + ' {:3.1f} {:8.2f} {:6.3f} {:6.3f}'.format(1.0, lwp, cbh, cth)+' > '+monortm_outputfile)
+    a = LBLRTM_Functions.run_monortm(command, freq, z, stdatmos, monortm_outputfile)
+    if a['status'] == 0:
+        print('Problem with MonoRTM-lwp-only calc 0')
+        return flag, -999., -999.
+    FXn = np.copy(a['tb'])
+
+    # Perform the pertubation calculation.  If I already have precomputed it, and the computed Tbs are
+    # less than 200 K for all channels, then I can use the precomputed one.  Otherwise, recompute it.
+    foo = np.where(FXn < 200)[0]
+    if((stored_jacobian['computed'] != 1) and (len(foo) == len(FXn))):
+        if verbose >= 3:
+            print('Computing Jacobian for the liquid cloud properties')
+        lwpp = lwp + 25.
+        command = ('rm -f '+monortm_outputfile+' ; '+monortm_exec + ' ' + monortm_tfile + ' {:3.1f} {:8.2f} {:6.3f} {:6.3f}'.format(1.0, lwpp, cbh, cth)+' > '+monortm_outputfile)
+        d = LBLRTM_Functions.run_monortm(command, freq, z, stdatmos, monortm_outputfile)
+        if d['status'] == 0:
+            print('Problem with MonoRTM-lwp-only calc 1')
+            return flag, -999., -999.
+        dTb_dLWP  = (d['tb']-a['tb'])/(lwpp-lwp)
+            # Store the Jacobian to reuse next time
+        if(stored_jacobian['computed'] != 1):
+            if(verbose >= 2):
+                print('      Storing the computed MWR jacobian')
+            stored_jacobian = {'computed':1, 'dTb_dLWP':dTb_dLWP}
+    else:
+        if(verbose >= 2):
+            print('      Using the precomputed MWR jacobian')
+        dTb_dLWP  = stored_jacobian['dTb_dLWP']
+
+    # Adjust units from perturbations in LWP to perturbations in liquid water optical depth
+    ltau_pert = 1.
+    dLWP_dtau = (lwp - Other_functions.compute_lwp((Xn[0]+ltau_pert)*Qext_ratio,Xn[1])) / (Qext_ratio*(Xn[0] - (Xn[0]+ltau_pert)))
+    Kij[:,0]  = dTb_dLWP * dLWP_dtau
+
+    flag = 1
+
+    return flag, Kij, FXn, stored_jacobian
+
+################################################################################
 # This function performs the forward model calculation and computes the Jacobian
 # for the external temperature profiler. Note that for now the code is the same
 # for all types of data. This is repeatitive, but I am leaving it that way so these
@@ -2030,3 +2103,236 @@ def compute_jacobian_microwavescan_3method(Xn, p, z, mwrscan, cbh, vip, workdir,
     flag = 1
 
     return flag, Kij, FXn, totaltime
+
+##################################################################################
+# This script makes the LBLRTM runs using the input profiles and the VIP input 
+# variables, reads in the gaseous optical depths, and returns the structure
+##################################################################################
+
+def make_lblrtm_calc(vip, ymd, hour, co2, z, p, t, w, wnum1,wnum2,delt,verbose):
+
+    err = {'status':0}
+    if verbose >-2:
+        quiet=0
+    else:
+        quiet=1
+    
+    # Get the name for the output files
+    hhmm = int(hour)*100 + int((hour-int(hour))*60)
+
+    # Check that the wavenumbers make sense
+    if wnum2 <= wnum1:
+        print('The wavenumber limits passed into make_lblrtm_cal are incorrect -- aborting')
+        return err
+    
+    if wnum2-wnum1 > 2000:
+        print('The wavenumber limits passed into make_lblrtm_calc span more than 2000 cm^-1 -- aborting')
+        return err
+    
+    # Make the TAPES and the LBLRTM run
+    tp5 = vip['workdir'] + '/tp5.' + str(ymd).zfill(8) + '.' + str(hhmm).zfill(4)
+    out = vip['workdir'] + '/' + vip['lblout'] + '.' + str(ymd).zfill(8) + '.' + str(hhmm).zfill(4)
+
+    # Check to see if I need to remake the LBLRTM runs or not
+    if (delt == 0) and (os.path.exists(tp5)) and (os.path.exists(out)):
+        if verbose >= 1:
+            print(f'  Reading previous lblrtm runs for {ymd:08d}.{hhmm:04d} UTC')
+    else:
+        print(f'  Making the lblrtm runs for {ymd:08d}.{hhmm:04d} UTC')
+    
+        # Make sure that the output paths are ready
+        if not os.path.exists(vip['workdir']):
+            os.makedirs(vip['workdir'])
+        
+        # Make the tape5 file and run the model
+        LBLRTM_Functions.rundecker(3, vip['lbl_std_atmos'], z, p, t+273.16, w,
+             od_only=1, mlayers=z, wnum1=wnum1, wnum2=wnum2, tape5=tp5, co2_sfactor=np.array([co2,1]),
+             v10=True, silent=True)
+        
+        command = ('setenv LBL_RUN_ROOT ' + vip['workdir'] + ' ; '+
+                    'setenv LBL_HOME ' + vip['lblrtm_home'] + ' ; '+
+                    '$LBL_HOME/bin/lblrun ' + tp5 + ' ' + out + ' ' + vip['lbl_tape3'])
+        
+        process = Popen(command, stdout = PIPE, stderr = PIPE, shell=True, executable = '/bin/csh')
+        stdout, stderr = process.communicate()
+    
+    # Confirm tha the LBLRTM ran properly
+    odfiles = []
+    odfiles = odfiles + sorted(glob.glob(out+'/OD*'))
+    if (len(odfiles) != len(z)-1):
+        print('Error within make_lblrtm_calc -- number of levels is incorrect')
+        if verbose >= 1:
+            print('Here is the output from the LBLRTM')
+            print(stdout)
+        return err
+    
+    return {'status':1,'ymd':ymd,'hour':hour,'filename':out}
+
+############################################################################################
+# This routine runs the LBLDIS as the forward model.
+############################################################################################
+
+def mixcra_forward_model(Xn, z, lblout, lwc, vip, jday, sza, sfc_emissivity, ref_wnum,
+                         nobs, microwin_file, retrieve_lcloud, retrieve_icloud, verbose):
+
+    ifile = vip['workdir'] + '/lbldis.parameters'
+    ofile = vip['workdir'] + '/lbldis.output'
+    dfile = vip['workdir'] + '/lbldis.'
+
+    err = 0
+
+    # The command that will be used to run the LBLDIS
+    command = 'rm -f ' + ofile + '* ; '+vip['lbldis_exec']+' '+ifile+' 0 '+ofile
+    if verbose < 2:
+        command = '('+command+') >& /dev/null'
+    
+    # Define the size of the perturbations
+    pLtau = 0.1  # optical depth
+    pItau = 0.1  # optical depth
+    plRe = 0.2   # microns
+    piRe = 0.2   # microns
+
+    # Count the number of layers that actually have cloud
+    cldlay = np.where((lwc > 0))[0]
+
+    if len(cldlay) == 0:
+        print('This should not happen -- should always have some cloud')
+        return err, -999, -999
+    
+    # Compute forward model and jacobian for liquid cloud
+    if verbose >= 2:
+        print('    Computing baseline F(Xn) in forward_model')
+    
+    # Allocate space for the Jacobian
+    Kij = np.ones((nobs,len(Xn)))*0.
+
+    # Generate normalized liquid cloud optical depth profile
+    ltau  = np.ones(len(cldlay))
+    ltau *= Xn[0]/np.sum(ltau)
+
+    # Generate normalized ice cloud optical depth profile
+    itau  = np.ones(len(cldlay))
+    itau *= Xn[2]/np.sum(itau)
+
+    # Write the parameter file
+    LBLRTM_Functions.write_lbldis_parmfile(ifile, sza, microwin_file, z, cldlay, Xn,
+                                           ltau, itau, vip, lblout, sfc_emissivity, ref_wnum)
+    
+    # Now run the RT model
+    process = Popen(command, stdout = PIPE, stderr = PIPE, shell=True, executable = '/bin/csh')
+    stdout, stderr = process.communicate()
+
+    # Now read in the output data
+    fid = Dataset(ofile + '.cdf')
+
+    dim_name = list(fid.dimensions.keys())[0]
+    dim_size = len(fid.dimensions[dim_name])
+
+    if (dim_name == 'n_wnum') and (dim_size == 0):
+        fid.close()
+        print('Error: no radiance data found in LBLDIS output file. Most likely, need to rerun LBLRTM over new range')
+        return err, -999., -999.
+    
+    orad = np.squeeze(fid.variables['radiance'][:])
+    fid.close()
+
+    if len(orad) != nobs:
+        print('Error within forward model -- dimensions do not match up')
+        print(f'   len(orad) is {len(orad):d} and nobs is {nobs:d}')
+        return err, -999., -999.
+    
+    # Now make the perturbations needed for liquid clouds
+    if retrieve_lcloud == 1:
+        if verbose >= 3:
+            print('      Making the perturbed liquid calculation for Jacobian')
+        # Make the run with the perturbed LWP
+
+        pXn     = np.copy(Xn)
+        pLtau   = np.max([Xn[0] * 0.1, pLtau]) # Perturb OD by 10% or 0.1 which ever is larger
+        pXn[0] += pLtau
+        plod    = np.ones(len(cldlay))
+        plod   *= pXn[0]/np.sum(plod)
+
+        LBLRTM_Functions.write_lbldis_parmfile(ifile, sza, microwin_file, z, cldlay, Xn,
+                                           plod, itau, vip, lblout, sfc_emissivity, ref_wnum)
+
+        # Now run the RT model
+        process = Popen(command, stdout = PIPE, stderr = PIPE, shell=True, executable = '/bin/csh')
+        stdout, stderr = process.communicate()
+
+        fid = Dataset(ofile + '.cdf')
+        prad = np.squeeze(fid.variables['radiance'][:])
+        fid.close()
+
+        Kij[:,0] = (prad-orad)/(pXn[0] - Xn[0])
+
+        # Make the run with the perturbed lReff
+        #      but only if the liquid OD is greater than zero
+        if Xn[0] > 0:
+            pXn = np.copy(pXn)            # Note this line was not in the IDL code but I added it because I think it was a bug
+            pXn[1] += plRe 
+
+            LBLRTM_Functions.write_lbldis_parmfile(ifile, sza, microwin_file, z, cldlay, pXn,
+                                           ltau, itau, vip, lblout, sfc_emissivity, ref_wnum)
+        
+            # Now run the RT model
+            process = Popen(command, stdout = PIPE, stderr = PIPE, shell=True, executable = '/bin/csh')
+            stdout, stderr = process.communicate()
+
+            fid = Dataset(ofile + '.cdf')
+            prad = np.squeeze(fid.variables['radiance'][:])
+            fid.close()
+
+            Kij[:,1] = (prad-orad)/(pXn[1] - Xn[1])
+        else:
+            Kij[:,1] = 0
+
+     # Now make the perturbations needed for ice clouds
+    if retrieve_icloud == 1:
+        if verbose > 3:
+            print('      Making the perturbed ice calculations for Jacobian')
+
+         # Make the run with the perturbed ice optical depth
+        pXn     = np.copy(Xn)
+        pItau   = np.max([Xn[2] * 0.1, pItau]) # Perturb OD by 10% or 0.1 which ever is larger
+        pXn[2] += pItau
+        piod    = np.ones(len(cldlay))
+        piod   *= pXn[2]/np.sum(piod)
+
+        LBLRTM_Functions.write_lbldis_parmfile(ifile, sza, microwin_file, z, cldlay, Xn,
+                                           ltau, piod, vip, lblout, sfc_emissivity, ref_wnum)
+
+        # Now run the RT model
+        process = Popen(command, stdout = PIPE, stderr = PIPE, shell=True, executable = '/bin/csh')
+        stdout, stderr = process.communicate()
+
+        fid = Dataset(ofile + '.cdf')
+        prad = np.squeeze(fid.variables['radiance'][:])
+        fid.close()
+
+        Kij[:,2] = (prad-orad)/(pXn[2] - Xn[2])
+
+        # Make the run with the perturbed iReff
+        #      but only if the liquid OD is greater than zero
+        if Xn[2] > 0:
+            pXn = np.copy(Xn)
+            pXn[3] += piRe
+
+            LBLRTM_Functions.write_lbldis_parmfile(ifile, sza, microwin_file, z, cldlay, pXn,
+                                           ltau, itau, vip, lblout, sfc_emissivity, ref_wnum)
+        
+            # Now run the RT model
+            process = Popen(command, stdout = PIPE, stderr = PIPE, shell=True, executable = '/bin/csh')
+            stdout, stderr = process.communicate()
+
+            fid = Dataset(ofile + '.cdf')
+            prad = np.squeeze(fid.variables['radiance'][:])
+            fid.close()
+
+            Kij[:,3] = (prad-orad)/(pXn[3] - Xn[3])
+        else:
+            Kij[:,3] = 0
+    
+    FXn = orad
+
+    return 1, FXn, Kij
