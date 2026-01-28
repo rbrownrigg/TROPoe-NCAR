@@ -215,15 +215,31 @@ def timeseries(time, data, sigma, ax, xlim=None, ylim=None, label=None, min_gap=
         _, data = fixgap(time, data, gapsize=min_gap)
         time, sigma = fixgap(time, sigma, gapsize=min_gap) # If you get errors here, it could be because the sigma isn't the same size as data
 
+    # Create bounds to deal with max and mins being unphysical in the sigma's
+    bottom = data-sigma
+    top = data+sigma
+
+    if label == 'PBLH'  or label == 'SBIH' or label == 'sbLCL' or label == 'mlLCL': 
+        bottom[bottom<0]=0
+        ylabel = 'Height [km]'
+    elif label == 'sbCAPE' or label == 'mlCAPE':
+        bottom[bottom<0]=0
+        ylabel = 'CAPE [J/kg]'
+    elif label == 'sbCIN' or label == 'mlCIN':
+        top[top>0]=0
+        ylabel = 'CIN [J/kg]'
+    else:
+        ylabel = 'RMSr'
+
     # Create the plot
     ax.plot(time, data, **kwargs, label=label)
-    ax.fill_between(time, data-sigma, data+sigma, alpha=.3, **kwargs)
+    ax.fill_between(time, bottom, top, alpha=.3, **kwargs)
 
     ax.set_ylim(ylim)
     ax.set_xlim(xlim)
 
     # Set the labels
-    ax.set_ylabel('Height [km]')
+    ax.set_ylabel(ylabel)
     ax.set_xlabel('Time [UTC]')
 
     return ax
@@ -319,7 +335,7 @@ def doplot(filename, x_lim=(0, 24), y_lim=(0, 2), temp_lim=(-5, 30), wvmr_lim=(0
 
     # Don't forget to close the dataset :)
     nc.close()
-
+    
     # Create the timeheight figure
     fig, axes = plt.subplots(4, 2)
     fig.set_figheight(10)
