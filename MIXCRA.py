@@ -585,7 +585,7 @@ for samp in range(foo[0],len(irs['secs']),step):
 
     # If desired, then modify the liquid and ice optical depths based upon cloud temperature
     if((vip['apply_tcloud_constraints'] == 1) and (vip['retrieve_icloud'] == 1) and (vip['retrieve_lcloud'] == 1)):
-        xtcld = np.ones(60)*-50
+        xtcld = np.arange(61)-50.
         xifac = 1-1./(1+np.exp(-(xtcld+ 5)))
         xlfac =   1./(1+np.exp(-(xtcld+35)))
         imult = np.min([np.max([np.interp(tcld,xtcld,xifac),0]),1])
