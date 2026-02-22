@@ -102,8 +102,12 @@ if verbose == 3:
 else:
     warnings.filterwarnings("ignore", category=UserWarning)
 
-process = Popen('which csh', stdout = PIPE, stderr = PIPE, shell=True)
-stdout, stderr = process.communicate()
+with Popen('which csh', stdout = PIPE, stderr = PIPE, shell=True) as process:
+    try:
+        stdout, stderr = process.communicate()
+    except Exception as e:
+        print('Error: Process did not return shell properly')
+        sys.exit()
 
 if stdout.decode() == '':
     print('Error: Unable to find the C-shell command on this system')

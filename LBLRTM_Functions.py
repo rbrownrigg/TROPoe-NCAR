@@ -523,8 +523,12 @@ def rundecker(model, aprofile, z, p, t, w, co2_profile= None, o3_profile=None,
         rec_1_2 = '    1    0    1    0    1    0    0    1    0    1         0    0    0    0    0    1'
     
     # Get the date for the default comment string
-    process = Popen('date', stdout = PIPE, stderr = PIPE, shell=True, executable = '/bin/csh')
-    stdout, stderr = process.communicate()
+    with Popen('date', stdout = PIPE, stderr = PIPE, shell=True, executable = '/bin/csh') as process:
+        try:
+            stdout, stderr = process.communicate()
+        except Exception as e:
+            print('Problem in rundecker -- stopping')
+            sys.exit()
     date = stdout[:-1].decode()
     
     # Get the proper output filename
@@ -1538,8 +1542,13 @@ def run_monortm(command, freq, z, stdatmos, outputfile):
     
     # Run the command
     newcommand = '('+command+') >& /dev/null'
-    process = Popen(newcommand, shell=True, executable = '/bin/csh')
-    stdout, stderr = process.communicate()
+    with Popen(newcommand, shell=True, executable = '/bin/csh') as process:
+        try:
+            stdout, stderr = process.communicate()
+        except Exception as e:
+            print('Problem in run_monortm call (1)')
+            return error
+
     # Read in the output file into "stdout"
     f = open(outputfile)
     stdout = f.readlines()

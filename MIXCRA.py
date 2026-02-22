@@ -73,6 +73,10 @@ if ehour is None:
     ehour = 24.
 if verbose is None:
     verbose = 1
+if keep is None:
+    keep = 0
+if step is None:
+    step = 1
 
 # Get the version of the TROPoe package and the software
 tropoe_version   = Data_reads.get_tropoe_version()
@@ -101,8 +105,12 @@ if verbose == 3:
 else:
     warnings.filterwarnings("ignore", category=UserWarning)
 
-process = Popen('which csh', stdout = PIPE, stderr = PIPE, shell=True)
-stdout, stderr = process.communicate()
+with Popen('which csh', stdout = PIPE, stderr = PIPE, shell=True) as process:
+    try:
+        stdout, stderr = process.communicate()
+    except Exception as e:
+        print('Error -- process did not return shell properly')
+        sys.exit()
 
 if stdout.decode() == '':
     print('Error: Unable to find the C-shell command on this system')
@@ -963,7 +971,7 @@ for samp in range(foo[0],len(irs['secs']),step):
     fsample += 1
 
 # If this flag was set then delete the working subdirectory
-if vip['delete_temporary'] == 1:
+if vip['delete_temporary'] != 0:
     if verbose >= 2:
         print('  Deleting the working directory ' + vip['workdir'])
     shutil.rmtree(vip['workdir'])
