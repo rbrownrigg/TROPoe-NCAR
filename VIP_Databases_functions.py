@@ -134,19 +134,19 @@ full_tropoe_vip = ({
 
     'ext_sfc_wv_type': {'value': 0, 'comment': 'External surface water vapor met data type: 0-none, 1-external met data', 'default': True},
     'ext_sfc_wv_fieldname': {'value': 'rh_mean', 'comment': 'Name of surface water vapor met field', 'default': True},
-    'ext_sfc_wv_units': {'value': 1, 'comment': 'Units of surface temperature met field: 1-percent_rh, 2-fraction_rh', 'default': True},
+    'ext_sfc_wv_units': {'value': 1, 'comment': 'Units of surface water vapor met field: 1-percent_rh, 2-fraction_rh', 'default': True},
     'ext_sfc_wv_npts': {'value': 1, 'comment': 'Number of surface water vapor met points to use in the retrieval.  Minimum=1, maximum=1000.  Larger number increases the weight of the observation', 'default': True},
     'ext_sfc_rh_random_error': {'value': 3.0, 'comment': 'Random error for the surface relative humidity measurement [%], which is used with the ext_sfc_random_temp_error to get the uncertainty in WVMR', 'default': True},
     'ext_sfc_wv_mult_error': {'value': 1.0, 'comment': 'Multiplier for the error in the surface water vapor mixing ratio measurement.  This is applied BEFORE the \'rep_error\' value', 'default': True},
     'ext_sfc_wv_rep_error': {'value': 0.0, 'comment': 'Representativeness error for the surface water vapor measurement [g/kg], which is added to the assumed random uncertainty of 0.5 degC and 3%RH', 'default': True},
 
     'ext_sfc_pres_type': {'value': 0, 'comment': '0 - Use the internal {IRS,MWR} pressure sensor for psfc; 1-external surface met data', 'default': True},
-    'ext_sfc_pres_fieldname': {'value': 'atmos_pressure', 'comment': 'Name of surface water vapor met field', 'default': True},
-    'ext_sfc_pres_units': {'value': 1, 'comment': 'Units of surface temperature pressure field: 1-kPa, 2-hPa, 3-Pa', 'default': True},
+    'ext_sfc_pres_fieldname': {'value': 'atmos_pressure', 'comment': 'Name of surface pressure met field', 'default': True},
+    'ext_sfc_pres_units': {'value': 1, 'comment': 'Units of surface pressure field: 1-kPa, 2-hPa, 3-Pa', 'default': True},
 
     'ext_sfc_path': {'value': '/data/met', 'comment': 'Path to the external surface met data', 'default': True},
     'ext_sfc_rootname': {'value': 'met', 'comment': 'Rootname of the external surface met datastream', 'default': True},
-    'ext_sfc_time_format': {'value': 0, 'comment': 'Time format for external surface temperature: 0-base_time/{time_offset,time} [epoch seconds], 1-same as option 0 but base_time is in milliseconds (ASSIST), 2-time [epoch seconds]', 'default': True},
+    'ext_sfc_time_format': {'value': 0, 'comment': 'Time format for external surface met datastream: 0-base_time/{time_offset,time} [epoch seconds], 1-same as option 0 but base_time is in milliseconds (ASSIST), 2-time [epoch seconds]', 'default': True},
     'ext_sfc_time_delta': {'value': 0.2, 'comment': 'Maximum amount of time from endpoints of external surface met dataset to extrapolate [hours]', 'default': True},
     'ext_sfc_relative_height': {'value': 0, 'comment': 'Relative height of the met station to the IRS zenith port [m]; note if met station is below IRS port then the value should be negative\n', 'default': True},
 
