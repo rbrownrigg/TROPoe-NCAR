@@ -2968,19 +2968,11 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
                 zzq = fid.variables['height'][:]
                 wwx = fid.variables['waterVapor'][:]
                 ssx = fid.variables['sigma_waterVapor'][:]
-                if len(np.where(np.array(list(fid.ncattrs())) == 'model')[0]) > 0:
-                    model_type = fid.model
-                else:
-                    model_type = "unknown"
-                    print("    Warning: The mod dataset does not have the global attribute 'model' defined")
-                if len(np.where(np.array(list(fid.ncattrs())) == 'gridpoint_lat')[0]) > 0:
-                    model_lat = np.float(fid.gridpoint_lat)
-                else:
-                    model_lat = -999.
-                if len(np.where(np.array(list(fid.ncattrs())) == 'gridpoint_lon')[0]) > 0:
-                    model_lon = np.float(fid.gridpoint_lon)
-                else:
-                    model_lon = -999.
+
+                # Keep the attributes from this so we can write them to the output netCDF
+                for key in fid.ncattrs():
+                    saved_attributes[f'extprof_wv_model_{key}']= fid.getncattr(key)
+
                 fid.close()
                     # Sometimes, the model data are not ascending with height, so sort them
                 sidx = np.argsort(zzq)
@@ -3163,7 +3155,7 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
 
                 # Keep the attributes from this so we can write them to the output netCDF
                 for key in fid.ncattrs():
-                    saved_attributes[f'extprof_{key}']= fid.getncattr(key)
+                    saved_attributes[f'extprof_wv_grid_{key}']= fid.getncattr(key)
 
                 fid.close()
 
@@ -3485,19 +3477,11 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
                 zzt = fid.variables['height'][:]
                 ttx = fid.variables['temperature'][:]
                 ssx = fid.variables['sigma_temperature'][:]
-                if len(np.where(np.array(list(fid.ncattrs())) == 'model')[0]) > 0:
-                    model_type = fid.model
-                else:
-                    model_type = "unknown"
-                    print("    Warning: The mod dataset does not have the global attribute 'model' defined")
-                if len(np.where(np.array(list(fid.ncattrs())) == 'gridpoint_lat')[0]) > 0:
-                    model_lat = np.float(fid.gridpoint_lat)
-                else:
-                    model_lat = -999.
-                if len(np.where(np.array(list(fid.ncattrs())) == 'gridpoint_lon')[0]) > 0:
-                    model_lon = np.float(fid.gridpoint_lon)
-                else:
-                    model_lon = -999.
+
+                # Keep the attributes from this so we can write them to the output netCDF
+                for key in fid.ncattrs():
+                    saved_attributes[f'extprof_temp_model_{key}'] = fid.getncattr(key)
+
                 fid.close()
                     # Sometimes, the model data are not ascending with height, so sort them
                 sidx = np.argsort(zzt)
@@ -3623,7 +3607,7 @@ def read_external_profile_data(date, ht, secs, tres, avg_instant,
 
                 # Keep the attributes from this so we can write them to the output netCDF
                 for key in fid.ncattrs():
-                    saved_attributes[f'extprof_{key}'] = fid.getncattr(key)
+                    saved_attributes[f'extprof_temp_grid_{key}'] = fid.getncattr(key)
 
                 fid.close()
 
