@@ -1798,7 +1798,11 @@ def read_irs_eng(path, date, irs_type, verbose):
         if len(np.where(np.array(list(fid.variables.keys())) == 'BBcavityFactor')[0]) > 0:
             xbbcavityfactor = fid.variables['BBcavityFactor'][:]
         else:
-            xbbcavityfactor = np.ones(len(to))*12.79
+            if(irs_type == 5):
+                default_cavFactor = 39.
+            else:
+                default_cavFactor = 12.79
+            xbbcavityfactor = np.ones(len(to))*default_cavFactor
 
         fid.close()
 
