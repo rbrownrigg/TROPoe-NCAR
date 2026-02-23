@@ -1103,8 +1103,8 @@ def read_mixcra_vip_file(filename,globatt,verbose,dostop):
     # Need to trap condition where spectral_bands was not set (and thus is the default string "None")
     # and then reset it to a standard set of bands used for IR sounding
     if(type(vip['spectral_bands']) == str):
-        blo = [770.9, 785.9, 809.0, 815.3, 828.3, 842.8, 860.1, 872.2, 891.9, 898.2, 929.6, 959.9, 985.0, 1076.6, 1092.1, 1113.3, 1124.4, 1142.2, 1155.2]
-        bhi = [774.8, 790.7, 812.9, 824.4, 834.6, 848.1, 864.0, 877.5, 895.8, 905.4, 939.7, 964.3, 998.0, 1084.8, 1098.8, 1116.6, 1132.6, 1148.0, 1163.4]
+        blo = [529.9, 558.5, 809.0, 815.3, 828.3, 842.8, 860.1, 872.2, 891.9, 898.2, 929.6, 959.9, 985.0, 1076.6, 1092.1, 1113.3, 1124.4, 1142.2, 1155.2]
+        bhi = [531.5, 562.0, 812.9, 824.4, 834.6, 848.1, 864.0, 877.5, 895.8, 905.4, 939.7, 964.3, 998.0, 1084.8, 1098.8, 1116.6, 1132.6, 1148.0, 1163.4]
         vip['spectral_bands'] = np.array([blo,bhi])
 
     # Need to trap condition where sfc_emissivity was not set (and thus is the default string "None")
