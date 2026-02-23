@@ -15,6 +15,7 @@ import os
 import sys
 import numpy as np
 import struct
+from pathlib import Path
 from subprocess import Popen, PIPE
 
 
@@ -1548,6 +1549,12 @@ def run_monortm(command, freq, z, stdatmos, outputfile):
         except Exception as e:
             print('Problem in run_monortm call (1)')
             return error
+
+    # Make sure the model created an output file; if not, the return error
+    file_path = Path(outputfile)
+    if not file_path.is_file():
+        print('    Error: run_monortm did not run properly')
+        return error
 
     # Read in the output file into "stdout"
     f = open(outputfile)
