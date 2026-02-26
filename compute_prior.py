@@ -310,15 +310,23 @@ def compute_prior(z, sonde_path, sonde_rootname, month_idx, outfile=None, deltao
 
         command = ' uname -a ; echo $LBL_HOME ; lblrun ' + tp5 + ' ' + lblout+'1'
 
-        process = Popen(command, stdout=PIPE, stderr=PIPE, shell=True, executable='/bin/csh')
-        stdout, stderr = process.communicate()
+        with Popen(command, stdout=PIPE, stderr=PIPE, shell=True, executable='/bin/csh') as process:
+            try:
+                stdout, stderr = process.communicate()
+            except Exception as e:
+                print("Problem with LBLRTM calculation in compute_prior")
+                return
 
         rundecker(3, stdatmos, z, p, t, w, mlayers=z, wnum1=1800, wnum2=3100, tape5=tp5, v10=True, od_only=True)
 
         command = ' uname -a ; echo $LBL_HOME ; lblrun ' + tp5 + ' ' + lblout + '2'
 
-        process = Popen(command, stdout=PIPE, stderr=PIPE, shell=True, executable='/bin/csh')
-        stdout, stderr = process.communicate()
+        with Popen(command, stdout=PIPE, stderr=PIPE, shell=True, executable='/bin/csh') as process:
+            try:
+                stdout, stderr = process.communicate()
+            except Exception as e:
+                print("Problem with LBLRTM calculation in compute_prior")
+                return
 
         # Find the LBLRTM OD files
         files1 = np.array(sorted(glob(os.path.join(lblout+'1', 'OD*'))))

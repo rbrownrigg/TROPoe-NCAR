@@ -73,6 +73,10 @@ if ehour is None:
     ehour = 24.
 if verbose is None:
     verbose = 1
+if keep is None:
+    keep = 0
+if step is None:
+    step = 1
 
 # Get the version of the TROPoe package and the software
 tropoe_version   = Data_reads.get_tropoe_version()
@@ -101,8 +105,12 @@ if verbose == 3:
 else:
     warnings.filterwarnings("ignore", category=UserWarning)
 
-process = Popen('which csh', stdout = PIPE, stderr = PIPE, shell=True)
-stdout, stderr = process.communicate()
+with Popen('which csh', stdout = PIPE, stderr = PIPE, shell=True) as process:
+    try:
+        stdout, stderr = process.communicate()
+    except Exception as e:
+        print('Error -- process did not return shell properly')
+        sys.exit()
 
 if stdout.decode() == '':
     print('Error: Unable to find the C-shell command on this system')
@@ -286,6 +294,11 @@ if vip['delete_temporary'] != 0:
         print('    Reinitializing the working directory ' + vip['workdir'])
     if os.path.exists(vip['workdir']):
         shutil.rmtree(vip['workdir'])
+            # Test to see if the current working directory is still there, as it should
+            # have been deleted in the previous step.  If it is, then abort
+    if os.path.exists(vip['workdir']):
+        print(f"Error: working directory {vip['workdir']:s} previously exists and can not be deleted -- aborting")
+        sys.exit()
     os.mkdir(vip['workdir'])
     
 # This should be included in the VIP file. Right now it is always set.
@@ -580,7 +593,7 @@ for samp in range(foo[0],len(irs['secs']),step):
 
     # If desired, then modify the liquid and ice optical depths based upon cloud temperature
     if((vip['apply_tcloud_constraints'] == 1) and (vip['retrieve_icloud'] == 1) and (vip['retrieve_lcloud'] == 1)):
-        xtcld = np.ones(60)*-50
+        xtcld = np.arange(61)-50.
         xifac = 1-1./(1+np.exp(-(xtcld+ 5)))
         xlfac =   1./(1+np.exp(-(xtcld+35)))
         imult = np.min([np.max([np.interp(tcld,xtcld,xifac),0]),1])
@@ -952,16 +965,19 @@ for samp in range(foo[0],len(irs['secs']),step):
     currenttime = datetime.now()
     
     flag, ofilename = Output_Functions.mixcra_write_output(mout,vip,location,flagY,dimY,outfull,
-                                                           fsample,currenttime-starttime,
-                                                           verbose,globatt,ofilename)
+                          fsample,(currenttime-starttime).total_seconds(),verbose,globatt,ofilename)
     
     # Increment the pointer, and continue
     fsample += 1
 
 # If this flag was set then delete the working subdirectory
-if vip['delete_temporary'] == 1:
+if vip['delete_temporary'] != 0:
     if verbose >= 2:
         print('  Deleting the working directory ' + vip['workdir'])
     shutil.rmtree(vip['workdir'])
 
+# Successful exit
+print(('>>> MIXCRA retrieval on ' + str(date) + ' ended properly <<<'))
+print('--------------------------------------------------------------------')
+print(' ')
 

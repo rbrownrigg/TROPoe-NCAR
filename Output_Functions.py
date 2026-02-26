@@ -87,7 +87,7 @@ def add_vip_to_global_atts(nc, full_vip):
     """
 
     ignore = np.array(['success','tag', 'output_rootname', 'output_path',
-              'output_clobber', 'lbl_temp_dir', 'sfc_emissivity'])
+              'output_clobber', 'lbl_temp_dir'])
     
     vip = full_vip.copy()  # Copy the VIP so we don't overwrite anything in the next iterations
 
@@ -105,6 +105,10 @@ def add_vip_to_global_atts(nc, full_vip):
 
         # Convert the spectral bands back to a string since we can't save arrays to the attributes
         if key == 'spectral_bands':
+            data = ','.join([f"{data[0, i]}-{data[1, i]}" for i in range(len(data[0])) if data[0, i] > 0])
+
+        # Convert the surface emissivity spectra back to a string since we can't save arrays to the attributes
+        if key == 'sfc_emissivity':
             data = ','.join([f"{data[0, i]}-{data[1, i]}" for i in range(len(data[0])) if data[0, i] > 0])
 
         # If the attribute is an integer, cast it as a 32-bit one (otherwise it defaults to a long int)

@@ -7,8 +7,8 @@
 if [[ $# -ne 9 ]]; then 
   echo "USAGE: $0 yyyymmdd vip_file prior_file shour ehour verbose data_path temporary_path image_id"
   echo "   where      yyyymmdd : is the date to process"
-  echo "              vip_file : is the path/name of the VIP file (should be in the data tree indicated below)"
-  echo "            prior_file : is the path/name of the prior data file (should be in the data tree indicated below)"
+  echo "              vip_file : is the path/name of the VIP file"
+  echo "            prior_file : is the path/name of the prior data file"
   echo "                 shour : is the start hour"
   echo "                 ehour : is the  end  hour"
   echo "               verbose : is the verbosity level (1, 2, or 3)"
@@ -18,7 +18,7 @@ if [[ $# -ne 9 ]]; then
   exit
 fi
 
-echo "Running docker container in operational mode, with"
+echo "Running TROPoe in operational mode, with"
 echo "                            Date (yyyymmdd) : $1"
 echo "                                   VIP file : $2"
 echo "                                 Prior file : $3"
@@ -32,8 +32,8 @@ echo "                                 Image name : $9"
 
 # If using Docker, then use this command
 echo "Running image Docker"
-docker run -it --userns=host -e "yyyymmdd=$1" -e "vfile=$2" -e "pfile=$3" -e "shour=$4" -e "ehour=$5" -e "verbose=$6" -v $7:/data -v $8:/tmp2 $9 
+docker run -it --userns=host -e "app=TROPoe" -e "yyyymmdd=$1" -e "vfile=$2" -e "pfile=$3" -e "shour=$4" -e "ehour=$5" -e "verbose=$6" -v $7:/data -v $8:/tmp2 $9 
 
 # Else if you are using Podman, then comment the above command and uncomment this one
 #echo "Running image Podman"
-#podman run -it -u root --rm -e "yyyymmdd=$1" -e "vfile=$2" -e "pfile=$3" -e "shour=$4" -e "ehour=$5" -e "verbose=$6" -v $7:/data -v $8:/tmp2 $9 
+#podman run -it -u root --rm -e "app=TROPoe" -e "yyyymmdd=$1" -e "vfile=$2" -e "pfile=$3" -e "shour=$4" -e "ehour=$5" -e "verbose=$6" --security-opt label=disable -v $7:/data -v $8:/tmp2 $9 

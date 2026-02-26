@@ -247,8 +247,12 @@ def compute_jacobian_irs_interpol(X, p, zz, lblhome, lbldir, lblroot, lbl_std_at
     if append_devnull:
         command = (command + ' >& /dev/null')
 
-    process = Popen(command, stdout = PIPE, stderr = PIPE, shell=True, executable = '/bin/csh')
-    stdout, stderr = process.communicate()
+    with Popen(command, stdout = PIPE, stderr = PIPE, shell=True, executable = '/bin/csh') as process:
+        try:
+            stdout, stderr = process.communicate()
+        except Exception as e:
+            print('Popen error with LBLRTM (1)')
+            return success, -999., -999., -999., -999., -999., tape3_info
 
     # Now read in the baseline optical depths
     files1 = []
@@ -1364,11 +1368,12 @@ def compute_jacobian_microwave_lwp_only(z, p, t, w, freq, cbh, Xn, Qext_ratio, v
     # Perform the pertubation calculation.  If I already have precomputed it, and the computed Tbs are
     # less than 200 K for all channels, then I can use the precomputed one.  Otherwise, recompute it.
     foo = np.where(FXn < 200)[0]
-    if((stored_jacobian['computed'] != 1) and (len(foo) == len(FXn))):
+    if((stored_jacobian['computed'] != 1) or (len(foo) != len(FXn))):
         if verbose >= 3:
             print('Computing Jacobian for the liquid cloud properties')
         lwpp = lwp + 25.
-        command = ('rm -f '+monortm_outputfile+' ; '+monortm_exec + ' ' + monortm_tfile + ' {:3.1f} {:8.2f} {:6.3f} {:6.3f}'.format(1.0, lwpp, cbh, cth)+' > '+monortm_outputfile)
+        command = ('rm -f '+monortm_outputfile+' ; '+monortm_exec + ' ' + 
+            monortm_tfile + ' {:3.1f} {:8.2f} {:6.3f} {:6.3f}'.format(1.0, lwpp, cbh, cth)+' > '+monortm_outputfile)
         d = LBLRTM_Functions.run_monortm(command, freq, z, stdatmos, monortm_outputfile)
         if d['status'] == 0:
             print('Problem with MonoRTM-lwp-only calc 1')
@@ -2153,8 +2158,12 @@ def make_lblrtm_calc(vip, ymd, hour, co2, z, p, t, w, wnum1,wnum2,delt,verbose):
                     'setenv LBL_HOME ' + vip['lblrtm_home'] + ' ; '+
                     '$LBL_HOME/bin/lblrun ' + tp5 + ' ' + out + ' ' + vip['lbl_tape3'])
         
-        process = Popen(command, stdout = PIPE, stderr = PIPE, shell=True, executable = '/bin/csh')
-        stdout, stderr = process.communicate()
+        with Popen(command, stdout = PIPE, stderr = PIPE, shell=True, executable = '/bin/csh') as process:
+            try:
+                stdout, stderr = process.communicate()
+            except Exception as e:
+                print('Popen error with LBLRTM (2)')
+                return err
     
     # Confirm tha the LBLRTM ran properly
     odfiles = []
@@ -2219,8 +2228,12 @@ def mixcra_forward_model(Xn, z, lblout, lwc, vip, jday, sza, sfc_emissivity, ref
                                            ltau, itau, vip, lblout, sfc_emissivity, ref_wnum)
     
     # Now run the RT model
-    process = Popen(command, stdout = PIPE, stderr = PIPE, shell=True, executable = '/bin/csh')
-    stdout, stderr = process.communicate()
+    with Popen(command, stdout = PIPE, stderr = PIPE, shell=True, executable = '/bin/csh') as process:
+        try:
+            stdout, stderr = process.communicate()
+        except Exception as e:
+            print('Popen error with LBLDIS (1)')
+            return err, -999, -999
 
     # Now read in the output data
     fid = Dataset(ofile + '.cdf')
@@ -2257,8 +2270,12 @@ def mixcra_forward_model(Xn, z, lblout, lwc, vip, jday, sza, sfc_emissivity, ref
                                            plod, itau, vip, lblout, sfc_emissivity, ref_wnum)
 
         # Now run the RT model
-        process = Popen(command, stdout = PIPE, stderr = PIPE, shell=True, executable = '/bin/csh')
-        stdout, stderr = process.communicate()
+        with Popen(command, stdout = PIPE, stderr = PIPE, shell=True, executable = '/bin/csh') as process:
+            try:
+                stdout, stderr = process.communicate()
+            except Exception as e:
+                print('Popen error with LBLDIS (2)')
+                return err, -999, -999
 
         fid = Dataset(ofile + '.cdf')
         prad = np.squeeze(fid.variables['radiance'][:])
@@ -2276,8 +2293,12 @@ def mixcra_forward_model(Xn, z, lblout, lwc, vip, jday, sza, sfc_emissivity, ref
                                            ltau, itau, vip, lblout, sfc_emissivity, ref_wnum)
         
             # Now run the RT model
-            process = Popen(command, stdout = PIPE, stderr = PIPE, shell=True, executable = '/bin/csh')
-            stdout, stderr = process.communicate()
+            with Popen(command, stdout = PIPE, stderr = PIPE, shell=True, executable = '/bin/csh') as process:
+                try:
+                    stdout, stderr = process.communicate()
+                except Exception as e:
+                    print('Popen error with LBLDIS (3)')
+                    return err, -999, -999
 
             fid = Dataset(ofile + '.cdf')
             prad = np.squeeze(fid.variables['radiance'][:])
@@ -2303,8 +2324,12 @@ def mixcra_forward_model(Xn, z, lblout, lwc, vip, jday, sza, sfc_emissivity, ref
                                            ltau, piod, vip, lblout, sfc_emissivity, ref_wnum)
 
         # Now run the RT model
-        process = Popen(command, stdout = PIPE, stderr = PIPE, shell=True, executable = '/bin/csh')
-        stdout, stderr = process.communicate()
+        with Popen(command, stdout = PIPE, stderr = PIPE, shell=True, executable = '/bin/csh') as process:
+            try:
+                stdout, stderr = process.communicate()
+            except Exception as e:
+                print('Popen error with LBLDIS (4)')
+                return err, -999, -999
 
         fid = Dataset(ofile + '.cdf')
         prad = np.squeeze(fid.variables['radiance'][:])
@@ -2322,8 +2347,12 @@ def mixcra_forward_model(Xn, z, lblout, lwc, vip, jday, sza, sfc_emissivity, ref
                                            ltau, itau, vip, lblout, sfc_emissivity, ref_wnum)
         
             # Now run the RT model
-            process = Popen(command, stdout = PIPE, stderr = PIPE, shell=True, executable = '/bin/csh')
-            stdout, stderr = process.communicate()
+            with Popen(command, stdout = PIPE, stderr = PIPE, shell=True, executable = '/bin/csh') as process:
+                try:
+                    stdout, stderr = process.communicate()
+                except Exception as e:
+                    print('Popen error with LBLDIS (5)')
+                    return err, -999, -999
 
             fid = Dataset(ofile + '.cdf')
             prad = np.squeeze(fid.variables['radiance'][:])

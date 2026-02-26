@@ -51,12 +51,12 @@ full_tropoe_vip = ({
 
     'zgrid': {'value': '0.000, 0.010, 0.021, 0.033, 0.046, 0.061, 0.077, 0.095, 0.114, 0.136, 0.159, 0.185, 0.214, 0.245, 0.280, 0.318, 0.359, 0.405, 0.456, 0.512, 0.573, 0.640, 0.714, 0.795, 0.885, 0.983, 1.092, 1.211, 1.342, 1.486, 1.645, 1.819, 2.011, 2.223, 2.455, 2.710, 2.991, 3.300, 3.640, 4.014, 4.426, 4.879, 5.376, 5.924, 6.526, 7.189, 7.918, 8.720, 9.602,10.572,11.639,12.813,14.104,15.525,17.087','comment': 'Comma delimited list of heights for the z-grid to use in the retrieval [km]\n', 'default': True},
 
-    'station_lat': {'value': -999., 'comment': 'Station latitude [degN]; if negative get value from IRS/MWR data file', 'default': True},
-    'station_lon': {'value': -999., 'comment': 'Station longitude [degE]; if negative get value from IRS/MWR data file', 'default': True},
-    'station_alt': {'value': -999., 'comment': 'Station altitude [m MSL]; if negative get value from IRS/MWR data file', 'default': True},
+    'station_lat': {'value': -999., 'comment': 'Station latitude [degN]', 'default': True},
+    'station_lon': {'value': -999., 'comment': 'Station longitude [degE]', 'default': True},
+    'station_alt': {'value': -999., 'comment': 'Station altitude [m MSL]', 'default': True},
     'station_pres': {'value': 1000., 'comment': 'Station pressure [mb]; will be only be used if there is no other surface pressure input', 'default': True},
-    'station_psfc_min': {'value': 800., 'comment': 'Default minimum surface pressure [mb]', 'default': True},
-    'station_psfc_max': {'value': 1040., 'comment': 'Default maximum surface pressure [mb]\n', 'default': True},
+    'station_psfc_min': {'value': 800., 'comment': 'Default minimum surface pressure [mb], used for QC', 'default': True},
+    'station_psfc_max': {'value': 1040., 'comment': 'Default maximum surface pressure [mb], used for QC\n', 'default': True},
 
     'omb_flag': {'value': 0, 'comment': 'Flag to perform single forward calculation using input file; useful for o-minus-b (O-B) calculations (0 - off, 1 - on)', 'default': True},
     'omb_path': {'value': "/data", 'comment': 'Path to the input NetCDF file to use for the O-B calculation', 'default': True},
@@ -88,7 +88,7 @@ full_tropoe_vip = ({
     'irs_fa': {'value': 0.0, 'comment': 'Apply an aftoptics obscuration correction', 'default': False},
     'irs_old_ffov_halfangle': {'value': 23.0, 'comment': 'Original Half angle [millirad] of the finite field of view of the instrument', 'default': False},
     'irs_new_ffov_halfangle': {'value': 0.0, 'comment': 'New half angle [millirad] of the finite field of view of the instrument (values} <= 0 will result in no correction being applied)', 'default': False},
-    'irs_min_675_bt': {'value': 263., 'comment': 'Minimum brightness temp [K] in the 675-680 cm-1 window -- this is QC screen', 'default': True},
+    'irs_min_675_bt': {'value': 233., 'comment': 'Minimum brightness temp [K] in the 675-680 cm-1 window -- this is QC screen', 'default': True},
     'irs_max_675_bt': {'value': 313., 'comment': 'Maximum brightness temp [K] in the 675-680 cm-1 window -- this is QC screen\n', 'default': True},
     'irs_spec_cal_factor_ch1': {'value': 1.0, 'comment': 'The multiplicative stretch factor to change the spectral calibration of IRS ch1 data', 'default': False},
     'irs_spec_cal_factor_ch2': {'value': 1.0, 'comment': 'The multiplicative stretch factor to change the spectral calibration of IRS ch2 data', 'default': False},
@@ -107,7 +107,7 @@ full_tropoe_vip = ({
     'mwr_tb_freqs': {'value': '23.8,31.4', 'comment': 'Comma separated list of frequency [GHz] of MWR Tb fields', 'default': True},
     'mwr_tb_noise': {'value': '0.3,0.3', 'comment': 'Comma separated list of noise levels [K] in the MWR Tb fields', 'default': True},
     'mwr_tb_bias': {'value': '0.0,0.0', 'comment': 'Comma separated list of bias [K] in the MWR Tb fields; this value is ADDED to the MWR observations', 'default': True},
-    'mwr_tb_replicate': {'value': 1, 'comment': 'Number of times to replicate the obs -- this allows us to change the weight of the MWR data in the retr}ieval (useful for LWP)', 'default': True},
+    'mwr_tb_replicate': {'value': 1, 'comment': 'Number of times to replicate the obs -- this allows us to change the weight of the MWR data in the retrieval (useful for LWP)', 'default': True},
     'mwr_time_delta': {'value': 0.083, 'comment': 'The maximum amount of time [hours] that the MWR zenith obs must be to the sampling time to be used \n', 'default': True},
 
     'mwrscan_type': {'value': 0, 'comment': '0 - none, 1 - Tb fields are individual time series, 2 - Tb field is 2-d array', 'default': True},
@@ -134,19 +134,19 @@ full_tropoe_vip = ({
 
     'ext_sfc_wv_type': {'value': 0, 'comment': 'External surface water vapor met data type: 0-none, 1-external met data', 'default': True},
     'ext_sfc_wv_fieldname': {'value': 'rh_mean', 'comment': 'Name of surface water vapor met field', 'default': True},
-    'ext_sfc_wv_units': {'value': 1, 'comment': 'Units of surface temperature met field: 1-percent_rh, 2-fraction_rh', 'default': True},
+    'ext_sfc_wv_units': {'value': 1, 'comment': 'Units of surface water vapor met field: 1-percent_rh, 2-fraction_rh', 'default': True},
     'ext_sfc_wv_npts': {'value': 1, 'comment': 'Number of surface water vapor met points to use in the retrieval.  Minimum=1, maximum=1000.  Larger number increases the weight of the observation', 'default': True},
     'ext_sfc_rh_random_error': {'value': 3.0, 'comment': 'Random error for the surface relative humidity measurement [%], which is used with the ext_sfc_random_temp_error to get the uncertainty in WVMR', 'default': True},
     'ext_sfc_wv_mult_error': {'value': 1.0, 'comment': 'Multiplier for the error in the surface water vapor mixing ratio measurement.  This is applied BEFORE the \'rep_error\' value', 'default': True},
     'ext_sfc_wv_rep_error': {'value': 0.0, 'comment': 'Representativeness error for the surface water vapor measurement [g/kg], which is added to the assumed random uncertainty of 0.5 degC and 3%RH', 'default': True},
 
     'ext_sfc_pres_type': {'value': 0, 'comment': '0 - Use the internal {IRS,MWR} pressure sensor for psfc; 1-external surface met data', 'default': True},
-    'ext_sfc_pres_fieldname': {'value': 'atmos_pressure', 'comment': 'Name of surface water vapor met field', 'default': True},
-    'ext_sfc_pres_units': {'value': 1, 'comment': 'Units of surface temperature pressure field: 1-kPa, 2-hPa, 3-Pa', 'default': True},
+    'ext_sfc_pres_fieldname': {'value': 'atmos_pressure', 'comment': 'Name of surface pressure met field', 'default': True},
+    'ext_sfc_pres_units': {'value': 1, 'comment': 'Units of surface pressure field: 1-kPa, 2-hPa, 3-Pa', 'default': True},
 
     'ext_sfc_path': {'value': '/data/met', 'comment': 'Path to the external surface met data', 'default': True},
     'ext_sfc_rootname': {'value': 'met', 'comment': 'Rootname of the external surface met datastream', 'default': True},
-    'ext_sfc_time_format': {'value': 0, 'comment': 'Time format for external surface temperature: 0-base_time/{time_offset,time} [epoch seconds], 1-same as option 0 but base_time is in milliseconds (ASSIST), 2-time [epoch seconds]', 'default': True},
+    'ext_sfc_time_format': {'value': 0, 'comment': 'Time format for external surface met datastream: 0-base_time/{time_offset,time} [epoch seconds], 1-same as option 0 but base_time is in milliseconds (ASSIST), 2-time [epoch seconds]', 'default': True},
     'ext_sfc_time_delta': {'value': 0.2, 'comment': 'Maximum amount of time from endpoints of external surface met dataset to extrapolate [hours]', 'default': True},
     'ext_sfc_relative_height': {'value': 0, 'comment': 'Relative height of the met station to the IRS zenith port [m]; note if met station is below IRS port then the value should be negative\n', 'default': True},
 
@@ -196,7 +196,7 @@ full_tropoe_vip = ({
     'add_tropoe_gamma_threshold':   {'value': 2, 'comment': 'Only samples with gamma values less than this threshold will be considered for use in future retrieval', 'default': False},
     'add_tropoe_T_noise_adder_val': {'value': [3.0, 1, 1], 'comment': '3-element comma delimited list of additive values to apply the noise profile of the previous TROPoe input temperature profile (must be >= 0)', 'default': False},
     'add_tropoe_T_noise_adder_hts': {'value': [0.0, 1, 20], 'comment': '3-element comma delimited list with the corresponding heights for the additive value [km AGL]', 'default': False},
-    'add_tropoe_q_noise_mult_val':  {'value': [5.0, 2, 2], 'comment': '3-element comma delimited list with the multipliers to apply the noise profile of the model water vapor profile (must be > 1)', 'default': False},
+    'add_tropoe_q_noise_mult_val':  {'value': [5.0, 2, 2], 'comment': '3-element comma delimited list with the multipliers to apply the noise profile of the previous TROPoe input water vapor profile (must be > 1)', 'default': False},
     'add_tropoe_q_noise_mult_hts':  {'value': [0.0, 1, 20], 'comment': '3-element comma delimited list with the corresponding heights for the noise multipliers [km AGL]', 'default': False},
     'add_tropoe_use_prior_as_max':  {'value': 1, 'comment': 'If set, then the maximum amount of uncertainty is the uncertainty of the prior', 'default': False},
     'add_tropoe_use_pblh_flag':     {'value': 1, 'comment': 'If set, then the middle height point in the adder and multiplier profiles becomes maximum of that value or the PBLH [km AGL]\n', 'default': True},
@@ -220,7 +220,7 @@ full_tropoe_vip = ({
     'output_akernal': {'value': 1, 'comment': '0 - do not output Sop and Akernal; 1 - output normal Sop and normal Akernal; 2 - output normal Sop, normal Akernal, and "no-model" Akernal', 'default': False},
     'output_clobber': {'value': 0, 'comment': '0 - do not clobber preexisting output files, 1 - clobber them, 2 - append to the last file of this day\n', 'default': True},
 
-    'lbl_home': {'value': '/home/tropoe/vip/src/lblrtm_v12.17/lblrtm', 'comment': 'String with the LBL_HOME path (environment variable)', 'default': False},
+    'lbl_home': {'value': '/home/tropoe/vip/src/lblrtm_v12.17/lblrtm', 'comment': 'String with the LBL_HOME path', 'default': False},
     'lbl_temp_dir': {'value': '/tmp', 'comment': 'Temporary working directory for the retrieval', 'default': False},
     'lbl_std_atmos': {'value': 6, 'comment': 'Standard atmosphere to use in LBLRTM and MonoRTM calcs', 'default': False},
     'path_std_atmos': {'value': '/home/tropoe/vip/src/input/idl_code/std_atmosphere.idl', 'comment': 'The path to the IDL save file with the standard atmosphere info in it', 'default': False},
@@ -243,15 +243,15 @@ full_tropoe_vip = ({
     'retrieve_temp': {'value': 1, 'comment': '0 - do not retrieve temp, 1 - do retrieve temp (default)', 'default': True},
     'retrieve_wvmr': {'value': 1, 'comment': '0 - do not retrieve wvmr, 1 - do retrieve wvmr (default)', 'default': True},
     'retrieve_co2': {'value': 0, 'comment': '0 - do not retrieve co2, 1 - do retrieve co2 (step model), 2 - do retrieve co2 (exponential model -- disabled)', 'default': False},
-    'fix_co2_shape': {'value': 0, 'comment': '(This option only works with retrieve_co2=2): 0 - retrieve all three coefs, 1 - shape coef is f(PBLH) and fixed', 'default': False},
+    'fix_co2_shape': {'value': 0, 'comment': '(This option only works with retrieve_co2=1): 0 - retrieve all three coefs, 1 - shape coef is f(PBLH) and fixed', 'default': False},
     'retrieve_ch4': {'value': 0, 'comment': '0 - do not retrieve ch4, 1 - do retrieve ch4 (step model), 2 - do retrieve ch4 (exponential model -- disabled)', 'default': False},
-    'fix_ch4_shape': {'value': 0, 'comment': '(This option only works with retrieve_ch4=2): 0 - retrieve all three coefs, 1 - shape coef is f(PBLH) and fixed', 'default': False},
+    'fix_ch4_shape': {'value': 0, 'comment': '(This option only works with retrieve_ch4=1): 0 - retrieve all three coefs, 1 - shape coef is f(PBLH) and fixed', 'default': False},
     'retrieve_n2o': {'value': 0, 'comment': '0 - do not retrieve n2o, 1 - do retrieve n2o (step model), 2 - do retrieve n2o (exponential model -- disabled)', 'default': False},
-    'fix_n2o_shape': {'value': 0, 'comment': '(This option only works with retrieve_n2o=2): 0 - retrieve all three coefs, 1 - shape coef is f(PBLH) and fixed', 'default': False},
+    'fix_n2o_shape': {'value': 0, 'comment': '(This option only works with retrieve_n2o=1): 0 - retrieve all three coefs, 1 - shape coef is f(PBLH) and fixed', 'default': False},
     'retrieve_lcloud': {'value': 1, 'comment': '0 - do not retrieve liquid clouds, 1 - retrieve liquid cloud properties', 'default': True},
     'retrieve_icloud': {'value': 0, 'comment': '0 - do not retrieve   ice  clouds, 1 - retrieve   ice  cloud properties', 'default': True},
     'lcloud_ssp': {'value': '/home/tropoe/vip/src/input/ssp_db_files/ssp_db.mie_wat.gamma_sigma_0p100', 'comment': 'SSP file for liquid cloud properties', 'default': False},
-    'icloud_ssp': {'value': '/home/tropoe/vip/src/input/ssp_db_files/ssp_db.mie_ice.gamma_sigma_0p100', 'comment': 'SSP file for   ice  cloud properties', 'default': False},
+    'icloud_ssp': {'value': '/home/tropoe/vip/src/input/ssp_db_files/ssp_db.mie_ice.gamma_sigma_0p100', 'comment': 'SSP file for ice cloud properties', 'default': False},
     'qc_rms_value': {'value': 10.0, 'comment': 'The RMSa value between ((obs minus calc)/obs_uncert), with values less than this being \'good\' ', 'default': True},
     'qc_gamma_value': {'value': 5.0, 'comment': 'The gamma value, with values less than this being \'good\' \n', 'default': True},
 
@@ -279,12 +279,12 @@ full_tropoe_vip = ({
     'prior_itau_mn': {'value': 0.0, 'comment': 'Mean ice cloud optical depth (geometric limit)', 'default': True},
     'prior_itau_sd': {'value': 50.0, 'comment': '1-sigma uncertainty in ice cloud optical depth', 'default': True},
     'prior_iReff_mn': {'value': 25.0, 'comment': 'Mean ice cloud Reff [microns]', 'default': True},
-    'prior_iReff_sd': {'value': 8.0, 'comment': '1-sigma uncertainty in ice cloud} Reff [Reff] \n', 'default': True},
-    'min_PBL_height': {'value': 0.3, 'comment': 'The minimum height of the planetary boundary layer (used for trace gases) [km AGL]', 'default': False},
+    'prior_iReff_sd': {'value': 8.0, 'comment': '1-sigma uncertainty in ice cloud} Reff [microns] \n', 'default': True},
+    'min_PBL_height': {'value': 0.050, 'comment': 'The minimum height of the planetary boundary layer (used for trace gases) [km AGL]', 'default': False},
     'max_PBL_height': {'value': 5.0, 'comment': 'The maximum height of the planetary boundary layer (used for trace gases) [km AGL]', 'default': False},
     'nudge_PBL_height': {'value': 0.5, 'comment': 'The temperature offset (nudge) added to the surface temp to find PBL height [C] \n', 'default': False},
 
-    'plot_output': {'value': 0, 'comment': '0 - do not generate quicklooks of the output; 1 - generate quicklooks of the output after every iterations; 2 - plot from pre-existing file and abort', 'default': True},
+    'plot_output': {'value': 0, 'comment': '0 - do not generate quicklooks of the output; 1 - generate quicklooks of the output after every iteration; 2 - plot from pre-existing file and abort', 'default': True},
     'plot_path'  : {'value': 'None', 'comment': 'Path to store outputted quicklooks. Defaults to output path', 'default': True},
     'plot_rootname': {'value': 'None', 'comment': 'Sets a prefix to the quicklooks. Defaults to the output_rootname vip entry', 'default': True},
     'plot_xlim'  : {'value': [0., 24.], 'comment': 'Hours of day', 'default': True},
@@ -307,7 +307,7 @@ full_tropoe_vip = ({
 full_mixcra_vip = ({
     'success': {'value': 0, 'comment': 'Interal success flag. Not for outside use', 'default': False},
     'tres_lblrtm': {'value': 3, 'comment': 'Temporal resoltuion of the LBLRTM runs [h]', 'default':True},
-    'workdir': {'value':'tag', 'comment': 'The working directory for the iterating retrieval','default':True},
+    'workdir': {'value':'/data/tag', 'comment': 'The working directory for the iterating retrieval','default':True},
     'avg_instant': {'value': 1, 'comment': 'A flag to specify -1:avg with no sqrt(N), 0:avg with sqrt(N), or 1:instantaneous', 'default': False},
 
     'delete_temporary': {'value':1, 'comment': 'Delete the temporary output after MIXCRA completes (1) or keep it (0)', 'default':False},
@@ -329,7 +329,7 @@ full_mixcra_vip = ({
     'irs_band_noise_sfc_wvmr_vals': {'value': '0.,7,12,18', 'comment': 'A comma separated list of the surface water vapor mixing ratio values [g/kg] for the x-axis', 'default': False}, 
     'irs_band_noise_sfc_multiplier': {'value': '20.0,20,1,1', 'comment': 'A comma separated list of multipliers [unitless] for the y-axis', 'default': False}, 
     'irs_zenith_scene_mirror_angle': {'value':180, 'comment': 'The angle [degrees] of the IRS scene mirror that corresponds to zenith', 'default':True},
-    'irs_min_675_bt': {'value': 263., 'comment': 'Minimum brightness temp [K] in the 675-680 cm-1 window -- this is QC screen', 'default': True},
+    'irs_min_675_bt': {'value': 233., 'comment': 'Minimum brightness temp [K] in the 675-680 cm-1 window -- this is QC screen', 'default': True},
     'irs_max_675_bt': {'value': 313., 'comment': 'Maximum brightness temp [K] in the 675-680 cm-1 window -- this is QC screen\n', 'default': True},
     'irs_use_missingDataFlag': {'value': 1, 'comment': 'Set this to 1 to use the field \'missingDataFlag\' (from the ch1 file) to remove bad IRS data from analysis. If zero, then all IRS data will be processed,', 'default': False},
     'irs_calib_pres': {'value': [0.0, 1.0], 'comment': 'Intercept [mb] and slope [mb/mb to calib (newP = int = slope*obsP) (need comma between them)', 'default': False},
@@ -370,7 +370,7 @@ full_mixcra_vip = ({
     'output_rootname': {'value': 'mixcra', 'comment': 'The rootname of the output file', 'default': True},
     'output_path': {'value': '/data/mixcra', 'comment': 'Path where the output file will be placed \n', 'default': True},
 
-    'lblrtm_home': {'value': '/home/tropoe/vip/src/lblrtm_v12.17/lblrtm', 'comment': 'String with the LBL_HOME path (environment variable)', 'default': False},
+    'lblrtm_home': {'value': '/home/tropoe/vip/src/lblrtm_v12.17/lblrtm', 'comment': 'String with the LBL_HOME path', 'default': False},
     'lbldis_exec': {'value': '/home/tropoe/vip/src/lbldis.Release_3_0/lbldis', 'comment': 'The LBLDIS executable (with path)', 'default': False},
     'lbl_std_atmos': {'value': 6, 'comment': 'Standard atmosphere to use in LBLRTM and MonoRTM calcs', 'default': False},
     'lbl_tape3': {'value': 'TAPE3.10-3500cm-1.first_7_molecules', 'comment': 'The TAPE3 file to use in the lblrtm calculation.  Needs to be in the directory lbl_home/hitran/', 'default': False},
@@ -1068,13 +1068,13 @@ def read_mixcra_vip_file(filename,globatt,verbose,dostop):
                         tmp = inputt[foo,1][0].split(',')
 
                         if len(tmp) >= maxbands:
-                            print('Error: There were more spectral bands defined than maximum allowed (maxbands = ' + str(maxbands) + ')')
+                            print('Error: There were more surface emissivity elements defined than maximum allowed (maxbands = ' + str(maxbands) + ')')
                             return vip
 
                         for j in range(len(tmp)):
                             feh = tmp[j].split('-')
                             if len(feh) != 2:
-                                print('Error: Unable to properly decompose the spectral_bands key')
+                                print('Error: Unable to properly decompose the sfc_emissivity key')
                                 if dostop:
                                     wait = input('Stopping inside to debug this bad boy. Press enter to continue')
                                 return vip
@@ -1104,9 +1104,16 @@ def read_mixcra_vip_file(filename,globatt,verbose,dostop):
     # Need to trap condition where spectral_bands was not set (and thus is the default string "None")
     # and then reset it to a standard set of bands used for IR sounding
     if(type(vip['spectral_bands']) == str):
-        blo = [770.9, 785.9, 809.0, 815.3, 828.3, 842.8, 860.1, 872.2, 891.9, 898.2, 929.6, 959.9, 985.0, 1076.6, 1092.1, 1113.3, 1124.4, 1142.2, 1155.2]
-        bhi = [774.8, 790.7, 812.9, 824.4, 834.6, 848.1, 864.0, 877.5, 895.8, 905.4, 939.7, 964.3, 998.0, 1084.8, 1098.8, 1116.6, 1132.6, 1148.0, 1163.4]
+        blo = [529.9, 558.5, 809.0, 815.3, 828.3, 842.8, 860.1, 872.2, 891.9, 898.2, 929.6, 959.9, 985.0, 1076.6, 1092.1, 1113.3, 1124.4, 1142.2, 1155.2]
+        bhi = [531.5, 562.0, 812.9, 824.4, 834.6, 848.1, 864.0, 877.5, 895.8, 905.4, 939.7, 964.3, 998.0, 1084.8, 1098.8, 1116.6, 1132.6, 1148.0, 1163.4]
         vip['spectral_bands'] = np.array([blo,bhi])
+
+    # Need to trap condition where sfc_emissivity was not set (and thus is the default string "None")
+    # and then reset it to a standard emissivity spectrum
+    if(type(vip['sfc_emissivity']) == str):
+        bwn = [100.0,  500.0,  700.0, 1000.0, 1100.0, 1200.0, 1300.0, 2000.0, 2200.0, 2450.0, 2800.0, 3000.0]
+        bem = [0.990,  0.990,  0.990,  0.980,  0.950,  0.950,  0.995,  0.990,  0.940,  0.920,  0.950,  0.990]
+        vip['sfc_emissivity'] = np.array([bwn,bem])
 
     foo = np.nonzero(track)[0]
     if len(foo) > 0:
